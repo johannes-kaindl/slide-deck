@@ -61,6 +61,17 @@ export const Platform = { isMobile: false, isDesktopApp: true };
 
 export function normalizePath(p: string): string { return p.replace(/\\/g, "/").replace(/\/+/g, "/"); }
 
+export class TFile {
+  path: string;
+  name: string;
+  extension: string;
+  constructor(path: string, extension: string) {
+    this.path = path;
+    this.name = path.split("/").pop() ?? path;
+    this.extension = extension;
+  }
+}
+
 export async function requestUrl(_opts: any): Promise<{ status: number; text: string; json: any }> {
   return { status: 200, text: "", json: {} };
 }
