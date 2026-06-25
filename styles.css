@@ -1,0 +1,21 @@
+/* Preview chrome — minimal host styles for the Obsidian leaf view */
+.sd-preview-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 24px;
+  background: var(--background-secondary, #1e1e1e);
+  overflow-y: auto;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Slide wrapper — preset CSS is injected per-slide via <style> */
+.sd-slide-wrapper {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
