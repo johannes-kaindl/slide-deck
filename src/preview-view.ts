@@ -41,5 +41,5 @@ export class SlideDeckView extends ItemView {
     view?.editor.setCursor({ line, ch: 0 });
   }
 
-  async onClose(): Promise<void> { this.deckEl?.empty(); }
+  async onClose(): Promise<void> { this.warnEl?.empty(); this.deckEl?.empty(); }
 }

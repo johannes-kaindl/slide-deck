@@ -9,6 +9,8 @@ import type { SlideDeck } from "./core/slide-model";
 
 mermaid.initialize({ startOnLoad: false, theme: "default" });
 
+let mermaidSeq = 0;
+
 const ICON: Record<string, string> = { note: "info", info: "info", warning: "alert-triangle", danger: "x-circle", tip: "lightbulb" };
 
 async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnings: Warning[]): Promise<void> {
@@ -16,7 +18,8 @@ async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnin
   for (let i = 0; i < slots.length; i++) {
     const src = atob(slots[i].dataset.src ?? "");
     try {
-      const { svg } = await mermaid.render(`sd-mm-${slideIndex}-${i}-${src.length}`, src);
+      const renderId = `sd-mm-${mermaidSeq++}`;
+      const { svg } = await mermaid.render(renderId, src);
       slots[i].innerHTML = svg;
     } catch {
       slots[i].textContent = "⚠ Mermaid error";
