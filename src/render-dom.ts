@@ -11,7 +11,7 @@ mermaid.initialize({ startOnLoad: false, theme: "default" });
 
 const ICON: Record<string, string> = { note: "info", info: "info", warning: "alert-triangle", danger: "x-circle", tip: "lightbulb" };
 
-async function renderMermaidSlots(doc: Document, scope: HTMLElement, slideIndex: number, warnings: Warning[]): Promise<void> {
+async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnings: Warning[]): Promise<void> {
   const slots = Array.from(scope.querySelectorAll<HTMLElement>(".sd-mermaid"));
   for (let i = 0; i < slots.length; i++) {
     const src = atob(slots[i].dataset.src ?? "");
@@ -23,7 +23,6 @@ async function renderMermaidSlots(doc: Document, scope: HTMLElement, slideIndex:
       warnings.push({ slideIndex, kind: "mermaid-error", message: "Mermaid diagram failed to parse" });
     }
   }
-  void doc; // doc is used in buildSelfContainedDeckHtml; passed here for API symmetry
 }
 
 function decorateIcons(scope: HTMLElement): void {
@@ -39,7 +38,7 @@ export async function renderDeckToContainer(
   const geo = geometryFor(deck.directives.aspect);
   const minScale = deck.directives.minFontPx / 28; // 28 = --sd-base
   const warnings: Warning[] = [];
-  void doc; // doc is used in buildSelfContainedDeckHtml; passed here for API symmetry
+  void doc; // doc used by buildSelfContainedDeckHtml (doc.createElement, doc.body) — kept for API symmetry
   container.empty();
   for (const slide of deck.slides) {
     const box = container.createDiv({ cls: "sd-slide" });
@@ -48,7 +47,7 @@ export async function renderDeckToContainer(
     const rendered = renderMarkdown({ markdown: slide.markdown, resolveEmbed });
     const inner = box.createDiv({ cls: "sd-content" });
     inner.innerHTML = rendered.html; // self-generated, controlled core HTML
-    await renderMermaidSlots(doc, inner, slide.index, warnings);
+    await renderMermaidSlots(inner, slide.index, warnings);
     decorateIcons(inner);
     const fit = computeFit({ contentWidth: inner.scrollWidth, contentHeight: inner.scrollHeight }, geo, minScale);
     inner.style.transformOrigin = "top left";
