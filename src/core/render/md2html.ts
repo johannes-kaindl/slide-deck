@@ -15,6 +15,13 @@ export interface RenderedSlide {
   warnings: Omit<Warning, "slideIndex">[];
 }
 
+function toBase64Utf8(s: string): string {
+  const bytes = new TextEncoder().encode(s);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
 function highlight(str: string, lang: string): string {
   const escaped = MarkdownIt().utils.escapeHtml(str);
   if (lang && hljs.getLanguage(lang)) {
@@ -39,7 +46,7 @@ function buildMd(): MarkdownIt {
     const token = tokens[idx];
     if (token.info.trim() === "mermaid") {
       // token.content includes a trailing newline added by markdown-it; strip it
-      const b64 = Buffer.from(token.content.replace(/\n$/, ""), "utf8").toString("base64");
+      const b64 = toBase64Utf8(token.content.replace(/\n$/, ""));
       return `<div class="sd-mermaid" data-src="${b64}"></div>`;
     }
     return defaultFence(tokens, idx, opts, env, self);
