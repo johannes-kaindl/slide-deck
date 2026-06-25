@@ -1,0 +1,22 @@
+import { describe, it, expect } from "vitest";
+import { renderMarkdown } from "../../src/core/render/md2html";
+
+const noEmbed = () => null;
+
+describe("renderMarkdown", () => {
+  it("renders headings and emphasis", () => {
+    const { html } = renderMarkdown({ markdown: "# Title\n\n**bold**", resolveEmbed: noEmbed });
+    expect(html).toContain("<h1>Title</h1>");
+    expect(html).toContain("<strong>bold</strong>");
+  });
+
+  it("renders inline KaTeX", () => {
+    const { html } = renderMarkdown({ markdown: "$E=mc^2$", resolveEmbed: noEmbed });
+    expect(html).toContain("katex");
+  });
+
+  it("highlights fenced code", () => {
+    const { html } = renderMarkdown({ markdown: "```js\nconst x=1\n```", resolveEmbed: noEmbed });
+    expect(html).toContain("hljs");
+  });
+});
