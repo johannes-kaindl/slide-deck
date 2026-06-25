@@ -1,5 +1,5 @@
 import { Plugin } from "obsidian";
-import { runSpike } from "./spike-export";
+import { exportPdf, exportImages } from "./export";
 import { SlideDeckView, VIEW_TYPE } from "./preview-view";
 import { t } from "./i18n";
 
@@ -8,14 +8,19 @@ export default class SlideDeckPlugin extends Plugin {
     this.registerView(VIEW_TYPE, (leaf) => new SlideDeckView(leaf));
     // Folgetasks registrieren Commands, Settings, View hier.
     this.addCommand({
-      id: "spike-export",
-      name: "Spike: export demo deck",
-      callback: () => { void runSpike(activeDocument, activeWindow); },
-    });
-    this.addCommand({
       id: "open-preview",
       name: t("cmd.openPreview"),
       callback: () => void this.activatePreview(),
+    });
+    this.addCommand({
+      id: "export-pdf",
+      name: t("cmd.exportPdf"),
+      callback: () => void exportPdf(this.app, activeDocument, activeWindow),
+    });
+    this.addCommand({
+      id: "export-images",
+      name: t("cmd.exportImages"),
+      callback: () => void exportImages(this.app, activeDocument, activeWindow),
     });
   }
 

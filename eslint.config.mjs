@@ -23,15 +23,14 @@ export default tseslint.config(
   //   rules: { "obsidianmd/no-restricted-globals": "off" }, // SSE via activeWindow.fetch, requestUrl kann nicht streamen
   // },
   {
-    // spike-export.ts: De-risk spike; all innerHTML writes are self-generated, isolated export-HTML (never user input).
-    // Inline positioning and console.log are intentional: off-screen canvas staging + Devtools smoke verification.
-    // Entire file deleted by Task 17 once the spike findings are absorbed into production export code.
-    files: ["src/spike-export.ts"],
+    // export.ts: innerHTML writes are self-generated, isolated export-HTML (never user input).
+    // Inline positioning is intentional: fixed off-screen staging geometry for html2canvas capture.
+    files: ["src/export.ts"],
     rules: {
       "no-unsanitized/property": "off",       // innerHTML: self-generated export HTML, not user input
+      "no-unsanitized/method": "off",         // insertAdjacentHTML: self-generated export HTML, not user input
       "@microsoft/sdl/no-inner-html": "off",  // same reason as above
       "obsidianmd/no-static-styles-assignment": "off", // fixed off-screen staging geometry, not theme styles
-      "obsidianmd/rule-custom-message": "off", // console.log for Devtools smoke verification during spike
     },
   },
   {
