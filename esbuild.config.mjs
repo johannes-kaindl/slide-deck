@@ -13,6 +13,7 @@ const ctx = await esbuild.context({
   minify: prod,
   treeShaking: true,
   outfile: "main.js",
+  loader: { ".css": "text" },
 });
 
 if (prod) {

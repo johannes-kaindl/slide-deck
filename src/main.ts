@@ -36,7 +36,8 @@ export default class SlideDeckPlugin extends Plugin {
   private async activatePreview(): Promise<void> {
     const { workspace } = this.app;
     const existing = workspace.getLeavesOfType(VIEW_TYPE)[0];
-    const leaf = existing ?? workspace.getRightLeaf(false)!;
+    const leaf = existing ?? workspace.getRightLeaf(false);
+    if (!leaf) return;
     await leaf.setViewState({ type: VIEW_TYPE, active: true });
     void workspace.revealLeaf(leaf);
   }

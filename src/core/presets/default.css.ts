@@ -22,3 +22,4 @@ const DEFAULT = `
 `;
 export const PRESETS: Record<string, string> = { default: DEFAULT };
 export function presetCss(name: string): string { return PRESETS[name] ?? PRESETS.default; }
+export function assembleDeckCss(parts: string[]): string { return parts.join("\n"); }

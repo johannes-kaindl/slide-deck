@@ -1,6 +1,7 @@
 import { ItemView, WorkspaceLeaf, MarkdownView, debounce } from "obsidian";
 import { loadActiveDeck } from "./adapter";
 import { renderDeckToContainer } from "./render-dom";
+import { deckCss } from "./deck-css";
 import { activeDoc } from "./dom-safe";
 import { t } from "./i18n";
 import type SlideDeckPlugin from "./main";
@@ -10,6 +11,7 @@ export const VIEW_TYPE = "slide-deck-preview";
 export class SlideDeckView extends ItemView {
   private warnEl!: HTMLElement;
   private deckEl!: HTMLElement;
+  private styleEl?: HTMLStyleElement;
   private rerender = debounce(() => void this.refresh(), 300, true);
 
   constructor(leaf: WorkspaceLeaf, private plugin: SlideDeckPlugin) { super(leaf); }
@@ -18,6 +20,7 @@ export class SlideDeckView extends ItemView {
   getIcon(): string { return "presentation"; }
 
   async onOpen(): Promise<void> {
+    this.styleEl = this.contentEl.createEl("style");
     this.warnEl = this.contentEl.createDiv({ cls: "sd-warnings" });
     this.deckEl = this.contentEl.createDiv({ cls: "sd-deck" });
     this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.rerender()));
@@ -30,6 +33,7 @@ export class SlideDeckView extends ItemView {
     this.warnEl.empty();
     this.deckEl.empty();
     if (!loaded || loaded.deck.slides.length === 0) { this.deckEl.createDiv({ text: t("preview.empty") }); return; }
+    this.styleEl!.textContent = deckCss(loaded.deck.directives.theme);
     const warnings = await renderDeckToContainer(activeDoc(), this.deckEl, loaded.deck, loaded.resolveEmbed);
     for (const w of warnings) {
       const row = this.warnEl.createDiv({ cls: `sd-warn sd-warn-${w.kind}`, text: `#${w.slideIndex + 1} — ${w.message}` });
@@ -42,5 +46,5 @@ export class SlideDeckView extends ItemView {
     view?.editor.setCursor({ line, ch: 0 });
   }
 
-  async onClose(): Promise<void> { this.warnEl?.empty(); this.deckEl?.empty(); }
+  async onClose(): Promise<void> { this.styleEl?.remove(); this.warnEl?.empty(); this.deckEl?.empty(); }
 }

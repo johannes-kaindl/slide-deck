@@ -1,17 +1,14 @@
 import mermaid from "mermaid";
-import { setIcon } from "obsidian";
 import { renderMarkdown } from "./core/render/md2html";
 import { computeFit } from "./core/layout/fit";
 import { collectWarnings, type Warning } from "./core/constraints/engine";
-import { presetCss } from "./core/presets/default.css";
+import { deckCss } from "./deck-css";
 import { geometryFor } from "./core/geometry";
 import type { SlideDeck } from "./core/slide-model";
 
 mermaid.initialize({ startOnLoad: false, theme: "default" });
 
 let mermaidSeq = 0;
-
-const ICON: Record<string, string> = { note: "info", info: "info", warning: "alert-triangle", danger: "x-circle", tip: "lightbulb" };
 
 async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnings: Warning[]): Promise<void> {
   const slots = Array.from(scope.querySelectorAll<HTMLElement>(".sd-mermaid"));
@@ -25,13 +22,6 @@ async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnin
       slots[i].textContent = "⚠ Mermaid error";
       warnings.push({ slideIndex, kind: "mermaid-error", message: "Mermaid diagram failed to parse" });
     }
-  }
-}
-
-function decorateIcons(scope: HTMLElement): void {
-  for (const el of Array.from(scope.querySelectorAll<HTMLElement>(".sd-callout-icon"))) {
-    const type = el.parentElement?.parentElement?.className.match(/sd-callout-(\w+)/)?.[1] ?? "note";
-    setIcon(el, ICON[type] ?? "info");
   }
 }
 
@@ -51,7 +41,6 @@ export async function renderDeckToContainer(
     const inner = box.createDiv({ cls: "sd-content" });
     inner.innerHTML = rendered.html; // self-generated, controlled core HTML
     await renderMermaidSlots(inner, slide.index, warnings);
-    decorateIcons(inner);
     const fit = computeFit({ contentWidth: inner.scrollWidth, contentHeight: inner.scrollHeight }, geo, minScale);
     inner.style.transformOrigin = "top left";
     inner.style.transform = `scale(${fit.scale})`;
@@ -69,7 +58,7 @@ export async function buildSelfContainedDeckHtml(
   try {
     const warnings = await renderDeckToContainer(doc, staging, deck, resolveEmbed);
     const slidesHtml = Array.from(staging.querySelectorAll<HTMLElement>(".sd-slide")).map((el) => el.outerHTML);
-    return { slidesHtml, css: presetCss(deck.directives.theme), warnings };
+    return { slidesHtml, css: deckCss(deck.directives.theme), warnings };
   } finally {
     staging.remove();
   }

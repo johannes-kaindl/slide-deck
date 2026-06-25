@@ -45,4 +45,14 @@ export default tseslint.config(
       "obsidianmd/no-static-styles-assignment": "off",
     },
   },
+  {
+    // preview-view.ts: a <style> element is required to inject the full deck CSS (katex + hljs + preset)
+    // into the live preview leaf so that math, code highlighting, and slide layout are correctly rendered.
+    // styles.css is insufficient here because the CSS content is dynamic (theme-dependent) and assembled
+    // at render time — it cannot be a static file loaded by Obsidian.
+    files: ["src/preview-view.ts"],
+    rules: {
+      "obsidianmd/no-forbidden-elements": "off",
+    },
+  },
 );
