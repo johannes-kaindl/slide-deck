@@ -44,10 +44,10 @@ src/core/          Reiner Kern — kein obsidian-Import, kein DOM. Vollständig 
   geometry.ts        geometryFor(aspect) → SlideGeometry {width, height}.
   layout/
     fit.ts           computeFit(measured, geo, minScale) → FitResult {scale, overflow}.
-    callouts.ts      calloutHtml(type, title, body) — barrierefreies Callout-HTML (icon+label).
   render/
     md2html.ts       renderMarkdown(md, resolveEmbed) → html-String (markdown-it + KaTeX +
                      highlight.js + Callout-Präprozessor + Mermaid-Slot).
+    callouts.ts      calloutHtml(type, title, body) — barrierefreies Callout-HTML (icon+label).
   constraints/
     contract.ts      collectWarnings(results) → Warning[]. Validierungs-Vertrag.
     engine.ts        Constraint-Engine — führt FitResult → Warning zusammen.
@@ -143,7 +143,7 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
 ## Memory
 
 - **Projekt-Memory:** `~/.claude/projects/-Users-Shared-code-markdown-presentation/memory/`
-- **SDD-Artefakte:** `docs/superpowers/sdd/` — Spec, Plan, Task-Reports
+- **SDD-Artefakte:** `.superpowers/sdd/` — Spec, Plan, Task-Reports
 
 ## Abweichungen von der Leitkonvention
 
