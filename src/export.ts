@@ -4,6 +4,7 @@ import { loadActiveDeck } from "./adapter";
 import { buildSelfContainedDeckHtml } from "./render-dom";
 import { geometryFor } from "./core/geometry";
 import { t } from "./i18n";
+import type { DeckDirectives } from "./core/slide-model";
 
 function printRootCss(w: number, h: number, preset: string): string {
   return (
@@ -14,8 +15,8 @@ function printRootCss(w: number, h: number, preset: string): string {
   );
 }
 
-export async function exportPdf(app: App, doc: Document, win: Window): Promise<void> {
-  const loaded = await loadActiveDeck(app);
+export async function exportPdf(app: App, doc: Document, win: Window, defaults?: Partial<DeckDirectives>): Promise<void> {
+  const loaded = await loadActiveDeck(app, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
   const { slidesHtml, css } = await buildSelfContainedDeckHtml(doc, loaded.deck, loaded.resolveEmbed);
@@ -41,9 +42,9 @@ export async function exportPdf(app: App, doc: Document, win: Window): Promise<v
   safetyTimer = win.setTimeout(cleanup, 60000);
 }
 
-export async function exportImages(app: App, doc: Document, win: Window): Promise<void> {
+export async function exportImages(app: App, doc: Document, win: Window, defaults?: Partial<DeckDirectives>, scale = 2): Promise<void> {
   void win; // win not used in image path; kept for API symmetry with exportPdf
-  const loaded = await loadActiveDeck(app);
+  const loaded = await loadActiveDeck(app, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
   const { slidesHtml, css } = await buildSelfContainedDeckHtml(doc, loaded.deck, loaded.resolveEmbed);
@@ -59,7 +60,7 @@ export async function exportImages(app: App, doc: Document, win: Window): Promis
     for (let i = 0; i < slidesHtml.length; i++) {
       holder.insertAdjacentHTML("beforeend", slidesHtml[i]); // bewusst: selbst-erzeugtes, isoliertes Export-HTML
       const el = holder.lastElementChild as HTMLElement;
-      const canvas = await html2canvas(el, { width: geo.width, height: geo.height, scale: 2, backgroundColor: "#fff" });
+      const canvas = await html2canvas(el, { width: geo.width, height: geo.height, scale, backgroundColor: "#fff" });
       const b64 = canvas.toDataURL("image/png").split(",")[1];
       // atob → char codes → Uint8Array → .buffer gives ArrayBuffer for writeBinary
       const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));

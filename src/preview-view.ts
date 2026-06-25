@@ -3,6 +3,7 @@ import { loadActiveDeck } from "./adapter";
 import { renderDeckToContainer } from "./render-dom";
 import { activeDoc } from "./dom-safe";
 import { t } from "./i18n";
+import type SlideDeckPlugin from "./main";
 
 export const VIEW_TYPE = "slide-deck-preview";
 
@@ -11,7 +12,7 @@ export class SlideDeckView extends ItemView {
   private deckEl!: HTMLElement;
   private rerender = debounce(() => void this.refresh(), 300, true);
 
-  constructor(leaf: WorkspaceLeaf) { super(leaf); }
+  constructor(leaf: WorkspaceLeaf, private plugin: SlideDeckPlugin) { super(leaf); }
   getViewType(): string { return VIEW_TYPE; }
   getDisplayText(): string { return "Slide deck"; }
   getIcon(): string { return "presentation"; }
@@ -25,7 +26,7 @@ export class SlideDeckView extends ItemView {
   }
 
   async refresh(): Promise<void> {
-    const loaded = await loadActiveDeck(this.app);
+    const loaded = await loadActiveDeck(this.app, { theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx });
     this.warnEl.empty();
     this.deckEl.empty();
     if (!loaded || loaded.deck.slides.length === 0) { this.deckEl.createDiv({ text: t("preview.empty") }); return; }

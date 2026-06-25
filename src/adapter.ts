@@ -1,5 +1,5 @@
 import { type App, TFile } from "obsidian";
-import { parseDeck, type SlideDeck } from "./core/slide-model";
+import { parseDeck, type DeckDirectives, type SlideDeck } from "./core/slide-model";
 
 const MIME: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml" };
 
@@ -12,11 +12,11 @@ export function binaryToDataUrl(buf: ArrayBuffer, ext: string): string {
   return `data:${mime};base64,${btoa(bin)}`;
 }
 
-export async function loadActiveDeck(app: App): Promise<{ deck: SlideDeck; resolveEmbed: (ref: string) => string | null } | null> {
+export async function loadActiveDeck(app: App, defaults?: Partial<DeckDirectives>): Promise<{ deck: SlideDeck; resolveEmbed: (ref: string) => string | null } | null> {
   const file = app.workspace.getActiveFile();
   if (!file) return null;
   const source = await app.vault.read(file);
-  const deck = parseDeck(source);
+  const deck = parseDeck(source, defaults);
   // Embeds vorab zu Data-URLs (synchroner resolveEmbed-Vertrag fürs Core)
   const cache = new Map<string, string>();
   const refs = new Set<string>();

@@ -21,4 +21,14 @@ describe("parseDeck", () => {
   it("applies defaults when no frontmatter", () => {
     expect(parseDeck("# A").directives).toEqual({ theme: "default", aspect: "16:9", minFontPx: 24 });
   });
+
+  it("merges passed defaults (lowest precedence), with frontmatter overriding them", () => {
+    // no frontmatter: passed defaults win over DEFAULTS
+    const noFm = parseDeck("# A", { theme: "dark", minFontPx: 30 });
+    expect(noFm.directives).toEqual({ theme: "dark", aspect: "16:9", minFontPx: 30 });
+
+    // frontmatter present: frontmatter overrides passed defaults
+    const withFm = parseDeck("---\ntheme: light\n---\n# A", { theme: "dark", minFontPx: 30 });
+    expect(withFm.directives).toEqual({ theme: "light", aspect: "16:9", minFontPx: 30 });
+  });
 });
