@@ -7,7 +7,7 @@
     "dev": "node esbuild.config.mjs",
     "build": "tsc --noEmit && node esbuild.config.mjs --production",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "node scripts/check-core-purity.mjs && vitest run",
     "lint": "eslint src",
     "lint:obsidian": "eslint src",
     "lint:portal": "eslint src --config eslint.portal.config.mjs",
