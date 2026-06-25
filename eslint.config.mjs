@@ -34,4 +34,16 @@ export default tseslint.config(
       "obsidianmd/rule-custom-message": "off", // console.log for Devtools smoke verification during spike
     },
   },
+  {
+    // render-dom.ts: innerHTML writes are self-generated HTML from controlled core renderer (renderMarkdown),
+    // never user input. Per-slide inline styles (--sd-w/--sd-h, transform:scale) are genuinely dynamic
+    // (per-slide geometry from computeFit), not static theme styles. Off-screen staging div uses fixed
+    // positioning to measure layout outside the viewport.
+    files: ["src/render-dom.ts"],
+    rules: {
+      "no-unsanitized/property": "off",
+      "@microsoft/sdl/no-inner-html": "off",
+      "obsidianmd/no-static-styles-assignment": "off",
+    },
+  },
 );
