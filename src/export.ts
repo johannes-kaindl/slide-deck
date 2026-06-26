@@ -52,7 +52,7 @@ export async function exportImages(app: App, doc: Document, win: Window, default
   holder.style.position = "fixed"; holder.style.left = "-99999px"; holder.style.top = "0"; // off-screen staging
   const style = doc.createElement("style"); style.textContent = css; holder.appendChild(style);
   doc.body.appendChild(holder);
-  const dir = ".slide-export";
+  const dir = "slide-export";
   const adapter = app.vault.adapter;
   try {
     if (!(await adapter.exists(dir))) await adapter.mkdir(dir);

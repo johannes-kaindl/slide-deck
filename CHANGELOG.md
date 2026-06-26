@@ -22,7 +22,7 @@ First release.
 - **PDF export** (`Export presentation to PDF` command) — renders all slides at native resolution
   and triggers the system print dialog (choose "Save as PDF").
 - **PNG image-series export** (`Export presentation to image series` command) — captures each
-  slide via html2canvas and writes numbered PNGs into `.slide-export/` at the vault root.
+  slide via html2canvas and writes numbered PNGs into `slide-export/` at the vault root.
 - **KaTeX math** — inline `$…$` and display `$$…$$` math rendered by KaTeX.
 - **Code highlighting** — fenced code blocks highlighted by highlight.js.
 - **Accessible callouts** — `> [!note]`, `[!warning]`, `[!danger]`, `[!tip]`, `[!info]`

@@ -16,7 +16,7 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 - **Live preview pane** — renders the current note as a slide deck in a side panel, with a source-jump link to the originating note line.
 - **Fit-or-warn readability** — each slide auto-scales content down to a configurable legibility floor (`minFontPx`); slides that would need smaller text are flagged as overflowing instead of becoming unreadable.
 - **PDF export** — renders all slides at their native resolution and triggers the system print dialog (choose "Save as PDF" in the print dialog).
-- **PNG image-series export** — captures each slide via html2canvas and writes numbered PNGs into a `.slide-export/` folder inside your vault root.
+- **PNG image-series export** — captures each slide via html2canvas and writes numbered PNGs into a `slide-export/` folder inside your vault root.
 - **KaTeX math** — inline and display math (`$…$` / `$$…$$`) rendered by KaTeX.
 - **Code highlighting** — fenced code blocks highlighted by highlight.js.
 - **Accessible callouts** — Obsidian-style `> [!note]`, `[!warning]`, `[!danger]`, `[!tip]`, `[!info]` blocks rendered with redundant coding: border color + geometric shape + visible label word (not color-only; satisfies WCAG 1.4.1).
@@ -28,7 +28,7 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 - **Obsidian ≥ 1.8.7**
 - **Desktop only** (`isDesktopOnly: true`) — export relies on `window.print()` for PDF and on `html2canvas` DOM capture for PNG; both require a desktop environment.
 - PDF export uses the **system print dialog** — choose "Save as PDF" in the printer dropdown. It does not produce a PDF file directly.
-- PNG export writes files into a **`.slide-export/`** folder at the vault root. The folder is created automatically on first use.
+- PNG export writes files into a **`slide-export/`** folder at the vault root. The folder is created automatically on first use.
 
 ## Install
 

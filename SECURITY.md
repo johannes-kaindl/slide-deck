@@ -21,7 +21,7 @@ Slide Deck is a fully local, offline plugin — this is its core security proper
 - **No network access.** The plugin does not make any outbound network requests. All rendering (markdown-it, KaTeX, highlight.js, Mermaid) runs locally in the Obsidian process.
 - **No telemetry.** The plugin does not collect usage data or phone home.
 - **No external services, no analytics, no remote logging.**
-- **Export stays local.** PDF export uses the system print dialog; PNG export writes files into a `.slide-export/` folder inside your vault. No data leaves your device.
+- **Export stays local.** PDF export uses the system print dialog; PNG export writes files into a `slide-export/` folder inside your vault. No data leaves your device.
 - **Embedded images are resolved locally.** The plugin reads image files from your vault and embeds them as data-URLs in the export HTML. No image data is transmitted anywhere.
 
 If you have questions about the plugin's data handling beyond what is described here, the same private contact above applies.
