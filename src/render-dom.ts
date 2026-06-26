@@ -1,12 +1,11 @@
 import mermaid from "mermaid";
 import { renderMarkdown } from "./core/render/md2html";
 import { computeFit } from "./core/layout/fit";
-import { collectWarnings, type Warning } from "./core/constraints/engine";
+import { collectWarnings, type Warning, type SlideWarning } from "./core/constraints/engine";
 import { deckCss } from "./deck-css";
 import { geometryFor } from "./core/geometry";
+import { presetFor } from "./core/presets";
 import type { SlideDeck } from "./core/slide-model";
-
-mermaid.initialize({ startOnLoad: false, theme: "default" });
 
 let mermaidSeq = 0;
 
@@ -29,20 +28,26 @@ export async function renderDeckToContainer(
   doc: Document, container: HTMLElement, deck: SlideDeck, resolveEmbed: (r: string) => string | null,
 ): Promise<Warning[]> {
   const geo = geometryFor(deck.directives.aspect);
-  const minScale = deck.directives.minFontPx / 28; // 28 = --sd-base
+  const preset = presetFor(deck.directives.theme);
+  const minScale = deck.directives.minFontPx / preset.baseFontPx;
+  mermaid.initialize({ startOnLoad: false, theme: preset.mermaid });
   const warnings: Warning[] = [];
-  void doc; // doc used by buildSelfContainedDeckHtml (doc.createElement, doc.body) — kept for API symmetry
+  void doc; // doc used by buildSelfContainedDeckHtml — kept for API symmetry
   container.empty();
   for (const slide of deck.slides) {
-    const box = container.createDiv({ cls: "sd-slide" });
+    const box = container.createDiv({ cls: `sd-slide sd-layout-${slide.layout}` });
     box.style.setProperty("--sd-w", `${geo.width}px`);
     box.style.setProperty("--sd-h", `${geo.height}px`);
-    const rendered = renderMarkdown({ markdown: slide.markdown, resolveEmbed });
     const inner = box.createDiv({ cls: "sd-content" });
-    inner.innerHTML = rendered.html; // self-generated, controlled core HTML
+    const renderWarnings: SlideWarning[] = [];
+    for (const region of slide.regions) {
+      const r = renderMarkdown({ markdown: region, resolveEmbed });
+      const regionEl = inner.createDiv({ cls: "sd-region" });
+      regionEl.innerHTML = r.html; // self-generated, controlled core HTML
+      renderWarnings.push(...r.warnings);
+    }
     await renderMermaidSlots(inner, slide.index, warnings);
-    // Measure against the actual content area (inner box = slide minus padding), not the
-    // full slide geometry — otherwise overflow is under-detected by the padding amount.
+    // Measure the whole padded content area (one shared scale for all regions).
     const fit = computeFit(
       { contentWidth: inner.scrollWidth, contentHeight: inner.scrollHeight },
       { width: inner.clientWidth, height: inner.clientHeight },
@@ -50,8 +55,7 @@ export async function renderDeckToContainer(
     );
     inner.style.transformOrigin = "top left";
     inner.style.transform = `scale(${fit.scale})`;
-    const slideWarnings = collectWarnings(slide, rendered.warnings, fit);
-    // Mark overflowing slides so the preview can flag them (styled preview-only; bare in export).
+    const slideWarnings = collectWarnings(slide, renderWarnings, fit);
     if (slideWarnings.some((w) => w.kind === "overflow" || w.kind === "belowFloor")) box.addClass("sd-slide-warn");
     warnings.push(...slideWarnings);
   }
