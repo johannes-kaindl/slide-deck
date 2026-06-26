@@ -12,8 +12,13 @@ export function binaryToDataUrl(buf: ArrayBuffer, ext: string): string {
   return `data:${mime};base64,${btoa(bin)}`;
 }
 
-export async function loadActiveDeck(app: App, defaults?: Partial<DeckDirectives>): Promise<{ deck: SlideDeck; resolveEmbed: (ref: string) => string | null } | null> {
-  const file = app.workspace.getActiveFile();
+export interface LoadedDeck {
+  deck: SlideDeck;
+  resolveEmbed: (ref: string) => string | null;
+}
+
+/** Load a specific Markdown file as a deck. Returns null for a missing or non-Markdown file. */
+export async function loadDeck(app: App, file: TFile | null, defaults?: Partial<DeckDirectives>): Promise<LoadedDeck | null> {
   if (!file || file.extension !== "md") return null; // only Markdown notes become decks (skip PDFs etc.)
   const source = await app.vault.read(file);
   const deck = parseDeck(source, defaults);
@@ -28,4 +33,9 @@ export async function loadActiveDeck(app: App, defaults?: Partial<DeckDirectives
     }
   }
   return { deck, resolveEmbed: (ref) => cache.get(ref) ?? null };
+}
+
+/** Convenience: load the currently active note as a deck. */
+export function loadActiveDeck(app: App, defaults?: Partial<DeckDirectives>): Promise<LoadedDeck | null> {
+  return loadDeck(app, app.workspace.getActiveFile(), defaults);
 }

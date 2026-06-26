@@ -1,6 +1,6 @@
-import { Notice, type App } from "obsidian";
+import { Notice, type App, type TFile } from "obsidian";
 import html2canvas from "html2canvas";
-import { loadActiveDeck } from "./adapter";
+import { loadDeck } from "./adapter";
 import { buildSelfContainedDeckHtml } from "./render-dom";
 import { geometryFor } from "./core/geometry";
 import { t } from "./i18n";
@@ -15,9 +15,9 @@ function printRootCss(w: number, h: number, preset: string): string {
   );
 }
 
-export async function exportPdf(app: App, doc: Document, win: Window, defaults?: Partial<DeckDirectives>): Promise<void> {
+export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, defaults?: Partial<DeckDirectives>): Promise<void> {
  try {
-  const loaded = await loadActiveDeck(app, defaults);
+  const loaded = await loadDeck(app, file, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
   const { slidesHtml, css } = await buildSelfContainedDeckHtml(doc, loaded.deck, loaded.resolveEmbed);
@@ -44,10 +44,10 @@ export async function exportPdf(app: App, doc: Document, win: Window, defaults?:
  } catch (e) { new Notice(t("notice.exportFailed", String(e))); }
 }
 
-export async function exportImages(app: App, doc: Document, win: Window, defaults?: Partial<DeckDirectives>, scale = 2): Promise<void> {
+export async function exportImages(app: App, doc: Document, win: Window, file: TFile | null, defaults?: Partial<DeckDirectives>, scale = 2): Promise<void> {
   void win; // win not used in image path; kept for API symmetry with exportPdf
  try {
-  const loaded = await loadActiveDeck(app, defaults);
+  const loaded = await loadDeck(app, file, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
   const { slidesHtml, css } = await buildSelfContainedDeckHtml(doc, loaded.deck, loaded.resolveEmbed);
@@ -56,8 +56,8 @@ export async function exportImages(app: App, doc: Document, win: Window, default
   const style = doc.createElement("style"); style.textContent = css; holder.appendChild(style);
   doc.body.appendChild(holder);
   const adapter = app.vault.adapter;
-  const sourcePath = app.workspace.getActiveFile()?.path ?? "";
-  const base = app.workspace.getActiveFile()?.basename ?? "deck";
+  const sourcePath = file?.path ?? "";
+  const base = file?.basename ?? "deck";
   try {
     for (let i = 0; i < slidesHtml.length; i++) {
       holder.insertAdjacentHTML("beforeend", slidesHtml[i]); // bewusst: selbst-erzeugtes, isoliertes Export-HTML

@@ -1,5 +1,5 @@
-import { ItemView, WorkspaceLeaf, MarkdownView, setIcon } from "obsidian";
-import { loadActiveDeck } from "./adapter";
+import { ItemView, WorkspaceLeaf, MarkdownView, setIcon, type TFile } from "obsidian";
+import { loadDeck } from "./adapter";
 import { renderDeckToContainer } from "./render-dom";
 import { exportPdf, exportImages } from "./export";
 import { deckCss } from "./deck-css";
@@ -14,8 +14,10 @@ export class SlideDeckView extends ItemView {
   private warnEl!: HTMLElement;
   private deckEl!: HTMLElement;
   private deckInner!: HTMLElement;
+  private fileLabel!: HTMLElement;
   private styleEl?: HTMLStyleElement;
   private resizeObs?: ResizeObserver;
+  private currentFile: TFile | null = null;
   private geoWidth = 1280;
 
   constructor(leaf: WorkspaceLeaf, private plugin: SlideDeckPlugin) { super(leaf); }
@@ -45,14 +47,21 @@ export class SlideDeckView extends ItemView {
       b.addEventListener("click", onClick);
     };
     mkBtn("refresh-cw", t("toolbar.refresh"), () => void this.refresh());
-    mkBtn("file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), defaults()));
-    mkBtn("image", t("toolbar.exportImages"), () => void exportImages(this.app, activeDoc(), activeWin(), defaults(), this.plugin.settings.imageScale));
+    // Export the file the preview currently SHOWS (this.currentFile), not the active file —
+    // so the buttons never silently export a different note than what's on screen.
+    mkBtn("file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), this.currentFile, defaults()));
+    mkBtn("image", t("toolbar.exportImages"), () => void exportImages(this.app, activeDoc(), activeWin(), this.currentFile, defaults(), this.plugin.settings.imageScale));
+    this.fileLabel = bar.createSpan({ cls: "sd-toolbar-file" });
   }
 
-  /** Manual only — re-reads the active Markdown note and rebuilds the deck. */
+  /** Manual only — captures the active Markdown note, renders it, and binds the export
+   *  buttons to THAT file so export always matches what the preview shows. */
   async refresh(): Promise<void> {
     try {
-      const loaded = await loadActiveDeck(this.app, { theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx });
+      const active = this.app.workspace.getActiveFile();
+      this.currentFile = active && active.extension === "md" ? active : null;
+      this.fileLabel.setText(this.currentFile ? this.currentFile.basename : "");
+      const loaded = await loadDeck(this.app, this.currentFile, { theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx });
       this.warnEl.empty();
       this.deckInner.empty();
       if (!loaded) { this.deckInner.createDiv({ cls: "sd-hint", text: t("preview.hint") }); return; }
