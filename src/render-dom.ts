@@ -41,7 +41,13 @@ export async function renderDeckToContainer(
     const inner = box.createDiv({ cls: "sd-content" });
     inner.innerHTML = rendered.html; // self-generated, controlled core HTML
     await renderMermaidSlots(inner, slide.index, warnings);
-    const fit = computeFit({ contentWidth: inner.scrollWidth, contentHeight: inner.scrollHeight }, geo, minScale);
+    // Measure against the actual content area (inner box = slide minus padding), not the
+    // full slide geometry — otherwise overflow is under-detected by the padding amount.
+    const fit = computeFit(
+      { contentWidth: inner.scrollWidth, contentHeight: inner.scrollHeight },
+      { width: inner.clientWidth, height: inner.clientHeight },
+      minScale,
+    );
     inner.style.transformOrigin = "top left";
     inner.style.transform = `scale(${fit.scale})`;
     warnings.push(...collectWarnings(slide.index, rendered, fit, slide.startLine));
@@ -54,10 +60,18 @@ export async function buildSelfContainedDeckHtml(
 ): Promise<{ slidesHtml: string[]; css: string; warnings: Warning[] }> {
   const staging = doc.createElement("div");
   staging.style.position = "fixed"; staging.style.left = "-99999px"; staging.style.top = "0";
+  // Inject the deck CSS into the staging tree so slides are STYLED while we measure them
+  // (fit/overflow needs the real padded geometry). renderDeckToContainer empties its host,
+  // so render into a child and keep the <style> as a sibling.
+  const style = doc.createElement("style");
+  style.textContent = deckCss(deck.directives.theme);
+  staging.appendChild(style);
+  const host = doc.createElement("div");
+  staging.appendChild(host);
   doc.body.appendChild(staging);
   try {
-    const warnings = await renderDeckToContainer(doc, staging, deck, resolveEmbed);
-    const slidesHtml = Array.from(staging.querySelectorAll<HTMLElement>(".sd-slide")).map((el) => el.outerHTML);
+    const warnings = await renderDeckToContainer(doc, host, deck, resolveEmbed);
+    const slidesHtml = Array.from(host.querySelectorAll<HTMLElement>(".sd-slide")).map((el) => el.outerHTML);
     return { slidesHtml, css: deckCss(deck.directives.theme), warnings };
   } finally {
     staging.remove();

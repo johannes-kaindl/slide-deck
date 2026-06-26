@@ -14,7 +14,7 @@ export function binaryToDataUrl(buf: ArrayBuffer, ext: string): string {
 
 export async function loadActiveDeck(app: App, defaults?: Partial<DeckDirectives>): Promise<{ deck: SlideDeck; resolveEmbed: (ref: string) => string | null } | null> {
   const file = app.workspace.getActiveFile();
-  if (!file) return null;
+  if (!file || file.extension !== "md") return null; // only Markdown notes become decks (skip PDFs etc.)
   const source = await app.vault.read(file);
   const deck = parseDeck(source, defaults);
   // Embeds vorab zu Data-URLs (synchroner resolveEmbed-Vertrag fürs Core)

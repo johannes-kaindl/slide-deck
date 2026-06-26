@@ -23,7 +23,11 @@ const EN: Dict = {
   "settings.imageScale.name": "Image export scale",
   "settings.imageScale.desc": "Pixel multiplier for PNG export (2 = crisp)",
   "preview.error": "Render error: {0}",
+  "preview.hint": "Open a Markdown note, then click Refresh.",
   "notice.exportFailed": "Export failed: {0}",
+  "toolbar.refresh": "Refresh",
+  "toolbar.exportPdf": "PDF",
+  "toolbar.exportImages": "Images",
 };
 const DE: Dict = {
   "cmd.openPreview": "Präsentations-Vorschau öffnen",
@@ -43,7 +47,11 @@ const DE: Dict = {
   "settings.imageScale.name": "Bild-Export-Skalierung",
   "settings.imageScale.desc": "Pixel-Multiplikator für PNG-Export (2 = scharf)",
   "preview.error": "Render-Fehler: {0}",
+  "preview.hint": "Öffne eine Markdown-Notiz und klicke auf Aktualisieren.",
   "notice.exportFailed": "Export fehlgeschlagen: {0}",
+  "toolbar.refresh": "Aktualisieren",
+  "toolbar.exportPdf": "PDF",
+  "toolbar.exportImages": "Bilder",
 };
 const STRINGS: Record<Lang, Dict> = { en: EN, de: DE };
 export function t(key: string, ...args: (string | number)[]): string {

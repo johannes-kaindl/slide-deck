@@ -1,8 +1,9 @@
-import { ItemView, WorkspaceLeaf, MarkdownView, debounce } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownView, setIcon } from "obsidian";
 import { loadActiveDeck } from "./adapter";
 import { renderDeckToContainer } from "./render-dom";
+import { exportPdf, exportImages } from "./export";
 import { deckCss } from "./deck-css";
-import { activeDoc } from "./dom-safe";
+import { activeDoc, activeWin } from "./dom-safe";
 import { geometryFor } from "./core/geometry";
 import { t } from "./i18n";
 import type SlideDeckPlugin from "./main";
@@ -16,7 +17,6 @@ export class SlideDeckView extends ItemView {
   private styleEl?: HTMLStyleElement;
   private resizeObs?: ResizeObserver;
   private geoWidth = 1280;
-  private rerender = debounce(() => void this.refresh(), 300, true);
 
   constructor(leaf: WorkspaceLeaf, private plugin: SlideDeckPlugin) { super(leaf); }
   getViewType(): string { return VIEW_TYPE; }
@@ -24,23 +24,39 @@ export class SlideDeckView extends ItemView {
   getIcon(): string { return "presentation"; }
 
   async onOpen(): Promise<void> {
+    this.contentEl.addClass("sd-view");
+    this.buildToolbar();
     this.styleEl = this.contentEl.createEl("style");
     this.warnEl = this.contentEl.createDiv({ cls: "sd-warnings" });
     this.deckEl = this.contentEl.createDiv({ cls: "sd-deck" });
     this.deckInner = this.deckEl.createDiv({ cls: "sd-deck-inner" });
     this.resizeObs = new ResizeObserver(() => this.fitToWidth());
     this.resizeObs.observe(this.deckEl);
-    this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.rerender()));
-    this.registerEvent(this.app.workspace.on("editor-change", () => this.rerender()));
     await this.refresh();
   }
 
+  private buildToolbar(): void {
+    const bar = this.contentEl.createDiv({ cls: "sd-toolbar" });
+    const defaults = () => ({ theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx });
+    const mkBtn = (icon: string, label: string, onClick: () => void): void => {
+      const b = bar.createEl("button", { cls: "sd-toolbar-btn" });
+      setIcon(b.createSpan({ cls: "sd-toolbar-icon" }), icon);
+      b.createSpan({ text: label });
+      b.addEventListener("click", onClick);
+    };
+    mkBtn("refresh-cw", t("toolbar.refresh"), () => void this.refresh());
+    mkBtn("file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), defaults()));
+    mkBtn("image", t("toolbar.exportImages"), () => void exportImages(this.app, activeDoc(), activeWin(), defaults(), this.plugin.settings.imageScale));
+  }
+
+  /** Manual only — re-reads the active Markdown note and rebuilds the deck. */
   async refresh(): Promise<void> {
     try {
       const loaded = await loadActiveDeck(this.app, { theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx });
       this.warnEl.empty();
       this.deckInner.empty();
-      if (!loaded || loaded.deck.slides.length === 0) { this.deckInner.createDiv({ text: t("preview.empty") }); return; }
+      if (!loaded) { this.deckInner.createDiv({ cls: "sd-hint", text: t("preview.hint") }); return; }
+      if (loaded.deck.slides.length === 0) { this.deckInner.createDiv({ cls: "sd-hint", text: t("preview.empty") }); return; }
       this.styleEl!.textContent = deckCss(loaded.deck.directives.theme);
       this.geoWidth = geometryFor(loaded.deck.directives.aspect).width;
       const warnings = await renderDeckToContainer(activeDoc(), this.deckInner, loaded.deck, loaded.resolveEmbed);

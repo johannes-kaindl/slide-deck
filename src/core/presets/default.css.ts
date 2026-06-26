@@ -6,9 +6,11 @@ const DEFAULT = `
 .sd-slide h2{ font-size:1.7em; margin:0 0 .4em; }
 .sd-slide ul,.sd-slide ol{ margin:0; padding-left:1.2em; }
 .sd-slide li{ margin:.25em 0; }
+/* Content fills the slide's padded area so overflow is measurable (scrollHeight > clientHeight). */
+.sd-content{ width:100%; height:100%; }
 .sd-slide pre.hljs{ font-size:.8em; padding:.6em .8em; border-radius:8px; background:#0d1117; color:#e6edf3; overflow:hidden; }
 .sd-embed{ max-width:100%; max-height:60%; object-fit:contain; }
-.sd-mermaid svg{ max-width:100%; max-height:60%; }
+.sd-mermaid svg{ max-width:100%; max-height:480px; }
 .sd-missing-embed{ color:#8a4b00; border:2px dashed #8a4b00; padding:0 .3em; border-radius:4px; }
 /* Callouts: Bedeutung redundant — Rahmenfarbe + Form (::before) + Label-Wort */
 .sd-callout{ border-left:6px solid #5b6470; background:#f4f6f8; padding:.5em .8em; border-radius:6px; margin:.4em 0; }

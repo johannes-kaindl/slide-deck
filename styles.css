@@ -1,11 +1,46 @@
 /* Preview chrome — minimal host styles for the Obsidian leaf view.
    Slide/callout/katex/hljs styles are injected per-render via deckCss(). */
 
+.sd-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+}
+
+.sd-toolbar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: none;
+  padding: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.sd-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
+.sd-toolbar-icon {
+  display: inline-flex;
+}
+
+.sd-toolbar-icon .svg-icon {
+  width: 16px;
+  height: 16px;
+}
+
 .sd-warnings {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 0 8px;
+  flex: none;
+  padding: 8px 8px 0;
 }
 
 .sd-warn {
@@ -17,19 +52,24 @@
   cursor: pointer;
 }
 
+.sd-hint,
 .sd-error {
-  padding: 12px;
-  color: var(--text-error, #f28b82);
+  padding: 16px;
   font-size: 0.9em;
   white-space: pre-wrap;
+  color: var(--text-muted);
 }
 
-/* Scroll container fills the leaf; the inner is scaled to the pane width via `zoom`. */
+.sd-error {
+  color: var(--text-error, #f28b82);
+}
+
+/* Scroll container grows to fill the leaf; the inner is scaled to pane width via `zoom`. */
 .sd-deck {
+  flex: 1;
   overflow: auto;
-  height: 100%;
-  box-sizing: border-box;
   padding: 16px;
+  box-sizing: border-box;
 }
 
 .sd-deck-inner {
