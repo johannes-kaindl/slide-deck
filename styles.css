@@ -64,17 +64,16 @@
   cursor: pointer;
 }
 
-.sd-hint,
-.sd-error {
+.sd-message {
   padding: 24px 16px;
-  font-size: 1em;
+  font-size: var(--font-text-size, 16px);
   line-height: 1.5;
   white-space: pre-wrap;
   color: var(--text-muted);
 }
 
-.sd-error {
-  color: var(--text-error, #f28b82);
+.sd-message.sd-error {
+  color: var(--text-error, #e5534b);
 }
 
 /* Scroll container grows to fill the leaf; the inner is scaled to pane width via `zoom`. */
@@ -103,5 +102,5 @@
 
 /* Overflowing slides get a red left stripe in the preview (not in the export). */
 .sd-deck-inner .sd-slide-warn {
-  box-shadow: inset 6px 0 0 0 var(--text-error, #e5534b), 0 2px 12px rgba(0, 0, 0, 0.18);
+  box-shadow: inset 12px 0 0 0 var(--text-error, #e5534b), 0 2px 12px rgba(0, 0, 0, 0.18);
 }

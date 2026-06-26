@@ -14,6 +14,7 @@ export class SlideDeckView extends ItemView {
   private warnEl!: HTMLElement;
   private deckEl!: HTMLElement;
   private deckInner!: HTMLElement;
+  private messageEl!: HTMLElement;
   private fileLabel!: HTMLElement;
   private styleEl?: HTMLStyleElement;
   private resizeObs?: ResizeObserver;
@@ -31,6 +32,7 @@ export class SlideDeckView extends ItemView {
     this.styleEl = this.contentEl.createEl("style");
     this.warnEl = this.contentEl.createDiv({ cls: "sd-warnings" });
     this.deckEl = this.contentEl.createDiv({ cls: "sd-deck" });
+    this.messageEl = this.deckEl.createDiv({ cls: "sd-message" }); // hint/error — full width, never zoomed
     this.deckInner = this.deckEl.createDiv({ cls: "sd-deck-inner" });
     this.resizeObs = new ResizeObserver(() => this.fitToWidth());
     this.resizeObs.observe(this.deckEl);
@@ -63,10 +65,11 @@ export class SlideDeckView extends ItemView {
       this.fileLabel.setText(this.currentFile ? this.currentFile.basename : "");
       const loaded = await loadDeck(this.app, this.currentFile, { theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx });
       this.warnEl.empty();
+      this.messageEl.empty();
+      this.messageEl.removeClass("sd-error");
       this.deckInner.empty();
-      this.deckInner.style.setProperty("zoom", "1"); // reset; fitToWidth re-applies for slides (keeps hint/error readable)
-      if (!loaded) { this.deckInner.createDiv({ cls: "sd-hint", text: t("preview.hint") }); return; }
-      if (loaded.deck.slides.length === 0) { this.deckInner.createDiv({ cls: "sd-hint", text: t("preview.empty") }); return; }
+      if (!loaded) { this.messageEl.setText(t("preview.hint")); return; }
+      if (loaded.deck.slides.length === 0) { this.messageEl.setText(t("preview.empty")); return; }
       this.styleEl!.textContent = deckCss(loaded.deck.directives.theme);
       this.geoWidth = geometryFor(loaded.deck.directives.aspect).width;
       const warnings = await renderDeckToContainer(activeDoc(), this.deckInner, loaded.deck, loaded.resolveEmbed);
@@ -77,7 +80,9 @@ export class SlideDeckView extends ItemView {
       }
     } catch (e) {
       this.deckInner.empty();
-      this.deckInner.createDiv({ cls: "sd-error", text: t("preview.error", String(e)) });
+      this.messageEl.empty();
+      this.messageEl.addClass("sd-error");
+      this.messageEl.setText(t("preview.error", String(e)));
     }
   }
 
@@ -111,6 +116,7 @@ export class SlideDeckView extends ItemView {
     this.resizeObs?.disconnect();
     this.styleEl?.remove();
     this.warnEl?.empty();
+    this.messageEl?.empty();
     this.deckInner?.empty();
   }
 }
