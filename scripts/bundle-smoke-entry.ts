@@ -32,3 +32,34 @@ if (missing.length > 0) {
   process.exit(2);
 }
 console.log("bundle-smoke OK — render path works in the real esbuild bundle");
+
+import { parseDeck } from "../src/core/slide-model";
+import { deckCss } from "../src/deck-css";
+import { presetFor, PRESETS } from "../src/core/presets";
+import { layoutFor } from "../src/core/presets/layouts.css";
+
+// 1) Directive parsing through the real bundle
+const deck = parseDeck("<!-- layout: two-column -->\n## L\n\n<!-- column -->\n\n## R\n");
+if (deck.slides[0].layout !== "two-column" || deck.slides[0].regions.length !== 2) {
+  console.error("bundle-smoke FAILED — directive parsing wrong:", JSON.stringify(deck.slides[0]));
+  process.exit(3);
+}
+
+// 2) deckCss assembles for EVERY theme (+ custom CSS appended last), through the real .css text-loader
+for (const id of Object.keys(PRESETS)) {
+  const css = deckCss(id, ".sd-slide{ --sd-accent:#e63946 }");
+  for (const needle of [".katex", ".hljs", ".sd-content", ".sd-layout-two-column", "--sd-base:", "#e63946"]) {
+    if (!css.includes(needle)) {
+      console.error(`bundle-smoke FAILED — theme "${id}" CSS missing: ${needle}`);
+      process.exit(4);
+    }
+  }
+}
+
+// 3) presetFor/layoutFor totality
+if (presetFor("nope").id !== "default" || layoutFor("nope").id !== "default") {
+  console.error("bundle-smoke FAILED — presetFor/layoutFor not total");
+  process.exit(5);
+}
+
+console.log("bundle-smoke OK — directives, every-theme deckCss, and totality work in the real bundle");

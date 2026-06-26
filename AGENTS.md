@@ -51,8 +51,14 @@ src/core/          Reiner Kern — kein obsidian-Import, kein DOM. Vollständig 
   constraints/
     contract.ts      collectWarnings(results) → Warning[]. Validierungs-Vertrag.
     engine.ts        Constraint-Engine — führt FitResult → Warning zusammen.
+  directives.ts     parseDirectives() — fence-aware Per-Folie-Direktiven (<!-- layout -->,
+                    <!-- column -->) → { layout, regions, warnings }.
   presets/
-    default.css.ts   PRESETS-Map; presetCss(name) → CSS-String. Nur default-Preset vorhanden.
+    index.ts        Preset-Typ + PRESETS-Registry; presetFor() (total); presetTokensCss();
+                    assembleDeckCss().
+    default.ts · dark.ts · serif.ts · high-contrast.ts   je ein Preset (Token-Block + hljs/mermaid).
+    structure.css.ts  geteiltes, theme-unabhängiges Struktur-CSS (var(--sd-*); kein --sd-base).
+    layouts.css.ts    LAYOUTS/layoutFor() + geteiltes Layout-CSS (.sd-layout-*, .sd-region).
 
 src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
   main.ts            Plugin-Entry: Commands (open-preview, export-pdf, export-images),
@@ -86,7 +92,7 @@ npm run dev                       # esbuild watch (Entwicklung)
 npm run build                     # tsc --noEmit + esbuild prod → main.js
 npm run deploy                    # build + nach $OBSIDIAN_PLUGIN_DIR kopieren
 npm run lint                      # eslint src (reproduziert Obsidian-Community-Review-Checks)
-npm test                          # Core-Purity-Check + vitest run (22 Tests)
+npm test                          # Core-Purity-Check + vitest run + bundle-smoke (every-theme deckCss)
 npm run typecheck                 # tsc --noEmit (separat von vitest)
 npm run version                   # Version bumpen (package.json/manifest.json/versions.json synct)
 ```
@@ -103,7 +109,7 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
 
 - **TS strict + `noImplicitAny`** — keine `any`-Casts für neue Typen.
 - **Tests:** vitest + happy-dom; Obsidian-Mock unter `tests/__mocks__/obsidian.ts`. Nach jeder
-  Änderung müssen **alle 22 Tests grün** bleiben. `npx tsc --noEmit` separat laufen
+  Änderung müssen alle vitest-Tests grün bleiben. `npx tsc --noEmit` separat laufen
   (vitest ≠ tsc).
 - **Core-Purity:** `scripts/check-core-purity.mjs` läuft als erster Schritt von `npm test` —
   schlägt fehl, wenn `src/core/**` einen `obsidian`-Import enthält.
@@ -117,6 +123,7 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
 
 ## Gotchas
 
+- **Themes/Tokens-Invariante:** Themes setzen nur Tokens; Struktur/Layout-CSS ist theme-unantastbar (fit-kritisch). `--sd-base` lebt einzig in `presetTokensCss`.
 - **html2canvas-Fidelität:** Der PNG-Export nutzt html2canvas 1.x. KaTeX-Mathematik und
   Mermaid-SVGs werden grundsätzlich erfasst, aber komplexe SVG-Funktionen (Gradients,
   Clipping Paths, bestimmte Fonts) können im Export abweichen. Bei Bedarf muss die

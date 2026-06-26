@@ -17,6 +17,7 @@ try {
     format: "cjs",
     target: "es2022",
     outfile: out,
+    loader: { ".css": "text" },
     logLevel: "silent",
   });
   execFileSync(process.execPath, [out], { stdio: "inherit" });
