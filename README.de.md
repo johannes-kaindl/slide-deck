@@ -16,7 +16,7 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 - **Live-Vorschau** — rendert die aktive Notiz als Folien-Deck in einer Seitenleiste; ein Link springt zur entsprechenden Quellzeile in der Notiz.
 - **Fit-or-warn-Lesbarkeit** — jede Folie skaliert den Inhalt automatisch herunter bis zur konfigurierbaren Lesbarkeits-Untergrenze (`minFontPx`); Folien, die noch kleineren Text bräuchten, werden als überlaufend markiert statt unleserlich zu werden.
 - **PDF-Export** — rendert alle Folien in nativer Auflösung und öffnet den System-Druckdialog (im Dialog „Als PDF speichern" wählen).
-- **PNG-Bilderserie-Export** — erfasst jede Folie via html2canvas und schreibt nummerierte PNGs in einen `slide-export/`-Ordner im Vault.
+- **PNG-Bilderserie-Export** — erfasst jede Folie via html2canvas und schreibt nummerierte PNGs in den konfigurierten Anhang-Ordner des Vaults.
 - **KaTeX-Mathematik** — Inline- und Display-Mathematik (`$…$` / `$$…$$`) gerendert von KaTeX.
 - **Code-Hervorhebung** — Fenced-Code-Blöcke werden von highlight.js eingefärbt.
 - **Barrierefreie Callouts** — Obsidian-Callouts `> [!note]`, `[!warning]`, `[!danger]`, `[!tip]`, `[!info]` mit redundanter Kodierung: Rahmenfarbe + geometrische Form + sichtbares Label (nicht nur Farbe; erfüllt WCAG 1.4.1).
@@ -28,7 +28,7 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 - **Obsidian ≥ 1.8.7**
 - **Nur Desktop** (`isDesktopOnly: true`) — der Export benötigt `window.print()` für PDF und `html2canvas` für PNG; beides erfordert eine Desktop-Umgebung.
 - Der PDF-Export verwendet den **System-Druckdialog** — im Druckerdropdown „Als PDF speichern" wählen. Es wird keine PDF-Datei direkt erzeugt.
-- Der PNG-Export schreibt Dateien in einen **`slide-export/`**-Ordner im Vault-Stammverzeichnis. Der Ordner wird beim ersten Export automatisch angelegt.
+- Der PNG-Export schreibt Dateien in den **konfigurierten Anhang-Ordner** des Vaults (Einstellungen → Dateien & Links → „Standardordner für neue Anhänge"). Der PDF-Export läuft über den System-Druckdialog, wo du den Ort wählst.
 
 ## Installation
 

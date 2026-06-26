@@ -65,7 +65,7 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
   preview-view.ts    SlideDeckView (ItemView, rechte Seitenleiste) — Live-Vorschau mit
                      Warn-Badges und Source-Jump-Link.
   export.ts          exportPdf() (window.print-Pipeline) + exportImages() (html2canvas → PNG
-                     in slide-export/). Beide bauen dasselbe selbst-enthaltene HTML.
+                     in den konfigurierten Anhang-Ordner). Beide bauen dasselbe self-contained HTML.
   dom-safe.ts        Popout-sichere DOM-Helfer (activeDocument, activeWindow).
   i18n.ts            t(key, ...args) · pickLang · setLang/getLang. EN kanonisch, DE übersetzt.
   settings.ts        SlideDeckSettings (defaultTheme, minFontPx, imageScale) + SettingTab.

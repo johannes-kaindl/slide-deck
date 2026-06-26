@@ -55,11 +55,10 @@ export async function exportImages(app: App, doc: Document, win: Window, default
   holder.style.position = "fixed"; holder.style.left = "-99999px"; holder.style.top = "0"; // off-screen staging
   const style = doc.createElement("style"); style.textContent = css; holder.appendChild(style);
   doc.body.appendChild(holder);
-  const dir = "slide-export";
   const adapter = app.vault.adapter;
+  const sourcePath = app.workspace.getActiveFile()?.path ?? "";
+  const base = app.workspace.getActiveFile()?.basename ?? "deck";
   try {
-    if (!(await adapter.exists(dir))) await adapter.mkdir(dir);
-    const base = app.workspace.getActiveFile()?.basename ?? "deck";
     for (let i = 0; i < slidesHtml.length; i++) {
       holder.insertAdjacentHTML("beforeend", slidesHtml[i]); // bewusst: selbst-erzeugtes, isoliertes Export-HTML
       const el = holder.lastElementChild as HTMLElement;
@@ -67,7 +66,12 @@ export async function exportImages(app: App, doc: Document, win: Window, default
       const b64 = canvas.toDataURL("image/png").split(",")[1];
       // atob → char codes → Uint8Array → .buffer gives ArrayBuffer for writeBinary
       const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-      await adapter.writeBinary(`${dir}/${base}-${String(i + 1).padStart(2, "0")}.png`, bytes.buffer);
+      const filename = `${base}-${String(i + 1).padStart(2, "0")}.png`;
+      // Honour the vault's configured attachment location (Settings → Files & Links)
+      const path = await app.fileManager.getAvailablePathForAttachment(filename, sourcePath);
+      const folder = path.substring(0, path.lastIndexOf("/"));
+      if (folder && !(await adapter.exists(folder))) await adapter.mkdir(folder);
+      await adapter.writeBinary(path, bytes.buffer);
       el.remove();
     }
     new Notice(t("export.done", slidesHtml.length));
