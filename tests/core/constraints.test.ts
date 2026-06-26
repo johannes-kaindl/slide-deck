@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { collectWarnings } from "../../src/core/constraints/engine";
+import { collectWarnings, collectDeckWarnings } from "../../src/core/constraints/engine";
 import { getAuthoringContract, contractToPrompt } from "../../src/core/constraints/contract";
-import type { Slide } from "../../src/core/slide-model";
+import type { Slide, SlideDeck } from "../../src/core/slide-model";
 
 const slide = (over: Partial<Slide>): Slide => ({
   index: 2, markdown: "", startLine: 40, layout: "default", regions: [""], directiveWarnings: [], ...over,
@@ -28,6 +28,18 @@ describe("collectWarnings", () => {
   it("no region warning when count matches", () => {
     const w = collectWarnings(slide({ layout: "two-column", regions: ["a", "b"] }), [], { scale: 1, overflow: false });
     expect(w.some((x) => x.kind === "region-count")).toBe(false);
+  });
+});
+
+describe("collectDeckWarnings", () => {
+  it("warns on an unknown deck theme", () => {
+    const deck = { directives: { theme: "drak", aspect: "16:9", minFontPx: 24 }, slides: [] } as unknown as SlideDeck;
+    const w = collectDeckWarnings(deck);
+    expect(w.some((x) => x.kind === "theme-unknown")).toBe(true);
+  });
+  it("no warning for a known theme", () => {
+    const deck = { directives: { theme: "dark", aspect: "16:9", minFontPx: 24 }, slides: [] } as unknown as SlideDeck;
+    expect(collectDeckWarnings(deck)).toEqual([]);
   });
 });
 

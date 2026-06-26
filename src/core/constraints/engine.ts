@@ -1,13 +1,23 @@
 // src/core/constraints/engine.ts
 import type { FitResult } from "../layout/fit";
-import type { Slide } from "../slide-model";
+import type { Slide, SlideDeck } from "../slide-model";
 import { LAYOUTS, layoutFor } from "../presets/layouts.css";
+import { PRESETS } from "../presets";
 
 export type WarningKind =
   | "overflow" | "belowFloor" | "missing-embed" | "mermaid-error" | "low-contrast"
-  | "layout-unknown" | "layout-multiple" | "directive-malformed" | "region-count";
+  | "layout-unknown" | "layout-multiple" | "directive-malformed" | "region-count"
+  | "theme-unknown";
 export interface Warning { slideIndex: number; kind: WarningKind; message: string; sourceLine?: number; }
 export type SlideWarning = Omit<Warning, "slideIndex">;
+
+export function collectDeckWarnings(deck: SlideDeck): Warning[] {
+  const out: Warning[] = [];
+  if (!(deck.directives.theme in PRESETS)) {
+    out.push({ slideIndex: 0, kind: "theme-unknown", message: `Unknown theme "${deck.directives.theme}" — using default.`, sourceLine: 0 });
+  }
+  return out;
+}
 
 export function collectWarnings(slide: Slide, renderWarnings: SlideWarning[], fit: FitResult): Warning[] {
   const out: Warning[] = [];

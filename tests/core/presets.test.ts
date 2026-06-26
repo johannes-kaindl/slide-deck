@@ -10,7 +10,7 @@ describe("presetFor", () => {
   });
   it("every preset declares the required tokens", () => {
     for (const p of Object.values(PRESETS)) {
-      for (const key of ["--sd-bg", "--sd-fg", "--sd-accent", "--sd-font", "--sd-code-bg"]) {
+      for (const key of ["--sd-bg", "--sd-fg", "--sd-accent", "--sd-font", "--sd-code-bg", "--sd-heading-font"]) {
         expect(p.tokens[key], `${p.id} missing ${key}`).toBeDefined();
       }
       expect(p.baseFontPx).toBeGreaterThan(0);

@@ -1,7 +1,7 @@
 import mermaid from "mermaid";
 import { renderMarkdown } from "./core/render/md2html";
 import { computeFit } from "./core/layout/fit";
-import { collectWarnings, type Warning, type SlideWarning } from "./core/constraints/engine";
+import { collectWarnings, collectDeckWarnings, type Warning, type SlideWarning } from "./core/constraints/engine";
 import { deckCss } from "./deck-css";
 import { geometryFor } from "./core/geometry";
 import { presetFor } from "./core/presets";
@@ -32,6 +32,7 @@ export async function renderDeckToContainer(
   const minScale = deck.directives.minFontPx / preset.baseFontPx;
   mermaid.initialize({ startOnLoad: false, theme: preset.mermaid });
   const warnings: Warning[] = [];
+  warnings.push(...collectDeckWarnings(deck));
   void doc; // doc used by buildSelfContainedDeckHtml — kept for API symmetry
   container.empty();
   for (const slide of deck.slides) {
