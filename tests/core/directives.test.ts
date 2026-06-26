@@ -66,4 +66,15 @@ describe("parseDirectives", () => {
     expect(r.layout).toBe("two-column");
     expect(r.regions).toEqual(["## L", "## R"]);
   });
+
+  it("warns on a layout directive with a missing colon", () => {
+    const r = parseDirectives("<!-- layout two-column -->\n# T");
+    expect(r.layout).toBe("default");
+    expect(r.warnings).toEqual([{ kind: "directive-malformed", message: expect.any(String) }]);
+  });
+
+  it("warns on a malformed column directive (extra token, no colon)", () => {
+    const r = parseDirectives("<!-- column foo -->\n# T");
+    expect(r.warnings).toEqual([{ kind: "directive-malformed", message: expect.any(String) }]);
+  });
 });
