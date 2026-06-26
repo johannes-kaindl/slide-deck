@@ -63,7 +63,7 @@ export async function renderDeckToContainer(
 }
 
 export async function buildSelfContainedDeckHtml(
-  doc: Document, deck: SlideDeck, resolveEmbed: (r: string) => string | null,
+  doc: Document, deck: SlideDeck, resolveEmbed: (r: string) => string | null, customCss = "",
 ): Promise<{ slidesHtml: string[]; css: string; warnings: Warning[] }> {
   const staging = doc.createElement("div");
   staging.style.position = "fixed"; staging.style.left = "-99999px"; staging.style.top = "0";
@@ -71,7 +71,7 @@ export async function buildSelfContainedDeckHtml(
   // (fit/overflow needs the real padded geometry). renderDeckToContainer empties its host,
   // so render into a child and keep the <style> as a sibling.
   const style = doc.createElement("style");
-  style.textContent = deckCss(deck.directives.theme);
+  style.textContent = deckCss(deck.directives.theme, customCss);
   staging.appendChild(style);
   const host = doc.createElement("div");
   staging.appendChild(host);
@@ -79,7 +79,7 @@ export async function buildSelfContainedDeckHtml(
   try {
     const warnings = await renderDeckToContainer(doc, host, deck, resolveEmbed);
     const slidesHtml = Array.from(host.querySelectorAll<HTMLElement>(".sd-slide")).map((el) => el.outerHTML);
-    return { slidesHtml, css: deckCss(deck.directives.theme), warnings };
+    return { slidesHtml, css: deckCss(deck.directives.theme, customCss), warnings };
   } finally {
     staging.remove();
   }

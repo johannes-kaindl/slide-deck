@@ -51,8 +51,8 @@ export class SlideDeckView extends ItemView {
     mkBtn("refresh-cw", t("toolbar.refresh"), () => void this.refresh());
     // Export the file the preview currently SHOWS (this.currentFile), not the active file —
     // so the buttons never silently export a different note than what's on screen.
-    mkBtn("file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), this.currentFile, defaults()));
-    mkBtn("image", t("toolbar.exportImages"), () => void exportImages(this.app, activeDoc(), activeWin(), this.currentFile, defaults(), this.plugin.settings.imageScale));
+    mkBtn("file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), this.currentFile, defaults(), this.plugin.settings.customCss));
+    mkBtn("image", t("toolbar.exportImages"), () => void exportImages(this.app, activeDoc(), activeWin(), this.currentFile, defaults(), this.plugin.settings.imageScale, this.plugin.settings.customCss));
     this.fileLabel = bar.createSpan({ cls: "sd-toolbar-file" });
   }
 
@@ -70,7 +70,7 @@ export class SlideDeckView extends ItemView {
       this.deckInner.empty();
       if (!loaded) { this.messageEl.setText(t("preview.hint")); return; }
       if (loaded.deck.slides.length === 0) { this.messageEl.setText(t("preview.empty")); return; }
-      this.styleEl!.textContent = deckCss(loaded.deck.directives.theme);
+      this.styleEl!.textContent = deckCss(loaded.deck.directives.theme, this.plugin.settings.customCss);
       this.geoWidth = geometryFor(loaded.deck.directives.aspect).width;
       const warnings = await renderDeckToContainer(activeDoc(), this.deckInner, loaded.deck, loaded.resolveEmbed);
       this.fitToWidth();

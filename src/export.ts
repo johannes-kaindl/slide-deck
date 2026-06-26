@@ -15,12 +15,12 @@ function printRootCss(w: number, h: number, preset: string): string {
   );
 }
 
-export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, defaults?: Partial<DeckDirectives>): Promise<void> {
+export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, defaults?: Partial<DeckDirectives>, customCss = ""): Promise<void> {
  try {
   const loaded = await loadDeck(app, file, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
-  const { slidesHtml, css } = await buildSelfContainedDeckHtml(doc, loaded.deck, loaded.resolveEmbed);
+  const { slidesHtml, css } = await buildSelfContainedDeckHtml(doc, loaded.deck, loaded.resolveEmbed, customCss);
   doc.getElementById("sd-print-root")?.remove();
   doc.getElementById("sd-print-style")?.remove();
   const style = doc.createElement("style"); style.id = "sd-print-style";
@@ -44,13 +44,13 @@ export async function exportPdf(app: App, doc: Document, win: Window, file: TFil
  } catch (e) { new Notice(t("notice.exportFailed", String(e))); }
 }
 
-export async function exportImages(app: App, doc: Document, win: Window, file: TFile | null, defaults?: Partial<DeckDirectives>, scale = 2): Promise<void> {
+export async function exportImages(app: App, doc: Document, win: Window, file: TFile | null, defaults?: Partial<DeckDirectives>, scale = 2, customCss = ""): Promise<void> {
   void win; // win not used in image path; kept for API symmetry with exportPdf
  try {
   const loaded = await loadDeck(app, file, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
-  const { slidesHtml, css } = await buildSelfContainedDeckHtml(doc, loaded.deck, loaded.resolveEmbed);
+  const { slidesHtml, css } = await buildSelfContainedDeckHtml(doc, loaded.deck, loaded.resolveEmbed, customCss);
   const holder = doc.createElement("div");
   holder.style.position = "fixed"; holder.style.left = "-99999px"; holder.style.top = "0"; // off-screen staging
   const style = doc.createElement("style"); style.textContent = css; holder.appendChild(style);
