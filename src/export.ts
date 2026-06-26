@@ -16,6 +16,7 @@ function printRootCss(w: number, h: number, preset: string): string {
 }
 
 export async function exportPdf(app: App, doc: Document, win: Window, defaults?: Partial<DeckDirectives>): Promise<void> {
+ try {
   const loaded = await loadActiveDeck(app, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
@@ -40,10 +41,12 @@ export async function exportPdf(app: App, doc: Document, win: Window, defaults?:
   win.addEventListener("afterprint", cleanup);
   win.setTimeout(() => { try { win.print(); } catch { new Notice("Print failed"); cleanup(); } }, 200);
   safetyTimer = win.setTimeout(cleanup, 60000);
+ } catch (e) { new Notice(t("notice.exportFailed", String(e))); }
 }
 
 export async function exportImages(app: App, doc: Document, win: Window, defaults?: Partial<DeckDirectives>, scale = 2): Promise<void> {
   void win; // win not used in image path; kept for API symmetry with exportPdf
+ try {
   const loaded = await loadActiveDeck(app, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
@@ -69,4 +72,5 @@ export async function exportImages(app: App, doc: Document, win: Window, default
     }
     new Notice(t("export.done", slidesHtml.length));
   } finally { holder.remove(); }
+ } catch (e) { new Notice(t("notice.exportFailed", String(e))); }
 }

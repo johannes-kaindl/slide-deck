@@ -22,6 +22,8 @@ const EN: Dict = {
   "settings.minFont.desc": "Legibility floor; slides that need smaller text are flagged",
   "settings.imageScale.name": "Image export scale",
   "settings.imageScale.desc": "Pixel multiplier for PNG export (2 = crisp)",
+  "preview.error": "Render error: {0}",
+  "notice.exportFailed": "Export failed: {0}",
 };
 const DE: Dict = {
   "cmd.openPreview": "Präsentations-Vorschau öffnen",
@@ -40,6 +42,8 @@ const DE: Dict = {
   "settings.minFont.desc": "Lesbarkeits-Boden; Folien mit kleinerem Text werden markiert",
   "settings.imageScale.name": "Bild-Export-Skalierung",
   "settings.imageScale.desc": "Pixel-Multiplikator für PNG-Export (2 = scharf)",
+  "preview.error": "Render-Fehler: {0}",
+  "notice.exportFailed": "Export fehlgeschlagen: {0}",
 };
 const STRINGS: Record<Lang, Dict> = { en: EN, de: DE };
 export function t(key: string, ...args: (string | number)[]): string {

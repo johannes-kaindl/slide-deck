@@ -29,15 +29,20 @@ export class SlideDeckView extends ItemView {
   }
 
   async refresh(): Promise<void> {
-    const loaded = await loadActiveDeck(this.app, { theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx });
-    this.warnEl.empty();
-    this.deckEl.empty();
-    if (!loaded || loaded.deck.slides.length === 0) { this.deckEl.createDiv({ text: t("preview.empty") }); return; }
-    this.styleEl!.textContent = deckCss(loaded.deck.directives.theme);
-    const warnings = await renderDeckToContainer(activeDoc(), this.deckEl, loaded.deck, loaded.resolveEmbed);
-    for (const w of warnings) {
-      const row = this.warnEl.createDiv({ cls: `sd-warn sd-warn-${w.kind}`, text: `#${w.slideIndex + 1} — ${w.message}` });
-      if (w.sourceLine !== undefined) row.addEventListener("click", () => this.jumpTo(w.sourceLine!));
+    try {
+      const loaded = await loadActiveDeck(this.app, { theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx });
+      this.warnEl.empty();
+      this.deckEl.empty();
+      if (!loaded || loaded.deck.slides.length === 0) { this.deckEl.createDiv({ text: t("preview.empty") }); return; }
+      this.styleEl!.textContent = deckCss(loaded.deck.directives.theme);
+      const warnings = await renderDeckToContainer(activeDoc(), this.deckEl, loaded.deck, loaded.resolveEmbed);
+      for (const w of warnings) {
+        const row = this.warnEl.createDiv({ cls: `sd-warn sd-warn-${w.kind}`, text: `#${w.slideIndex + 1} — ${w.message}` });
+        if (w.sourceLine !== undefined) row.addEventListener("click", () => this.jumpTo(w.sourceLine!));
+      }
+    } catch (e) {
+      this.deckEl.empty();
+      this.deckEl.createDiv({ cls: "sd-error", text: t("preview.error", String(e)) });
     }
   }
 

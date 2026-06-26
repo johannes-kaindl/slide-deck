@@ -1,9 +1,16 @@
 import MarkdownIt from "markdown-it";
 import type { RenderRule } from "markdown-it/lib/renderer.mjs";
-import katex from "@vscode/markdown-it-katex";
+import katexImport from "@vscode/markdown-it-katex";
 import hljs from "highlight.js";
 import type { Warning } from "../constraints/engine";
 import { calloutPlugin } from "./callouts";
+
+// Interop guard: esbuild's CJS bundling exposes this package's default export as
+// `{ default: fn }` at runtime, while vitest/ESM exposes the fn directly. Without
+// this, `md.use(katexImport)` receives a non-callable object → "e.apply is not a
+// function" at runtime (passes in vitest, fails in the real bundle). Normalize to
+// the function so it works in both. (Verified via esbuild-bundle smoke.)
+const katexPlugin = (katexImport as unknown as { default?: typeof katexImport }).default ?? katexImport;
 
 export interface RenderInput {
   markdown: string;
@@ -37,7 +44,7 @@ function highlight(str: string, lang: string): string {
 function buildMd(): MarkdownIt {
   const md = new MarkdownIt({ html: true, highlight });
 
-  md.use(katex);
+  md.use(katexPlugin);
   md.use(calloutPlugin);
 
   // Mermaid fence override — emit placeholder div, no SVG in core
