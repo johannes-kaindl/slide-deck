@@ -56,17 +56,19 @@
 
 .sd-warn {
   font-size: 0.85em;
-  padding: 4px 8px;
+  padding: 6px 10px;
   border-radius: 4px;
-  background: var(--background-modifier-error, #3d1a1a);
-  color: var(--text-error, #f28b82);
+  background: var(--background-secondary);
+  border-left: 4px solid var(--text-error, #e5534b);
+  color: var(--text-normal);
   cursor: pointer;
 }
 
 .sd-hint,
 .sd-error {
-  padding: 16px;
-  font-size: 0.9em;
+  padding: 24px 16px;
+  font-size: 1em;
+  line-height: 1.5;
   white-space: pre-wrap;
   color: var(--text-muted);
 }

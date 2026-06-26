@@ -64,6 +64,7 @@ export class SlideDeckView extends ItemView {
       const loaded = await loadDeck(this.app, this.currentFile, { theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx });
       this.warnEl.empty();
       this.deckInner.empty();
+      this.deckInner.style.setProperty("zoom", "1"); // reset; fitToWidth re-applies for slides (keeps hint/error readable)
       if (!loaded) { this.deckInner.createDiv({ cls: "sd-hint", text: t("preview.hint") }); return; }
       if (loaded.deck.slides.length === 0) { this.deckInner.createDiv({ cls: "sd-hint", text: t("preview.empty") }); return; }
       this.styleEl!.textContent = deckCss(loaded.deck.directives.theme);
