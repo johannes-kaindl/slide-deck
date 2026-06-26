@@ -39,4 +39,10 @@ describe("authoring contract", () => {
     expect(c.slideSeparator).toBe("---");
     expect(contractToPrompt(c)).toContain("1280");
   });
+  it("lists available layouts and themes", () => {
+    const c = getAuthoringContract({ theme: "default", aspect: "16:9", minFontPx: 24 });
+    expect(c.themes).toContain("dark");
+    expect(c.layouts).toContain("two-column");
+    expect(contractToPrompt(c)).toContain("two-column");
+  });
 });
