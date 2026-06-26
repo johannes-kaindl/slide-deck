@@ -44,7 +44,7 @@ export async function exportPdf(app: App, doc: Document, win: Window, file: TFil
  } catch (e) { new Notice(t("notice.exportFailed", String(e))); }
 }
 
-export async function exportImages(app: App, doc: Document, win: Window, file: TFile | null, defaults?: Partial<DeckDirectives>, scale = 2, customCss = ""): Promise<void> {
+export async function exportImages(app: App, doc: Document, win: Window, file: TFile | null, defaults?: Partial<DeckDirectives>, scale = 2, customCss = "", exportFolder = "Slide-Deck-Export"): Promise<void> {
   void win; // win not used in image path; kept for API symmetry with exportPdf
  try {
   const loaded = await loadDeck(app, file, defaults);
@@ -56,8 +56,12 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
   const style = doc.createElement("style"); style.textContent = css; holder.appendChild(style);
   doc.body.appendChild(holder);
   const adapter = app.vault.adapter;
-  const sourcePath = file?.path ?? "";
   const base = file?.basename ?? "deck";
+  // Export into <exportFolder>/<note name>/, one PNG per slide named NN-<note>.png.
+  const root = exportFolder.replace(/\/+$/, "") || "Slide-Deck-Export";
+  const folder = `${root}/${base}`;
+  if (!(await adapter.exists(root))) await adapter.mkdir(root);
+  if (!(await adapter.exists(folder))) await adapter.mkdir(folder);
   try {
     for (let i = 0; i < slidesHtml.length; i++) {
       holder.insertAdjacentHTML("beforeend", slidesHtml[i]); // bewusst: selbst-erzeugtes, isoliertes Export-HTML
@@ -66,11 +70,7 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
       const b64 = canvas.toDataURL("image/png").split(",")[1];
       // atob → char codes → Uint8Array → .buffer gives ArrayBuffer for writeBinary
       const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-      const filename = `${base}-${String(i + 1).padStart(2, "0")}.png`;
-      // Honour the vault's configured attachment location (Settings → Files & Links)
-      const path = await app.fileManager.getAvailablePathForAttachment(filename, sourcePath);
-      const folder = path.substring(0, path.lastIndexOf("/"));
-      if (folder && !(await adapter.exists(folder))) await adapter.mkdir(folder);
+      const path = `${folder}/${String(i + 1).padStart(2, "0")}-${base}.png`;
       await adapter.writeBinary(path, bytes.buffer);
       el.remove();
     }

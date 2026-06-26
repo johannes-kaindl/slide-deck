@@ -25,7 +25,7 @@ export default class SlideDeckPlugin extends Plugin {
     this.addCommand({
       id: "export-images",
       name: t("cmd.exportImages"),
-      callback: () => void exportImages(this.app, activeDocument, activeWindow, this.app.workspace.getActiveFile(), { theme: this.settings.defaultTheme, minFontPx: this.settings.minFontPx }, this.settings.imageScale, this.settings.customCss),
+      callback: () => void exportImages(this.app, activeDocument, activeWindow, this.app.workspace.getActiveFile(), { theme: this.settings.defaultTheme, minFontPx: this.settings.minFontPx }, this.settings.imageScale, this.settings.customCss, this.settings.exportFolder),
     });
   }
 

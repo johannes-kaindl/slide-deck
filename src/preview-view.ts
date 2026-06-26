@@ -52,7 +52,7 @@ export class SlideDeckView extends ItemView {
     // Export the file the preview currently SHOWS (this.currentFile), not the active file —
     // so the buttons never silently export a different note than what's on screen.
     mkBtn("file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), this.currentFile, defaults(), this.plugin.settings.customCss));
-    mkBtn("image", t("toolbar.exportImages"), () => void exportImages(this.app, activeDoc(), activeWin(), this.currentFile, defaults(), this.plugin.settings.imageScale, this.plugin.settings.customCss));
+    mkBtn("image", t("toolbar.exportImages"), () => void exportImages(this.app, activeDoc(), activeWin(), this.currentFile, defaults(), this.plugin.settings.imageScale, this.plugin.settings.customCss, this.plugin.settings.exportFolder));
     this.fileLabel = bar.createSpan({ cls: "sd-toolbar-file" });
   }
 

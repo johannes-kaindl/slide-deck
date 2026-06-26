@@ -3,8 +3,8 @@ import type SlideDeckPlugin from "./main";
 import { t } from "./i18n";
 import { PRESETS } from "./core/presets";
 
-export interface SlideDeckSettings { defaultTheme: string; minFontPx: number; imageScale: number; customCss: string; }
-export const DEFAULT_SETTINGS: SlideDeckSettings = { defaultTheme: "default", minFontPx: 24, imageScale: 2, customCss: "" };
+export interface SlideDeckSettings { defaultTheme: string; minFontPx: number; imageScale: number; customCss: string; exportFolder: string; }
+export const DEFAULT_SETTINGS: SlideDeckSettings = { defaultTheme: "default", minFontPx: 24, imageScale: 2, customCss: "", exportFolder: "Slide-Deck-Export" };
 
 export class SlideDeckSettingTab extends PluginSettingTab {
   constructor(app: App, private plugin: SlideDeckPlugin) { super(app, plugin); }
@@ -28,6 +28,9 @@ export class SlideDeckSettingTab extends PluginSettingTab {
 
     new Setting(containerEl).setName(t("settings.imageScale.name")).setDesc(t("settings.imageScale.desc"))
       .addText((c) => c.setValue(String(this.plugin.settings.imageScale)).onChange(async (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) { this.plugin.settings.imageScale = n; await this.plugin.saveSettings(); } }));
+
+    new Setting(containerEl).setName(t("settings.exportFolder.name")).setDesc(t("settings.exportFolder.desc"))
+      .addText((c) => c.setValue(this.plugin.settings.exportFolder).onChange(async (v) => { this.plugin.settings.exportFolder = v.trim() || "Slide-Deck-Export"; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl).setName(t("settings.customCss.name")).setDesc(t("settings.customCss.desc"))
       .addTextArea((c) => c.setValue(this.plugin.settings.customCss).onChange(async (v) => { this.plugin.settings.customCss = v; await this.plugin.saveSettings(); }));

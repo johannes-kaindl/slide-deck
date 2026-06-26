@@ -58,6 +58,7 @@ export async function renderDeckToContainer(
     inner.style.transform = `scale(${fit.scale})`;
     const slideWarnings = collectWarnings(slide, renderWarnings, fit);
     if (slideWarnings.some((w) => w.kind === "overflow" || w.kind === "belowFloor")) box.addClass("sd-slide-warn");
+    else if (slideWarnings.length > 0) box.addClass("sd-slide-warn-soft");
     warnings.push(...slideWarnings);
   }
   return warnings;

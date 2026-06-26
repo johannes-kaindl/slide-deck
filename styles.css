@@ -104,3 +104,9 @@
 .sd-deck-inner .sd-slide-warn {
   box-shadow: inset 12px 0 0 0 var(--text-error, #e5534b), 0 2px 12px rgba(0, 0, 0, 0.18);
 }
+
+/* Slides with a non-overflow warning (unknown layout, region count, missing embed, …)
+   get an amber left stripe in the preview (not in the export). */
+.sd-deck-inner .sd-slide-warn-soft {
+  box-shadow: inset 12px 0 0 0 var(--text-warning, #c98a00), 0 2px 12px rgba(0, 0, 0, 0.18);
+}
