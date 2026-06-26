@@ -5,15 +5,14 @@ export interface DirectiveResult { layout: string; regions: string[]; warnings: 
 const FENCE_RE = /^\s*(```|~~~)/;
 const LAYOUT_RE = /^<!--\s*layout\s*:\s*([A-Za-z-]+)\s*-->$/i;
 const COLUMN_RE = /^<!--\s*column\s*-->$/i;
-const LAYOUT_LIKE = /^<!--\s*layout\b/i;
-const COLUMN_LIKE = /^<!--\s*column\b/i;
-/** Catches any <!--...:--> comment that looks directive-like but wasn't recognized. */
+/** Catches any <!--word:--> comment that looks directive-like but wasn't recognized. */
 const DIRECTIVE_LIKE = /^<!--\s*\w[\w-]*\s*:/i;
 
 /** Parse per-slide directives. Fence-aware: directives inside ```/~~~ blocks are literal.
- *  Indented code blocks are intentionally NOT fence-protected (rare; documented limitation). */
+ *  Indented code blocks are intentionally NOT fence-protected (rare; documented limitation).
+ *  CRLF line endings are normalized to LF internally before parsing. */
 export function parseDirectives(slideMarkdown: string): DirectiveResult {
-  const lines = slideMarkdown.split("\n");
+  const lines = slideMarkdown.replace(/\r\n/g, "\n").split("\n");
   const warnings: DirectiveWarning[] = [];
   let layout = "default";
   let layoutSet = false;
@@ -41,7 +40,7 @@ export function parseDirectives(slideMarkdown: string): DirectiveResult {
       else warnings.push({ kind: "layout-multiple", message: "Multiple layout directives — using the first." });
       continue;
     }
-    if (LAYOUT_LIKE.test(trimmed) || COLUMN_LIKE.test(trimmed) || DIRECTIVE_LIKE.test(trimmed)) {
+    if (DIRECTIVE_LIKE.test(trimmed)) {
       warnings.push({ kind: "directive-malformed", message: `Unrecognized directive: ${trimmed}` });
       continue;
     }

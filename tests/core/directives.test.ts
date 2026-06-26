@@ -60,4 +60,10 @@ describe("parseDirectives", () => {
     expect(r.layout).toBe("title");
     expect(r.regions).toEqual(["# Title\nbody"]);
   });
+
+  it("normalizes CRLF input (layout + clean region, no stray \\r)", () => {
+    const r = parseDirectives("<!-- layout: two-column -->\r\n## L\r\n\r\n<!-- column -->\r\n\r\n## R\r\n");
+    expect(r.layout).toBe("two-column");
+    expect(r.regions).toEqual(["## L", "## R"]);
+  });
 });
