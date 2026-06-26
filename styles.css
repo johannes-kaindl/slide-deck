@@ -17,13 +17,33 @@
   cursor: pointer;
 }
 
+.sd-error {
+  padding: 12px;
+  color: var(--text-error, #f28b82);
+  font-size: 0.9em;
+  white-space: pre-wrap;
+}
+
+/* Scroll container fills the leaf; the inner is scaled to the pane width via `zoom`. */
 .sd-deck {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 24px;
-  overflow-y: auto;
+  overflow: auto;
   height: 100%;
   box-sizing: border-box;
+  padding: 16px;
+}
+
+.sd-deck-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  width: max-content;
+}
+
+/* Preview-only card chrome on each fixed-size slide (export keeps a bare .sd-slide). */
+.sd-deck-inner .sd-slide {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--background-modifier-border, #ddd);
+  border-radius: 8px;
+  flex: none;
 }

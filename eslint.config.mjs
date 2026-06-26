@@ -53,6 +53,8 @@ export default tseslint.config(
     files: ["src/preview-view.ts"],
     rules: {
       "obsidianmd/no-forbidden-elements": "off",
+      // dynamic `zoom` scales the deck to the pane width at render time (not a static theme style)
+      "obsidianmd/no-static-styles-assignment": "off",
     },
   },
 );
