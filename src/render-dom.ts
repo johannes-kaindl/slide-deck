@@ -50,7 +50,10 @@ export async function renderDeckToContainer(
     );
     inner.style.transformOrigin = "top left";
     inner.style.transform = `scale(${fit.scale})`;
-    warnings.push(...collectWarnings(slide.index, rendered, fit, slide.startLine));
+    const slideWarnings = collectWarnings(slide.index, rendered, fit, slide.startLine);
+    // Mark overflowing slides so the preview can flag them (styled preview-only; bare in export).
+    if (slideWarnings.some((w) => w.kind === "overflow" || w.kind === "belowFloor")) box.addClass("sd-slide-warn");
+    warnings.push(...slideWarnings);
   }
   return warnings;
 }

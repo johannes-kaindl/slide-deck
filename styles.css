@@ -100,3 +100,8 @@
   border-radius: 8px;
   flex: none;
 }
+
+/* Overflowing slides get a red left stripe in the preview (not in the export). */
+.sd-deck-inner .sd-slide-warn {
+  box-shadow: inset 6px 0 0 0 var(--text-error, #e5534b), 0 2px 12px rgba(0, 0, 0, 0.18);
+}

@@ -85,15 +85,26 @@ export class SlideDeckView extends ItemView {
    *  reflows layout (unlike transform), so the vertical scrollbar stays correct. */
   private fitToWidth(): void {
     if (!this.deckInner) return;
+    // Only zoom when slides are present — otherwise the hint/error message would be scaled down too.
+    if (!this.deckInner.querySelector(".sd-slide")) { this.deckInner.style.setProperty("zoom", "1"); return; }
     const avail = this.deckEl.clientWidth - 16;
     if (avail <= 0) return;
     const factor = Math.min(1, avail / this.geoWidth);
     this.deckInner.style.setProperty("zoom", String(factor));
   }
 
+  /** Reveal the previewed note's editor and move the cursor to the slide's source line. */
   private jumpTo(line: number): void {
-    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-    view?.editor.setCursor({ line, ch: 0 });
+    if (!this.currentFile) return;
+    const path = this.currentFile.path;
+    const leaf = this.app.workspace.getLeavesOfType("markdown").find((l) => l.view instanceof MarkdownView && l.view.file?.path === path);
+    if (leaf && leaf.view instanceof MarkdownView) {
+      void this.app.workspace.revealLeaf(leaf);
+      leaf.view.editor.setCursor({ line, ch: 0 });
+      leaf.view.editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: 0 } }, true);
+    } else {
+      void this.app.workspace.openLinkText(path, "", false);
+    }
   }
 
   async onClose(): Promise<void> {
