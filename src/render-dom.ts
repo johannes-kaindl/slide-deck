@@ -33,22 +33,37 @@ export async function renderDeckToContainer(
   mermaid.initialize({ startOnLoad: false, theme: preset.mermaid });
   const warnings: Warning[] = [];
   warnings.push(...collectDeckWarnings(deck));
-  void doc; // doc used by buildSelfContainedDeckHtml — kept for API symmetry
-  container.empty();
+  container.replaceChildren();
+
+  // Pass 1 — build every slide's DOM (native createElement; runs in any realm).
+  const built: { box: HTMLElement; inner: HTMLElement; slide: SlideDeck["slides"][number]; renderWarnings: SlideWarning[] }[] = [];
   for (const slide of deck.slides) {
-    const box = container.createDiv({ cls: `sd-slide sd-layout-${slide.layout}` });
+    const box = doc.createElement("div");
+    box.className = `sd-slide sd-layout-${slide.layout}`;
     box.style.setProperty("--sd-w", `${geo.width}px`);
     box.style.setProperty("--sd-h", `${geo.height}px`);
-    const inner = box.createDiv({ cls: "sd-content" });
+    const inner = doc.createElement("div");
+    inner.className = "sd-content";
+    box.appendChild(inner);
     const renderWarnings: SlideWarning[] = [];
     for (const region of slide.regions) {
       const r = renderMarkdown({ markdown: region, resolveEmbed });
-      const regionEl = inner.createDiv({ cls: "sd-region" });
+      const regionEl = doc.createElement("div");
+      regionEl.className = "sd-region";
       regionEl.innerHTML = r.html; // self-generated, controlled core HTML
+      inner.appendChild(regionEl);
       renderWarnings.push(...r.warnings);
     }
     await renderMermaidSlots(inner, slide.index, warnings);
-    // Measure the whole padded content area (one shared scale for all regions).
+    container.appendChild(box);
+    built.push({ box, inner, slide, renderWarnings });
+  }
+
+  // Fonts must be decoded before measuring (KaTeX glyph metrics shift scrollHeight).
+  await doc.fonts.ready;
+
+  // Pass 2 — measure the padded content area and bake one shared scale per slide.
+  for (const { box, inner, slide, renderWarnings } of built) {
     const fit = computeFit(
       { contentWidth: inner.scrollWidth, contentHeight: inner.scrollHeight },
       { width: inner.clientWidth, height: inner.clientHeight },
@@ -57,8 +72,8 @@ export async function renderDeckToContainer(
     inner.style.transformOrigin = "top left";
     inner.style.transform = `scale(${fit.scale})`;
     const slideWarnings = collectWarnings(slide, renderWarnings, fit);
-    if (slideWarnings.some((w) => w.kind === "overflow" || w.kind === "belowFloor")) box.addClass("sd-slide-warn");
-    else if (slideWarnings.length > 0) box.addClass("sd-slide-warn-soft");
+    if (slideWarnings.some((w) => w.kind === "overflow" || w.kind === "belowFloor")) box.classList.add("sd-slide-warn");
+    else if (slideWarnings.length > 0) box.classList.add("sd-slide-warn-soft");
     warnings.push(...slideWarnings);
   }
   return warnings;
