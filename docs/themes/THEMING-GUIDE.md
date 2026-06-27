@@ -116,6 +116,16 @@ gold rule, inline code, callout repaint).
   override `.sd-callout` background + text (see `kuro.css`). Light themes are
   fine as-is. *(A future plugin version may tokenize callouts; until then, this
   override is the norm.)*
+- **Code-highlight and Mermaid inherit the LIGHT default scheme.** A user theme
+  always gets the built-in `default` theme's highlight.js scheme (`github`,
+  light) and Mermaid theme (`default`, light) — there is currently no way for a
+  `.css` theme to choose them. On a **light** theme that's fine. On a **dark**
+  theme: remap the highlight.js tokens in your file (see `kuro.css` §2 — it maps
+  `.hljs-keyword/-string/-comment/…` to readable dark colours). Mermaid is
+  harder (it inlines its own SVG styles); a dark Mermaid diagram will look light
+  until a future plugin version lets themes pick the Mermaid theme. *(This is the
+  strongest candidate for a follow-up plugin enhancement: let a theme declare its
+  highlight + Mermaid scheme.)*
 - **No network. Ever.** Do not use `@import url(...)` or remote `@font-face`
   `src: url(https://…)`. The slide renders in a sandboxed `srcdoc` iframe and
   the plugin is offline-by-design; remote URLs leak your IP, fail offline, and

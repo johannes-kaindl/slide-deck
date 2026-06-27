@@ -104,6 +104,19 @@
   border-radius: 4px;
 }
 
+/* CODE HIGHLIGHTING (dark): the plugin gives user themes the built-in "github"
+   (LIGHT) highlight scheme, whose token colours — especially strings (dark navy)
+   — vanish on a dark code panel. We remap the common highlight.js tokens to the
+   Kuro signal palette so code reads on dark. `.sd-slide .hljs-*` (specificity
+   0,2,0) wins over github's `.hljs-*` (0,1,0). (A future plugin version may let
+   a theme choose its own highlight scheme; until then a dark theme remaps here.) */
+.sd-slide .hljs { color: var(--sd-fg); }                                                    /* plain code text   */
+.sd-slide .hljs-comment, .sd-slide .hljs-quote { color: #8c8270; font-style: italic; }      /* void-600, muted   */
+.sd-slide .hljs-keyword, .sd-slide .hljs-selector-tag, .sd-slide .hljs-literal { color: #d8b264; } /* gold-soft   */
+.sd-slide .hljs-string, .sd-slide .hljs-attr, .sd-slide .hljs-meta-string { color: #8bbf87; }      /* biolink     */
+.sd-slide .hljs-number, .sd-slide .hljs-built_in, .sd-slide .hljs-type { color: #7ab8c4; }         /* ghost cyan  */
+.sd-slide .hljs-title, .sd-slide .hljs-function, .sd-slide .hljs-section, .sd-slide .hljs-name { color: #e8c47a; } /* light gold */
+
 /* CALLOUT FIX (dark): the plugin hardcodes callouts to LIGHT colours
    (#f4f6f8 background, dark text) in its structure CSS, so on a dark theme
    they look wrong out of the box. We repaint the body for the chamber; the
