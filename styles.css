@@ -93,3 +93,20 @@
   border: 0;
   transform-origin: top left;
 }
+
+/* Theme switcher in the preview toolbar */
+.sd-toolbar-themelabel { font-size: 12px; color: var(--text-muted); margin-left: 4px; }
+.sd-toolbar-theme { max-width: 160px; }
+.sd-toolbar-source { font-size: 12px; color: var(--text-muted); }
+.sd-toolbar-source.sd-source-dirty { color: var(--text-warning, #c98a00); }
+.sd-toolbar-set { display: none; }
+.sd-toolbar-set:not([style*="display: none"]) { display: inline-flex; }
+
+/* Available-themes reference chips in settings */
+.sd-theme-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.sd-theme-chip {
+  font-family: var(--font-monospace); font-size: 12px;
+  padding: 2px 8px; border-radius: 6px;
+  background: var(--background-modifier-border); cursor: pointer;
+}
+.sd-theme-chip:hover { background: var(--background-modifier-hover); }
