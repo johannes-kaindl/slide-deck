@@ -14,6 +14,9 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 
 - **Theme-Isolation** — Folien werden in einem sandboxed iframe gerendert, sodass das aktive Obsidian-Theme niemals in die Vorschau oder die Exporte durchsickert. Ein Deck sieht unabhängig vom Vault-Theme identisch aus.
 - **Vier eingebaute Themes** — `default` (hell), `dark`, `serif`, `high-contrast` — über den `theme:`-Frontmatter-Schlüssel je Deck gewählt; jedes Theme bringt ein passendes Code-Highlighting- und Mermaid-Theme mit.
+- **Live-Theme-Wechsler** — die Vorschau-Toolbar enthält ein Theme-Dropdown zum ephemeren Ausprobieren, eine Quell-Anzeige (`aus Frontmatter` / `aus Standard` / `● nicht gespeichert`), die zeigt, woher das aktive Theme stammt, und eine Schaltfläche **Setzen**, die `theme:` direkt in die Frontmatter der Notiz schreibt. Die Frontmatter ist die maßgebliche Quelle; der Einstellungs-Standard gilt nur für Notizen ohne `theme:`-Schlüssel.
+- **Eigene Themes** — `.css`-Dateien in einen konfigurierbaren Themes-Ordner (Standard `Slide-Deck-Themes/`) ablegen; der `theme:`-Frontmatter-Wert entspricht dem Dateinamen ohne `.css`-Erweiterung. Jede Datei enthält einen `--sd-*`-Token-Block mit optionalem zusätzlichem CSS; eigene Themes erben das Code-Highlighting- und Mermaid-Theme des eingebauten `default`-Themes. Der Einstellungs-Tab zeigt alle gültigen Theme-Schlüssel live an.
+- **Theme-Import/Export** — die Schaltfläche **Im Finder öffnen** zeigt den Themes-Ordner, sodass Dateien hineingezogen werden können; **Theme als .css exportieren** schreibt jedes Theme als editierbare `.css`-Ausgangsdatei; ein Schalter blendet den Themes-Ordner im Obsidian-Datei-Explorer aus.
 - **Fünf Folien-Layouts** — `title`, `two-column`, `image-focus`, `section`, `quote` — je Folie per HTML-Kommentar-Direktive `<!-- layout: two-column -->` gesetzt; `<!-- column -->` trennt Bereiche in Mehrspalten-Layouts.
 - **Markdown-Notizen → Folien** — Folien werden durch eine Zeile, die nur `---` enthält, getrennt; YAML-Frontmatter steuert Theme, Seitenverhältnis und Schrift-Untergrenze je Notiz.
 - **Live-Vorschau** — rendert die aktive Notiz als Folien-Deck in einer Seitenleiste, skaliert auf die Fensterbreite; ein Klick auf Überlauf-Warnungen springt zur Quellzeile.
@@ -78,6 +81,8 @@ cp main.js manifest.json styles.css /pfad/zum/vault/.obsidian/plugins/slide-deck
 | Bild-Export-Skalierung | `imageScale` | `2` | Pixel-Multiplikator für PNG-Export (`2` = 2×, scharf auf HiDPI) |
 | Eigenes CSS | `customCss` | *(leer)* | CSS, das in Vorschau und Exporten an die Deck-Styles angehängt wird, für Branding oder Anpassungen |
 | Export-Ordner | `exportFolder` | `Slide-Deck-Export` | Vault-Ordner für den PNG-Bilderserie-Export |
+| Themes-Ordner | `themesFolder` | `Slide-Deck-Themes` | Vault-Ordner, der nach eigenen `.css`-Themes durchsucht wird |
+| Themes-Ordner ausblenden | `hideThemesFolder` | `true` | Themes-Ordner im Obsidian-Datei-Explorer ausblenden |
 
 ### Frontmatter je Notiz
 
@@ -93,7 +98,7 @@ minFontPx: 24
 
 | Schlüssel | Werte | Beschreibung |
 |---|---|---|
-| `theme` | `default` · `dark` · `serif` · `high-contrast` | Visuelles Preset |
+| `theme` | `default` · `dark` · `serif` · `high-contrast` · *eigener-Theme-Schlüssel* | Visuelles Preset; eigener Theme-Schlüssel = Dateiname der `.css`-Datei ohne Erweiterung |
 | `aspect` | `16:9` (Standard), `4:3` | Canvas-Größe: 1280×720 (16:9) oder 960×720 (4:3) |
 | `minFontPx` | jede positive Zahl | Lesbarkeits-Untergrenze je Notiz; überschreibt die Plugin-Einstellung |
 

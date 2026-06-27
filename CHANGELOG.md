@@ -6,6 +6,21 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Live theme switcher** — the preview toolbar now has a theme dropdown for ephemeral try-on, a
+  source label (`from frontmatter` / `from default` / `● unsaved`) that disambiguates where the
+  active theme comes from, and a **Set** button that writes `theme:` into the note's frontmatter
+  via `setNoteTheme` (`processFrontMatter`). Fixes the „theme dropdown does nothing" confusion.
+- **User themes** — drop `.css` files into the configurable themes folder (default
+  `Slide-Deck-Themes/`); the frontmatter `theme:` value is the filename without the `.css`
+  extension. Each file is a `--sd-*` token block with optional extra CSS; user themes inherit
+  the built-in `default` theme's code-highlight and Mermaid styles. The Settings tab shows all
+  valid theme keys live.
+- **Theme import/export** — an **Open in Finder** button reveals the themes folder (drop files
+  in); **Export theme as .css** writes any theme as an editable `.css` starting point; a toggle
+  hides the themes folder in Obsidian's file explorer.
+
 ## [0.1.0] — 2026-06-27
 
 First release.

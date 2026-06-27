@@ -53,6 +53,11 @@ src/core/          Reiner Kern — kein obsidian-Import, kein DOM. Vollständig 
     engine.ts        Constraint-Engine — führt FitResult → Warning zusammen.
   directives.ts     parseDirectives() — fence-aware Per-Folie-Direktiven (<!-- layout -->,
                     <!-- column -->) → { layout, regions, warnings }.
+  theme-key.ts       keyFromFilename(filename) → Theme-Key (Dateiname ohne .css);
+                     parseBaseFontPx(css) → baseFontPx-Token aus CSS.
+  folder-hide.ts     normalizeFolder(raw) — kanonische Pfadform; buildHideCss(folder, hide) —
+                     CSS, das einen Vault-Ordner im Datei-Explorer ausblendet (vault-rag-Muster,
+                     data-path-Attribut, document.adoptedStyleSheets in main.applyFolderHide()).
   presets/
     index.ts        Preset-Typ + PRESETS-Registry; presetFor() (total); presetTokensCss();
                     assembleDeckCss().
@@ -89,7 +94,16 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
                      Beide konsumieren buildIsolatedDeck() für ein einheitliches Artefakt.
   dom-safe.ts        Popout-sichere DOM-Helfer (activeDocument, activeWindow).
   i18n.ts            t(key, ...args) · pickLang · setLang/getLang. EN kanonisch, DE übersetzt.
-  settings.ts        SlideDeckSettings (defaultTheme, minFontPx, imageScale) + SettingTab.
+  settings.ts        SlideDeckSettings (defaultTheme, minFontPx, imageScale, themesFolder,
+                     hideThemesFolder) + SettingTab (inkl. „Verfügbare Themes"-Referenz,
+                     Open-in-Finder-Button, Export-as-.css-Button, Ordner-Ausblenden-Toggle).
+  theme-registry.ts  ThemeStore — merged Built-ins + User-.css-Themes aus dem konfigurierten
+                     Ordner. refresh() scannt via scanThemeFiles(); resolve(key) → ThemeEntry.
+  theme-source.ts    scanThemeFiles() — listet *.css im Themes-Ordner; writeThemeCss() —
+                     exportiert ein Theme als editierbare .css-Datei; revealFolder() — öffnet
+                     den Ordner im System-Dateimanager (Electron shell.openPath).
+  frontmatter-writer.ts  setNoteTheme(app, file, key) — schreibt theme: in die Frontmatter der
+                         Notiz (via processFrontMatter), legt den YAML-Block an falls nötig.
 ```
 
 **Invariante:** `src/core/**` darf niemals `obsidian` importieren. Ein purity-Check-Skript
@@ -150,6 +164,14 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
 ## Gotchas
 
 - **Themes/Tokens-Invariante:** Themes setzen nur Tokens; Struktur/Layout-CSS ist theme-unantastbar (fit-kritisch). `--sd-base` lebt einzig in `presetTokensCss`.
+- **Theme-Registry:** Themes sind `ThemeEntry { key, source, themeCss, hljs, mermaid, baseFontPx }`.
+  `ThemeStore` (`theme-registry.ts`) merged Built-ins (`builtinThemeEntries`) mit User-`.css` aus
+  `settings.themesFolder` (`scanThemeFiles`). Frontmatter `theme:` = SoT der Notiz (Settings-`defaultTheme`
+  nur für Notizen ohne `theme:`). Das Preview-Dropdown schaltet ephemer; „Setzen" schreibt via
+  `setNoteTheme` (`processFrontMatter`). User-Themes erben Code-/Mermaid-Theme des `default`-Built-ins.
+- **Themes-Ordner ausblenden:** `buildHideCss` (vault-rag-Muster) via `document.adoptedStyleSheets`
+  in `main.applyFolderHide()`. `data-path` ist internes Obsidian-Markup — bricht es, taucht der Ordner
+  nur kosmetisch wieder auf.
 - **iframe-Isolation:** Folien rendern in einem `sandbox="allow-same-origin"`-iframe — das
   aktive Obsidian-Theme erreicht den iframe-Inhalt nicht. Obsidians `createDiv`/`addClass`/etc.
   sind Prototype-Patches des Eltern-Realms und werfen auf iframe-Knoten. Deshalb ist der gesamte
