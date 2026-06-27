@@ -6,35 +6,43 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 [![Release](https://img.shields.io/badge/Release-0.1.0-green.svg)](https://codeberg.org/jkaindl/slide-deck/releases)
 [![Platform: Desktop only](https://img.shields.io/badge/Platform-Desktop%20only-lightgrey.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/manifest.json)
 
-<!-- hero image added before release -->
+![Slide Deck — a two-column slide with bullet list, inline math, and an image](https://codeberg.org/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png)
 
 [Deutsch](https://codeberg.org/jkaindl/slide-deck/src/branch/main/README.de.md)
 
 ## Features
 
+- **Theme isolation** — slides render inside a sandboxed iframe, so the active Obsidian theme never leaks into the preview or the exports. A deck looks identical regardless of the vault theme.
+- **Four built-in themes** — `default` (light), `dark`, `serif`, `high-contrast` — selected per deck via the `theme:` frontmatter key; each carries a matching code-highlight and Mermaid theme.
+- **Five per-slide layouts** — `title`, `two-column`, `image-focus`, `section`, `quote` — set per slide with an HTML-comment directive `<!-- layout: two-column -->`; use `<!-- column -->` to separate regions in multi-column layouts.
 - **Markdown notes → slides** — separate slides with a line containing only `---`; YAML frontmatter controls theme, aspect ratio, and font floor per note.
-- **Live preview pane** — renders the current note as a slide deck in a side panel, with a source-jump link to the originating note line.
+- **Live preview pane** — renders the current note as a slide deck in a side panel, scaled to pane width, with a click-to-source link on overflow warnings.
 - **Fit-or-warn readability** — each slide auto-scales content down to a configurable legibility floor (`minFontPx`); slides that would need smaller text are flagged as overflowing instead of becoming unreadable.
-- **PDF export** — renders all slides at their native resolution and triggers the system print dialog (choose "Save as PDF" in the print dialog).
-- **PNG image-series export** — captures each slide via html2canvas and writes numbered PNGs into your vault's configured attachment folder.
+- **Custom CSS** — an optional CSS snippet in Settings is appended to the deck styles in both preview and exports, for branding or tweaks.
+- **PDF export** — renders all slides at their native resolution and triggers the system print dialog (choose "Save as PDF" in the print dialog); theme-isolated.
+- **PNG image-series export** — captures each slide via html2canvas and writes numbered PNGs into a configurable export folder (Settings, default `Slide-Deck-Export/`).
 - **KaTeX math** — inline and display math (`$…$` / `$$…$$`) rendered by KaTeX.
-- **Code highlighting** — fenced code blocks highlighted by highlight.js.
+- **Code highlighting** — fenced code blocks highlighted by highlight.js, per-theme.
 - **Accessible callouts** — Obsidian-style `> [!note]`, `[!warning]`, `[!danger]`, `[!tip]`, `[!info]` blocks rendered with redundant coding: border color + geometric shape + visible label word (not color-only; satisfies WCAG 1.4.1).
-- **Mermaid diagrams** — fenced ` ```mermaid ``` ` blocks rendered as SVG.
+- **Mermaid diagrams** — fenced ` ```mermaid ``` ` blocks rendered as SVG, per-theme.
 - **EN/DE interface** — all UI strings follow Obsidian's language setting (English canonical, German supported).
+
+## Screenshots
+
+![Accessible callouts rendered with icon, shape, and label](https://codeberg.org/jkaindl/slide-deck/raw/branch/main/docs/images/callouts.png)
 
 ## Requirements
 
 - **Obsidian ≥ 1.8.7**
 - **Desktop only** (`isDesktopOnly: true`) — export relies on `window.print()` for PDF and on `html2canvas` DOM capture for PNG; both require a desktop environment.
 - PDF export uses the **system print dialog** — choose "Save as PDF" in the printer dropdown. It does not produce a PDF file directly.
-- PNG export writes files into your vault's **configured attachment folder** (Settings → Files & links → "Default location for new attachments"). PDF export goes through the system print dialog, where you choose the location.
+- PNG export writes files into a **configurable export folder** (Settings → Slide Deck → Export folder, default `Slide-Deck-Export/`). PDF export goes through the system print dialog, where you choose the location.
 
 ## Install
 
 ### Community Plugins (intended channel)
 
-The plugin is submitted to the Obsidian community plugin registry. Once accepted it will be available via **Settings → Community plugins → Browse → search "Slide Deck"**.
+Planned: once accepted into the Obsidian community plugin registry it will be installable via **Settings → Community plugins → Browse → search "Slide Deck"**.
 
 ### Manual install
 
@@ -68,6 +76,8 @@ cp main.js manifest.json styles.css /path/to/vault/.obsidian/plugins/slide-deck/
 | Default preset | `defaultTheme` | `default` | Preset used when a note has no `theme` frontmatter directive |
 | Minimum body font size (px) | `minFontPx` | `24` | Legibility floor — slides that would need smaller text are flagged as overflowing |
 | Image export scale | `imageScale` | `2` | Pixel multiplier for PNG export (`2` = 2×, crisp on HiDPI screens) |
+| Custom CSS | `customCss` | *(empty)* | CSS appended to the deck styles in preview and exports, for branding or tweaks |
+| Export folder | `exportFolder` | `Slide-Deck-Export` | Vault folder for the PNG image-series export |
 
 ### Per-note frontmatter
 
@@ -75,7 +85,7 @@ Add a YAML frontmatter block at the top of your note to control presentation-lev
 
 ```yaml
 ---
-theme: default
+theme: dark
 aspect: 16:9
 minFontPx: 24
 ---
@@ -83,9 +93,34 @@ minFontPx: 24
 
 | Key | Values | Description |
 |---|---|---|
-| `theme` | `default` | Visual preset name (only `default` currently) |
+| `theme` | `default` · `dark` · `serif` · `high-contrast` | Visual preset name |
 | `aspect` | `16:9` (default), `4:3` | Canvas size: 1280×720 (16:9) or 960×720 (4:3) |
 | `minFontPx` | any positive number | Per-note legibility floor; overrides the plugin setting |
+
+### Per-slide layouts
+
+Add an HTML comment at the start of a slide to choose its layout:
+
+```markdown
+<!-- layout: two-column -->
+
+## Left heading
+
+- Bullet one
+- Bullet two
+
+<!-- column -->
+
+![An image on the right](attachment.png)
+```
+
+| Value | Description |
+|---|---|
+| `title` | Centered title slide with large heading and subtitle |
+| `two-column` | Two equal columns separated by `<!-- column -->` |
+| `image-focus` | Large image with optional caption |
+| `section` | Full-bleed section divider |
+| `quote` | Centered block quote with attribution |
 
 ### Slide separator
 
@@ -114,8 +149,9 @@ Note: the `---` in the YAML frontmatter block is the standard YAML delimiter and
 
 1. **Parsing** — the active note's Markdown is split on `---` lines into individual slide bodies. A YAML frontmatter block (if present) sets deck-level directives.
 2. **Fixed canvas** — each slide is rendered onto a fixed canvas: 1280×720 px (16:9) or 960×720 px (4:3). The canvas size does not change with window size.
-3. **Fit-or-warn** — each slide's content is measured in the DOM. If it exceeds the canvas, the content is scaled down uniformly. Scaling stops at `minFontPx` (the legibility floor). If the content would still overflow at that scale, the slide is flagged with a warning in the preview pane rather than scaled further.
-4. **Export** — export builds the same self-contained HTML (inline CSS + resolved image data-URLs) and either sends it to the print pipeline (PDF) or captures each slide canvas with html2canvas (PNG). KaTeX and Mermaid rendering fidelity in html2canvas may vary by diagram complexity; see [AGENTS.md](https://codeberg.org/jkaindl/slide-deck/src/branch/main/AGENTS.md) for known constraints.
+3. **Theme isolation** — slides render inside a sandboxed iframe with the chosen theme's styles injected directly. The active Obsidian theme does not reach inside the iframe, so the deck looks identical in preview, PDF, and PNG regardless of vault theme.
+4. **Fit-or-warn** — each slide's content is measured in the DOM. If it exceeds the canvas, the content is scaled down uniformly. Scaling stops at `minFontPx` (the legibility floor). If the content would still overflow at that scale, the slide is flagged with a warning in the preview pane rather than scaled further.
+5. **Export** — the same theme-isolated iframe artifact feeds all export paths: the print pipeline (PDF) and per-slide html2canvas capture (PNG). KaTeX and Mermaid rendering fidelity in html2canvas may vary by diagram complexity; see [AGENTS.md](https://codeberg.org/jkaindl/slide-deck/src/branch/main/AGENTS.md) for known constraints.
 
 ## License
 

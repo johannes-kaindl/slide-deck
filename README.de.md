@@ -6,35 +6,43 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 [![Release](https://img.shields.io/badge/Release-0.1.0-green.svg)](https://codeberg.org/jkaindl/slide-deck/releases)
 [![Plattform: Nur Desktop](https://img.shields.io/badge/Plattform-Nur%20Desktop-lightgrey.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/manifest.json)
 
-<!-- hero image added before release -->
+![Slide Deck — eine Zwei-Spalten-Folie mit Aufzählung, Inline-Mathe und Bild](https://codeberg.org/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png)
 
 [English](https://codeberg.org/jkaindl/slide-deck/src/branch/main/README.md)
 
 ## Funktionen
 
-- **Markdown-Notizen → Folien** — Folien werden durch eine Zeile, die nur `---` enthält, getrennt; YAML-Frontmatter steuert Preset, Seitenverhältnis und Schrift-Untergrenze je Notiz.
-- **Live-Vorschau** — rendert die aktive Notiz als Folien-Deck in einer Seitenleiste; ein Link springt zur entsprechenden Quellzeile in der Notiz.
+- **Theme-Isolation** — Folien werden in einem sandboxed iframe gerendert, sodass das aktive Obsidian-Theme niemals in die Vorschau oder die Exporte durchsickert. Ein Deck sieht unabhängig vom Vault-Theme identisch aus.
+- **Vier eingebaute Themes** — `default` (hell), `dark`, `serif`, `high-contrast` — über den `theme:`-Frontmatter-Schlüssel je Deck gewählt; jedes Theme bringt ein passendes Code-Highlighting- und Mermaid-Theme mit.
+- **Fünf Folien-Layouts** — `title`, `two-column`, `image-focus`, `section`, `quote` — je Folie per HTML-Kommentar-Direktive `<!-- layout: two-column -->` gesetzt; `<!-- column -->` trennt Bereiche in Mehrspalten-Layouts.
+- **Markdown-Notizen → Folien** — Folien werden durch eine Zeile, die nur `---` enthält, getrennt; YAML-Frontmatter steuert Theme, Seitenverhältnis und Schrift-Untergrenze je Notiz.
+- **Live-Vorschau** — rendert die aktive Notiz als Folien-Deck in einer Seitenleiste, skaliert auf die Fensterbreite; ein Klick auf Überlauf-Warnungen springt zur Quellzeile.
 - **Fit-or-warn-Lesbarkeit** — jede Folie skaliert den Inhalt automatisch herunter bis zur konfigurierbaren Lesbarkeits-Untergrenze (`minFontPx`); Folien, die noch kleineren Text bräuchten, werden als überlaufend markiert statt unleserlich zu werden.
-- **PDF-Export** — rendert alle Folien in nativer Auflösung und öffnet den System-Druckdialog (im Dialog „Als PDF speichern" wählen).
-- **PNG-Bilderserie-Export** — erfasst jede Folie via html2canvas und schreibt nummerierte PNGs in den konfigurierten Anhang-Ordner des Vaults.
+- **Eigenes CSS** — ein optionales CSS-Snippet in den Einstellungen wird an die Deck-Styles in Vorschau und Exporten angehängt, für Branding oder Anpassungen.
+- **PDF-Export** — rendert alle Folien in nativer Auflösung und öffnet den System-Druckdialog (im Dialog „Als PDF speichern" wählen); theme-isoliert.
+- **PNG-Bilderserie-Export** — erfasst jede Folie via html2canvas und schreibt nummerierte PNGs in einen konfigurierbaren Export-Ordner (Einstellungen, Standard `Slide-Deck-Export/`).
 - **KaTeX-Mathematik** — Inline- und Display-Mathematik (`$…$` / `$$…$$`) gerendert von KaTeX.
-- **Code-Hervorhebung** — Fenced-Code-Blöcke werden von highlight.js eingefärbt.
+- **Code-Hervorhebung** — Fenced-Code-Blöcke werden von highlight.js eingefärbt, theme-spezifisch.
 - **Barrierefreie Callouts** — Obsidian-Callouts `> [!note]`, `[!warning]`, `[!danger]`, `[!tip]`, `[!info]` mit redundanter Kodierung: Rahmenfarbe + geometrische Form + sichtbares Label (nicht nur Farbe; erfüllt WCAG 1.4.1).
-- **Mermaid-Diagramme** — Fenced-Blöcke ` ```mermaid ``` ` werden als SVG gerendert.
+- **Mermaid-Diagramme** — Fenced-Blöcke ` ```mermaid ``` ` werden als SVG gerendert, theme-spezifisch.
 - **EN/DE-Oberfläche** — alle UI-Strings folgen der Obsidian-Spracheinstellung (Englisch kanonisch, Deutsch unterstützt).
+
+## Screenshots
+
+![Barrierefreie Callouts mit Symbol, Form und Label gerendert](https://codeberg.org/jkaindl/slide-deck/raw/branch/main/docs/images/callouts.png)
 
 ## Voraussetzungen
 
 - **Obsidian ≥ 1.8.7**
 - **Nur Desktop** (`isDesktopOnly: true`) — der Export benötigt `window.print()` für PDF und `html2canvas` für PNG; beides erfordert eine Desktop-Umgebung.
 - Der PDF-Export verwendet den **System-Druckdialog** — im Druckerdropdown „Als PDF speichern" wählen. Es wird keine PDF-Datei direkt erzeugt.
-- Der PNG-Export schreibt Dateien in den **konfigurierten Anhang-Ordner** des Vaults (Einstellungen → Dateien & Links → „Standardordner für neue Anhänge"). Der PDF-Export läuft über den System-Druckdialog, wo du den Ort wählst.
+- Der PNG-Export schreibt Dateien in einen **konfigurierbaren Export-Ordner** (Einstellungen → Slide Deck → Export-Ordner, Standard `Slide-Deck-Export/`). Der PDF-Export läuft über den System-Druckdialog, wo du den Ort wählst.
 
 ## Installation
 
 ### Community Plugins (vorgesehener Kanal)
 
-Das Plugin ist bei der Obsidian Community Plugin Registry eingereicht. Nach Aufnahme ist es über **Einstellungen → Community-Plugins → Durchsuchen → "Slide Deck"** verfügbar.
+Geplant: Sobald das Plugin in die Obsidian Community Plugin Registry aufgenommen wurde, ist es über **Einstellungen → Community-Plugins → Durchsuchen → „Slide Deck"** installierbar.
 
 ### Manuelle Installation
 
@@ -68,6 +76,8 @@ cp main.js manifest.json styles.css /pfad/zum/vault/.obsidian/plugins/slide-deck
 | Standard-Preset | `defaultTheme` | `default` | Preset, wenn eine Notiz keine `theme`-Frontmatter-Direktive hat |
 | Mindest-Schriftgröße Body (px) | `minFontPx` | `24` | Lesbarkeits-Untergrenze — Folien, die kleineren Text bräuchten, werden als überlaufend markiert |
 | Bild-Export-Skalierung | `imageScale` | `2` | Pixel-Multiplikator für PNG-Export (`2` = 2×, scharf auf HiDPI) |
+| Eigenes CSS | `customCss` | *(leer)* | CSS, das in Vorschau und Exporten an die Deck-Styles angehängt wird, für Branding oder Anpassungen |
+| Export-Ordner | `exportFolder` | `Slide-Deck-Export` | Vault-Ordner für den PNG-Bilderserie-Export |
 
 ### Frontmatter je Notiz
 
@@ -75,7 +85,7 @@ Ein YAML-Frontmatter-Block am Anfang der Notiz steuert präsentationsweite Einst
 
 ```yaml
 ---
-theme: default
+theme: dark
 aspect: 16:9
 minFontPx: 24
 ---
@@ -83,9 +93,34 @@ minFontPx: 24
 
 | Schlüssel | Werte | Beschreibung |
 |---|---|---|
-| `theme` | `default` | Visuelles Preset (aktuell nur `default`) |
+| `theme` | `default` · `dark` · `serif` · `high-contrast` | Visuelles Preset |
 | `aspect` | `16:9` (Standard), `4:3` | Canvas-Größe: 1280×720 (16:9) oder 960×720 (4:3) |
 | `minFontPx` | jede positive Zahl | Lesbarkeits-Untergrenze je Notiz; überschreibt die Plugin-Einstellung |
+
+### Folien-Layouts
+
+Füge am Anfang einer Folie einen HTML-Kommentar ein, um das Layout zu wählen:
+
+```markdown
+<!-- layout: two-column -->
+
+## Linke Überschrift
+
+- Punkt eins
+- Punkt zwei
+
+<!-- column -->
+
+![Ein Bild rechts](anhang.png)
+```
+
+| Wert | Beschreibung |
+|---|---|
+| `title` | Zentrierte Titelfolie mit großer Überschrift und Untertitel |
+| `two-column` | Zwei gleiche Spalten, getrennt durch `<!-- column -->` |
+| `image-focus` | Großes Bild mit optionaler Bildunterschrift |
+| `section` | Vollflächiger Abschnittstrenner |
+| `quote` | Zentriertes Blockzitat mit Quellenangabe |
 
 ### Folien-Trenner
 
@@ -114,8 +149,9 @@ Hinweis: Das `---` im YAML-Frontmatter-Block ist der Standard-YAML-Begrenzer und
 
 1. **Parsing** — das Markdown der aktiven Notiz wird an `---`-Zeilen in einzelne Folien-Körper aufgeteilt. Ein YAML-Frontmatter-Block (falls vorhanden) setzt Deck-weite Direktiven.
 2. **Fester Canvas** — jede Folie wird auf einen festen Canvas gerendert: 1280×720 px (16:9) oder 960×720 px (4:3). Die Canvas-Größe ändert sich nicht mit der Fenstergröße.
-3. **Fit-or-warn** — der Inhalt jeder Folie wird im DOM gemessen. Überschreitet er den Canvas, wird er gleichmäßig skaliert. Die Skalierung stoppt bei `minFontPx` (Lesbarkeits-Untergrenze). Würde der Inhalt bei dieser Skalierung immer noch überlaufen, wird die Folie in der Vorschau mit einer Warnung markiert statt weiter skaliert.
-4. **Export** — der Export baut dasselbe selbst-enthaltene HTML (inline CSS + aufgelöste Bild-Data-URLs) und sendet es entweder an die Druck-Pipeline (PDF) oder erfasst jeden Folien-Canvas mit html2canvas (PNG). Die Rendering-Treue von KaTeX und Mermaid in html2canvas kann je nach Diagramm-Komplexität variieren; siehe [AGENTS.md](https://codeberg.org/jkaindl/slide-deck/src/branch/main/AGENTS.md) für bekannte Einschränkungen.
+3. **Theme-Isolation** — Folien werden in einem sandboxed iframe gerendert, in den die Styles des gewählten Themes direkt injiziert werden. Das aktive Obsidian-Theme dringt nicht in den iframe ein, sodass das Deck in Vorschau, PDF und PNG unabhängig vom Vault-Theme identisch aussieht.
+4. **Fit-or-warn** — der Inhalt jeder Folie wird im DOM gemessen. Überschreitet er den Canvas, wird er gleichmäßig skaliert. Die Skalierung stoppt bei `minFontPx` (Lesbarkeits-Untergrenze). Würde der Inhalt bei dieser Skalierung immer noch überlaufen, wird die Folie in der Vorschau mit einer Warnung markiert statt weiter skaliert.
+5. **Export** — dasselbe theme-isolierte iframe-Artefakt speist alle Export-Wege: die Druck-Pipeline (PDF) und die folienweise html2canvas-Erfassung (PNG). Die Rendering-Treue von KaTeX und Mermaid in html2canvas kann je nach Diagramm-Komplexität variieren; siehe [AGENTS.md](https://codeberg.org/jkaindl/slide-deck/src/branch/main/AGENTS.md) für bekannte Einschränkungen.
 
 ## Lizenz
 
