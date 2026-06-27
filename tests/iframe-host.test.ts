@@ -82,4 +82,11 @@ describe("createIsolatedDeckIframe", () => {
     handle.dispose();
     expect(f.removed).toContain(f.iframe);
   });
+
+  it("defaults the sandbox to allow-same-origin and accepts an override (allow-modals for print)", async () => {
+    const f = makeFakeOwnerDoc();
+    f.fireFonts();
+    await createIsolatedDeckIframe(f.ownerDoc as any, { css: "X", bodyHtml: "Y", sandbox: "allow-same-origin allow-modals" });
+    expect(f.iframe.sandbox.value).toBe("allow-same-origin allow-modals");
+  });
 });

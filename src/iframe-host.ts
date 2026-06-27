@@ -30,10 +30,13 @@ export interface IsolatedIframe {
  *  zooming to clear the offscreen positioning and show the iframe in place. */
 export async function createIsolatedDeckIframe(
   ownerDoc: Document,
-  opts: { css: string; bodyHtml: string; extraCss?: string; mount?: HTMLElement; width?: number; fontsTimeoutMs?: number },
+  opts: { css: string; bodyHtml: string; extraCss?: string; mount?: HTMLElement; width?: number; fontsTimeoutMs?: number; sandbox?: string },
 ): Promise<IsolatedIframe> {
   const iframe = ownerDoc.createElement("iframe");
-  iframe.setAttribute("sandbox", "allow-same-origin");
+  // Default keeps scripts disabled (allow-same-origin is required so the parent can read
+  // contentDocument for measurement). The PDF path adds "allow-modals" so contentWindow.print()
+  // is permitted — harmless here because without allow-scripts the content can't open modals itself.
+  iframe.setAttribute("sandbox", opts.sandbox ?? "allow-same-origin");
   iframe.style.border = "0";
   iframe.style.position = "fixed";
   iframe.style.left = "-99999px";

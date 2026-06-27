@@ -14,18 +14,21 @@ export async function exportPdf(app: App, doc: Document, win: Window, file: TFil
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
   const { slidesHtml, css } = await buildIsolatedDeck(doc, loaded.deck, loaded.resolveEmbed, customCss);
-  const host = await createIsolatedDeckIframe(doc, { css, extraCss: PRINT_CSS(geo.width, geo.height), bodyHtml: slidesHtml.join(""), width: geo.width });
+  // allow-modals is required for contentWindow.print() on a sandboxed frame (print opens a modal).
+  const host = await createIsolatedDeckIframe(doc, { css, extraCss: PRINT_CSS(geo.width, geo.height), bodyHtml: slidesHtml.join(""), width: geo.width, sandbox: "allow-same-origin allow-modals" });
+  const frameWin = host.iframe.contentWindow;
   let done = false;
   let safetyTimer: ReturnType<typeof win.setTimeout> | undefined;
   const cleanup = () => {
     if (done) return;
     done = true;
     if (safetyTimer !== undefined) win.clearTimeout(safetyTimer);
-    win.removeEventListener("afterprint", cleanup);
+    frameWin?.removeEventListener("afterprint", cleanup);
     host.dispose();
   };
-  win.addEventListener("afterprint", cleanup);
-  win.setTimeout(() => { try { host.iframe.contentWindow?.print(); } catch { new Notice(t("notice.printFailed")); cleanup(); } }, 200);
+  // afterprint fires on the printed window — the iframe's own contentWindow, not the parent.
+  frameWin?.addEventListener("afterprint", cleanup);
+  win.setTimeout(() => { try { frameWin?.print(); } catch { new Notice(t("notice.printFailed")); cleanup(); } }, 200);
   safetyTimer = win.setTimeout(cleanup, 60000);
  } catch (e) { new Notice(t("notice.exportFailed", String(e))); }
 }
