@@ -31,10 +31,15 @@ body { margin: 0; }
 /** Print CSS for the PDF iframe. The iframe document contains ONLY slides, so no
  *  "hide everything else" hack is needed (unlike the old top-document printRootCss). */
 export function PRINT_CSS(w: number, h: number): string {
+  // print-color-adjust:exact forces the browser to render background colours and
+  // images when printing. Without it, the slide's themed background (.sd-slide
+  // { background:var(--sd-bg) }) is dropped unless the user ticks "Background
+  // graphics" in the print dialog (off by default) — so a dark theme prints on a
+  // white page and its light text washes out. exact makes every theme print true.
   return (
     `@page { size: ${w}px ${h}px; margin: 0; }\n` +
-    `html, body { margin: 0; padding: 0; background: #fff; }\n` +
-    `.sd-slide { break-after: page; }\n` +
+    `html, body { margin: 0; padding: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n` +
+    `.sd-slide { break-after: page; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n` +
     `.sd-slide:last-child { break-after: auto; }`
   );
 }

@@ -21,4 +21,11 @@ describe("PRINT_CSS", () => {
     expect(css).toContain("margin: 0");
     expect(css).toContain("break-after: page");
   });
+  it("forces background/colour printing so dark themes don't print on white", () => {
+    const css = PRINT_CSS(1280, 720);
+    // Without print-color-adjust:exact the slide's dark background is dropped when
+    // the browser's "Background graphics" print option is off → white page, washed text.
+    expect(css).toContain("print-color-adjust: exact");
+    expect(css).toContain("-webkit-print-color-adjust: exact");
+  });
 });
