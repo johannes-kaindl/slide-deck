@@ -6,14 +6,21 @@ import { createIsolatedDeckIframe } from "./iframe-host";
 import { PRINT_CSS } from "./chrome-css";
 import { geometryFor } from "./core/geometry";
 import { t } from "./i18n";
-import type { DeckDirectives } from "./core/slide-model";
+import type { DeckDirectives, SlideDeck } from "./core/slide-model";
+import type { ThemeRegistry } from "./core/presets";
 
-export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, defaults?: Partial<DeckDirectives>, customCss = ""): Promise<void> {
+/** Apply an explicit theme override (the toolbar's ephemeral try-on) onto a loaded deck. */
+function withTheme(deck: SlideDeck, themeOverride?: string): SlideDeck {
+  return themeOverride ? { ...deck, directives: { ...deck.directives, theme: themeOverride } } : deck;
+}
+
+export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, registry: ThemeRegistry, defaults?: Partial<DeckDirectives>, customCss = "", themeOverride?: string): Promise<void> {
  try {
   const loaded = await loadDeck(app, file, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
-  const geo = geometryFor(loaded.deck.directives.aspect);
-  const { slidesHtml, css } = await buildIsolatedDeck(doc, loaded.deck, loaded.resolveEmbed, customCss);
+  const deck = withTheme(loaded.deck, themeOverride);
+  const geo = geometryFor(deck.directives.aspect);
+  const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, customCss);
   // allow-modals is required for contentWindow.print() on a sandboxed frame (print opens a modal).
   const host = await createIsolatedDeckIframe(doc, { css, extraCss: PRINT_CSS(geo.width, geo.height), bodyHtml: slidesHtml.join(""), width: geo.width, sandbox: "allow-same-origin allow-modals" });
   const frameWin = host.iframe.contentWindow;
@@ -33,13 +40,14 @@ export async function exportPdf(app: App, doc: Document, win: Window, file: TFil
  } catch (e) { new Notice(t("notice.exportFailed", String(e))); }
 }
 
-export async function exportImages(app: App, doc: Document, win: Window, file: TFile | null, defaults?: Partial<DeckDirectives>, scale = 2, customCss = "", exportFolder = "Slide-Deck-Export"): Promise<void> {
-  void win; // win not used in image path; kept for API symmetry with exportPdf
+export async function exportImages(app: App, doc: Document, win: Window, file: TFile | null, registry: ThemeRegistry, defaults?: Partial<DeckDirectives>, scale = 2, customCss = "", exportFolder = "Slide-Deck-Export", themeOverride?: string): Promise<void> {
+  void win;
  try {
   const loaded = await loadDeck(app, file, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
-  const geo = geometryFor(loaded.deck.directives.aspect);
-  const { slidesHtml, css } = await buildIsolatedDeck(doc, loaded.deck, loaded.resolveEmbed, customCss);
+  const deck = withTheme(loaded.deck, themeOverride);
+  const geo = geometryFor(deck.directives.aspect);
+  const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, customCss);
   const adapter = app.vault.adapter;
   const base = file?.basename ?? "deck";
   const root = exportFolder.replace(/\/+$/, "") || "Slide-Deck-Export";
