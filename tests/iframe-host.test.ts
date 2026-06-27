@@ -49,7 +49,7 @@ describe("createIsolatedDeckIframe", () => {
     // Not resolved until fonts.ready settles:
     let settled = false;
     void p.then(() => (settled = true));
-    await Promise.resolve();
+    await new Promise<void>((r) => setTimeout(r, 0)); // drain the full load→await microtask ladder
     expect(settled).toBe(false);
     f.fireFonts();
     const handle = await p;
