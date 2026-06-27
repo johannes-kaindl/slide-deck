@@ -73,13 +73,15 @@ export class SlideDeckView extends ItemView {
       this.geoWidth = geometryFor(loaded.deck.directives.aspect).width;
       const { slidesHtml, css, warnings } = await buildIsolatedDeck(activeDoc(), loaded.deck, loaded.resolveEmbed, this.plugin.settings.customCss);
       const bodyHtml = `<div class="sd-deck-inner">${slidesHtml.join("")}</div>`;
-      this.previewFrame = await createIsolatedDeckIframe(this.deckHost.ownerDocument, { css, extraCss: PREVIEW_CHROME_CSS, bodyHtml, offscreen: false, width: this.geoWidth });
+      this.previewFrame = await createIsolatedDeckIframe(this.deckHost.ownerDocument, { css, extraCss: PREVIEW_CHROME_CSS, bodyHtml, width: this.geoWidth, mount: this.deckHost });
       this.previewFrame.iframe.addClass("sd-deck-iframe");
       // Size the iframe to its content (parent .sd-deck scrolls; zoom scales the element).
+      // The iframe was created INSIDE deckHost (parked offscreen during load) — we must not
+      // re-parent it, since moving an iframe reloads it and blanks the srcdoc.
       const ch = this.previewFrame.contentDoc.documentElement.scrollHeight;
       this.previewFrame.iframe.style.height = `${ch}px`;
-      this.deckHost.appendChild(this.previewFrame.iframe);
       this.fitToWidth();
+      this.previewFrame.reveal();
       for (const w of warnings) {
         const row = this.warnEl.createDiv({ cls: `sd-warn sd-warn-${w.kind}`, text: `#${w.slideIndex + 1} — ${w.message}` });
         if (w.sourceLine !== undefined) row.addEventListener("click", () => this.jumpTo(w.sourceLine!));

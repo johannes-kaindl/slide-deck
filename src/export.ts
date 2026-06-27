@@ -14,7 +14,7 @@ export async function exportPdf(app: App, doc: Document, win: Window, file: TFil
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
   const { slidesHtml, css } = await buildIsolatedDeck(doc, loaded.deck, loaded.resolveEmbed, customCss);
-  const host = await createIsolatedDeckIframe(doc, { css, extraCss: PRINT_CSS(geo.width, geo.height), bodyHtml: slidesHtml.join(""), offscreen: true, width: geo.width });
+  const host = await createIsolatedDeckIframe(doc, { css, extraCss: PRINT_CSS(geo.width, geo.height), bodyHtml: slidesHtml.join(""), width: geo.width });
   let done = false;
   let safetyTimer: ReturnType<typeof win.setTimeout> | undefined;
   const cleanup = () => {
@@ -43,7 +43,7 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
   const folder = `${root}/${base}`;
   if (!(await adapter.exists(root))) await adapter.mkdir(root);
   if (!(await adapter.exists(folder))) await adapter.mkdir(folder);
-  const host = await createIsolatedDeckIframe(doc, { css, bodyHtml: slidesHtml.join(""), offscreen: true, width: geo.width });
+  const host = await createIsolatedDeckIframe(doc, { css, bodyHtml: slidesHtml.join(""), width: geo.width });
   try {
     const slides = Array.from(host.contentDoc.querySelectorAll<HTMLElement>(".sd-slide"));
     for (let i = 0; i < slides.length; i++) {

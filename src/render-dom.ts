@@ -86,7 +86,7 @@ export async function buildIsolatedDeck(
   const css = deckCss(deck.directives.theme, customCss);
   // Measure inside a theme-ISOLATED off-screen iframe: a parent staging div lives in the
   // themed document and would bake theme metrics — the exact leak this change removes.
-  const host = await createIsolatedDeckIframe(ownerDoc, { css, bodyHtml: "", offscreen: true });
+  const host = await createIsolatedDeckIframe(ownerDoc, { css, bodyHtml: "" });
   try {
     const warnings = await renderDeckToContainer(host.contentDoc, host.contentDoc.body, deck, resolveEmbed);
     const slidesHtml = Array.from(host.contentDoc.querySelectorAll<HTMLElement>(".sd-slide")).map((el) => el.outerHTML);

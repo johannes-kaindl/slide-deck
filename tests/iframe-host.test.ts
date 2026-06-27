@@ -46,7 +46,7 @@ function makeFakeOwnerDoc() {
 describe("createIsolatedDeckIframe", () => {
   it("sets the sandbox, resolves after load + fonts.ready, and disposes", async () => {
     const f = makeFakeOwnerDoc();
-    const p = createIsolatedDeckIframe(f.ownerDoc as any, { css: "X", bodyHtml: "Y", offscreen: true });
+    const p = createIsolatedDeckIframe(f.ownerDoc as any, { css: "X", bodyHtml: "Y" });
     // Not resolved until fonts.ready settles:
     let settled = false;
     void p.then(() => (settled = true));
@@ -55,8 +55,10 @@ describe("createIsolatedDeckIframe", () => {
     f.fireFonts();
     const handle = await p;
     expect(f.iframe.sandbox.value).toBe("allow-same-origin");
-    expect(f.iframe.style.left).toBe("-99999px"); // offscreen
+    expect(f.iframe.style.left).toBe("-99999px"); // parked offscreen during load
     expect(handle.contentDoc).toBe(f.contentDoc);
+    handle.reveal();
+    expect(f.iframe.style.left).toBe(""); // reveal clears the offscreen positioning
     handle.dispose();
     expect(f.removed).toContain(f.iframe);
   });

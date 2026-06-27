@@ -16,31 +16,35 @@ export function isolatedDeckHtml(opts: { css: string; bodyHtml: string; extraCss
 export interface IsolatedIframe {
   iframe: HTMLIFrameElement;
   contentDoc: Document;
+  reveal: () => void;
   dispose: () => void;
 }
 
-/** Create an isolated, same-origin deck iframe and resolve once it is loaded AND fonts
- *  have decoded (KaTeX glyph metrics). `offscreen` parks it at left:-99999px (NOT
- *  display:none, which suppresses layout and breaks scrollWidth measurement). */
+/** Create an isolated, same-origin deck iframe inside `mount` (default: ownerDoc.body) and
+ *  resolve once it is loaded AND fonts have decoded (KaTeX glyph metrics). The iframe is
+ *  parked offscreen (position:fixed; left:-99999px — NOT display:none, which would suppress
+ *  the layout that scrollHeight/scrollWidth measurement needs) so it never flashes during
+ *  load. It is created in its FINAL parent: never re-parent an iframe after load, because
+ *  moving it in the DOM makes the browser reload it and blank its srcdoc. Offscreen
+ *  consumers (export/staging) just dispose; the live preview calls reveal() after sizing +
+ *  zooming to clear the offscreen positioning and show the iframe in place. */
 export async function createIsolatedDeckIframe(
   ownerDoc: Document,
-  opts: { css: string; bodyHtml: string; extraCss?: string; offscreen: boolean; width?: number; fontsTimeoutMs?: number },
+  opts: { css: string; bodyHtml: string; extraCss?: string; mount?: HTMLElement; width?: number; fontsTimeoutMs?: number },
 ): Promise<IsolatedIframe> {
   const iframe = ownerDoc.createElement("iframe");
   iframe.setAttribute("sandbox", "allow-same-origin");
   iframe.style.border = "0";
-  if (opts.offscreen) {
-    iframe.style.position = "fixed";
-    iframe.style.left = "-99999px";
-    iframe.style.top = "0";
-  }
+  iframe.style.position = "fixed";
+  iframe.style.left = "-99999px";
+  iframe.style.top = "0";
   if (opts.width !== undefined) iframe.style.width = `${opts.width}px`;
 
   const loaded = new Promise<void>((resolve) => {
     const onLoad = () => { iframe.removeEventListener("load", onLoad); resolve(); };
     iframe.addEventListener("load", onLoad);
   });
-  ownerDoc.body.appendChild(iframe);
+  (opts.mount ?? ownerDoc.body).appendChild(iframe);
   iframe.srcdoc = isolatedDeckHtml(opts);
   await loaded;
 
@@ -54,5 +58,10 @@ export async function createIsolatedDeckIframe(
   await Promise.race([contentDoc.fonts.ready.then(() => undefined), timeout]);
   if (fontsTimer !== undefined) win.clearTimeout(fontsTimer);
 
-  return { iframe, contentDoc, dispose: () => iframe.remove() };
+  const reveal = () => {
+    iframe.style.position = "";
+    iframe.style.left = "";
+    iframe.style.top = "";
+  };
+  return { iframe, contentDoc, reveal, dispose: () => iframe.remove() };
 }
