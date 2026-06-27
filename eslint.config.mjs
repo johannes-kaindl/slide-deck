@@ -81,4 +81,13 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-member-access": "off",// shell.openPath — no types available
     },
   },
+  {
+    // frontmatter-writer.ts: processFrontMatter callback receives fm as `any` type by design
+    // in the Obsidian API, since frontmatter is dynamic YAML. Setting fm.theme is the intended
+    // usage pattern and is unavoidably unsafe-typed in the Obsidian SDK.
+    files: ["src/frontmatter-writer.ts"],
+    rules: {
+      "@typescript-eslint/no-unsafe-member-access": "off", // fm: any by design in processFrontMatter callback (dynamic YAML)
+    },
+  },
 );
