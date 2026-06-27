@@ -67,4 +67,18 @@ export default tseslint.config(
       "obsidianmd/no-static-styles-assignment": "off",
     },
   },
+  {
+    // theme-source.ts: revealFolder uses a dynamic require("electron") because this is a
+    // desktop-only plugin and electron is marked external by esbuild. The dynamic require
+    // is intentionally lazy (avoids a hard import that would break mobile builds). No types
+    // for electron are available in this project, so the unsafe-* rules must be suppressed
+    // for this one call site. The try/catch ensures graceful fallback if electron is absent.
+    files: ["src/theme-source.ts"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",     // dynamic require("electron") — esbuild external, desktop-only
+      "@typescript-eslint/no-unsafe-assignment": "off",   // electron shell has no @types/electron here
+      "@typescript-eslint/no-unsafe-call": "off",         // shell.openPath — no types available
+      "@typescript-eslint/no-unsafe-member-access": "off",// shell.openPath — no types available
+    },
+  },
 );
