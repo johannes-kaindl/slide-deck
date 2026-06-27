@@ -57,4 +57,14 @@ export default tseslint.config(
       "obsidianmd/no-static-styles-assignment": "off",
     },
   },
+  {
+    // iframe-host.ts: off-screen staging geometry (position:fixed; left:-99999px) and the
+    // iframe reset (border:0) are fixed layout-measurement styles, not theme styles —
+    // same rationale as export.ts / render-dom.ts. (Dynamic width/zoom are set as template
+    // strings elsewhere, which the rule already allows.)
+    files: ["src/iframe-host.ts"],
+    rules: {
+      "obsidianmd/no-static-styles-assignment": "off",
+    },
+  },
 );

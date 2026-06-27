@@ -45,12 +45,14 @@ export async function createIsolatedDeckIframe(
   await loaded;
 
   const contentDoc = iframe.contentDocument!;
+  const win = ownerDoc.defaultView!;
   // Wait for fonts, but never hang on a stuck decode; clear the timer once the race settles
-  // so no stray timeout lingers after fonts.ready wins.
-  let fontsTimer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<void>((r) => { fontsTimer = setTimeout(r, opts.fontsTimeoutMs ?? 3000); });
+  // so no stray timeout lingers after fonts.ready wins. Use the document's own window so
+  // timers are correct when the leaf lives in a popout window.
+  let fontsTimer: ReturnType<typeof win.setTimeout> | undefined;
+  const timeout = new Promise<void>((r) => { fontsTimer = win.setTimeout(r, opts.fontsTimeoutMs ?? 3000); });
   await Promise.race([contentDoc.fonts.ready.then(() => undefined), timeout]);
-  if (fontsTimer !== undefined) clearTimeout(fontsTimer);
+  if (fontsTimer !== undefined) win.clearTimeout(fontsTimer);
 
   return { iframe, contentDoc, dispose: () => iframe.remove() };
 }

@@ -38,6 +38,7 @@ function makeFakeOwnerDoc() {
   const ownerDoc: any = {
     createElement: (tag: string) => (tag === "iframe" ? iframe : { style: {} }),
     body: { appendChild() {} },
+    defaultView: globalThis,
   };
   return { ownerDoc, iframe, contentDoc, removed, fireFonts: () => fontsResolve() };
 }
