@@ -1,7 +1,7 @@
 import { Notice, type App, type TFile } from "obsidian";
 import html2canvas from "html2canvas";
 import { loadDeck } from "./adapter";
-import { buildSelfContainedDeckHtml } from "./render-dom";
+import { buildIsolatedDeck } from "./render-dom";
 import { geometryFor } from "./core/geometry";
 import { t } from "./i18n";
 import type { DeckDirectives } from "./core/slide-model";
@@ -20,7 +20,7 @@ export async function exportPdf(app: App, doc: Document, win: Window, file: TFil
   const loaded = await loadDeck(app, file, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
-  const { slidesHtml, css } = await buildSelfContainedDeckHtml(doc, loaded.deck, loaded.resolveEmbed, customCss);
+  const { slidesHtml, css } = await buildIsolatedDeck(doc, loaded.deck, loaded.resolveEmbed, customCss);
   doc.getElementById("sd-print-root")?.remove();
   doc.getElementById("sd-print-style")?.remove();
   const style = doc.createElement("style"); style.id = "sd-print-style";
@@ -50,7 +50,7 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
   const loaded = await loadDeck(app, file, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
-  const { slidesHtml, css } = await buildSelfContainedDeckHtml(doc, loaded.deck, loaded.resolveEmbed, customCss);
+  const { slidesHtml, css } = await buildIsolatedDeck(doc, loaded.deck, loaded.resolveEmbed, customCss);
   const holder = doc.createElement("div");
   holder.style.position = "fixed"; holder.style.left = "-99999px"; holder.style.top = "0"; // off-screen staging
   const style = doc.createElement("style"); style.textContent = css; holder.appendChild(style);

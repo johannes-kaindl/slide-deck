@@ -6,6 +6,7 @@ import { deckCss } from "./deck-css";
 import { geometryFor } from "./core/geometry";
 import { presetFor } from "./core/presets";
 import type { SlideDeck } from "./core/slide-model";
+import { createIsolatedDeckIframe } from "./iframe-host";
 
 let mermaidSeq = 0;
 
@@ -79,25 +80,18 @@ export async function renderDeckToContainer(
   return warnings;
 }
 
-export async function buildSelfContainedDeckHtml(
-  doc: Document, deck: SlideDeck, resolveEmbed: (r: string) => string | null, customCss = "",
+export async function buildIsolatedDeck(
+  ownerDoc: Document, deck: SlideDeck, resolveEmbed: (r: string) => string | null, customCss = "",
 ): Promise<{ slidesHtml: string[]; css: string; warnings: Warning[] }> {
-  const staging = doc.createElement("div");
-  staging.style.position = "fixed"; staging.style.left = "-99999px"; staging.style.top = "0";
-  // Inject the deck CSS into the staging tree so slides are STYLED while we measure them
-  // (fit/overflow needs the real padded geometry). renderDeckToContainer empties its host,
-  // so render into a child and keep the <style> as a sibling.
-  const style = doc.createElement("style");
-  style.textContent = deckCss(deck.directives.theme, customCss);
-  staging.appendChild(style);
-  const host = doc.createElement("div");
-  staging.appendChild(host);
-  doc.body.appendChild(staging);
+  const css = deckCss(deck.directives.theme, customCss);
+  // Measure inside a theme-ISOLATED off-screen iframe: a parent staging div lives in the
+  // themed document and would bake theme metrics — the exact leak this change removes.
+  const host = await createIsolatedDeckIframe(ownerDoc, { css, bodyHtml: "", offscreen: true });
   try {
-    const warnings = await renderDeckToContainer(doc, host, deck, resolveEmbed);
-    const slidesHtml = Array.from(host.querySelectorAll<HTMLElement>(".sd-slide")).map((el) => el.outerHTML);
-    return { slidesHtml, css: deckCss(deck.directives.theme, customCss), warnings };
+    const warnings = await renderDeckToContainer(host.contentDoc, host.contentDoc.body, deck, resolveEmbed);
+    const slidesHtml = Array.from(host.contentDoc.querySelectorAll<HTMLElement>(".sd-slide")).map((el) => el.outerHTML);
+    return { slidesHtml, css, warnings };
   } finally {
-    staging.remove();
+    host.dispose();
   }
 }
