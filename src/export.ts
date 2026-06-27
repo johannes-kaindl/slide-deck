@@ -2,6 +2,7 @@ import { Notice, type App, type TFile } from "obsidian";
 import html2canvas from "html2canvas";
 import { loadDeck } from "./adapter";
 import { buildIsolatedDeck } from "./render-dom";
+import { createIsolatedDeckIframe } from "./iframe-host";
 import { geometryFor } from "./core/geometry";
 import { t } from "./i18n";
 import type { DeckDirectives } from "./core/slide-model";
@@ -51,30 +52,23 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
   const { slidesHtml, css } = await buildIsolatedDeck(doc, loaded.deck, loaded.resolveEmbed, customCss);
-  const holder = doc.createElement("div");
-  holder.style.position = "fixed"; holder.style.left = "-99999px"; holder.style.top = "0"; // off-screen staging
-  const style = doc.createElement("style"); style.textContent = css; holder.appendChild(style);
-  doc.body.appendChild(holder);
+  const host = await createIsolatedDeckIframe(doc, { css, bodyHtml: slidesHtml.join(""), offscreen: true, width: geo.width });
   const adapter = app.vault.adapter;
   const base = file?.basename ?? "deck";
-  // Export into <exportFolder>/<note name>/, one PNG per slide named NN-<note>.png.
   const root = exportFolder.replace(/\/+$/, "") || "Slide-Deck-Export";
   const folder = `${root}/${base}`;
   if (!(await adapter.exists(root))) await adapter.mkdir(root);
   if (!(await adapter.exists(folder))) await adapter.mkdir(folder);
   try {
-    for (let i = 0; i < slidesHtml.length; i++) {
-      holder.insertAdjacentHTML("beforeend", slidesHtml[i]); // bewusst: selbst-erzeugtes, isoliertes Export-HTML
-      const el = holder.lastElementChild as HTMLElement;
-      const canvas = await html2canvas(el, { width: geo.width, height: geo.height, scale, backgroundColor: "#fff" });
+    const slides = Array.from(host.contentDoc.querySelectorAll<HTMLElement>(".sd-slide"));
+    for (let i = 0; i < slides.length; i++) {
+      const canvas = await html2canvas(slides[i], { width: geo.width, height: geo.height, scale, backgroundColor: "#fff" });
       const b64 = canvas.toDataURL("image/png").split(",")[1];
-      // atob → char codes → Uint8Array → .buffer gives ArrayBuffer for writeBinary
       const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
       const path = `${folder}/${String(i + 1).padStart(2, "0")}-${base}.png`;
       await adapter.writeBinary(path, bytes.buffer);
-      el.remove();
     }
-    new Notice(t("export.done", slidesHtml.length));
-  } finally { holder.remove(); }
+    new Notice(t("export.done", slides.length));
+  } finally { host.dispose(); }
  } catch (e) { new Notice(t("notice.exportFailed", String(e))); }
 }
