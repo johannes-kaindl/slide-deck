@@ -1,8 +1,9 @@
 import { ItemView, WorkspaceLeaf, MarkdownView, setIcon, type TFile } from "obsidian";
 import { loadDeck } from "./adapter";
-import { renderDeckToContainer } from "./render-dom";
+import { buildIsolatedDeck } from "./render-dom";
+import { createIsolatedDeckIframe, type IsolatedIframe } from "./iframe-host";
+import { PREVIEW_CHROME_CSS } from "./chrome-css";
 import { exportPdf, exportImages } from "./export";
-import { deckCss } from "./deck-css";
 import { activeDoc, activeWin } from "./dom-safe";
 import { geometryFor } from "./core/geometry";
 import { t } from "./i18n";
@@ -13,10 +14,10 @@ export const VIEW_TYPE = "slide-deck-preview";
 export class SlideDeckView extends ItemView {
   private warnEl!: HTMLElement;
   private deckEl!: HTMLElement;
-  private deckInner!: HTMLElement;
+  private deckHost!: HTMLElement;        // the in-pane container that holds the iframe
   private messageEl!: HTMLElement;
   private fileLabel!: HTMLElement;
-  private styleEl?: HTMLStyleElement;
+  private previewFrame?: IsolatedIframe; // current deck iframe (disposed on refresh/close)
   private resizeObs?: ResizeObserver;
   private currentFile: TFile | null = null;
   private geoWidth = 1280;
@@ -29,11 +30,10 @@ export class SlideDeckView extends ItemView {
   async onOpen(): Promise<void> {
     this.contentEl.addClass("sd-view");
     this.buildToolbar();
-    this.styleEl = this.contentEl.createEl("style");
     this.warnEl = this.contentEl.createDiv({ cls: "sd-warnings" });
     this.deckEl = this.contentEl.createDiv({ cls: "sd-deck" });
-    this.messageEl = this.deckEl.createDiv({ cls: "sd-message" }); // hint/error — full width, never zoomed
-    this.deckInner = this.deckEl.createDiv({ cls: "sd-deck-inner" });
+    this.messageEl = this.deckEl.createDiv({ cls: "sd-message" });
+    this.deckHost = this.deckEl.createDiv({ cls: "sd-deck-host" });
     this.resizeObs = new ResizeObserver(() => this.fitToWidth());
     this.resizeObs.observe(this.deckEl);
     await this.refresh();
@@ -67,35 +67,45 @@ export class SlideDeckView extends ItemView {
       this.warnEl.empty();
       this.messageEl.empty();
       this.messageEl.removeClass("sd-error");
-      this.deckInner.empty();
+      this.disposeFrame();
       if (!loaded) { this.messageEl.setText(t("preview.hint")); return; }
       if (loaded.deck.slides.length === 0) { this.messageEl.setText(t("preview.empty")); return; }
-      this.styleEl!.textContent = deckCss(loaded.deck.directives.theme, this.plugin.settings.customCss);
       this.geoWidth = geometryFor(loaded.deck.directives.aspect).width;
-      const warnings = await renderDeckToContainer(activeDoc(), this.deckInner, loaded.deck, loaded.resolveEmbed);
+      const { slidesHtml, css, warnings } = await buildIsolatedDeck(activeDoc(), loaded.deck, loaded.resolveEmbed, this.plugin.settings.customCss);
+      const bodyHtml = `<div class="sd-deck-inner">${slidesHtml.join("")}</div>`;
+      this.previewFrame = await createIsolatedDeckIframe(this.deckHost.ownerDocument, { css, extraCss: PREVIEW_CHROME_CSS, bodyHtml, offscreen: false, width: this.geoWidth });
+      this.previewFrame.iframe.addClass("sd-deck-iframe");
+      // Size the iframe to its content (parent .sd-deck scrolls; zoom scales the element).
+      const ch = this.previewFrame.contentDoc.documentElement.scrollHeight;
+      this.previewFrame.iframe.style.height = `${ch}px`;
+      this.deckHost.appendChild(this.previewFrame.iframe);
       this.fitToWidth();
       for (const w of warnings) {
         const row = this.warnEl.createDiv({ cls: `sd-warn sd-warn-${w.kind}`, text: `#${w.slideIndex + 1} — ${w.message}` });
         if (w.sourceLine !== undefined) row.addEventListener("click", () => this.jumpTo(w.sourceLine!));
       }
     } catch (e) {
-      this.deckInner.empty();
+      this.disposeFrame();
       this.messageEl.empty();
       this.messageEl.addClass("sd-error");
       this.messageEl.setText(t("preview.error", String(e)));
     }
   }
 
+  private disposeFrame(): void {
+    this.previewFrame?.dispose();
+    this.previewFrame = undefined;
+  }
+
   /** Scale the native 1280-wide slides down to the preview pane width. Chromium's `zoom`
    *  reflows layout (unlike transform), so the vertical scrollbar stays correct. */
   private fitToWidth(): void {
-    if (!this.deckInner) return;
-    // Only zoom when slides are present — otherwise the hint/error message would be scaled down too.
-    if (!this.deckInner.querySelector(".sd-slide")) { this.deckInner.style.setProperty("zoom", "1"); return; }
+    const frame = this.previewFrame?.iframe;
+    if (!frame) return;
     const avail = this.deckEl.clientWidth - 16;
     if (avail <= 0) return;
     const factor = Math.min(1, avail / this.geoWidth);
-    this.deckInner.style.setProperty("zoom", String(factor));
+    frame.style.setProperty("zoom", String(factor));
   }
 
   /** Reveal the previewed note's editor and move the cursor to the slide's source line. */
@@ -114,9 +124,8 @@ export class SlideDeckView extends ItemView {
 
   async onClose(): Promise<void> {
     this.resizeObs?.disconnect();
-    this.styleEl?.remove();
+    this.disposeFrame();
     this.warnEl?.empty();
     this.messageEl?.empty();
-    this.deckInner?.empty();
   }
 }
