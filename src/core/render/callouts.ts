@@ -1,5 +1,4 @@
 import type MarkdownIt from "markdown-it";
-import Token from "markdown-it/lib/token.mjs";
 
 const RE = /^\[!(\w+)\]([+-]?)\s*(.*)$/;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -32,19 +31,13 @@ export function calloutPlugin(md: MarkdownIt): void {
         `<div class="sd-callout-body">`;
       tokens[i].tag = "";
 
-      // Replace the inline token: remove the [!type] title line, keep body lines
+      // Replace the inline token's content: drop the [!type] title line, keep body lines.
+      // Leave `children` empty — markdown-it's "inline" core rule runs after this one and
+      // parses `content` into `children`. Pre-parsing here too would make that rule APPEND a
+      // second copy to the same array, rendering the body twice.
       const bodyLines = lines.slice(1);
-      const bodyContent = bodyLines.join("\n").trim();
-      tokens[j].content = bodyContent;
-
-      // Re-parse children from remaining body content
-      if (bodyContent) {
-        const innerTokens: Token[] = [];
-        state.md.inline.parse(bodyContent, state.md, state.env, innerTokens);
-        tokens[j].children = innerTokens;
-      } else {
-        tokens[j].children = [];
-      }
+      tokens[j].content = bodyLines.join("\n").trim();
+      tokens[j].children = [];
 
       // Find matching blockquote_close and convert to closing HTML
       let depth = 0;
