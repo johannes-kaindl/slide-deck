@@ -12,3 +12,42 @@ export function isolatedDeckHtml(opts: { css: string; bodyHtml: string; extraCss
     `<body>${bodyHtml}</body></html>`
   );
 }
+
+export interface IsolatedIframe {
+  iframe: HTMLIFrameElement;
+  contentDoc: Document;
+  dispose: () => void;
+}
+
+/** Create an isolated, same-origin deck iframe and resolve once it is loaded AND fonts
+ *  have decoded (KaTeX glyph metrics). `offscreen` parks it at left:-99999px (NOT
+ *  display:none, which suppresses layout and breaks scrollWidth measurement). */
+export async function createIsolatedDeckIframe(
+  ownerDoc: Document,
+  opts: { css: string; bodyHtml: string; extraCss?: string; offscreen: boolean; width?: number; fontsTimeoutMs?: number },
+): Promise<IsolatedIframe> {
+  const iframe = ownerDoc.createElement("iframe");
+  iframe.setAttribute("sandbox", "allow-same-origin");
+  iframe.style.border = "0";
+  if (opts.offscreen) {
+    iframe.style.position = "fixed";
+    iframe.style.left = "-99999px";
+    iframe.style.top = "0";
+  }
+  if (opts.width !== undefined) iframe.style.width = `${opts.width}px`;
+
+  const loaded = new Promise<void>((resolve) => {
+    const onLoad = () => { iframe.removeEventListener("load", onLoad); resolve(); };
+    iframe.addEventListener("load", onLoad);
+  });
+  ownerDoc.body.appendChild(iframe);
+  iframe.srcdoc = isolatedDeckHtml(opts);
+  await loaded;
+
+  const contentDoc = iframe.contentDocument!;
+  // Wait for fonts, but never hang on a stuck decode.
+  const timeout = new Promise<void>((r) => setTimeout(r, opts.fontsTimeoutMs ?? 3000));
+  await Promise.race([contentDoc.fonts.ready.then(() => undefined), timeout]);
+
+  return { iframe, contentDoc, dispose: () => iframe.remove() };
+}
