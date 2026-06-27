@@ -25,7 +25,7 @@ export async function exportPdf(app: App, doc: Document, win: Window, file: TFil
     host.dispose();
   };
   win.addEventListener("afterprint", cleanup);
-  win.setTimeout(() => { try { host.iframe.contentWindow?.print(); } catch { new Notice("Print failed"); cleanup(); } }, 200);
+  win.setTimeout(() => { try { host.iframe.contentWindow?.print(); } catch { new Notice(t("notice.printFailed")); cleanup(); } }, 200);
   safetyTimer = win.setTimeout(cleanup, 60000);
  } catch (e) { new Notice(t("notice.exportFailed", String(e))); }
 }
@@ -37,13 +37,13 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
   const { slidesHtml, css } = await buildIsolatedDeck(doc, loaded.deck, loaded.resolveEmbed, customCss);
-  const host = await createIsolatedDeckIframe(doc, { css, bodyHtml: slidesHtml.join(""), offscreen: true, width: geo.width });
   const adapter = app.vault.adapter;
   const base = file?.basename ?? "deck";
   const root = exportFolder.replace(/\/+$/, "") || "Slide-Deck-Export";
   const folder = `${root}/${base}`;
   if (!(await adapter.exists(root))) await adapter.mkdir(root);
   if (!(await adapter.exists(folder))) await adapter.mkdir(folder);
+  const host = await createIsolatedDeckIframe(doc, { css, bodyHtml: slidesHtml.join(""), offscreen: true, width: geo.width });
   try {
     const slides = Array.from(host.contentDoc.querySelectorAll<HTMLElement>(".sd-slide"));
     for (let i = 0; i < slides.length; i++) {
