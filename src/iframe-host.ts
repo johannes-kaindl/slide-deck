@@ -44,8 +44,13 @@ export async function createIsolatedDeckIframe(
     const onLoad = () => { iframe.removeEventListener("load", onLoad); resolve(); };
     iframe.addEventListener("load", onLoad);
   });
-  (opts.mount ?? ownerDoc.body).appendChild(iframe);
+  // Set srcdoc BEFORE connecting the iframe. Appending an iframe with no srcdoc first loads
+  // about:blank and fires `load` for it, so awaiting that load would capture the empty
+  // about:blank document (scrollHeight 0, no styles) instead of the srcdoc content — a blank
+  // deck. With srcdoc set first, the only load is the srcdoc navigation and contentDocument
+  // is the populated, styled document.
   iframe.srcdoc = isolatedDeckHtml(opts);
+  (opts.mount ?? ownerDoc.body).appendChild(iframe);
   await loaded;
 
   const contentDoc = iframe.contentDocument!;

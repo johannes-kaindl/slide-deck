@@ -16,38 +16,56 @@ describe("isolatedDeckHtml", () => {
   });
 });
 
-// Minimal fake DOM seam: enough of Document/HTMLIFrameElement to drive the lifecycle.
+// Fake DOM seam modelling the real iframe load race: connecting an iframe (appendChild)
+// fires `load` for whatever document is current at that moment — about:blank if srcdoc has
+// not been set yet, the srcdoc document if it has. Setting srcdoc on a connected iframe
+// fires a second load. The helper must end up holding the SRCDOC document, never about:blank.
 function makeFakeOwnerDoc() {
   const removed: any[] = [];
   let fontsResolve!: () => void;
-  const contentDoc: any = {
+  const srcdocDoc: any = {
     open() {}, write() {}, close() {},
     fonts: { ready: new Promise<void>((r) => { fontsResolve = r; }) },
-    body: {}, documentElement: { scrollHeight: 700 },
+    body: { childElementCount: 1 }, documentElement: { scrollHeight: 700 }, URL: "about:srcdoc",
+  };
+  const aboutBlankDoc: any = {
+    fonts: { ready: Promise.resolve() }, // would resolve WITHOUT fireFonts → exposes the bug
+    body: { childElementCount: 0 }, documentElement: { scrollHeight: 0 }, URL: "about:blank",
   };
   const listeners: Record<string, (() => void)[]> = {};
+  let connected = false;
+  let srcdocSet = false;
+  let currentDoc: any = null;
+  // A navigation is an ASYNC macrotask-level event: contentDocument only becomes the target
+  // doc when its load fires (a real navigation, not a microtask), so the helper's await-load
+  // continuation reads whatever document is current at THAT load — about:blank if it loaded
+  // first. Modelling this (setTimeout, not queueMicrotask) is what exposes the race.
+  const navigate = (doc: any) => setTimeout(() => { currentDoc = doc; (listeners["load"] ?? []).slice().forEach((cb) => cb()); }, 0);
   const iframe: any = {
-    style: {}, sandbox: { value: "", add(v: string) { this.value = v; } },
+    style: {}, sandbox: { value: "" },
     setAttribute(_k: string, v: string) { this.sandbox.value = v; },
     addEventListener(t: string, cb: () => void) { (listeners[t] ??= []).push(cb); },
-    removeEventListener() {},
-    set srcdoc(_v: string) { queueMicrotask(() => (listeners["load"] ?? []).forEach((cb) => cb())); },
-    contentDocument: contentDoc, contentWindow: {},
+    removeEventListener(t: string, cb: () => void) { listeners[t] = (listeners[t] ?? []).filter((x) => x !== cb); },
+    set srcdoc(_v: string) { srcdocSet = true; if (connected) navigate(srcdocDoc); },
+    get contentDocument() { return currentDoc; },
+    contentWindow: {},
     remove() { removed.push(iframe); },
   };
+  const connect = () => { connected = true; navigate(srcdocSet ? srcdocDoc : aboutBlankDoc); };
   const ownerDoc: any = {
     createElement: (tag: string) => (tag === "iframe" ? iframe : { style: {} }),
-    body: { appendChild() {} },
+    body: { appendChild: connect },
     defaultView: globalThis,
   };
-  return { ownerDoc, iframe, contentDoc, removed, fireFonts: () => fontsResolve() };
+  return { ownerDoc, iframe, srcdocDoc, aboutBlankDoc, removed, fireFonts: () => fontsResolve() };
 }
 
 describe("createIsolatedDeckIframe", () => {
-  it("sets the sandbox, resolves after load + fonts.ready, and disposes", async () => {
+  it("captures the srcdoc document (not about:blank), resolves after load + fonts.ready, and disposes", async () => {
     const f = makeFakeOwnerDoc();
     const p = createIsolatedDeckIframe(f.ownerDoc as any, { css: "X", bodyHtml: "Y" });
-    // Not resolved until fonts.ready settles:
+    // Not resolved until fonts.ready settles. (If the helper captured about:blank, its
+    // fonts.ready is already resolved and `settled` would flip true here — guarding the race.)
     let settled = false;
     void p.then(() => (settled = true));
     await new Promise<void>((r) => setTimeout(r, 0)); // drain the full load→await microtask ladder
@@ -56,7 +74,9 @@ describe("createIsolatedDeckIframe", () => {
     const handle = await p;
     expect(f.iframe.sandbox.value).toBe("allow-same-origin");
     expect(f.iframe.style.left).toBe("-99999px"); // parked offscreen during load
-    expect(handle.contentDoc).toBe(f.contentDoc);
+    expect(handle.contentDoc).toBe(f.srcdocDoc); // the populated doc, NOT about:blank
+    expect(handle.contentDoc).not.toBe(f.aboutBlankDoc);
+    expect(handle.contentDoc.URL).toBe("about:srcdoc");
     handle.reveal();
     expect(f.iframe.style.left).toBe(""); // reveal clears the offscreen positioning
     handle.dispose();
