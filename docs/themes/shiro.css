@@ -1,0 +1,106 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHIRO — slide-deck theme (light)  ·  「白」 rice paper
+   ───────────────────────────────────────────────────────────────────────────
+   The light twin of kuro. NOTE how little differs: §1 is the same SEVEN tokens
+   with paper/bronze VALUES, and §2 is the same structure with one swapped
+   accent variable. That is the whole point — light vs dark is a value swap, not
+   a second stylesheet. (Full story: docs/themes/THEMING-GUIDE.md.)
+
+   Use it from a note's frontmatter (file name without ".css" = the value):
+
+       ---
+       theme: shiro
+       ---
+
+   CSS layer order (later wins): katex · code-highlight · structure · layouts
+   · THIS FILE · the global "Custom CSS" setting.
+
+   Palette: Kuro Signal Protocol — the Rice-paper inverse + bronze accent.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── §1 · REQUIRED — design tokens ────────────────────────────────────────── */
+.sd-slide {
+  /* Surfaces */
+  --sd-bg: #f7f2e8;          /* slide background — paper-000, "paper ground"    */
+  --sd-code-bg: #efe7d6;     /* code-block background — paper-100 panel         */
+
+  /* Ink */
+  --sd-fg: #1f1a13;          /* body text — paper-ink                           */
+
+  /* The one accent (links, rules, eyebrows) — bronze on paper */
+  --sd-accent: #7d5e26;      /* signal-bronze                                   */
+
+  /* Type — same NAMED faces + system fallback as kuro. No network requests.
+     (See the guide for self-hosting the exact faces offline via data-URI.) */
+  --sd-font:         "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; /* body  */
+  --sd-heading-font: "EB Garamond", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;     /* display */
+
+  /* Legibility floor (px) — the fit-engine warns rather than shrink past this. */
+  --sd-base: 28px;
+}
+
+/* ─── §2 · OPTIONAL — character & fixes ──────────────────────────────────────
+   Identical structure to kuro; only the accent value differs. (Light needs no
+   callout fix — the plugin's built-in callout colours are already light; the
+   block below is optional polish to match the paper palette.) */
+.sd-slide {
+  --shiro-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --shiro-line: rgba(125, 94, 38, 0.24);   /* hairline bronze for rules/borders */
+  --shiro-muted: #5f574a;                   /* paper-muted, secondary text       */
+}
+
+/* Display H1 — serif, italic, tight. */
+.sd-slide h1 {
+  font-style: italic;
+  font-size: 2.4em;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+/* H2 as the mono signal voice — uppercase label/eyebrow in bronze. */
+.sd-slide h2 {
+  font-family: var(--shiro-mono);
+  font-size: 1.1em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--sd-accent);
+}
+
+/* Links: bronze, subtly underlined. */
+.sd-slide a { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--shiro-line); }
+
+/* Blockquote — serif, italic, bronze edge. */
+.sd-slide blockquote {
+  margin: 0.6em 0;
+  padding: 0.2em 0 0.2em 1em;
+  border-left: 3px solid var(--sd-accent);
+  font-family: var(--sd-heading-font);
+  font-style: italic;
+  color: var(--shiro-muted);
+}
+
+/* Horizontal rule — thin bronze line. */
+.sd-slide hr { border: none; border-top: 1px solid var(--shiro-line); margin: 0.8em 0; }
+
+/* List markers in accent. */
+.sd-slide li::marker { color: var(--sd-accent); }
+
+/* Inline code — subtle paper panel + mono. */
+.sd-slide :not(pre) > code {
+  font-family: var(--shiro-mono);
+  font-size: 0.88em;
+  background: var(--sd-code-bg);
+  padding: 0.08em 0.34em;
+  border-radius: 4px;
+}
+
+/* OPTIONAL callout polish (light): nudge the body onto the paper panel so
+   callouts sit in the palette rather than the plugin's default cool grey.
+   Delete this block to keep the plugin defaults. */
+.sd-slide .sd-callout {
+  background: #efe7d6;            /* paper-100 */
+  color: var(--sd-fg);
+  border-radius: 8px;
+}
+.sd-slide .sd-callout-title { color: var(--sd-fg); }
