@@ -59,3 +59,17 @@ export function listThemes(reg: ThemeRegistry): ThemeEntry[] {
   const users = all.filter((e) => e.source === "user").sort((a, b) => a.key.localeCompare(b.key));
   return [...builtins, ...users];
 }
+
+/** Merge built-in entries with user entries. A user key matching a builtin overrides it
+ *  (overridesBuiltin); two user entries with the same key → first wins + a warning. */
+export function mergeThemes(builtins: ThemeEntry[], users: ThemeEntry[]): { map: ThemeRegistry; warnings: string[] } {
+  const map: ThemeRegistry = new Map();
+  const warnings: string[] = [];
+  for (const b of builtins) map.set(b.key, b);
+  for (const u of users) {
+    const existing = map.get(u.key);
+    if (existing && existing.source === "user") { warnings.push(`Duplicate theme "${u.key}" ignored.`); continue; }
+    map.set(u.key, { ...u, overridesBuiltin: existing?.source === "builtin" });
+  }
+  return { map, warnings };
+}

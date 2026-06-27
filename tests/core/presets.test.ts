@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PRESETS, presetFor, presetTokensCss, assembleDeckCss, resolveTheme, listThemes, type ThemeEntry, type ThemeRegistry } from "../../src/core/presets";
+import { PRESETS, presetFor, presetTokensCss, assembleDeckCss, resolveTheme, listThemes, mergeThemes, type ThemeEntry, type ThemeRegistry } from "../../src/core/presets";
 
 describe("presetFor", () => {
   it("ships the four built-in presets", () => {
@@ -54,5 +54,27 @@ describe("listThemes", () => {
   it("lists builtins first, then user themes alphabetically", () => {
     const r = reg(entry("default", "builtin"), entry("zeta", "user"), entry("alpha", "user"));
     expect(listThemes(r).map((e) => e.key)).toEqual(["default", "alpha", "zeta"]);
+  });
+});
+
+describe("mergeThemes", () => {
+  it("keeps all builtins when there are no user themes", () => {
+    const { map, warnings } = mergeThemes([entry("default", "builtin"), entry("dark", "builtin")], []);
+    expect([...map.keys()].sort()).toEqual(["dark", "default"]);
+    expect(warnings).toEqual([]);
+  });
+  it("user theme overrides a builtin of the same key (overridesBuiltin)", () => {
+    const u = { ...entry("dark", "user"), themeCss: ".sd-slide{--sd-bg:#000}" };
+    const { map } = mergeThemes([entry("default", "builtin"), entry("dark", "builtin")], [u]);
+    expect(map.get("dark")!.source).toBe("user");
+    expect(map.get("dark")!.overridesBuiltin).toBe(true);
+    expect(map.get("dark")!.themeCss).toContain("#000");
+  });
+  it("first user wins on user/user key collision and warns", () => {
+    const a = { ...entry("mine", "user"), themeCss: "A" };
+    const b = { ...entry("mine", "user"), themeCss: "B" };
+    const { map, warnings } = mergeThemes([entry("default", "builtin")], [a, b]);
+    expect(map.get("mine")!.themeCss).toBe("A");
+    expect(warnings.some((w) => w.includes("mine"))).toBe(true);
   });
 });
