@@ -15,6 +15,7 @@ export function binaryToDataUrl(buf: ArrayBuffer, ext: string): string {
 export interface LoadedDeck {
   deck: SlideDeck;
   resolveEmbed: (ref: string) => string | null;
+  frontmatterTheme?: string; // the note's OWN theme: key (undefined if it has none) — drives the preview source label
 }
 
 /** Load a specific Markdown file as a deck. Returns null for a missing or non-Markdown file. */
@@ -32,7 +33,9 @@ export async function loadDeck(app: App, file: TFile | null, defaults?: Partial<
       try { cache.set(ref, binaryToDataUrl(await app.vault.readBinary(dest), dest.extension)); } catch { /* missing -> warning later */ }
     }
   }
-  return { deck, resolveEmbed: (ref) => cache.get(ref) ?? null };
+  const fmTheme = app.metadataCache.getFileCache(file)?.frontmatter?.theme as unknown;
+  const frontmatterTheme = typeof fmTheme === "string" ? fmTheme : undefined;
+  return { deck, resolveEmbed: (ref) => cache.get(ref) ?? null, frontmatterTheme };
 }
 
 /** Convenience: load the currently active note as a deck. */
