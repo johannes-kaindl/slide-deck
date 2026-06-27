@@ -105,6 +105,9 @@ export class SlideDeckView extends ItemView {
       this.geoWidth = geometryFor(loaded.deck.directives.aspect).width;
       await this.renderCurrent();
     } catch (e) {
+      this.currentDeck = null;
+      this.resolveEmbedFn = () => null;
+      this.syncThemeControls();
       this.disposeFrame();
       this.messageEl.empty();
       this.messageEl.addClass("sd-error");
