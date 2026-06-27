@@ -34,8 +34,8 @@ if (missing.length > 0) {
 console.log("bundle-smoke OK — render path works in the real esbuild bundle");
 
 import { parseDeck } from "../src/core/slide-model";
-import { deckCss } from "../src/deck-css";
-import { presetFor, PRESETS } from "../src/core/presets";
+import { deckCss, builtinThemeEntries, userThemeEntry } from "../src/deck-css";
+import { presetFor } from "../src/core/presets";
 import { layoutFor } from "../src/core/presets/layouts.css";
 
 // 1) Directive parsing through the real bundle
@@ -45,15 +45,22 @@ if (deck.slides[0].layout !== "two-column" || deck.slides[0].regions.length !== 
   process.exit(3);
 }
 
-// 2) deckCss assembles for EVERY theme (+ custom CSS appended last), through the real .css text-loader
-for (const id of Object.keys(PRESETS)) {
-  const css = deckCss(id, ".sd-slide{ --sd-accent:#e63946 }");
+// 2) deckCss assembles for every builtin theme (+ custom CSS appended last), through the real .css text-loader
+for (const entry of builtinThemeEntries()) {
+  const css = deckCss(entry, ".sd-slide{ --sd-accent:#e63946 }");
   for (const needle of [".katex", ".hljs", ".sd-content", ".sd-layout-two-column", "--sd-base:", "#e63946"]) {
     if (!css.includes(needle)) {
-      console.error(`bundle-smoke FAILED — theme "${id}" CSS missing: ${needle}`);
+      console.error(`bundle-smoke FAILED — theme "${entry.key}" CSS missing: ${needle}`);
       process.exit(4);
     }
   }
+}
+
+// 2b) a user .css theme injects its raw tokens
+const userCss = deckCss(userThemeEntry("ocean", ".sd-slide{ --sd-bg:#012738 }"));
+if (!userCss.includes("--sd-bg:#012738") || !userCss.includes(".katex")) {
+  console.error("bundle-smoke FAILED — user theme CSS not assembled");
+  process.exit(4);
 }
 
 // 3) presetFor/layoutFor totality
