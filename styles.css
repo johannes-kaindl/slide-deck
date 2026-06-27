@@ -10,12 +10,21 @@
 
 .sd-toolbar {
   display: flex;
+  flex-direction: column;
   gap: 6px;
-  flex-wrap: wrap;
   flex: none;
   padding: 8px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
+
+/* sectioned toolbar rows: theme / source / export */
+.sd-tb-row { display: flex; align-items: center; gap: 6px; }
+.sd-tb-theme-row .sd-toolbar-theme { flex: 1; min-width: 0; }
+.sd-tb-source-row { justify-content: space-between; min-height: 24px; }
+.sd-tb-export-row { gap: 8px; }
+.sd-tb-label { font-size: 12px; color: var(--text-muted); flex: none; }
+.sd-tb-iconbtn { padding: 4px 8px; flex: none; }
+.sd-tb-divider { border: none; border-top: 1px solid var(--background-modifier-border); margin: 2px 0; width: 100%; }
 
 .sd-toolbar-btn {
   display: inline-flex;
@@ -36,14 +45,12 @@
 }
 
 .sd-toolbar-file {
-  margin-left: auto;
-  align-self: center;
-  max-width: 45%;
+  max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--text-muted);
-  font-size: 0.85em;
+  font-size: 0.8em;
 }
 
 .sd-warnings {
@@ -95,10 +102,8 @@
 }
 
 /* Theme switcher in the preview toolbar */
-.sd-toolbar-themelabel { font-size: 12px; color: var(--text-muted); margin-left: 4px; }
-.sd-toolbar-theme { max-width: 160px; }
 .sd-toolbar-source { font-size: 12px; color: var(--text-muted); }
-.sd-toolbar-source.sd-source-dirty { color: var(--text-warning, #c98a00); }
+.sd-toolbar-source.sd-source-dirty { color: var(--text-warning, #c98a00); font-weight: 600; }
 .sd-toolbar-set { display: none; }
 .sd-toolbar-set:not([style*="display: none"]) { display: inline-flex; }
 

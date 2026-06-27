@@ -53,26 +53,41 @@ export class SlideDeckView extends ItemView {
 
   private buildToolbar(): void {
     const bar = this.contentEl.createDiv({ cls: "sd-toolbar" });
-    const mkBtn = (icon: string, label: string, onClick: () => void): HTMLButtonElement => {
-      const b = bar.createEl("button", { cls: "sd-toolbar-btn" });
+    const mkBtn = (parent: HTMLElement, icon: string, label: string, onClick: () => void): void => {
+      const b = parent.createEl("button", { cls: "sd-toolbar-btn" });
       setIcon(b.createSpan({ cls: "sd-toolbar-icon" }), icon);
       b.createSpan({ text: label });
       b.addEventListener("click", onClick);
-      return b;
     };
-    mkBtn("refresh-cw", t("toolbar.refresh"), () => void this.refresh());
 
-    // Theme switcher (ephemeral try-on)
-    bar.createSpan({ cls: "sd-toolbar-themelabel", text: t("toolbar.theme") });
-    this.themeSelect = bar.createEl("select", { cls: "sd-toolbar-theme" });
+    // --- Theme section: label + select (primary) + icon-only refresh ---
+    const themeRow = bar.createDiv({ cls: "sd-tb-row sd-tb-theme-row" });
+    themeRow.createSpan({ cls: "sd-tb-label", text: t("toolbar.theme") });
+    this.themeSelect = themeRow.createEl("select", { cls: "sd-toolbar-theme" });
     this.themeSelect.addEventListener("change", () => { this.ephemeralTheme = this.themeSelect.value; void this.rerenderTheme(); });
-    this.sourceLabel = bar.createSpan({ cls: "sd-toolbar-source" });
-    this.setBtn = bar.createEl("button", { cls: "sd-toolbar-btn sd-toolbar-set", text: t("toolbar.setTheme") });
+    const refreshBtn = themeRow.createEl("button", { cls: "sd-toolbar-btn sd-tb-iconbtn" });
+    setIcon(refreshBtn.createSpan({ cls: "sd-toolbar-icon" }), "refresh-cw");
+    refreshBtn.setAttribute("aria-label", t("toolbar.refresh"));
+    refreshBtn.setAttribute("title", t("toolbar.refresh"));
+    refreshBtn.addEventListener("click", () => void this.refresh());
+
+    // --- Source state + commit (Set appears only when dirty) ---
+    const srcRow = bar.createDiv({ cls: "sd-tb-row sd-tb-source-row" });
+    this.sourceLabel = srcRow.createSpan({ cls: "sd-toolbar-source" });
+    this.setBtn = srcRow.createEl("button", { cls: "sd-toolbar-btn sd-toolbar-set" });
+    setIcon(this.setBtn.createSpan({ cls: "sd-toolbar-icon" }), "check");
+    this.setBtn.createSpan({ text: t("toolbar.setTheme") });
     this.setBtn.addEventListener("click", () => void this.commitTheme());
 
+    bar.createEl("hr", { cls: "sd-tb-divider" });
+
+    // --- Export section: label + PDF + images ---
+    const expRow = bar.createDiv({ cls: "sd-tb-row sd-tb-export-row" });
+    expRow.createSpan({ cls: "sd-tb-label", text: t("toolbar.export") });
     const defaults = () => ({ theme: this.effectiveTheme, minFontPx: this.plugin.settings.minFontPx });
-    mkBtn("file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.customCss, this.effectiveTheme));
-    mkBtn("image", t("toolbar.exportImages"), () => void exportImages(this.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.imageScale, this.plugin.settings.customCss, this.plugin.settings.exportFolder, this.effectiveTheme));
+    mkBtn(expRow, "file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.customCss, this.effectiveTheme));
+    mkBtn(expRow, "image", t("toolbar.exportImages"), () => void exportImages(this.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.imageScale, this.plugin.settings.customCss, this.plugin.settings.exportFolder, this.effectiveTheme));
+
     this.fileLabel = bar.createSpan({ cls: "sd-toolbar-file" });
   }
 
@@ -81,7 +96,7 @@ export class SlideDeckView extends ItemView {
     this.themeSelect.empty();
     for (const e of this.plugin.themeStore.getThemes()) this.themeSelect.createEl("option", { value: e.key, text: e.key });
     this.themeSelect.value = this.effectiveTheme;
-    this.sourceLabel.setText(this.dirty ? `● ${t("source.unsaved")}` : (this.persistedTheme ? t("source.frontmatter") : t("source.default")));
+    this.sourceLabel.setText(this.dirty ? `● ${t("source.unsaved")}` : `ⓘ ${this.persistedTheme ? t("source.frontmatter") : t("source.default")}`);
     this.sourceLabel.toggleClass("sd-source-dirty", this.dirty);
     this.setBtn.toggle(this.dirty && !!this.currentFile);
   }
