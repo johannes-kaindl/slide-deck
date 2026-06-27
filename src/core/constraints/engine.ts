@@ -2,7 +2,7 @@
 import type { FitResult } from "../layout/fit";
 import type { Slide, SlideDeck } from "../slide-model";
 import { LAYOUTS, layoutFor } from "../presets/layouts.css";
-import { PRESETS } from "../presets";
+import type { ThemeRegistry } from "../presets";
 
 export type WarningKind =
   | "overflow" | "belowFloor" | "missing-embed" | "mermaid-error" | "low-contrast"
@@ -11,9 +11,9 @@ export type WarningKind =
 export interface Warning { slideIndex: number; kind: WarningKind; message: string; sourceLine?: number; }
 export type SlideWarning = Omit<Warning, "slideIndex">;
 
-export function collectDeckWarnings(deck: SlideDeck): Warning[] {
+export function collectDeckWarnings(deck: SlideDeck, registry: ThemeRegistry): Warning[] {
   const out: Warning[] = [];
-  if (!(deck.directives.theme in PRESETS)) {
+  if (!registry.has(deck.directives.theme)) {
     out.push({ slideIndex: 0, kind: "theme-unknown", message: `Unknown theme "${deck.directives.theme}" — using default.`, sourceLine: 0 });
   }
   return out;

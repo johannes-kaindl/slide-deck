@@ -2,10 +2,21 @@ import { describe, it, expect } from "vitest";
 import { collectWarnings, collectDeckWarnings } from "../../src/core/constraints/engine";
 import { getAuthoringContract, contractToPrompt } from "../../src/core/constraints/contract";
 import type { Slide, SlideDeck } from "../../src/core/slide-model";
+import { type ThemeEntry, type ThemeRegistry } from "../../src/core/presets";
+import { parseDeck } from "../../src/core/slide-model";
 
 const slide = (over: Partial<Slide>): Slide => ({
   index: 2, markdown: "", startLine: 40, layout: "default", regions: [""], directiveWarnings: [], ...over,
 });
+
+function themeReg(...keys: string[]): ThemeRegistry {
+  const m: ThemeRegistry = new Map();
+  for (const k of keys) {
+    const e: ThemeEntry = { key: k, source: k === "default" ? "builtin" : "user", themeCss: "", hljs: "", mermaid: "default", baseFontPx: 28 };
+    m.set(k, e);
+  }
+  return m;
+}
 
 describe("collectWarnings", () => {
   it("tags slideIndex/sourceLine, includes render + overflow warnings", () => {
@@ -31,15 +42,20 @@ describe("collectWarnings", () => {
   });
 });
 
-describe("collectDeckWarnings", () => {
-  it("warns on an unknown deck theme", () => {
-    const deck = { directives: { theme: "drak", aspect: "16:9", minFontPx: 24 }, slides: [] } as unknown as SlideDeck;
-    const w = collectDeckWarnings(deck);
-    expect(w.some((x) => x.kind === "theme-unknown")).toBe(true);
+describe("collectDeckWarnings (registry-aware)", () => {
+  it("does not warn for a builtin theme in the registry", () => {
+    const deck = parseDeck("---\ntheme: default\n---\n# A\n");
+    expect(collectDeckWarnings(deck, themeReg("default", "dark"))).toEqual([]);
   });
-  it("no warning for a known theme", () => {
-    const deck = { directives: { theme: "dark", aspect: "16:9", minFontPx: 24 }, slides: [] } as unknown as SlideDeck;
-    expect(collectDeckWarnings(deck)).toEqual([]);
+  it("does not warn for a user theme present in the registry", () => {
+    const deck = parseDeck("---\ntheme: ocean\n---\n# A\n");
+    expect(collectDeckWarnings(deck, themeReg("default", "ocean"))).toEqual([]);
+  });
+  it("warns theme-unknown for a key absent from the registry", () => {
+    const deck = parseDeck("---\ntheme: ghost\n---\n# A\n");
+    const w = collectDeckWarnings(deck, themeReg("default"));
+    expect(w).toHaveLength(1);
+    expect(w[0].kind).toBe("theme-unknown");
   });
 });
 
