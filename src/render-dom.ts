@@ -4,7 +4,7 @@ import { computeFit } from "./core/layout/fit";
 import { collectWarnings, collectDeckWarnings, type Warning, type SlideWarning } from "./core/constraints/engine";
 import { deckCss } from "./deck-css";
 import { geometryFor } from "./core/geometry";
-import { presetFor } from "./core/presets";
+import { resolveTheme, type ThemeRegistry } from "./core/presets";
 import type { SlideDeck } from "./core/slide-model";
 import { createIsolatedDeckIframe } from "./iframe-host";
 
@@ -27,13 +27,14 @@ async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnin
 
 export async function renderDeckToContainer(
   doc: Document, container: HTMLElement, deck: SlideDeck, resolveEmbed: (r: string) => string | null,
+  registry: ThemeRegistry,
 ): Promise<Warning[]> {
   const geo = geometryFor(deck.directives.aspect);
-  const preset = presetFor(deck.directives.theme);
-  const minScale = deck.directives.minFontPx / preset.baseFontPx;
-  mermaid.initialize({ startOnLoad: false, theme: preset.mermaid });
+  const entry = resolveTheme(registry, deck.directives.theme);
+  const minScale = deck.directives.minFontPx / entry.baseFontPx;
+  mermaid.initialize({ startOnLoad: false, theme: entry.mermaid });
   const warnings: Warning[] = [];
-  warnings.push(...collectDeckWarnings(deck));
+  warnings.push(...collectDeckWarnings(deck, registry));
   container.replaceChildren();
 
   // Pass 1 — build every slide's DOM (native createElement; runs in any realm).
@@ -81,14 +82,13 @@ export async function renderDeckToContainer(
 }
 
 export async function buildIsolatedDeck(
-  ownerDoc: Document, deck: SlideDeck, resolveEmbed: (r: string) => string | null, customCss = "",
+  ownerDoc: Document, deck: SlideDeck, resolveEmbed: (r: string) => string | null,
+  registry: ThemeRegistry, customCss = "",
 ): Promise<{ slidesHtml: string[]; css: string; warnings: Warning[] }> {
-  const css = deckCss(deck.directives.theme, customCss);
-  // Measure inside a theme-ISOLATED off-screen iframe: a parent staging div lives in the
-  // themed document and would bake theme metrics — the exact leak this change removes.
+  const css = deckCss(resolveTheme(registry, deck.directives.theme), customCss);
   const host = await createIsolatedDeckIframe(ownerDoc, { css, bodyHtml: "" });
   try {
-    const warnings = await renderDeckToContainer(host.contentDoc, host.contentDoc.body, deck, resolveEmbed);
+    const warnings = await renderDeckToContainer(host.contentDoc, host.contentDoc.body, deck, resolveEmbed, registry);
     const slidesHtml = Array.from(host.contentDoc.querySelectorAll<HTMLElement>(".sd-slide")).map((el) => el.outerHTML);
     return { slidesHtml, css, warnings };
   } finally {
