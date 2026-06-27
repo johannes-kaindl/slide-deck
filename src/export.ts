@@ -3,18 +3,10 @@ import html2canvas from "html2canvas";
 import { loadDeck } from "./adapter";
 import { buildIsolatedDeck } from "./render-dom";
 import { createIsolatedDeckIframe } from "./iframe-host";
+import { PRINT_CSS } from "./chrome-css";
 import { geometryFor } from "./core/geometry";
 import { t } from "./i18n";
 import type { DeckDirectives } from "./core/slide-model";
-
-function printRootCss(w: number, h: number, preset: string): string {
-  return (
-    `${preset}\n#sd-print-root{display:none;}\n@media print{@page{size:${w}px ${h}px;margin:0;}` +
-    `html,body{margin:0!important;padding:0!important;background:#fff!important;}` +
-    `body>*:not(#sd-print-root){display:none!important;}#sd-print-root{display:block!important;}` +
-    `.sd-slide{break-after:page;}}`
-  );
-}
 
 export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, defaults?: Partial<DeckDirectives>, customCss = ""): Promise<void> {
  try {
@@ -22,25 +14,18 @@ export async function exportPdf(app: App, doc: Document, win: Window, file: TFil
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const geo = geometryFor(loaded.deck.directives.aspect);
   const { slidesHtml, css } = await buildIsolatedDeck(doc, loaded.deck, loaded.resolveEmbed, customCss);
-  doc.getElementById("sd-print-root")?.remove();
-  doc.getElementById("sd-print-style")?.remove();
-  const style = doc.createElement("style"); style.id = "sd-print-style";
-  style.textContent = printRootCss(geo.width, geo.height, css); doc.head.appendChild(style);
-  const root = doc.createElement("div"); root.id = "sd-print-root";
-  root.innerHTML = slidesHtml.join(""); // bewusst: selbst-erzeugtes, isoliertes Export-HTML
-  doc.body.appendChild(root);
+  const host = await createIsolatedDeckIframe(doc, { css, extraCss: PRINT_CSS(geo.width, geo.height), bodyHtml: slidesHtml.join(""), offscreen: true, width: geo.width });
   let done = false;
   let safetyTimer: ReturnType<typeof win.setTimeout> | undefined;
   const cleanup = () => {
     if (done) return;
     done = true;
     if (safetyTimer !== undefined) win.clearTimeout(safetyTimer);
-    root.remove();
-    style.remove();
     win.removeEventListener("afterprint", cleanup);
+    host.dispose();
   };
   win.addEventListener("afterprint", cleanup);
-  win.setTimeout(() => { try { win.print(); } catch { new Notice("Print failed"); cleanup(); } }, 200);
+  win.setTimeout(() => { try { host.iframe.contentWindow?.print(); } catch { new Notice("Print failed"); cleanup(); } }, 200);
   safetyTimer = win.setTimeout(cleanup, 60000);
  } catch (e) { new Notice(t("notice.exportFailed", String(e))); }
 }
