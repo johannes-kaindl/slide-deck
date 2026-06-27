@@ -91,17 +91,12 @@ export default tseslint.config(
     },
   },
   {
-    // settings.ts: themeStore, refreshThemes, applyFolderHide are added to SlideDeckPlugin in
-    // Task 16 (main.ts). Until then, TypeScript cannot resolve the types, causing all
-    // @typescript-eslint/no-unsafe-* rules to fire for every access through themeStore.
-    // no-deprecated is suppressed because this.display() calls our own override, which shadows
-    // the deprecated SettingTab.display() — the override itself is the canonical implementation.
+    // settings.ts: no-deprecated is suppressed because this.display() calls our own override,
+    // which shadows the deprecated SettingTab.display() — the override itself is the canonical
+    // implementation. (The interim no-unsafe-* suppressions were removed once Task 16 typed
+    // themeStore on SlideDeckPlugin; theme-store access is now fully type-resolved.)
     files: ["src/settings.ts"],
     rules: {
-      "@typescript-eslint/no-unsafe-assignment": "off",   // themeStore members unresolved until Task 16 adds them to main.ts
-      "@typescript-eslint/no-unsafe-call": "off",         // themeStore.getThemes/getMap/resolve — same reason
-      "@typescript-eslint/no-unsafe-member-access": "off",// themeStore.* / ThemeEntry fields — same reason
-      "@typescript-eslint/no-unsafe-argument": "off",     // ThemeEntry.key/themeCss passed to typed APIs — same reason
       "@typescript-eslint/no-deprecated": "off",          // this.display() shadows deprecated SettingTab.display(); our override is the impl
     },
   },
