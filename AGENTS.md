@@ -57,7 +57,7 @@ src/core/          Reiner Kern — kein obsidian-Import, kein DOM. Vollständig 
                      parseBaseFontPx(css) → baseFontPx-Token aus CSS.
   folder-hide.ts     normalizeFolder(raw) — kanonische Pfadform; buildHideCss(folder, hide) —
                      CSS, das einen Vault-Ordner im Datei-Explorer ausblendet (vault-rag-Muster,
-                     data-path-Attribut, document.adoptedStyleSheets in main.applyFolderHide()).
+                     data-path-Attribut, activeDocument.adoptedStyleSheets in main.applyFolderHide()).
   presets/
     index.ts        Preset-Typ + PRESETS-Registry; presetFor() (total); presetTokensCss();
                     assembleDeckCss().
@@ -169,7 +169,7 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
   `settings.themesFolder` (`scanThemeFiles`). Frontmatter `theme:` = SoT der Notiz (Settings-`defaultTheme`
   nur für Notizen ohne `theme:`). Das Preview-Dropdown schaltet ephemer; „Setzen" schreibt via
   `setNoteTheme` (`processFrontMatter`). User-Themes erben Code-/Mermaid-Theme des `default`-Built-ins.
-- **Themes-Ordner ausblenden:** `buildHideCss` (vault-rag-Muster) via `document.adoptedStyleSheets`
+- **Themes-Ordner ausblenden:** `buildHideCss` (vault-rag-Muster) via `activeDocument.adoptedStyleSheets`
   in `main.applyFolderHide()`. `data-path` ist internes Obsidian-Markup — bricht es, taucht der Ordner
   nur kosmetisch wieder auf.
 - **iframe-Isolation:** Folien rendern in einem `sandbox="allow-same-origin"`-iframe — das
