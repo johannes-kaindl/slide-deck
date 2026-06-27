@@ -65,13 +65,28 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
                      SettingTab, View-Registration, Sprach-Detektion.
   adapter.ts         loadActiveDeck(app, defaults) — liest die aktive Notiz, löst Embeds
                      zu data-URLs auf (resolveEmbed-Closure), gibt SlideDeck zurück.
-  render-dom.ts      buildSelfContainedDeckHtml(doc, deck, resolveEmbed) — rendert alle
-                     Folien im DOM, misst, fittet, sammelt Warnings, liefert slidesHtml[]+css.
-                     renderMermaidSlots() — Mermaid SVG-Rendering (async, DOM-abhängig).
+  iframe-host.ts     Isoliertes Deck-iframe: isolatedDeckHtml({css,bodyHtml,extraCss?})
+                     (reiner HTML-String-Assembler) + createIsolatedDeckIframe(ownerDoc, opts)
+                     (async Lifecycle: erzeugt sandbox="allow-same-origin"-iframe, injiziert via
+                     srcdoc, löst nach load + contentDoc.fonts.ready auf; nutzt
+                     ownerDoc.defaultView für Popout-sichere Timer). Gibt {iframe,contentDoc,dispose}.
+  chrome-css.ts      PREVIEW_CHROME_CSS (Card-Schatten + Overflow-Stripes + Deck-Inner-Stacking,
+                     theme-freie Hardcoded-Farben) und PRINT_CSS(w,h) (@page + Seitenumbruch
+                     pro Folie). Beide werden in Iframes injiziert — nie ins themed Eltern-Dokument.
+  render-dom.ts      buildIsolatedDeck(ownerDoc, deck, resolveEmbed, customCss?) — rendert und
+                     misst im Off-Screen-Staging-iframe (theme-isoliert), serialisiert
+                     {slidesHtml, css, warnings}. renderDeckToContainer() ist realm-sicher
+                     (ausschließlich native DOM: doc.createElement/classList/replaceChildren, keine
+                     Obsidian-Augmentierungen) und zweiphasig (alle Folien bauen → fonts.ready →
+                     alle messen). renderMermaidSlots() — Mermaid SVG-Rendering (async, DOM-abhängig).
   preview-view.ts    SlideDeckView (ItemView, rechte Seitenleiste) — Live-Vorschau mit
-                     Warn-Badges und Source-Jump-Link.
-  export.ts          exportPdf() (window.print-Pipeline) + exportImages() (html2canvas → PNG
-                     in den konfigurierten Anhang-Ordner). Beide bauen dasselbe self-contained HTML.
+                     Warn-Badges und Source-Jump-Link. Deck wird in einem persistenten
+                     isolierten iframe dargestellt; Preview-Zoom wirkt auf das <iframe>-Element;
+                     PREVIEW_CHROME_CSS wird in den iframe injiziert.
+  export.ts          exportPdf() — druckt einen isolierten iframe via contentWindow.print()
+                     (der alte printRootCss-„Alles-ausblenden"-Hack entfällt).
+                     exportImages() — PNG-Capture via html2canvas innerhalb eines isolierten iframes.
+                     Beide konsumieren buildIsolatedDeck() für ein einheitliches Artefakt.
   dom-safe.ts        Popout-sichere DOM-Helfer (activeDocument, activeWindow).
   i18n.ts            t(key, ...args) · pickLang · setLang/getLang. EN kanonisch, DE übersetzt.
   settings.ts        SlideDeckSettings (defaultTheme, minFontPx, imageScale) + SettingTab.
@@ -79,6 +94,11 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
 
 **Invariante:** `src/core/**` darf niemals `obsidian` importieren. Ein purity-Check-Skript
 (`scripts/check-core-purity.mjs`) erzwingt das als Teil von `npm test`.
+
+**Realm-Invariante:** `src/render-dom.ts` darf keine Obsidian-DOM-Augmentierungen verwenden
+(`createDiv`/`createEl`/`createSpan`/`empty`/`addClass`/`removeClass`/`setText`/`setAttr`).
+Ein Gate-Skript (`scripts/check-render-realm.mjs`) erzwingt das als zweiter Schritt von
+`npm test` (nach check-core-purity.mjs).
 
 **md2pdf-Seed:** Die Architektur ist bewusst so aufgebaut, dass `src/core/**` + ein
 CLI-Adapter in einem zukünftigen `md2pdf`-Tool wiederverwendet werden kann, ohne die
@@ -108,11 +128,17 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
 ## Conventions
 
 - **TS strict + `noImplicitAny`** — keine `any`-Casts für neue Typen.
-- **Tests:** vitest + happy-dom; Obsidian-Mock unter `tests/__mocks__/obsidian.ts`. Nach jeder
-  Änderung müssen alle vitest-Tests grün bleiben. `npx tsc --noEmit` separat laufen
+- **Tests:** vitest läuft mit `environment: "node"` — **kein DOM, kein happy-dom**.
+  Obsidian-Mock unter `tests/__mocks__/obsidian.ts` für reine Logik-Tests.
+  DOM/iframe/Layout-Verhalten wird durch `bundle-smoke.mjs` + manuellen Pallas-Smoke abgedeckt.
+  Nach jeder Änderung müssen alle vitest-Tests grün bleiben. `npx tsc --noEmit` separat laufen
   (vitest ≠ tsc).
 - **Core-Purity:** `scripts/check-core-purity.mjs` läuft als erster Schritt von `npm test` —
   schlägt fehl, wenn `src/core/**` einen `obsidian`-Import enthält.
+- **Realm-Safety:** `scripts/check-render-realm.mjs` läuft als zweiter Schritt von `npm test` —
+  schlägt fehl, wenn `src/render-dom.ts` eine Obsidian-DOM-Augmentierung
+  (`createDiv`/`addClass`/etc.) verwendet. Render-DOM muss gegen jedes Realm (inkl. iframe-
+  contentDocument) lauffähig sein.
 - **Commits:** Conventional Commits, deutsche Beschreibung erlaubt. **Nur berührte Dateien
   stagen.** Trailer bei substanziellem AI-Beitrag:
   `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`.
@@ -124,6 +150,13 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
 ## Gotchas
 
 - **Themes/Tokens-Invariante:** Themes setzen nur Tokens; Struktur/Layout-CSS ist theme-unantastbar (fit-kritisch). `--sd-base` lebt einzig in `presetTokensCss`.
+- **iframe-Isolation:** Folien rendern in einem `sandbox="allow-same-origin"`-iframe — das
+  aktive Obsidian-Theme erreicht den iframe-Inhalt nicht. Obsidians `createDiv`/`addClass`/etc.
+  sind Prototype-Patches des Eltern-Realms und werfen auf iframe-Knoten. Deshalb ist der gesamte
+  iframe-Pfad (renderDeckToContainer, buildIsolatedDeck) ausschließlich native DOM + String-
+  Injektion. Messung wartet auf `load` + `contentDoc.fonts.ready` (KaTeX-Glyph-Metriken).
+  Off-Screen-Staging: `position: fixed; left: -99999px` statt `display: none` —
+  `display:none` unterdrückt das Layout und bricht scrollWidth-Messungen.
 - **html2canvas-Fidelität:** Der PNG-Export nutzt html2canvas 1.x. KaTeX-Mathematik und
   Mermaid-SVGs werden grundsätzlich erfasst, aber komplexe SVG-Funktionen (Gradients,
   Clipping Paths, bestimmte Fonts) können im Export abweichen. Bei Bedarf muss die

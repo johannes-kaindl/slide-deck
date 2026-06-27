@@ -1,6 +1,6 @@
 # iframe-Isolation — Design Spec
 
-- **Status:** Draft (User-approved Design; autonome Umsetzung freigegeben)
+- **Status:** Implemented (feat/iframe-isolation) — pending merge to main
 - **Datum:** 2026-06-27
 - **Profil:** `ts-node` · `obsidian-plugin` (Leitkonvention `_docs/CONVENTIONS.md`)
 - **Branch:** `feat/iframe-isolation`
