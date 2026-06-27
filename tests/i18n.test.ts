@@ -7,3 +7,16 @@ describe("i18n", () => {
   it("interpolates positional args", () => { expect(t("export.done", 3)).toContain("3"); });
   it("falls back en -> key", () => { expect(t("does.not.exist")).toBe("does.not.exist"); });
 });
+
+describe("theme-handling strings", () => {
+  it("has EN + DE for the new keys", () => {
+    const keys = ["toolbar.theme", "toolbar.setTheme", "source.frontmatter", "source.default", "source.unsaved",
+      "settings.themesFolder.name", "settings.openFolder.button", "settings.exportTheme.button",
+      "settings.availableThemes.name", "settings.hideFolder.name"];
+    setLang("en");
+    for (const k of keys) expect(t(k), `EN ${k}`).not.toBe(k);
+    setLang("de");
+    for (const k of keys) expect(t(k), `DE ${k}`).not.toBe(k);
+    setLang("en");
+  });
+});
