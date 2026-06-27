@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] — 2026-06-27
+
 First release.
 
 ### Added
