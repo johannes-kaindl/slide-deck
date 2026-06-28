@@ -1,5 +1,5 @@
 import { Notice, type App, type TFile } from "obsidian";
-import html2canvas from "html2canvas";
+import { domToCanvas } from "modern-screenshot";
 import { loadDeck } from "./adapter";
 import { buildIsolatedDeck } from "./render-dom";
 import { createIsolatedDeckIframe } from "./iframe-host";
@@ -58,7 +58,7 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
   try {
     const slides = Array.from(host.contentDoc.querySelectorAll<HTMLElement>(".sd-slide"));
     for (let i = 0; i < slides.length; i++) {
-      const canvas = await html2canvas(slides[i], { width: geo.width, height: geo.height, scale, backgroundColor: "#fff" });
+      const canvas = await domToCanvas(slides[i], { width: geo.width, height: geo.height, scale, backgroundColor: "#fff" });
       const b64 = canvas.toDataURL("image/png").split(",")[1];
       const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
       const path = `${folder}/${String(i + 1).padStart(2, "0")}-${base}.png`;
