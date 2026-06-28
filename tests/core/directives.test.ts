@@ -77,4 +77,35 @@ describe("parseDirectives", () => {
     const r = parseDirectives("<!-- column foo -->\n# T");
     expect(r.warnings).toEqual([{ kind: "directive-malformed", message: expect.any(String) }]);
   });
+
+  it("parses a structural template plus modifiers", () => {
+    const r = parseDirectives("<!-- layout: two-column compact -->\n## A");
+    expect(r.layout).toBe("two-column");
+    expect(r.layoutExplicit).toBe(true);
+    expect(r.modifiers).toEqual(["compact"]);
+  });
+
+  it("collects multiple modifiers, order preserved, no dupes", () => {
+    const r = parseDirectives("<!-- layout: default code-heavy compact code-heavy -->\nx");
+    expect(r.layout).toBe("default");
+    expect(r.modifiers).toEqual(["code-heavy", "compact"]);
+  });
+
+  it("modifier-only directive: layout stays inferable, modifier still applies", () => {
+    const r = parseDirectives("<!-- layout: compact -->\n# T\n\nbody");
+    expect(r.layout).toBe("default");      // placeholder; slide-model will infer
+    expect(r.layoutExplicit).toBe(false);
+    expect(r.modifiers).toEqual(["compact"]);
+  });
+
+  it("no directive → empty modifiers", () => {
+    expect(parseDirectives("# Hi").modifiers).toEqual([]);
+  });
+
+  it("warns on an extra unrecognized structural token but keeps the first", () => {
+    const r = parseDirectives("<!-- layout: title bogus -->\n# T");
+    expect(r.layout).toBe("title");
+    expect(r.modifiers).toEqual([]);
+    expect(r.warnings).toEqual([{ kind: "directive-malformed", message: expect.any(String) }]);
+  });
 });
