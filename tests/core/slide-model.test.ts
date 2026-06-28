@@ -78,3 +78,27 @@ describe("parseDeck — directives & fences", () => {
     expect(deck.slides[0].layout).toBe("default");
   });
 });
+
+describe("parseDeck — modifiers & slots", () => {
+  it("carries per-slide modifiers onto the Slide", () => {
+    const deck = parseDeck("<!-- layout: two-column compact -->\n## L\n<!-- column -->\n## R");
+    expect(deck.slides[0].layout).toBe("two-column");
+    expect(deck.slides[0].modifiers).toEqual(["compact"]);
+  });
+
+  it("defaults modifiers to an empty array", () => {
+    expect(parseDeck("# A").slides[0].modifiers).toEqual([]);
+  });
+
+  it("reads header/footer/paginate from frontmatter (quotes stripped)", () => {
+    const src = '---\nheader: "ACME"\nfooter: \'Q3 Review\'\npaginate: true\n---\n# A\n';
+    const d = parseDeck(src).directives;
+    expect(d.header).toBe("ACME");
+    expect(d.footer).toBe("Q3 Review");
+    expect(d.paginate).toBe(true);
+  });
+
+  it("omits slot keys when absent (directives stay minimal)", () => {
+    expect(parseDeck("# A").directives).toEqual({ theme: "default", aspect: "16:9", minFontPx: 24 });
+  });
+});

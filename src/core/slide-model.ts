@@ -2,10 +2,10 @@ import { parseDirectives, type DirectiveWarning } from "./directives";
 import { inferLayout } from "./infer-layout";
 
 export type Aspect = "16:9" | "4:3";
-export interface DeckDirectives { theme: string; aspect: Aspect; minFontPx: number; }
+export interface DeckDirectives { theme: string; aspect: Aspect; minFontPx: number; header?: string; footer?: string; paginate?: boolean; }
 export interface Slide {
   index: number; markdown: string; speakerNotes?: string; startLine: number;
-  layout: string; regions: string[]; directiveWarnings: DirectiveWarning[];
+  layout: string; modifiers: string[]; regions: string[]; directiveWarnings: DirectiveWarning[];
 }
 export interface SlideDeck { directives: DeckDirectives; slides: Slide[]; }
 
@@ -23,6 +23,9 @@ function parseFrontmatter(lines: string[], base: DeckDirectives): { directives: 
     if (key === "theme") d.theme = val;
     else if (key === "aspect" && (val === "16:9" || val === "4:3")) d.aspect = val;
     else if (key === "minFontPx") { const n = Number(val); if (Number.isFinite(n) && n > 0) d.minFontPx = n; }
+    else if (key === "header") d.header = val.replace(/^["']|["']$/g, "");
+    else if (key === "footer") d.footer = val.replace(/^["']|["']$/g, "");
+    else if (key === "paginate") d.paginate = /^(true|yes|on)$/i.test(val);
   }
   return { directives: d, bodyStart: end + 1, hasFrontmatter: true };
 }
@@ -45,7 +48,7 @@ export function parseDeck(source: string, defaults?: Partial<DeckDirectives>): S
       const layout = d.layoutExplicit ? d.layout : inferLayout(d.regions);
       slides.push({
         index: slides.length, markdown: d.regions.join("\n"), startLine: slideStart,
-        layout, regions: d.regions, directiveWarnings: d.warnings,
+        layout, modifiers: d.modifiers, regions: d.regions, directiveWarnings: d.warnings,
       });
     }
   };
