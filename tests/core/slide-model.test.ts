@@ -54,13 +54,27 @@ describe("parseDeck — directives & fences", () => {
   it("retains a directive-only slide (section divider)", () => {
     const src = "# A\n\n---\n\n<!-- layout: section -->\n\n---\n\n# B\n";
     const deck = parseDeck(src);
-    expect(deck.slides.map((s) => s.layout)).toEqual(["default", "section", "default"]);
+    // "# A" and "# B" are lone headings → inferred "section"; middle is explicit section.
+    expect(deck.slides.map((s) => s.layout)).toEqual(["section", "section", "section"]);
     expect(deck.slides[1].regions).toEqual([""]);
   });
 
-  it("defaults layout/regions for plain slides", () => {
+  it("infers section for a lone-heading slide; regions unchanged", () => {
     const deck = parseDeck("# A");
-    expect(deck.slides[0].layout).toBe("default");
+    expect(deck.slides[0].layout).toBe("section");
     expect(deck.slides[0].regions).toEqual(["# A"]);
+  });
+
+  it("infers quote for a lone-blockquote slide", () => {
+    const deck = parseDeck("> a single pull quote");
+    expect(deck.slides[0].layout).toBe("quote");
+  });
+  it("an explicit layout directive overrides inference", () => {
+    const deck = parseDeck("<!-- layout: default -->\n# A");
+    expect(deck.slides[0].layout).toBe("default");
+  });
+  it("does not infer for multi-line content", () => {
+    const deck = parseDeck("# A\n\n- one\n- two");
+    expect(deck.slides[0].layout).toBe("default");
   });
 });

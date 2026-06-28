@@ -1,4 +1,5 @@
 import { parseDirectives, type DirectiveWarning } from "./directives";
+import { inferLayout } from "./infer-layout";
 
 export type Aspect = "16:9" | "4:3";
 export interface DeckDirectives { theme: string; aspect: Aspect; minFontPx: number; }
@@ -41,9 +42,10 @@ export function parseDeck(source: string, defaults?: Partial<DeckDirectives>): S
     const md = buf.join("\n");
     if (md.trim().length > 0 && slideStart !== null) {
       const d = parseDirectives(md);
+      const layout = d.layoutExplicit ? d.layout : inferLayout(d.regions);
       slides.push({
         index: slides.length, markdown: d.regions.join("\n"), startLine: slideStart,
-        layout: d.layout, regions: d.regions, directiveWarnings: d.warnings,
+        layout, regions: d.regions, directiveWarnings: d.warnings,
       });
     }
   };

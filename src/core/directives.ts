@@ -1,6 +1,6 @@
 // src/core/directives.ts
 export interface DirectiveWarning { kind: string; message: string; }
-export interface DirectiveResult { layout: string; regions: string[]; warnings: DirectiveWarning[]; }
+export interface DirectiveResult { layout: string; layoutExplicit: boolean; regions: string[]; warnings: DirectiveWarning[]; }
 
 const FENCE_RE = /^\s*(```|~~~)/;
 const LAYOUT_RE = /^<!--\s*layout\s*:\s*([A-Za-z-]+)\s*-->$/i;
@@ -51,5 +51,5 @@ export function parseDirectives(slideMarkdown: string): DirectiveResult {
 
   // Trim each region's leading/trailing blank lines (left by author formatting around directives).
   const regionStrings = regions.map((r) => r.join("\n").replace(/^\n+/, "").replace(/\n+$/, ""));
-  return { layout, regions: regionStrings, warnings };
+  return { layout, layoutExplicit: layoutSet, regions: regionStrings, warnings };
 }
