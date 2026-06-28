@@ -6,8 +6,19 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- PNG export no longer collapses inter-word spaces (switched the rasterizer from
+  html2canvas to `modern-screenshot`).
+- PDF export now prints the theme background (`print-color-adjust: exact` in `PRINT_CSS`) —
+  dark themes no longer print on white.
+
 ### Added
 
+- **Mobile support** (`isDesktopOnly: false`) — the plugin now runs on iOS/iPadOS. All
+  desktop-only APIs are platform-guarded. On mobile, PDF export writes a self-contained HTML
+  file into the export folder and opens it via the OS (`openWithDefaultApp`); the user then
+  prints or shares to PDF from there.
 - **Live theme switcher** — the preview toolbar now has a theme dropdown for ephemeral try-on, a
   source label (`from frontmatter` / `from default` / `● unsaved`) that disambiguates where the
   active theme comes from, and a **Set** button that writes `theme:` into the note's frontmatter

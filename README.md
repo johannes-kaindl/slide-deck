@@ -4,7 +4,7 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/LICENSE)
 [![Release](https://img.shields.io/badge/Release-0.1.0-green.svg)](https://codeberg.org/jkaindl/slide-deck/releases)
-[![Platform: Desktop only](https://img.shields.io/badge/Platform-Desktop%20only-lightgrey.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/manifest.json)
+[![Platform: Desktop + Mobile](https://img.shields.io/badge/Platform-Desktop%20%2B%20Mobile-blue.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/manifest.json)
 
 ![Slide Deck — a two-column slide with bullet list, inline math, and an image](https://codeberg.org/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png)
 
@@ -22,8 +22,9 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 - **Live preview pane** — renders the current note as a slide deck in a side panel, scaled to pane width, with a click-to-source link on overflow warnings.
 - **Fit-or-warn readability** — each slide auto-scales content down to a configurable legibility floor (`minFontPx`); slides that would need smaller text are flagged as overflowing instead of becoming unreadable.
 - **Custom CSS** — an optional CSS snippet in Settings is appended to the deck styles in both preview and exports, for branding or tweaks.
-- **PDF export** — renders all slides at their native resolution and triggers the system print dialog (choose "Save as PDF" in the print dialog); theme-isolated.
-- **PNG image-series export** — captures each slide via html2canvas and writes numbered PNGs into a configurable export folder (Settings, default `Slide-Deck-Export/`).
+- **PDF export** — renders all slides at their native resolution; on desktop, triggers the system print dialog (choose "Save as PDF"); on mobile (iOS/iPadOS), writes a self-contained HTML file and opens it via the OS so you can print or share to PDF from there.
+- **PNG image-series export** — captures each slide via `modern-screenshot` and writes numbered PNGs into a configurable export folder (Settings, default `Slide-Deck-Export/`); typographically accurate inter-word spacing.
+- **Mobile support** — runs on iOS/iPadOS (Obsidian Mobile); all desktop-only APIs are platform-guarded.
 - **KaTeX math** — inline and display math (`$…$` / `$$…$$`) rendered by KaTeX.
 - **Code highlighting** — fenced code blocks highlighted by highlight.js, per-theme.
 - **Accessible callouts** — Obsidian-style `> [!note]`, `[!warning]`, `[!danger]`, `[!tip]`, `[!info]` blocks rendered with redundant coding: border color + geometric shape + visible label word (not color-only; satisfies WCAG 1.4.1).
@@ -37,9 +38,10 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 ## Requirements
 
 - **Obsidian ≥ 1.8.7**
-- **Desktop only** (`isDesktopOnly: true`) — export relies on `window.print()` for PDF and on `html2canvas` DOM capture for PNG; both require a desktop environment.
-- PDF export uses the **system print dialog** — choose "Save as PDF" in the printer dropdown. It does not produce a PDF file directly.
-- PNG export writes files into a **configurable export folder** (Settings → Slide Deck → Export folder, default `Slide-Deck-Export/`). PDF export goes through the system print dialog, where you choose the location.
+- **Desktop + Mobile** (`isDesktopOnly: false`) — runs on desktop (Windows, macOS, Linux) and on mobile (iOS/iPadOS); desktop-only APIs are platform-guarded.
+- **Desktop PDF export** uses the **system print dialog** — choose "Save as PDF" in the printer dropdown. It does not produce a PDF file directly.
+- **Mobile PDF export** writes a self-contained HTML file into the export folder and opens it with the OS default app; from there you can print or share to PDF. The file name is `<export-folder>/<note-name>.html`.
+- PNG export writes files into a **configurable export folder** (Settings → Slide Deck → Export folder, default `Slide-Deck-Export/`). PDF export on desktop goes through the system print dialog, where you choose the location.
 
 ## Install
 
@@ -156,7 +158,7 @@ Note: the `---` in the YAML frontmatter block is the standard YAML delimiter and
 2. **Fixed canvas** — each slide is rendered onto a fixed canvas: 1280×720 px (16:9) or 960×720 px (4:3). The canvas size does not change with window size.
 3. **Theme isolation** — slides render inside a sandboxed iframe with the chosen theme's styles injected directly. The active Obsidian theme does not reach inside the iframe, so the deck looks identical in preview, PDF, and PNG regardless of vault theme.
 4. **Fit-or-warn** — each slide's content is measured in the DOM. If it exceeds the canvas, the content is scaled down uniformly. Scaling stops at `minFontPx` (the legibility floor). If the content would still overflow at that scale, the slide is flagged with a warning in the preview pane rather than scaled further.
-5. **Export** — the same theme-isolated iframe artifact feeds all export paths: the print pipeline (PDF) and per-slide html2canvas capture (PNG). KaTeX and Mermaid rendering fidelity in html2canvas may vary by diagram complexity; see [AGENTS.md](https://codeberg.org/jkaindl/slide-deck/src/branch/main/AGENTS.md) for known constraints.
+5. **Export** — the same theme-isolated iframe artifact feeds all export paths: the print pipeline (PDF) and per-slide `modern-screenshot` (`domToCanvas`) capture (PNG). On desktop, PDF is printed via `contentWindow.print()`; on mobile, a self-contained HTML file is written to the vault and handed to the OS via `openWithDefaultApp`.
 
 ## License
 

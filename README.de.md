@@ -4,7 +4,7 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 
 [![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/LICENSE)
 [![Release](https://img.shields.io/badge/Release-0.1.0-green.svg)](https://codeberg.org/jkaindl/slide-deck/releases)
-[![Plattform: Nur Desktop](https://img.shields.io/badge/Plattform-Nur%20Desktop-lightgrey.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/manifest.json)
+[![Plattform: Desktop + Mobile](https://img.shields.io/badge/Plattform-Desktop%20%2B%20Mobile-blue.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/manifest.json)
 
 ![Slide Deck — eine Zwei-Spalten-Folie mit Aufzählung, Inline-Mathe und Bild](https://codeberg.org/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png)
 
@@ -22,8 +22,9 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 - **Live-Vorschau** — rendert die aktive Notiz als Folien-Deck in einer Seitenleiste, skaliert auf die Fensterbreite; ein Klick auf Überlauf-Warnungen springt zur Quellzeile.
 - **Fit-or-warn-Lesbarkeit** — jede Folie skaliert den Inhalt automatisch herunter bis zur konfigurierbaren Lesbarkeits-Untergrenze (`minFontPx`); Folien, die noch kleineren Text bräuchten, werden als überlaufend markiert statt unleserlich zu werden.
 - **Eigenes CSS** — ein optionales CSS-Snippet in den Einstellungen wird an die Deck-Styles in Vorschau und Exporten angehängt, für Branding oder Anpassungen.
-- **PDF-Export** — rendert alle Folien in nativer Auflösung und öffnet den System-Druckdialog (im Dialog „Als PDF speichern" wählen); theme-isoliert.
-- **PNG-Bilderserie-Export** — erfasst jede Folie via html2canvas und schreibt nummerierte PNGs in einen konfigurierbaren Export-Ordner (Einstellungen, Standard `Slide-Deck-Export/`).
+- **PDF-Export** — rendert alle Folien in nativer Auflösung; auf dem Desktop wird der System-Druckdialog geöffnet (im Dialog „Als PDF speichern" wählen); auf Mobilgeräten (iOS/iPadOS) wird eine eigenständige HTML-Datei in den Export-Ordner geschrieben und über die Standard-App des Betriebssystems geöffnet — von dort kann als PDF gedruckt oder geteilt werden.
+- **PNG-Bilderserie-Export** — erfasst jede Folie via `modern-screenshot` und schreibt nummerierte PNGs in einen konfigurierbaren Export-Ordner (Einstellungen, Standard `Slide-Deck-Export/`); typografisch korrekte Wortabstände.
+- **Mobile-Unterstützung** — läuft auf iOS/iPadOS (Obsidian Mobile); alle Desktop-only-APIs sind plattformgesichert.
 - **KaTeX-Mathematik** — Inline- und Display-Mathematik (`$…$` / `$$…$$`) gerendert von KaTeX.
 - **Code-Hervorhebung** — Fenced-Code-Blöcke werden von highlight.js eingefärbt, theme-spezifisch.
 - **Barrierefreie Callouts** — Obsidian-Callouts `> [!note]`, `[!warning]`, `[!danger]`, `[!tip]`, `[!info]` mit redundanter Kodierung: Rahmenfarbe + geometrische Form + sichtbares Label (nicht nur Farbe; erfüllt WCAG 1.4.1).
@@ -37,9 +38,10 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 ## Voraussetzungen
 
 - **Obsidian ≥ 1.8.7**
-- **Nur Desktop** (`isDesktopOnly: true`) — der Export benötigt `window.print()` für PDF und `html2canvas` für PNG; beides erfordert eine Desktop-Umgebung.
-- Der PDF-Export verwendet den **System-Druckdialog** — im Druckerdropdown „Als PDF speichern" wählen. Es wird keine PDF-Datei direkt erzeugt.
-- Der PNG-Export schreibt Dateien in einen **konfigurierbaren Export-Ordner** (Einstellungen → Slide Deck → Export-Ordner, Standard `Slide-Deck-Export/`). Der PDF-Export läuft über den System-Druckdialog, wo du den Ort wählst.
+- **Desktop + Mobile** (`isDesktopOnly: false`) — läuft auf dem Desktop (Windows, macOS, Linux) und auf Mobilgeräten (iOS/iPadOS); Desktop-only-APIs sind plattformgesichert.
+- **PDF-Export auf dem Desktop** verwendet den **System-Druckdialog** — im Druckerdropdown „Als PDF speichern" wählen. Es wird keine PDF-Datei direkt erzeugt.
+- **PDF-Export auf Mobile** schreibt eine eigenständige HTML-Datei in den Export-Ordner und öffnet sie mit der Standard-App des Betriebssystems; von dort kann als PDF gedruckt oder geteilt werden. Der Dateiname lautet `<Export-Ordner>/<Notizname>.html`.
+- Der PNG-Export schreibt Dateien in einen **konfigurierbaren Export-Ordner** (Einstellungen → Slide Deck → Export-Ordner, Standard `Slide-Deck-Export/`). Der PDF-Export auf dem Desktop läuft über den System-Druckdialog, wo du den Ort wählst.
 
 ## Installation
 
@@ -156,7 +158,7 @@ Hinweis: Das `---` im YAML-Frontmatter-Block ist der Standard-YAML-Begrenzer und
 2. **Fester Canvas** — jede Folie wird auf einen festen Canvas gerendert: 1280×720 px (16:9) oder 960×720 px (4:3). Die Canvas-Größe ändert sich nicht mit der Fenstergröße.
 3. **Theme-Isolation** — Folien werden in einem sandboxed iframe gerendert, in den die Styles des gewählten Themes direkt injiziert werden. Das aktive Obsidian-Theme dringt nicht in den iframe ein, sodass das Deck in Vorschau, PDF und PNG unabhängig vom Vault-Theme identisch aussieht.
 4. **Fit-or-warn** — der Inhalt jeder Folie wird im DOM gemessen. Überschreitet er den Canvas, wird er gleichmäßig skaliert. Die Skalierung stoppt bei `minFontPx` (Lesbarkeits-Untergrenze). Würde der Inhalt bei dieser Skalierung immer noch überlaufen, wird die Folie in der Vorschau mit einer Warnung markiert statt weiter skaliert.
-5. **Export** — dasselbe theme-isolierte iframe-Artefakt speist alle Export-Wege: die Druck-Pipeline (PDF) und die folienweise html2canvas-Erfassung (PNG). Die Rendering-Treue von KaTeX und Mermaid in html2canvas kann je nach Diagramm-Komplexität variieren; siehe [AGENTS.md](https://codeberg.org/jkaindl/slide-deck/src/branch/main/AGENTS.md) für bekannte Einschränkungen.
+5. **Export** — dasselbe theme-isolierte iframe-Artefakt speist alle Export-Wege: die Druck-Pipeline (PDF) und die folienweise `modern-screenshot`-Erfassung (`domToCanvas`) (PNG). Auf dem Desktop wird PDF via `contentWindow.print()` gedruckt; auf Mobilgeräten wird eine eigenständige HTML-Datei in den Vault geschrieben und via `openWithDefaultApp` ans Betriebssystem übergeben.
 
 ## Lizenz
 
