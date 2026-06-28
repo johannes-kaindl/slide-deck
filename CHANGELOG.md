@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-06-28
+
 ### Fixed
 
 - PNG export no longer collapses inter-word spaces (switched the rasterizer from
