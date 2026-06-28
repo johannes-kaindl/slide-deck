@@ -60,6 +60,15 @@ function buildMd(): MarkdownIt {
   };
   md.renderer.rules.fence = mermaidFence;
 
+  // Markdown images get the same media class as ![[embeds]] so the centered/
+  // contain media CSS + image-focus sizing apply to both syntaxes.
+  const defaultImage = md.renderer.rules.image!;
+  md.renderer.rules.image = (tokens, idx, opts, env, self) => {
+    const token = tokens[idx];
+    if (token.attrIndex("class") < 0) token.attrPush(["class", "sd-embed"]);
+    return defaultImage(tokens, idx, opts, env, self);
+  };
+
   return md;
 }
 

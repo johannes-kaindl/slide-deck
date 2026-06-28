@@ -19,4 +19,10 @@ describe("renderMarkdown", () => {
     const { html } = renderMarkdown({ markdown: "```js\nconst x=1\n```", resolveEmbed: noEmbed });
     expect(html).toContain("hljs");
   });
+
+  it("adds sd-embed class to standard markdown images", () => {
+    const { html } = renderMarkdown({ markdown: "![a photo](pic.png)", resolveEmbed: noEmbed });
+    expect(html).toContain('class="sd-embed"');
+    expect(html).toContain('src="pic.png"');
+  });
 });
