@@ -74,8 +74,15 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
   const host = await createIsolatedDeckIframe(doc, { css, bodyHtml: slidesHtml.join(""), width: geo.width });
   try {
     const slides = Array.from(host.contentDoc.querySelectorAll<HTMLElement>(".sd-slide"));
+    const view = host.contentDoc.defaultView;
     for (let i = 0; i < slides.length; i++) {
-      const canvas = await domToCanvas(slides[i], { width: geo.width, height: geo.height, scale, backgroundColor: "#fff" });
+      // modern-screenshot's backgroundColor option fills the canvas AND forces
+      // `background-color !important` on the cloned root. Passing the slide's own
+      // computed --sd-bg keeps the theme background (a hardcoded "#fff" would paint
+      // every theme white); fall back to white only if the slide is transparent.
+      const slideBg = view ? view.getComputedStyle(slides[i]).backgroundColor : "";
+      const backgroundColor = slideBg && slideBg !== "rgba(0, 0, 0, 0)" && slideBg !== "transparent" ? slideBg : "#fff";
+      const canvas = await domToCanvas(slides[i], { width: geo.width, height: geo.height, scale, backgroundColor });
       const b64 = canvas.toDataURL("image/png").split(",")[1];
       const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
       const path = `${folder}/${String(i + 1).padStart(2, "0")}-${base}.png`;
