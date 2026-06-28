@@ -11,6 +11,19 @@ import { createIsolatedDeckIframe } from "./iframe-host";
 
 let mermaidSeq = 0;
 
+function appendSlots(doc: Document, box: HTMLElement, deck: SlideDeck, slideIndex: number): void {
+  const d = deck.directives;
+  const make = (cls: string, text: string) => {
+    const el = doc.createElement("div");
+    el.className = cls;
+    el.textContent = text;
+    box.appendChild(el);
+  };
+  if (d.header) make("sd-slide-header", d.header);
+  if (d.footer) make("sd-slide-footer", d.footer);
+  if (d.paginate) make("sd-slide-pagination", `${slideIndex + 1} / ${deck.slides.length}`);
+}
+
 async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnings: Warning[]): Promise<void> {
   const slots = Array.from(scope.querySelectorAll<HTMLElement>(".sd-mermaid"));
   for (let i = 0; i < slots.length; i++) {
@@ -42,7 +55,8 @@ export async function renderDeckToContainer(
   const built: { box: HTMLElement; inner: HTMLElement; slide: SlideDeck["slides"][number]; renderWarnings: SlideWarning[] }[] = [];
   for (const slide of deck.slides) {
     const box = doc.createElement("div");
-    box.className = `sd-slide sd-layout-${slide.layout}`;
+    const modClasses = slide.modifiers.map((m) => `sd-mod-${m}`).join(" ");
+    box.className = `sd-slide sd-layout-${slide.layout}${modClasses ? " " + modClasses : ""}`;
     box.style.setProperty("--sd-w", `${geo.width}px`);
     box.style.setProperty("--sd-h", `${geo.height}px`);
     const inner = doc.createElement("div");
@@ -57,6 +71,34 @@ export async function renderDeckToContainer(
       inner.appendChild(regionEl);
       renderWarnings.push(...r.warnings);
     }
+    // Multi-column: hoist a leading h1/h2 out of the first column so it spans all columns.
+    if (slide.layout === "two-column" || slide.layout === "columns-3") {
+      const firstRegion = inner.querySelector(".sd-region");
+      const first = firstRegion?.firstElementChild;
+      if (first && (first.tagName === "H1" || first.tagName === "H2")) {
+        const titleEl = doc.createElement("div");
+        titleEl.className = "sd-region sd-region-title";
+        titleEl.appendChild(first); // moves the node
+        inner.insertBefore(titleEl, firstRegion);
+      }
+    }
+    // cover-image: pull the first image out into a full-bleed background layer + scrim.
+    if (slide.layout === "cover-image") {
+      const img = inner.querySelector<HTMLImageElement>("img");
+      if (img) {
+        const media = doc.createElement("img");
+        media.className = "sd-cover-media";
+        media.src = img.getAttribute("src") ?? "";
+        const scrim = doc.createElement("div");
+        scrim.className = "sd-cover-scrim";
+        img.remove();
+        box.insertBefore(scrim, inner);
+        box.insertBefore(media, scrim);
+      } else {
+        renderWarnings.push({ kind: "cover-no-image", message: "cover-image slide has no image — rendering title only." });
+      }
+    }
+    appendSlots(doc, box, deck, slide.index);
     await renderMermaidSlots(inner, slide.index, warnings);
     container.appendChild(box);
     built.push({ box, inner, slide, renderWarnings });
@@ -76,7 +118,7 @@ export async function renderDeckToContainer(
     );
     inner.style.transformOrigin = "top left";
     inner.style.transform = `scale(${fit.scale})`;
-    const composable = slide.layout === "default" || slide.layout === "two-column";
+    const composable = slide.layout === "default" || slide.layout === "two-column" || slide.layout === "columns-3";
     if (composable && shouldCenterCompose(contentHeight, clientHeight, fit)) {
       box.classList.add("sd-compose-center");
     }
