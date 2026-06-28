@@ -34,12 +34,26 @@ describe("LAYOUTS_CSS", () => {
 });
 
 describe("LAYOUTS_CSS compose-center", () => {
-  it("centers single-column composed content with flex", () => {
-    expect(LAYOUTS_CSS).toContain(".sd-compose-center:not(.sd-layout-two-column) .sd-content");
+  it("centers single-column composed content with flex (excluding grids)", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-compose-center:not(.sd-layout-two-column):not(.sd-layout-columns-3) .sd-content");
     expect(LAYOUTS_CSS).toContain("justify-content:center");
   });
-  it("centers two-column composed content via grid align-content", () => {
-    expect(LAYOUTS_CSS).toContain(".sd-compose-center.sd-layout-two-column .sd-content");
+  it("centers grid composed content via align-content", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-layout-columns-3 .sd-content");
     expect(LAYOUTS_CSS).toContain("align-content:center");
+  });
+});
+
+describe("LAYOUTS_CSS templates & modifiers", () => {
+  it("spans titles across columns and defines new templates", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-region-title");
+    expect(LAYOUTS_CSS).toContain("grid-column:1/-1");
+    expect(LAYOUTS_CSS).toContain(".sd-layout-columns-3 .sd-content");
+    expect(LAYOUTS_CSS).toContain(".sd-layout-stat");
+    expect(LAYOUTS_CSS).toContain(".sd-layout-cover-image .sd-content");
+  });
+  it("defines combinable modifiers", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-mod-compact");
+    expect(LAYOUTS_CSS).toContain(".sd-mod-code-heavy");
   });
 });

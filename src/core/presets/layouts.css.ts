@@ -21,14 +21,42 @@ export function layoutFor(id: string): LayoutSpec {
 /** Shared, theme-independent layout CSS. References only tokens (no colors here). */
 export const LAYOUTS_CSS = `
 .sd-region{ min-width:0; min-height:0; }
+
+/* multi-column: title spans all columns */
 .sd-layout-two-column .sd-content{ display:grid; grid-template-columns:1fr 1fr; gap:48px; align-content:start; }
+.sd-layout-columns-3 .sd-content{ display:grid; grid-template-columns:repeat(3,1fr); gap:36px; align-content:start; }
+.sd-layout-two-column .sd-region-title,
+.sd-layout-columns-3 .sd-region-title{ grid-column:1/-1; }
+
+/* centered hero/divider templates */
 .sd-layout-title .sd-content,
 .sd-layout-section .sd-content,
-.sd-layout-quote .sd-content{ display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+.sd-layout-quote .sd-content,
+.sd-layout-stat .sd-content{ display:flex; flex-direction:column; justify-content:center; align-items:flex-start; }
+.sd-layout-title .sd-content,
+.sd-layout-section .sd-content,
+.sd-layout-quote .sd-content{ align-items:center; text-align:center; }
 .sd-layout-quote .sd-region{ font-size:1.4em; font-style:italic; max-width:80%; }
 .sd-layout-section .sd-region{ font-size:1.2em; }
+.sd-layout-title h1{ font-size:3em; }
+
+/* stat: oversized lead number */
+.sd-layout-stat h1{ font-size:var(--sd-stat-size,4.5em); line-height:1; margin:0; }
+
+/* image-focus: media dominates, centered */
 .sd-layout-image-focus .sd-content{ display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
-.sd-layout-image-focus .sd-embed{ max-height:80%; }
-.sd-compose-center:not(.sd-layout-two-column) .sd-content{ display:flex; flex-direction:column; justify-content:center; }
-.sd-compose-center.sd-layout-two-column .sd-content{ align-content:center; }
+.sd-layout-image-focus .sd-embed{ max-height:var(--sd-media-max-h-focus,80%); }
+
+/* cover-image: title overlays the full-bleed background, anchored bottom-left */
+.sd-layout-cover-image .sd-content{ display:flex; flex-direction:column; justify-content:flex-end; }
+
+/* density modifiers (combine with any layout) */
+.sd-mod-compact .sd-content{ font-size:var(--sd-compact-scale,0.88em); line-height:1.3; }
+.sd-mod-compact li{ margin:.12em 0; }
+.sd-mod-code-heavy pre.hljs{ font-size:1em; }
+
+/* compose-center: vertically center sparse, non-overflowing content */
+.sd-compose-center:not(.sd-layout-two-column):not(.sd-layout-columns-3) .sd-content{ display:flex; flex-direction:column; justify-content:center; }
+.sd-compose-center.sd-layout-two-column .sd-content,
+.sd-compose-center.sd-layout-columns-3 .sd-content{ align-content:center; }
 `;
