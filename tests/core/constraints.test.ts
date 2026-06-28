@@ -78,4 +78,9 @@ describe("authoring contract", () => {
     expect(c.layouts).toContain("two-column");
     expect(contractToPrompt(c)).toContain("two-column");
   });
+  it("prompt mentions modifiers and slots", () => {
+    const p = contractToPrompt(getAuthoringContract({ theme: "default", aspect: "16:9", minFontPx: 24 }));
+    expect(p).toContain("compact");
+    expect(p).toContain("paginate");
+  });
 });
