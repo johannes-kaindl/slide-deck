@@ -35,6 +35,7 @@ export async function exportPdf(app: App, doc: Document, win: Window, file: TFil
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const deck = withTheme(loaded.deck, themeOverride);
   const geo = geometryFor(deck.directives.aspect);
+  new Notice(t("notice.exporting"));
   const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, customCss);
   if (!Platform.isDesktopApp) { await exportDeckHtmlAndOpen(app, file, slidesHtml, css, geo, exportFolder); return; }
   // Desktop: print the isolated iframe directly.
@@ -64,6 +65,7 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const deck = withTheme(loaded.deck, themeOverride);
   const geo = geometryFor(deck.directives.aspect);
+  new Notice(t("notice.exporting"));
   const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, customCss);
   const adapter = app.vault.adapter;
   const base = file?.basename ?? "deck";
