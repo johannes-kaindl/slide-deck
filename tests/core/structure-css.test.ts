@@ -53,9 +53,12 @@ describe("STRUCTURE_CSS area model", () => {
     expect(STRUCTURE_CSS).toContain(".sd-slide-header");
     expect(STRUCTURE_CSS).toContain(".sd-slide-footer");
   });
-  it("centers block media (no longer left-inline)", () => {
+  it("fills + centers block media via the media cell (sd-has-media)", () => {
     expect(STRUCTURE_CSS).toContain("margin-inline:auto");
-    expect(STRUCTURE_CSS).toContain("var(--sd-media-max-h,60%)");
+    expect(STRUCTURE_CSS).toContain(".sd-content.sd-has-media");
+    // the filled media cell forces the image to the cell box + contain (not a
+    // percentage max-height, which does not resolve through auto-height wrappers)
+    expect(STRUCTURE_CSS).toContain("img.sd-embed:only-child{ width:100%; height:100%; object-fit:contain; }");
   });
   it("defines cover-image background + scrim", () => {
     expect(STRUCTURE_CSS).toContain(".sd-cover-media");

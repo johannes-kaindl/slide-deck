@@ -47,7 +47,7 @@ Berührt `src/core/**` (pure: Direktiven-/Modifier-Parsing, Inferenz, neue CSS-S
 |---|---|---|
 | Scope | **Voller MARP-Ausbau** (11 Templates + Slots + Modifier) | User-Wahl im Brainstorm; kohärentes Bündel um *ein* Bereichsmodell. |
 | Architektur | **Hybrid (C)**: semantische Templates + minimale render-dom-Eingriffe | MARP-treu; behält Single-Scale + Fit-Invariante; löst Media exakt. |
-| Media-Vertikalbalance | **`object-fit:contain` + bestehendes `compose-center`** (ganzer Stapel), kein eigenständiges Media-Wachstum | minimal; image-focus/cover-image sind die media-dominanten Spezialfälle. |
+| Media-Füllung/-Balance | **Media-Zelle füllt per `flex:1` + `width/height:100%`+`object-fit:contain`** (`.sd-has-media`); `compose-center` nur für text-only sparse Folien | smoke-korrigiert: Prozent-`max-height` resolved nicht; flex-Zelle liefert Füllen + decode-timing-unabhängig. |
 | `compact`/`code-heavy` | **Kombinierbare Modifier** (`<!-- layout: <tpl> [mod…] -->`) | MARP-treu; kein Nachrüsten später; generalisiert auf künftige Modifier. |
 | Spanning-Titel | **Leading-Heading-Hoist** in Mehrspaltern (render-dom), rückwärtskompatibel | nur Hoist wenn `region[0]` mit h1/h2 startet → bestehende 2-Spalter brechen nicht. |
 | Slots | **Frontmatter `header:`/`footer:`/`paginate:`**, deck-weit, MARP-kompatibel | trivial zu parsen; ein Slot-Primitiv für alle drei; teuerste Nachrüst-Stelle wird einmal richtig gebaut. |
@@ -83,9 +83,10 @@ Berührt `src/core/**` (pure: Direktiven-/Modifier-Parsing, Inferenz, neue CSS-S
 
 ### 5.3 Media-Verhalten (der eigentliche Fix — Punkt zum genau-Prüfen)
 
-- **Immer (rein CSS, kein Umsortieren):** ein Block-Bild (`<img>` als einziges Kind seines `<p>`) bzw. `.sd-mermaid` rendert als zentrierter Block: `display:block; margin-inline:auto; max-width:100%; max-height:var(--sd-media-max-h); object-fit:contain`. Das ersetzt die heutige links-inline-Darstellung. Inline-Bilder *innerhalb* eines Textabsatzes bleiben inline.
-- **Vertikale Balance:** sparse Folien werden als *ganzer* Inhaltsstapel vertikal zentriert über das bestehende `compose-center` (erweitert auf `default`/`two-column`/`columns-3`). Media wächst **nicht** eigenständig.
-- **image-focus:** Media ist der dominante Inhalt; höhere `max-height` (z.B. `var(--sd-media-max-h-focus, 80%)`), Content zentriert.
+- **Media füllt + zentriert (Media-Zellen-Modell, smoke-korrigiert):** Bei einer einspaltigen Folie mit Block-Media (Block-`![[…]]`/`![](…)` als einziges Kind seines `<p>`, oder `.sd-mermaid`) markiert `render-dom` `.sd-content` mit `.sd-has-media`. Dann wird der Body zur Flex-Spalte, und die **Media-Zelle** (`<p>` bzw. `.sd-mermaid`) wächst per `flex:1` in den **verbleibenden** vertikalen Raum; das Media-Element nutzt `width:100%; height:100%; object-fit:contain` gegen diese **definite** Zelle → füllt + zentriert zuverlässig, **unabhängig vom Raster-Decode-Timing** (die Folienhöhe ist flex- statt bildgrößengetrieben). Inline-Bilder *innerhalb* eines Textabsatzes bleiben inline (`.sd-embed`-Fallback: `margin-inline:auto`, kein Fill).
+  - **Wichtig (Lektion aus dem Smoke):** Prozent-`max-height` (z.B. `60%`/`80%`) wurde **verworfen** — es resolved nicht durch auto-Höhe-Vorfahren (`.sd-region`, `<p>`) und auch nicht zuverlässig auf Flex-Item-Bildern. Nur eine definite Flex-Zelle + `width/height:100%`+`contain` liefert Füllen.
+- **Vertikale Balance (reiner Text):** sparse Folien **ohne** Media werden als *ganzer* Inhaltsstapel vertikal zentriert über das bestehende `compose-center` (erweitert auf `default`/`two-column`/`columns-3`).
+- **image-focus:** media-dominant; nutzt dasselbe `.sd-has-media`-Media-Fill (Media füllt fast die ganze Folie), Titel/Caption nur zentriert (`text-align:center`).
 - **cover-image:** render-dom hebt das **erste** Bild-Embed in `.sd-cover-media` (Hintergrund, `object-fit:cover`, randlos) + `.sd-cover-scrim`. Fehlt ein Bild: nur Titel rendern (kein Scrim), `cover-image`-Warnung (`directive`-Klasse soft).
 
 ## 6. Template-Katalog (11) + Modifier
@@ -157,8 +158,6 @@ Wenn `layout ∈ {two-column, columns-3}` **und** das erste gerenderte Top-Level
 
 | Token | Default-Fallback | Zweck |
 |---|---|---|
-| `--sd-media-max-h` | `60%` | Max-Höhe Block-Media (heutiges `.sd-embed`). |
-| `--sd-media-max-h-focus` | `80%` | Max-Höhe in `image-focus`. |
 | `--sd-slot-fg` | `var(--sd-muted, #6b7280)` | Farbe header/footer/pagination. |
 | `--sd-slot-size` | `0.6em` | Schriftgröße Slots. |
 | `--sd-scrim` | `linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,.12) 60%, transparent)` | cover-image-Lesbarkeits-Overlay. |

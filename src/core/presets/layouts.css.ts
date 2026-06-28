@@ -43,9 +43,9 @@ export const LAYOUTS_CSS = `
 /* stat: oversized lead number */
 .sd-layout-stat h1{ font-size:var(--sd-stat-size,4.5em); line-height:1; margin:0; }
 
-/* image-focus: media dominates, centered */
-.sd-layout-image-focus .sd-content{ display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
-.sd-layout-image-focus .sd-embed{ max-height:var(--sd-media-max-h-focus,80%); }
+/* image-focus: media-dominant — the media fill is handled by .sd-has-media
+   (structure.css); here we only center an optional title/caption. */
+.sd-layout-image-focus .sd-content{ text-align:center; }
 
 /* cover-image: title overlays the full-bleed background, anchored bottom-left */
 .sd-layout-cover-image .sd-content{ display:flex; flex-direction:column; justify-content:flex-end; }

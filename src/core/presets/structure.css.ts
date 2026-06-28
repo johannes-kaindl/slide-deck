@@ -15,10 +15,19 @@ export const STRUCTURE_CSS = `
 /* Content fills the slide's padded area so overflow is measurable (scrollHeight > clientHeight). */
 .sd-content{ width:100%; height:100%; }
 .sd-slide pre.hljs{ font-size:.8em; padding:.6em .8em; border-radius:8px; background:var(--sd-code-bg); overflow:hidden; }
-/* Block media: centered, body-width, contain (no left-inline flow). */
-.sd-embed{ display:block; margin-inline:auto; max-width:100%; max-height:var(--sd-media-max-h,60%); object-fit:contain; }
+/* Block media: centered + contain. On a media-bearing single-region slide,
+   render-dom marks .sd-content with .sd-has-media → the media cell fills the
+   remaining vertical space via flex, so media sizing is independent of raster
+   image decode timing and never relies on (unresolved) percentage heights. */
+.sd-embed{ display:block; margin-inline:auto; max-width:100%; max-height:100%; object-fit:contain; }
 .sd-mermaid{ text-align:center; }
-.sd-mermaid svg{ display:inline-block; max-width:100%; max-height:var(--sd-media-max-h-mermaid,480px); }
+.sd-mermaid svg{ display:block; margin-inline:auto; max-width:100%; max-height:100%; }
+.sd-content.sd-has-media{ display:flex; flex-direction:column; }
+.sd-content.sd-has-media > .sd-region{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+.sd-content.sd-has-media .sd-region > p:has(> img.sd-embed:only-child){ flex:1 1 0; min-height:0; margin:.4em 0; }
+.sd-content.sd-has-media .sd-region > p > img.sd-embed:only-child{ width:100%; height:100%; object-fit:contain; }
+.sd-content.sd-has-media .sd-region > .sd-mermaid{ flex:1 1 0; min-height:0; }
+.sd-content.sd-has-media .sd-region > .sd-mermaid > svg{ width:100%; height:100%; }
 .sd-missing-embed{ color:#8a4b00; border:2px dashed #8a4b00; padding:0 .3em; border-radius:4px; }
 /* Callouts: Bedeutung redundant — Rahmenfarbe + Form (::before) + Label-Wort */
 .sd-callout{ border-left:6px solid var(--sd-callout-base,#5b6470); background:var(--sd-surface,#f4f6f8); padding:.5em .8em; border-radius:6px; margin:.4em 0; color:var(--sd-callout-fg,#16181d); }

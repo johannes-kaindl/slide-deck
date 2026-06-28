@@ -98,6 +98,17 @@ export async function renderDeckToContainer(
         renderWarnings.push({ kind: "cover-no-image", message: "cover-image slide has no image — rendering title only." });
       }
     }
+    // Media-bearing single-column slides: mark so the media cell fills the
+    // remaining vertical space (CSS .sd-has-media) — fill/centering is then
+    // independent of raster decode timing. cover-image (above) uses its image
+    // as a background layer, not an in-flow media block.
+    if (
+      slide.layout !== "cover-image" &&
+      slide.regions.length === 1 &&
+      inner.querySelector(".sd-region > p > img.sd-embed, .sd-region > .sd-mermaid")
+    ) {
+      inner.classList.add("sd-has-media");
+    }
     appendSlots(doc, box, deck, slide.index);
     await renderMermaidSlots(inner, slide.index, warnings);
     container.appendChild(box);
