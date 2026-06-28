@@ -85,7 +85,7 @@ export class SlideDeckView extends ItemView {
     const expRow = bar.createDiv({ cls: "sd-tb-row sd-tb-export-row" });
     expRow.createSpan({ cls: "sd-tb-label", text: t("toolbar.export") });
     const defaults = () => ({ theme: this.effectiveTheme, minFontPx: this.plugin.settings.minFontPx });
-    mkBtn(expRow, "file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.customCss, this.effectiveTheme));
+    mkBtn(expRow, "file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.customCss, this.effectiveTheme, this.plugin.settings.exportFolder));
     mkBtn(expRow, "image", t("toolbar.exportImages"), () => void exportImages(this.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.imageScale, this.plugin.settings.customCss, this.plugin.settings.exportFolder, this.effectiveTheme));
 
     this.fileLabel = bar.createSpan({ cls: "sd-toolbar-file" });

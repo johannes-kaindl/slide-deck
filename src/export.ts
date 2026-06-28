@@ -1,8 +1,8 @@
-import { Notice, type App, type TFile } from "obsidian";
+import { Notice, Platform, type App, type TFile } from "obsidian";
 import { domToCanvas } from "modern-screenshot";
 import { loadDeck } from "./adapter";
 import { buildIsolatedDeck } from "./render-dom";
-import { createIsolatedDeckIframe } from "./iframe-host";
+import { createIsolatedDeckIframe, isolatedDeckHtml } from "./iframe-host";
 import { PRINT_CSS } from "./chrome-css";
 import { geometryFor } from "./core/geometry";
 import { t } from "./i18n";
@@ -14,13 +14,30 @@ function withTheme(deck: SlideDeck, themeOverride?: string): SlideDeck {
   return themeOverride ? { ...deck, directives: { ...deck.directives, theme: themeOverride } } : deck;
 }
 
-export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, registry: ThemeRegistry, defaults?: Partial<DeckDirectives>, customCss = "", themeOverride?: string): Promise<void> {
+/** Mobile PDF path (letterhead pattern): window.print() is a no-op in the Obsidian
+ *  mobile WebView, so write the self-contained deck HTML into the vault and hand it
+ *  to the OS via openWithDefaultApp — the user prints/shares it to PDF from there. */
+async function exportDeckHtmlAndOpen(app: App, file: TFile | null, slidesHtml: string[], css: string, geo: { width: number; height: number }, exportFolder: string): Promise<void> {
+  const adapter = app.vault.adapter;
+  const base = file?.basename ?? "deck";
+  const root = exportFolder.replace(/\/+$/, "") || "Slide-Deck-Export";
+  if (!(await adapter.exists(root))) await adapter.mkdir(root);
+  const path = `${root}/${base}.html`;
+  await adapter.write(path, isolatedDeckHtml({ css, bodyHtml: slidesHtml.join(""), extraCss: PRINT_CSS(geo.width, geo.height) }));
+  const open = (app as unknown as { openWithDefaultApp?: (p: string) => Promise<void> }).openWithDefaultApp;
+  if (typeof open === "function") { try { await open.call(app, path); } catch { /* fall through to the path notice */ } }
+  new Notice(t("notice.pdfOpened", path));
+}
+
+export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, registry: ThemeRegistry, defaults?: Partial<DeckDirectives>, customCss = "", themeOverride?: string, exportFolder = "Slide-Deck-Export"): Promise<void> {
  try {
   const loaded = await loadDeck(app, file, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const deck = withTheme(loaded.deck, themeOverride);
   const geo = geometryFor(deck.directives.aspect);
   const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, customCss);
+  if (!Platform.isDesktopApp) { await exportDeckHtmlAndOpen(app, file, slidesHtml, css, geo, exportFolder); return; }
+  // Desktop: print the isolated iframe directly.
   // allow-modals is required for contentWindow.print() on a sandboxed frame (print opens a modal).
   const host = await createIsolatedDeckIframe(doc, { css, extraCss: PRINT_CSS(geo.width, geo.height), bodyHtml: slidesHtml.join(""), width: geo.width, sandbox: "allow-same-origin allow-modals" });
   const frameWin = host.iframe.contentWindow;
