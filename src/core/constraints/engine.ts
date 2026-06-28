@@ -7,7 +7,7 @@ import type { ThemeRegistry } from "../presets";
 export type WarningKind =
   | "overflow" | "belowFloor" | "missing-embed" | "mermaid-error" | "low-contrast"
   | "layout-unknown" | "layout-multiple" | "directive-malformed" | "region-count"
-  | "theme-unknown";
+  | "theme-unknown" | "cover-no-image";
 export interface Warning { slideIndex: number; kind: WarningKind; message: string; sourceLine?: number; }
 export type SlideWarning = Omit<Warning, "slideIndex">;
 

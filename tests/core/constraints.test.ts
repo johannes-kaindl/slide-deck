@@ -40,6 +40,11 @@ describe("collectWarnings", () => {
     const w = collectWarnings(slide({ layout: "two-column", regions: ["a", "b"] }), [], { scale: 1, overflow: false });
     expect(w.some((x) => x.kind === "region-count")).toBe(false);
   });
+  it("passes through a cover-no-image render warning", () => {
+    const slide_obj = { index: 0, startLine: 0, layout: "cover-image", modifiers: [], regions: [""], directiveWarnings: [], markdown: "" };
+    const out = collectWarnings(slide_obj as any, [{ kind: "cover-no-image", message: "cover-image without an image" }], { scale: 1, overflow: false });
+    expect(out.some((w) => w.kind === "cover-no-image")).toBe(true);
+  });
 });
 
 describe("collectDeckWarnings (registry-aware)", () => {

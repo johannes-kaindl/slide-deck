@@ -8,6 +8,9 @@ export const LAYOUTS: Record<string, LayoutSpec> = {
   quote: { id: "quote", regions: 1 },
   "image-focus": { id: "image-focus", regions: 1 },
   "two-column": { id: "two-column", regions: 2 },
+  "columns-3": { id: "columns-3", regions: 3 },
+  stat: { id: "stat", regions: 1 },
+  "cover-image": { id: "cover-image", regions: 1 },
 };
 
 /** TOTAL — unknown layout id falls back to default. */

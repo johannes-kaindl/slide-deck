@@ -15,6 +15,11 @@ describe("layoutFor", () => {
     expect(layoutFor("nope")).toEqual(LAYOUTS.default);
     expect(layoutFor("").id).toBe("default");
   });
+  it("knows the new templates with region counts", () => {
+    expect(layoutFor("columns-3").regions).toBe(3);
+    expect(layoutFor("stat").regions).toBe(1);
+    expect(layoutFor("cover-image").regions).toBe(1);
+  });
 });
 
 describe("LAYOUTS_CSS", () => {
