@@ -110,9 +110,18 @@ export async function renderDeckToContainer(
     if (
       slide.layout !== "cover-image" &&
       slide.regions.length === 1 &&
-      inner.querySelector(".sd-region > p > img.sd-embed, .sd-region > .sd-mermaid")
+      inner.querySelector(".sd-region > p > img.sd-embed:only-child, .sd-region > img.sd-embed, .sd-region > .sd-mermaid")
     ) {
       inner.classList.add("sd-has-media");
+      // Obsidian ![[embeds]] render as a bare <img> directly under .sd-region (no
+      // <p>); wrap each in a cell so it shares the same fill structure as the
+      // <p>-wrapped markdown ![](…) images.
+      for (const img of Array.from(inner.querySelectorAll(".sd-region > img.sd-embed"))) {
+        const cell = doc.createElement("div");
+        cell.className = "sd-media-cell";
+        img.parentNode?.insertBefore(cell, img);
+        cell.appendChild(img);
+      }
     }
     appendSlots(doc, box, deck, slide.index);
     await renderMermaidSlots(inner, slide.index, warnings);

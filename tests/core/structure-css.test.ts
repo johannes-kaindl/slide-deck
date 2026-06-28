@@ -56,9 +56,10 @@ describe("STRUCTURE_CSS area model", () => {
   it("fills + centers block media via the media cell (sd-has-media)", () => {
     expect(STRUCTURE_CSS).toContain("margin-inline:auto");
     expect(STRUCTURE_CSS).toContain(".sd-content.sd-has-media");
-    // the filled media cell forces the image to the cell box + contain (not a
-    // percentage max-height, which does not resolve through auto-height wrappers)
-    expect(STRUCTURE_CSS).toContain("img.sd-embed:only-child{ width:100%; height:100%; object-fit:contain; }");
+    // both syntaxes share one fill structure: markdown <p>-wrap and the
+    // render-dom .sd-media-cell wrap for bare Obsidian ![[embeds]]
+    expect(STRUCTURE_CSS).toContain(".sd-media-cell");
+    expect(STRUCTURE_CSS).toContain("width:100%; height:100%; object-fit:contain;");
   });
   it("defines cover-image background + scrim", () => {
     expect(STRUCTURE_CSS).toContain(".sd-cover-media");

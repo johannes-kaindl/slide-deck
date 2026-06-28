@@ -24,10 +24,16 @@ export const STRUCTURE_CSS = `
 .sd-mermaid svg{ display:block; margin-inline:auto; max-width:100%; max-height:100%; }
 .sd-content.sd-has-media{ display:flex; flex-direction:column; }
 .sd-content.sd-has-media > .sd-region{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-.sd-content.sd-has-media .sd-region > p:has(> img.sd-embed:only-child){ flex:1 1 0; min-height:0; margin:.4em 0; }
-.sd-content.sd-has-media .sd-region > p > img.sd-embed:only-child{ width:100%; height:100%; object-fit:contain; }
-.sd-content.sd-has-media .sd-region > .sd-mermaid{ flex:1 1 0; min-height:0; }
-.sd-content.sd-has-media .sd-region > .sd-mermaid > svg{ width:100%; height:100%; }
+/* The block-media cell grows into the remaining vertical space. Obsidian
+   ![[embeds]] are a bare <img> that render-dom wraps into .sd-media-cell;
+   markdown ![](…) images come pre-wrapped in markdown-it's <p>. */
+.sd-content.sd-has-media .sd-region > p:has(> img.sd-embed:only-child),
+.sd-content.sd-has-media .sd-region > .sd-media-cell,
+.sd-content.sd-has-media .sd-region > .sd-mermaid{ flex:1 1 0; min-height:0; margin:.4em 0; }
+/* The media element fills its cell, contained + centered. */
+.sd-content.sd-has-media .sd-region > p > img.sd-embed:only-child,
+.sd-content.sd-has-media .sd-region > .sd-media-cell > img.sd-embed,
+.sd-content.sd-has-media .sd-region > .sd-mermaid > svg{ width:100%; height:100%; object-fit:contain; }
 .sd-missing-embed{ color:#8a4b00; border:2px dashed #8a4b00; padding:0 .3em; border-radius:4px; }
 /* Callouts: Bedeutung redundant — Rahmenfarbe + Form (::before) + Label-Wort */
 .sd-callout{ border-left:6px solid var(--sd-callout-base,#5b6470); background:var(--sd-surface,#f4f6f8); padding:.5em .8em; border-radius:6px; margin:.4em 0; color:var(--sd-callout-fg,#16181d); }
