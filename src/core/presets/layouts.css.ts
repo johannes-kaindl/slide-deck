@@ -49,10 +49,16 @@ export const LAYOUTS_CSS = `
 
 /* cover-image: title overlays the full-bleed background, anchored bottom-left */
 .sd-layout-cover-image .sd-content{ display:flex; flex-direction:column; justify-content:flex-end; }
+/* cover-image without an image (.sd-cover-empty, set by render-dom): center the
+   title instead of stranding it at the bottom of an empty slide. */
+.sd-cover-empty .sd-content{ justify-content:center; align-items:center; text-align:center; }
 
 /* density modifiers (combine with any layout) */
-.sd-mod-compact .sd-content{ font-size:var(--sd-compact-scale,0.88em); line-height:1.3; }
-.sd-mod-compact li{ margin:.12em 0; }
+.sd-mod-compact .sd-content{ font-size:var(--sd-compact-scale,0.82em); line-height:1.25; }
+.sd-mod-compact h1{ font-size:1.7em; margin:0 0 .25em; }
+.sd-mod-compact h2{ font-size:1.3em; margin:0 0 .25em; }
+.sd-mod-compact p{ margin:.3em 0; }
+.sd-mod-compact li{ margin:.08em 0; }
 .sd-mod-code-heavy pre.hljs{ font-size:1em; }
 
 /* compose-center: vertically center sparse, non-overflowing content */

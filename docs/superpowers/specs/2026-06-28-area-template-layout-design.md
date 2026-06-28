@@ -87,7 +87,8 @@ Berührt `src/core/**` (pure: Direktiven-/Modifier-Parsing, Inferenz, neue CSS-S
   - **Wichtig (Lektion aus dem Smoke):** Prozent-`max-height` (z.B. `60%`/`80%`) wurde **verworfen** — es resolved nicht durch auto-Höhe-Vorfahren (`.sd-region`, `<p>`) und auch nicht zuverlässig auf Flex-Item-Bildern. Nur eine definite Flex-Zelle + `width/height:100%`+`contain` liefert Füllen.
 - **Vertikale Balance (reiner Text):** sparse Folien **ohne** Media werden als *ganzer* Inhaltsstapel vertikal zentriert über das bestehende `compose-center` (erweitert auf `default`/`two-column`/`columns-3`).
 - **image-focus:** media-dominant; nutzt dasselbe `.sd-has-media`-Media-Fill (Media füllt fast die ganze Folie), Titel/Caption nur zentriert (`text-align:center`).
-- **cover-image:** render-dom hebt das **erste** Bild-Embed in `.sd-cover-media` (Hintergrund, `object-fit:cover`, randlos) + `.sd-cover-scrim`. Fehlt ein Bild: nur Titel rendern (kein Scrim), `cover-image`-Warnung (`directive`-Klasse soft).
+- **cover-image:** render-dom hebt das **erste** Bild-Embed in `.sd-cover-media` (Hintergrund, `object-fit:cover`, randlos) + `.sd-cover-scrim`. Fehlt ein Bild: `box` bekommt `.sd-cover-empty` → Titel **zentriert** (statt unten verankert), kein Scrim, soft `cover-no-image`-Warnung.
+- **compose-center (sparse vertikal zentrieren) — Mess-Korrektur:** Die Entscheidung „ist die Folie sparse?" misst die **natürliche Inhaltshöhe** (vertikaler Span der `.sd-content`-Kinder via `getBoundingClientRect`), **nicht** `scrollHeight` — das ist auf einer `height:100%`-Box gleich `clientHeight` und würde immer „voll" melden (Plan-1-Bug, hier behoben). Fit nutzt weiter `scrollHeight` (Overflow-Erkennung). Media-Fill-Folien (`.sd-has-media`) melden natH≈clientH → kein Compose (richtig, Media füllt bereits).
 
 ## 6. Template-Katalog (11) + Modifier
 
@@ -162,7 +163,7 @@ Wenn `layout ∈ {two-column, columns-3}` **und** das erste gerenderte Top-Level
 | `--sd-slot-size` | `0.6em` | Schriftgröße Slots. |
 | `--sd-scrim` | `linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,.12) 60%, transparent)` | cover-image-Lesbarkeits-Overlay. |
 | `--sd-stat-size` | `4.5em` | Schriftgröße `stat`-Kennzahl. |
-| `--sd-compact-scale` | `0.88em` | Typo-Faktor für `compact` (em-Einheit erforderlich — speist `font-size`). |
+| `--sd-compact-scale` | `0.82em` | Typo-Faktor für `compact` (em-Einheit erforderlich — speist `font-size`; zusätzlich kleinere h1/h2 + engere Abstände). |
 
 Reserviert (nicht in diesem Spec): `--sd-eyebrow-glyph`, `--sd-rule-width`.
 

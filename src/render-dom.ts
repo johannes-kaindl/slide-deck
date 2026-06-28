@@ -95,6 +95,7 @@ export async function renderDeckToContainer(
         box.insertBefore(scrim, inner);
         box.insertBefore(media, scrim);
       } else {
+        box.classList.add("sd-cover-empty"); // center the title instead of bottom-anchoring it
         renderWarnings.push({ kind: "cover-no-image", message: "cover-image slide has no image — rendering title only." });
       }
     }
@@ -122,6 +123,15 @@ export async function renderDeckToContainer(
   for (const { box, inner, slide, renderWarnings } of built) {
     const contentHeight = inner.scrollHeight;
     const clientHeight = inner.clientHeight;
+    // Natural content span = vertical extent of .sd-content's children. scrollHeight
+    // equals clientHeight on a height:100% box, so it cannot tell a sparse slide from
+    // a full one; the children's bounding boxes can. Measured before the transform.
+    const innerTop = inner.getBoundingClientRect().top;
+    let contentBottom = innerTop;
+    for (const child of Array.from(inner.children)) {
+      contentBottom = Math.max(contentBottom, child.getBoundingClientRect().bottom);
+    }
+    const naturalHeight = contentBottom - innerTop;
     const fit = computeFit(
       { contentWidth: inner.scrollWidth, contentHeight },
       { width: inner.clientWidth, height: clientHeight },
@@ -130,7 +140,7 @@ export async function renderDeckToContainer(
     inner.style.transformOrigin = "top left";
     inner.style.transform = `scale(${fit.scale})`;
     const composable = slide.layout === "default" || slide.layout === "two-column" || slide.layout === "columns-3";
-    if (composable && shouldCenterCompose(contentHeight, clientHeight, fit)) {
+    if (composable && shouldCenterCompose(naturalHeight, clientHeight, fit)) {
       box.classList.add("sd-compose-center");
     }
     const slideWarnings = collectWarnings(slide, renderWarnings, fit);
