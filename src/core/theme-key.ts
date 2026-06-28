@@ -1,3 +1,5 @@
+import type { MermaidTheme } from "./presets";
+
 /** Theme key = the .css file's name without its extension, verbatim (frontmatter "theme:" value). */
 export function keyFromFilename(filename: string): string {
   return filename.trim().replace(/\.css$/i, "");
@@ -9,4 +11,23 @@ export function parseBaseFontPx(css: string): number | undefined {
   if (!m) return undefined;
   const n = Number(m[1]);
   return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
+const HLJS_META_RE = /\/\*\s*sd-hljs\s*:\s*([A-Za-z0-9-]+)\s*\*\//i;
+const MERMAID_META_RE = /\/\*\s*sd-mermaid\s*:\s*([A-Za-z]+)\s*\*\//i;
+const MERMAID_VALUES = ["default", "dark", "neutral", "forest"];
+
+/** Read optional `sd-hljs` and `sd-mermaid` header directives from a
+ *  theme's CSS (analogous to parseBaseFontPx). hljs is returned raw (validated against the
+ *  HLJS map by the adapter); mermaid is validated against the MermaidTheme union here. */
+export function parseThemeMeta(css: string): { hljs?: string; mermaid?: MermaidTheme } {
+  const out: { hljs?: string; mermaid?: MermaidTheme } = {};
+  const h = HLJS_META_RE.exec(css);
+  if (h) out.hljs = h[1];
+  const m = MERMAID_META_RE.exec(css);
+  if (m) {
+    const v = m[1].toLowerCase();
+    if (MERMAID_VALUES.includes(v)) out.mermaid = v as MermaidTheme;
+  }
+  return out;
 }

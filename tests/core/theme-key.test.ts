@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { keyFromFilename, parseBaseFontPx } from "../../src/core/theme-key";
+import { keyFromFilename, parseBaseFontPx, parseThemeMeta } from "../../src/core/theme-key";
 
 describe("keyFromFilename", () => {
   it("strips the .css extension verbatim", () => {
@@ -20,5 +20,22 @@ describe("parseBaseFontPx", () => {
   it("returns undefined when absent or non-positive", () => {
     expect(parseBaseFontPx(".sd-slide{ --sd-bg:#000 }")).toBeUndefined();
     expect(parseBaseFontPx("--sd-base:0px")).toBeUndefined();
+  });
+});
+
+describe("parseThemeMeta", () => {
+  it("reads sd-hljs and sd-mermaid header directives", () => {
+    const css = "/* sd-hljs: github-dark */\n/* sd-mermaid: dark */\n.sd-slide{ --sd-bg:#000 }";
+    expect(parseThemeMeta(css)).toEqual({ hljs: "github-dark", mermaid: "dark" });
+  });
+  it("tolerates whitespace and case on the mermaid value", () => {
+    expect(parseThemeMeta("/*  sd-mermaid : Forest */").mermaid).toBe("forest");
+  });
+  it("drops an unknown mermaid value but keeps a valid hljs", () => {
+    const r = parseThemeMeta("/* sd-hljs: github */\n/* sd-mermaid: bogus */");
+    expect(r).toEqual({ hljs: "github" });
+  });
+  it("returns an empty object when no directives present", () => {
+    expect(parseThemeMeta(".sd-slide{ --sd-bg:#000 }")).toEqual({});
   });
 });
