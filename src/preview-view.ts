@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, MarkdownView, Notice, setIcon, type TFile } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownView, Notice, Platform, setIcon, type TFile } from "obsidian";
 import { loadDeck } from "./adapter";
 import { buildIsolatedDeck } from "./render-dom";
 import { createIsolatedDeckIframe, type IsolatedIframe } from "./iframe-host";
@@ -85,7 +85,7 @@ export class SlideDeckView extends ItemView {
     const expRow = bar.createDiv({ cls: "sd-tb-row sd-tb-export-row" });
     expRow.createSpan({ cls: "sd-tb-label", text: t("toolbar.export") });
     const defaults = () => ({ theme: this.effectiveTheme, minFontPx: this.plugin.settings.minFontPx });
-    mkBtn(expRow, "file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.customCss, this.effectiveTheme));
+    mkBtn(expRow, "file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.customCss, this.effectiveTheme, this.plugin.settings.exportFolder));
     mkBtn(expRow, "image", t("toolbar.exportImages"), () => void exportImages(this.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.imageScale, this.plugin.settings.customCss, this.plugin.settings.exportFolder, this.effectiveTheme));
 
     this.fileLabel = bar.createSpan({ cls: "sd-toolbar-file" });
@@ -175,7 +175,21 @@ export class SlideDeckView extends ItemView {
     if (!frame) return;
     const avail = this.deckEl.clientWidth - 16;
     if (avail <= 0) return;
-    frame.style.setProperty("zoom", String(Math.min(1, avail / this.geoWidth)));
+    const factor = Math.min(1, avail / this.geoWidth);
+    if (Platform.isDesktopApp) {
+      // Chromium honours `zoom` and reflows, so the scrollbar stays correct.
+      frame.style.setProperty("zoom", String(factor));
+      return;
+    }
+    // iOS/iPadOS WebView ignores `zoom` on the iframe element → the 1280px deck
+    // overflows the pane. Use transform:scale and size the host to the scaled box
+    // so the parent lays out + scrolls correctly.
+    const h = frame.contentDocument?.documentElement.scrollHeight ?? 0;
+    frame.style.transformOrigin = "top left";
+    frame.style.transform = `scale(${factor})`;
+    this.deckHost.style.width = `${this.geoWidth * factor}px`;
+    this.deckHost.style.height = `${h * factor}px`;
+    this.deckHost.style.overflow = "hidden";
   }
 
   private jumpTo(line: number): void {

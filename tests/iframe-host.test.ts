@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { isolatedDeckHtml, createIsolatedDeckIframe } from "../src/iframe-host";
+import { PRINT_CSS } from "../src/chrome-css";
 
 describe("isolatedDeckHtml", () => {
   it("builds a doctype document with css in head and body html in body", () => {
@@ -88,5 +89,19 @@ describe("createIsolatedDeckIframe", () => {
     f.fireFonts();
     await createIsolatedDeckIframe(f.ownerDoc as any, { css: "X", bodyHtml: "Y", sandbox: "allow-same-origin allow-modals" });
     expect(f.iframe.sandbox.value).toBe("allow-same-origin allow-modals");
+  });
+});
+
+describe("mobile PDF artifact", () => {
+  it("isolatedDeckHtml + PRINT_CSS is a self-contained printable doc", () => {
+    const html = isolatedDeckHtml({
+      css: ".sd-slide{background:#000}",
+      bodyHtml: '<div class="sd-slide">A</div>',
+      extraCss: PRINT_CSS(1280, 720),
+    });
+    expect(html).toContain("<!doctype html>");
+    expect(html).toContain("@page");
+    expect(html).toContain("print-color-adjust: exact");
+    expect(html).toContain('class="sd-slide"');
   });
 });

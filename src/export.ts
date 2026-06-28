@@ -1,8 +1,8 @@
-import { Notice, type App, type TFile } from "obsidian";
-import html2canvas from "html2canvas";
+import { Notice, Platform, type App, type TFile } from "obsidian";
+import { domToCanvas } from "modern-screenshot";
 import { loadDeck } from "./adapter";
 import { buildIsolatedDeck } from "./render-dom";
-import { createIsolatedDeckIframe } from "./iframe-host";
+import { createIsolatedDeckIframe, isolatedDeckHtml } from "./iframe-host";
 import { PRINT_CSS } from "./chrome-css";
 import { geometryFor } from "./core/geometry";
 import { t } from "./i18n";
@@ -14,13 +14,31 @@ function withTheme(deck: SlideDeck, themeOverride?: string): SlideDeck {
   return themeOverride ? { ...deck, directives: { ...deck.directives, theme: themeOverride } } : deck;
 }
 
-export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, registry: ThemeRegistry, defaults?: Partial<DeckDirectives>, customCss = "", themeOverride?: string): Promise<void> {
+/** Mobile PDF path (letterhead pattern): window.print() is a no-op in the Obsidian
+ *  mobile WebView, so write the self-contained deck HTML into the vault and hand it
+ *  to the OS via openWithDefaultApp — the user prints/shares it to PDF from there. */
+async function exportDeckHtmlAndOpen(app: App, file: TFile | null, slidesHtml: string[], css: string, geo: { width: number; height: number }, exportFolder: string): Promise<void> {
+  const adapter = app.vault.adapter;
+  const base = file?.basename ?? "deck";
+  const root = exportFolder.replace(/\/+$/, "") || "Slide-Deck-Export";
+  if (!(await adapter.exists(root))) await adapter.mkdir(root);
+  const path = `${root}/${base}.html`;
+  await adapter.write(path, isolatedDeckHtml({ css, bodyHtml: slidesHtml.join(""), extraCss: PRINT_CSS(geo.width, geo.height) }));
+  const open = (app as unknown as { openWithDefaultApp?: (p: string) => Promise<void> }).openWithDefaultApp;
+  if (typeof open === "function") { try { await open.call(app, path); } catch { /* fall through to the path notice */ } }
+  new Notice(t("notice.pdfOpened", path));
+}
+
+export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, registry: ThemeRegistry, defaults?: Partial<DeckDirectives>, customCss = "", themeOverride?: string, exportFolder = "Slide-Deck-Export"): Promise<void> {
  try {
   const loaded = await loadDeck(app, file, defaults);
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const deck = withTheme(loaded.deck, themeOverride);
   const geo = geometryFor(deck.directives.aspect);
+  new Notice(t("notice.exporting"));
   const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, customCss);
+  if (!Platform.isDesktopApp) { await exportDeckHtmlAndOpen(app, file, slidesHtml, css, geo, exportFolder); return; }
+  // Desktop: print the isolated iframe directly.
   // allow-modals is required for contentWindow.print() on a sandboxed frame (print opens a modal).
   const host = await createIsolatedDeckIframe(doc, { css, extraCss: PRINT_CSS(geo.width, geo.height), bodyHtml: slidesHtml.join(""), width: geo.width, sandbox: "allow-same-origin allow-modals" });
   const frameWin = host.iframe.contentWindow;
@@ -47,6 +65,7 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const deck = withTheme(loaded.deck, themeOverride);
   const geo = geometryFor(deck.directives.aspect);
+  new Notice(t("notice.exporting"));
   const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, customCss);
   const adapter = app.vault.adapter;
   const base = file?.basename ?? "deck";
@@ -57,8 +76,15 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
   const host = await createIsolatedDeckIframe(doc, { css, bodyHtml: slidesHtml.join(""), width: geo.width });
   try {
     const slides = Array.from(host.contentDoc.querySelectorAll<HTMLElement>(".sd-slide"));
+    const view = host.contentDoc.defaultView;
     for (let i = 0; i < slides.length; i++) {
-      const canvas = await html2canvas(slides[i], { width: geo.width, height: geo.height, scale, backgroundColor: "#fff" });
+      // modern-screenshot's backgroundColor option fills the canvas AND forces
+      // `background-color !important` on the cloned root. Passing the slide's own
+      // computed --sd-bg keeps the theme background (a hardcoded "#fff" would paint
+      // every theme white); fall back to white only if the slide is transparent.
+      const slideBg = view ? view.getComputedStyle(slides[i]).backgroundColor : "";
+      const backgroundColor = slideBg && slideBg !== "rgba(0, 0, 0, 0)" && slideBg !== "transparent" ? slideBg : "#fff";
+      const canvas = await domToCanvas(slides[i], { width: geo.width, height: geo.height, scale, backgroundColor });
       const b64 = canvas.toDataURL("image/png").split(",")[1];
       const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
       const path = `${folder}/${String(i + 1).padStart(2, "0")}-${base}.png`;

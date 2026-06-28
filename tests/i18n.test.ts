@@ -20,3 +20,11 @@ describe("theme-handling strings", () => {
     setLang("en");
   });
 });
+
+describe("export notices", () => {
+  it("has EN + DE for notice.pdfOpened", () => {
+    setLang("en"); expect(t("notice.pdfOpened", "x.html")).not.toBe("notice.pdfOpened");
+    setLang("de"); expect(t("notice.pdfOpened", "x.html")).not.toBe("notice.pdfOpened");
+    setLang("en");
+  });
+});

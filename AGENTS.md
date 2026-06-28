@@ -9,7 +9,7 @@ Workspace-weite Standards (comply-or-explain): siehe [`../_docs/CONVENTIONS.md`]
 
 **Projekt:** `slide-deck` (Plugin-id) — Obsidian-Plugin, das eine **Markdown-Notiz** in eine
 **Folienpräsentation** verwandelt und diese als PDF oder PNG-Bilderserie exportiert.
-Desktop-only, keine Cloud, keine externen Dienste. Autor: Johannes Kaindl.
+Desktop und Mobile, keine Cloud, keine externen Dienste. Autor: Johannes Kaindl.
 
 **Warum es existiert:** Präsentationen direkt aus dem eigenen Wissens-Vault heraus erstellen —
 ohne Format-Konvertierungen, Powerpoint, oder externe SaaS-Tools. Markdown-Notizen bleiben
@@ -88,10 +88,14 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
                      Warn-Badges und Source-Jump-Link. Deck wird in einem persistenten
                      isolierten iframe dargestellt; Preview-Zoom wirkt auf das <iframe>-Element;
                      PREVIEW_CHROME_CSS wird in den iframe injiziert.
-  export.ts          exportPdf() — druckt einen isolierten iframe via contentWindow.print()
-                     (der alte printRootCss-„Alles-ausblenden"-Hack entfällt).
-                     exportImages() — PNG-Capture via html2canvas innerhalb eines isolierten iframes.
-                     Beide konsumieren buildIsolatedDeck() für ein einheitliches Artefakt.
+  export.ts          exportPdf() — plattformabhängige PDF-Weiche: Desktop druckt den isolierten
+                     iframe via `contentWindow.print()` (sandbox="allow-same-origin allow-modals");
+                     Mobile schreibt `isolatedDeckHtml` (mit `PRINT_CSS`) in den Export-Ordner
+                     und übergibt die Datei via `app.openWithDefaultApp` ans OS (Nutzer druckt/
+                     teilt von dort als PDF). `window.print()` ist im Mobile-WebView ein No-op.
+                     exportImages() — PNG-Capture via `modern-screenshot` (`domToCanvas`) innerhalb
+                     eines isolierten iframes; ersetzt html2canvas (Wortabstände wurden zusammen-
+                     geklebt). Beide konsumieren buildIsolatedDeck() für ein einheitliches Artefakt.
   dom-safe.ts        Popout-sichere DOM-Helfer (activeDocument, activeWindow).
   i18n.ts            t(key, ...args) · pickLang · setLang/getLang. EN kanonisch, DE übersetzt.
   settings.ts        SlideDeckSettings (defaultTheme, minFontPx, imageScale, themesFolder,
@@ -179,15 +183,17 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
   Injektion. Messung wartet auf `load` + `contentDoc.fonts.ready` (KaTeX-Glyph-Metriken).
   Off-Screen-Staging: `position: fixed; left: -99999px` statt `display: none` —
   `display:none` unterdrückt das Layout und bricht scrollWidth-Messungen.
-- **html2canvas-Fidelität:** Der PNG-Export nutzt html2canvas 1.x. KaTeX-Mathematik und
-  Mermaid-SVGs werden grundsätzlich erfasst, aber komplexe SVG-Funktionen (Gradients,
-  Clipping Paths, bestimmte Fonts) können im Export abweichen. Bei Bedarf muss die
-  Render-Pipeline auf eine Headless-Browser-Lösung (z.B. Puppeteer/Playwright) umgestellt
-  werden — das ist als Phase-2-Arbeit markiert.
-- **PDF via window.print:** Der PDF-Export injiziert selbst-enthaltenes HTML in den
-  `activeDocument` und öffnet `window.print()`. Obsidian-Themes, Browser-Erweiterungen und
-  Systemdruck-Einstellungen können das Ergebnis beeinflussen. Die `@page`-CSS-Regel setzt die
-  Seitengröße auf die Foliengröße.
+- **Export-Pfade plattformabhängig:** PNG nutzt `modern-screenshot` (foreignObject →
+  natives Text-Layout; html2canvas wurde wegen zusammenklebender Wortabstände
+  ersetzt). PDF verzweigt auf `Platform.isDesktopApp`: Desktop druckt den isolierten
+  iframe (`contentWindow.print()`), Mobile schreibt `isolatedDeckHtml` in den
+  Export-Ordner und ruft `app.openWithDefaultApp` (window.print ist im Mobile-WebView
+  ein No-op — letterhead-Muster). `print-color-adjust: exact` in `PRINT_CSS` erzwingt
+  den Theme-Hintergrund im Druck.
+- **PDF via window.print (Desktop):** Der Desktop-PDF-Export druckt den isolierten iframe via
+  `contentWindow.print()`. Obsidian-Themes, Browser-Erweiterungen und Systemdruck-Einstellungen
+  können das Ergebnis beeinflussen. Die `@page`-CSS-Regel setzt die Seitengröße auf die
+  Foliengröße.
 - **Fit-or-warn — Overflow ist beabsichtigt:** Folien werden bei `minFontPx` gewarnt, nicht
   beschnitten. Das ist kein Bug — der Nutzer soll den Inhalt verdichten.
 - **Mermaid-IDs müssen eindeutig sein:** `render-dom.ts` vergibt eindeutige IDs per Folie
@@ -212,9 +218,10 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
 Stand 2026-06-25 — **vor erstem Release 0.1.0**. Bewusste, begründete Abweichungen
 (comply-or-explain):
 
-- **`isDesktopOnly: true`** — PDF-Export via `window.print()` und PNG-Export via html2canvas
-  benötigen eine vollständige Browser-DOM-Umgebung. Obsidian Mobile hat dafür keine stabile API.
-  Explizite Desktop-Einschränkung ist besser als stiller Fehler auf Mobile.
+- **`isDesktopOnly: false`** — das Plugin läuft auf Mobile. Alle Desktop-only-APIs sind
+  bewacht: PDF-Export verzweigt auf `Platform.isDesktopApp` (Desktop: `contentWindow.print()`;
+  Mobile: HTML-Datei schreiben + `openWithDefaultApp`); „Im Finder anzeigen" prüft
+  `FileSystemAdapter` und fällt auf einen `Notice`-Fallback zurück.
 - **PROF-OBS-06** — SettingTab nutzt `display()` (deklarative `getSettingDefinitions`-API ist
   Obsidian 1.13+). *Grund:* Recommendation, kein Blocker; minAppVersion bleibt 1.8.7. Eigener
   Upgrade-Zyklus.
