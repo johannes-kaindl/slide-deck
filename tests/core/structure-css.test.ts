@@ -24,3 +24,20 @@ describe("STRUCTURE_CSS", () => {
     expect(STRUCTURE_CSS).toContain("::before");
   });
 });
+
+describe("STRUCTURE_CSS callout tokenization", () => {
+  it("derives callout surface + text from tokens with current fallbacks", () => {
+    expect(STRUCTURE_CSS).toContain("var(--sd-surface,#f4f6f8)");
+    expect(STRUCTURE_CSS).toContain("var(--sd-callout-fg,#16181d)");
+  });
+  it("derives each callout signal color from a token", () => {
+    expect(STRUCTURE_CSS).toContain("var(--sd-callout-note,#3b6db5)");
+    expect(STRUCTURE_CSS).toContain("var(--sd-callout-warning,#b58a1e)");
+    expect(STRUCTURE_CSS).toContain("var(--sd-callout-danger,#b5443b)");
+    expect(STRUCTURE_CSS).toContain("var(--sd-callout-tip,#2e8b6f)");
+    expect(STRUCTURE_CSS).toContain("var(--sd-callout-info,#3b6db5)");
+  });
+  it("no longer hardcodes the light callout surface hex directly", () => {
+    expect(STRUCTURE_CSS).not.toContain("background:#f4f6f8");
+  });
+});
