@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-06-28
+
 ### Added
 
 - **Template/layout model** — eleven per-slide templates (`default`, `title`, `section`, `quote`,
