@@ -163,7 +163,7 @@ Wenn `layout ∈ {two-column, columns-3}` **und** das erste gerenderte Top-Level
 | `--sd-slot-size` | `0.6em` | Schriftgröße Slots. |
 | `--sd-scrim` | `linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,.12) 60%, transparent)` | cover-image-Lesbarkeits-Overlay. |
 | `--sd-stat-size` | `4.5em` | Schriftgröße `stat`-Kennzahl. |
-| `--sd-compact-scale` | `0.88` | Typo-Faktor für `compact` (em-basiert). |
+| `--sd-compact-scale` | `0.88em` | Typo-Faktor für `compact` (em-Einheit erforderlich — speist `font-size`). |
 
 Reserviert (nicht in diesem Spec): `--sd-eyebrow-glyph`, `--sd-rule-width`.
 
