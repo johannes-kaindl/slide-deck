@@ -88,7 +88,7 @@ export async function renderDeckToContainer(
       if (img) {
         const media = doc.createElement("img");
         media.className = "sd-cover-media";
-        media.src = img.getAttribute("src") ?? "";
+        media.setAttribute("src", img.getAttribute("src") ?? "");
         const scrim = doc.createElement("div");
         scrim.className = "sd-cover-scrim";
         img.remove();
