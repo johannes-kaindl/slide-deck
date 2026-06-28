@@ -40,4 +40,8 @@ describe("STRUCTURE_CSS callout tokenization", () => {
   it("no longer hardcodes the light callout surface hex directly", () => {
     expect(STRUCTURE_CSS).not.toContain("background:#f4f6f8");
   });
+  it("base callout border keeps the original neutral grey fallback", () => {
+    expect(STRUCTURE_CSS).toContain("var(--sd-callout-base,#5b6470)");
+    expect(STRUCTURE_CSS).not.toContain("6px solid var(--sd-callout-note");
+  });
 });

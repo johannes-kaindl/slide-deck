@@ -19,7 +19,7 @@ export const STRUCTURE_CSS = `
 .sd-mermaid svg{ max-width:100%; max-height:480px; }
 .sd-missing-embed{ color:#8a4b00; border:2px dashed #8a4b00; padding:0 .3em; border-radius:4px; }
 /* Callouts: Bedeutung redundant — Rahmenfarbe + Form (::before) + Label-Wort */
-.sd-callout{ border-left:6px solid var(--sd-callout-note,#3b6db5); background:var(--sd-surface,#f4f6f8); padding:.5em .8em; border-radius:6px; margin:.4em 0; color:var(--sd-callout-fg,#16181d); }
+.sd-callout{ border-left:6px solid var(--sd-callout-base,#5b6470); background:var(--sd-surface,#f4f6f8); padding:.5em .8em; border-radius:6px; margin:.4em 0; color:var(--sd-callout-fg,#16181d); }
 .sd-callout-title{ display:flex; align-items:center; gap:.4em; font-weight:600; }
 .sd-callout-icon::before{ font-size:1em; }
 .sd-callout-note{ border-left-color:var(--sd-callout-note,#3b6db5); } .sd-callout-note .sd-callout-icon::before{ content:"ℹ"; }
