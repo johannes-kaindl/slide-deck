@@ -5,7 +5,7 @@
  *  owned by the per-theme hljs stylesheet — only the wrapper background is tokenized. */
 export const STRUCTURE_CSS = `
 .sd-slide{ width:var(--sd-w,1280px); height:var(--sd-h,720px); box-sizing:border-box;
-  padding:64px; overflow:hidden; background:var(--sd-bg); color:var(--sd-fg); font-size:var(--sd-base);
+  padding:64px; overflow:hidden; position:relative; background:var(--sd-bg); color:var(--sd-fg); font-size:var(--sd-base);
   line-height:1.4; font-family:var(--sd-font); }
 .sd-slide h1{ font-family:var(--sd-heading-font); font-size:2.2em; margin:0 0 .4em; }
 .sd-slide h2{ font-family:var(--sd-heading-font); font-size:1.7em; margin:0 0 .4em; }
@@ -15,8 +15,10 @@ export const STRUCTURE_CSS = `
 /* Content fills the slide's padded area so overflow is measurable (scrollHeight > clientHeight). */
 .sd-content{ width:100%; height:100%; }
 .sd-slide pre.hljs{ font-size:.8em; padding:.6em .8em; border-radius:8px; background:var(--sd-code-bg); overflow:hidden; }
-.sd-embed{ max-width:100%; max-height:60%; object-fit:contain; }
-.sd-mermaid svg{ max-width:100%; max-height:480px; }
+/* Block media: centered, body-width, contain (no left-inline flow). */
+.sd-embed{ display:block; margin-inline:auto; max-width:100%; max-height:var(--sd-media-max-h,60%); object-fit:contain; }
+.sd-mermaid{ text-align:center; }
+.sd-mermaid svg{ display:inline-block; max-width:100%; max-height:var(--sd-media-max-h-mermaid,480px); }
 .sd-missing-embed{ color:#8a4b00; border:2px dashed #8a4b00; padding:0 .3em; border-radius:4px; }
 /* Callouts: Bedeutung redundant — Rahmenfarbe + Form (::before) + Label-Wort */
 .sd-callout{ border-left:6px solid var(--sd-callout-base,#5b6470); background:var(--sd-surface,#f4f6f8); padding:.5em .8em; border-radius:6px; margin:.4em 0; color:var(--sd-callout-fg,#16181d); }
@@ -27,4 +29,15 @@ export const STRUCTURE_CSS = `
 .sd-callout-danger{ border-left-color:var(--sd-callout-danger,#b5443b); } .sd-callout-danger .sd-callout-icon::before{ content:"✕"; }
 .sd-callout-tip{ border-left-color:var(--sd-callout-tip,#2e8b6f); } .sd-callout-tip .sd-callout-icon::before{ content:"★"; }
 .sd-callout-info{ border-left-color:var(--sd-callout-info,#3b6db5); } .sd-callout-info .sd-callout-icon::before{ content:"ℹ"; }
+/* Floating slots — live in the 64px margin, outside the scaled .sd-content. */
+.sd-slide-header,.sd-slide-footer,.sd-slide-pagination{ position:absolute; z-index:4;
+  font-size:var(--sd-slot-size,0.6em); color:var(--sd-slot-fg,var(--sd-muted,#6b7280)); letter-spacing:.04em; }
+.sd-slide-header{ top:24px; right:32px; text-transform:uppercase; }
+.sd-slide-footer{ bottom:24px; left:32px; }
+.sd-slide-pagination{ bottom:24px; right:32px; }
+/* cover-image: full-bleed background + readability scrim behind the content. */
+.sd-cover-media{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+.sd-cover-scrim{ position:absolute; inset:0; z-index:1;
+  background:var(--sd-scrim,linear-gradient(0deg,rgba(0,0,0,.78),rgba(0,0,0,.12) 60%,transparent)); }
+.sd-layout-cover-image .sd-content{ position:relative; z-index:3; }
 `;

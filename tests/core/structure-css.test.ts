@@ -45,3 +45,24 @@ describe("STRUCTURE_CSS callout tokenization", () => {
     expect(STRUCTURE_CSS).not.toContain("6px solid var(--sd-callout-note");
   });
 });
+
+describe("STRUCTURE_CSS area model", () => {
+  it("anchors absolutely-positioned slots", () => {
+    expect(STRUCTURE_CSS).toContain("position:relative");           // on .sd-slide
+    expect(STRUCTURE_CSS).toContain(".sd-slide-pagination");
+    expect(STRUCTURE_CSS).toContain(".sd-slide-header");
+    expect(STRUCTURE_CSS).toContain(".sd-slide-footer");
+  });
+  it("centers block media (no longer left-inline)", () => {
+    expect(STRUCTURE_CSS).toContain("margin-inline:auto");
+    expect(STRUCTURE_CSS).toContain("var(--sd-media-max-h,60%)");
+  });
+  it("defines cover-image background + scrim", () => {
+    expect(STRUCTURE_CSS).toContain(".sd-cover-media");
+    expect(STRUCTURE_CSS).toContain("object-fit:cover");
+    expect(STRUCTURE_CSS).toContain("var(--sd-scrim,");
+  });
+  it("keeps .sd-content fill rule verbatim (fit-critical)", () => {
+    expect(STRUCTURE_CSS).toContain(".sd-content{ width:100%; height:100%; }");
+  });
+});
