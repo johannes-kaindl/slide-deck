@@ -27,3 +27,14 @@ describe("LAYOUTS_CSS", () => {
     expect(LAYOUTS_CSS).not.toContain("#");
   });
 });
+
+describe("LAYOUTS_CSS compose-center", () => {
+  it("centers single-column composed content with flex", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-compose-center:not(.sd-layout-two-column) .sd-content");
+    expect(LAYOUTS_CSS).toContain("justify-content:center");
+  });
+  it("centers two-column composed content via grid align-content", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-compose-center.sd-layout-two-column .sd-content");
+    expect(LAYOUTS_CSS).toContain("align-content:center");
+  });
+});

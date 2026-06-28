@@ -1,6 +1,7 @@
 import mermaid from "mermaid";
 import { renderMarkdown } from "./core/render/md2html";
 import { computeFit } from "./core/layout/fit";
+import { shouldCenterCompose } from "./core/layout/compose";
 import { collectWarnings, collectDeckWarnings, type Warning, type SlideWarning } from "./core/constraints/engine";
 import { deckCss } from "./deck-css";
 import { geometryFor } from "./core/geometry";
@@ -66,13 +67,19 @@ export async function renderDeckToContainer(
 
   // Pass 2 — measure the padded content area and bake one shared scale per slide.
   for (const { box, inner, slide, renderWarnings } of built) {
+    const contentHeight = inner.scrollHeight;
+    const clientHeight = inner.clientHeight;
     const fit = computeFit(
-      { contentWidth: inner.scrollWidth, contentHeight: inner.scrollHeight },
-      { width: inner.clientWidth, height: inner.clientHeight },
+      { contentWidth: inner.scrollWidth, contentHeight },
+      { width: inner.clientWidth, height: clientHeight },
       minScale,
     );
     inner.style.transformOrigin = "top left";
     inner.style.transform = `scale(${fit.scale})`;
+    const composable = slide.layout === "default" || slide.layout === "two-column";
+    if (composable && shouldCenterCompose(contentHeight, clientHeight, fit)) {
+      box.classList.add("sd-compose-center");
+    }
     const slideWarnings = collectWarnings(slide, renderWarnings, fit);
     if (slideWarnings.some((w) => w.kind === "overflow" || w.kind === "belowFloor")) box.classList.add("sd-slide-warn");
     else if (slideWarnings.length > 0) box.classList.add("sd-slide-warn-soft");

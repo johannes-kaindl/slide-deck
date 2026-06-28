@@ -26,4 +26,6 @@ export const LAYOUTS_CSS = `
 .sd-layout-section .sd-region{ font-size:1.2em; }
 .sd-layout-image-focus .sd-content{ display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
 .sd-layout-image-focus .sd-embed{ max-height:80%; }
+.sd-compose-center:not(.sd-layout-two-column) .sd-content{ display:flex; flex-direction:column; justify-content:center; }
+.sd-compose-center.sd-layout-two-column .sd-content{ align-content:center; }
 `;
