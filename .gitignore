@@ -6,3 +6,6 @@ data.json
 # styles.css bleibt TRACKED (Release-Asset)
 node_modules/
 .superpowers/brainstorm/
+
+# DS reference, kept out of the repo on purpose (untracked → ignored so release-clean checks pass)
+design/

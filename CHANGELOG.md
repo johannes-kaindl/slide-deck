@@ -6,6 +6,32 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Template/layout model** — eleven per-slide templates (`default`, `title`, `section`, `quote`,
+  `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`) plus combinable density
+  modifiers (`compact`, `code-heavy`), chosen with `<!-- layout: <template> [modifier…] -->`.
+  In multi-column layouts the title spans all columns.
+- **Media that fills and centers** — block images and Mermaid diagrams now occupy the available
+  space, horizontally and vertically centered and scaled to fit (`object-fit: contain`), for both
+  Obsidian `![[embeds]]` and standard `![](…)` images — instead of flowing small and left-aligned.
+- **Deck slots** — `header:`, `footer:` and `paginate:` frontmatter render as floating corner
+  slots (pagination shows `n / N`).
+- **Smart layout inference** — with no explicit directive, a lone heading becomes `section`, a lone
+  quote becomes `quote`, a lone image/diagram becomes `image-focus`, and `<!-- column -->` splits
+  pick `two-column`/`columns-3`; an explicit `<!-- layout -->` always wins.
+- **Sparse slides compose vertically** — slides with little content are vertically centered instead
+  of clinging to the top.
+- **Per-theme code & Mermaid** — a user `.css` theme can declare its highlight.js and Mermaid theme
+  via `/* sd-hljs: … */` and `/* sd-mermaid: … */` header directives, so dark decks get dark code
+  and dark diagrams.
+
+### Fixed
+
+- Callout colours now derive from theme tokens, so dark themes render dark callouts without
+  per-theme overrides.
+- Mermaid diagrams scale to fill their area instead of being capped small.
+
 ## [0.2.0] — 2026-06-28
 
 ### Fixed
