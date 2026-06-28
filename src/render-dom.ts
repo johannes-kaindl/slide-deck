@@ -32,6 +32,10 @@ async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnin
       const renderId = `sd-mm-${mermaidSeq++}`;
       const { svg } = await mermaid.render(renderId, src);
       slots[i].innerHTML = svg;
+      // mermaid injects an inline max-width on the <svg> that caps it small and
+      // overrides the stylesheet — drop it so the media-cell CSS (width/height:100%)
+      // can scale the diagram to fill its area.
+      slots[i].querySelector("svg")?.style.removeProperty("max-width");
     } catch {
       slots[i].textContent = "⚠ Mermaid error";
       warnings.push({ slideIndex, kind: "mermaid-error", message: "Mermaid diagram failed to parse" });
