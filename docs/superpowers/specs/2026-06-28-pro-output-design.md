@@ -101,7 +101,7 @@ Wenn eine Folie **keine** explizite `<!-- layout: … -->`-Direktive trägt, lei
 | Inhaltsform der Folie | Inferiertes Layout | Effekt (bestehendes CSS) |
 |---|---|---|
 | genau eine `blockquote`, sonst nichts Substanzielles | `quote` | zentriert, italic, `max-width:80%` |
-| genau eine Überschrift (h1/h2), sonst nichts | `section` | zentriert, größer |
+| genau eine Überschrift (h1–h6), sonst nichts | `section` | zentriert, größer |
 | alles andere | `default` | normaler Fluss (→ A2 entscheidet vertikal) |
 
 - Implementiert als pure Funktion `inferLayout(slide): string | undefined` (gibt `undefined` zurück, wenn eine explizite Direktive vorliegt → diese gewinnt).
