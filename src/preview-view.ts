@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, MarkdownView, Notice, setIcon, type TFile } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownView, Notice, Platform, setIcon, type TFile } from "obsidian";
 import { loadDeck } from "./adapter";
 import { buildIsolatedDeck } from "./render-dom";
 import { createIsolatedDeckIframe, type IsolatedIframe } from "./iframe-host";
@@ -175,7 +175,21 @@ export class SlideDeckView extends ItemView {
     if (!frame) return;
     const avail = this.deckEl.clientWidth - 16;
     if (avail <= 0) return;
-    frame.style.setProperty("zoom", String(Math.min(1, avail / this.geoWidth)));
+    const factor = Math.min(1, avail / this.geoWidth);
+    if (Platform.isDesktopApp) {
+      // Chromium honours `zoom` and reflows, so the scrollbar stays correct.
+      frame.style.setProperty("zoom", String(factor));
+      return;
+    }
+    // iOS/iPadOS WebView ignores `zoom` on the iframe element → the 1280px deck
+    // overflows the pane. Use transform:scale and size the host to the scaled box
+    // so the parent lays out + scrolls correctly.
+    const h = frame.contentDocument?.documentElement.scrollHeight ?? 0;
+    frame.style.transformOrigin = "top left";
+    frame.style.transform = `scale(${factor})`;
+    this.deckHost.style.width = `${this.geoWidth * factor}px`;
+    this.deckHost.style.height = `${h * factor}px`;
+    this.deckHost.style.overflow = "hidden";
   }
 
   private jumpTo(line: number): void {
