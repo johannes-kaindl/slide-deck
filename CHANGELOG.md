@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-06-30
+
 Maintenance release for the Obsidian community-plugin review — no user-facing behaviour change.
 
 ### Changed

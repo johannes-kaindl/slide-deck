@@ -1,6 +1,6 @@
 {
   "name": "slide-deck",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Turn a Markdown note into a slide deck and export it to PDF or a PNG image series, with live readability checks.",
   "type": "module",
   "scripts": {
