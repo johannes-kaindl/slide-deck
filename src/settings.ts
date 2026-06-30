@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting, type SettingDefinitionItem } from "obsidian";
 import type SlideDeckPlugin from "./main";
 import { t } from "./i18n";
 import { revealFolder, writeThemeCss } from "./theme-source";
@@ -17,76 +17,111 @@ export const DEFAULT_SETTINGS: SlideDeckSettings = {
   exportFolder: "Slide-Deck-Export", themesFolder: "Slide-Deck-Themes", hideThemesFolder: true,
 };
 
+/** Declarative settings tab (Obsidian ≥ 1.13: getSettingDefinitions, not the deprecated
+ *  imperative display()). Plain controls bind via key ↔ get/setControlValue; the two pieces
+ *  that need bespoke UI (the theme-key chip list, the export dropdown+button) use render. */
 export class SlideDeckSettingTab extends PluginSettingTab {
   constructor(app: App, private plugin: SlideDeckPlugin) { super(app, plugin); }
 
-  display(): void {
-    const { containerEl } = this;
-    containerEl.empty();
-    new Setting(containerEl).setName(t("settings.heading")).setHeading();
-
+  getSettingDefinitions(): SettingDefinitionItem[] {
     const themes = this.plugin.themeStore.getThemes();
-    // Coerce an unknown persisted default to "default" so the dropdown always has a valid value.
-    if (!this.plugin.themeStore.getMap().has(this.plugin.settings.defaultTheme)) this.plugin.settings.defaultTheme = "default";
+    const themeOptions = Object.fromEntries(themes.map((e) => [e.key, e.key]));
+    return [
+      {
+        type: "group",
+        heading: t("settings.heading"),
+        items: [
+          { name: t("settings.theme.name"), desc: t("settings.theme.desc"),
+            control: { type: "dropdown", key: "defaultTheme", options: themeOptions } },
+          { name: t("settings.availableThemes.name"), desc: t("settings.availableThemes.desc"),
+            render: (setting) => this.renderThemeChips(setting) },
+          { name: t("settings.minFont.name"), desc: t("settings.minFont.desc"),
+            control: { type: "number", key: "minFontPx", min: 1 } },
+          { name: t("settings.imageScale.name"), desc: t("settings.imageScale.desc"),
+            control: { type: "number", key: "imageScale", min: 1, step: "any" } },
+          { name: t("settings.exportFolder.name"), desc: t("settings.exportFolder.desc"),
+            control: { type: "text", key: "exportFolder", placeholder: DEFAULT_SETTINGS.exportFolder } },
+          { name: t("settings.themesFolder.name"), desc: t("settings.themesFolder.desc"),
+            control: { type: "text", key: "themesFolder", placeholder: DEFAULT_SETTINGS.themesFolder } },
+          { name: t("settings.openFolder.name"), desc: t("settings.openFolder.desc"),
+            render: (setting) => {
+              setting.addButton((b) => b.setButtonText(t("settings.openFolder.button"))
+                .onClick(() => revealFolder(this.app, this.plugin.settings.themesFolder)));
+            } },
+          { name: t("settings.exportTheme.name"), desc: t("settings.exportTheme.desc"),
+            render: (setting) => this.renderExportTheme(setting) },
+          { name: t("settings.hideFolder.name"), desc: t("settings.hideFolder.desc"),
+            control: { type: "toggle", key: "hideThemesFolder" } },
+          { name: t("settings.customCss.name"), desc: t("settings.customCss.desc"),
+            control: { type: "textarea", key: "customCss" } },
+        ],
+      },
+    ];
+  }
 
-    new Setting(containerEl).setName(t("settings.theme.name")).setDesc(t("settings.theme.desc"))
-      .addDropdown((c) => {
-        for (const e of themes) c.addOption(e.key, e.key);
-        c.setValue(this.plugin.settings.defaultTheme)
-          .onChange(async (v) => { this.plugin.settings.defaultTheme = v; await this.plugin.saveSettings(); });
-      });
+  /** Read the current value for a bound control key. Called on every render. */
+  getControlValue(key: string): unknown {
+    const s = this.plugin.settings;
+    switch (key) {
+      // Coerce an unknown persisted default to "default" so the dropdown shows a valid option.
+      case "defaultTheme": return this.plugin.themeStore.getMap().has(s.defaultTheme) ? s.defaultTheme : "default";
+      case "minFontPx": return s.minFontPx;
+      case "imageScale": return s.imageScale;
+      case "exportFolder": return s.exportFolder;
+      case "themesFolder": return s.themesFolder;
+      case "hideThemesFolder": return s.hideThemesFolder;
+      case "customCss": return s.customCss;
+      default: return undefined;
+    }
+  }
 
-    // Available themes reference — the live list of valid frontmatter theme: values.
-    const ref = new Setting(containerEl).setName(t("settings.availableThemes.name")).setDesc(t("settings.availableThemes.desc"));
-    const chips = ref.controlEl.createDiv({ cls: "sd-theme-chips" });
-    for (const e of themes) {
+  /** Persist a changed control value (+ run the key's side effects), then save. */
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    const s = this.plugin.settings;
+    switch (key) {
+      case "defaultTheme": s.defaultTheme = String(value); break;
+      case "minFontPx": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.minFontPx = n; break; }
+      case "imageScale": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.imageScale = n; break; }
+      case "exportFolder": s.exportFolder = String(value).trim() || DEFAULT_SETTINGS.exportFolder; break;
+      case "customCss": s.customCss = String(value); break;
+      case "themesFolder":
+        s.themesFolder = String(value).trim() || DEFAULT_SETTINGS.themesFolder;
+        await this.plugin.saveSettings();
+        await this.plugin.refreshThemes();
+        this.plugin.applyFolderHide();
+        return;
+      case "hideThemesFolder":
+        s.hideThemesFolder = Boolean(value);
+        await this.plugin.saveSettings();
+        this.plugin.applyFolderHide();
+        return;
+      default: return;
+    }
+    await this.plugin.saveSettings();
+  }
+
+  /** Available-themes reference — the live list of valid frontmatter `theme:` values. */
+  private renderThemeChips(setting: Setting): void {
+    const chips = setting.controlEl.createDiv({ cls: "sd-theme-chips" });
+    for (const e of this.plugin.themeStore.getThemes()) {
       const tag = e.source === "user" ? t("settings.userTag") : t("settings.builtinTag");
       const label = /\s/.test(e.key) ? `"${e.key}"` : e.key;
       const chip = chips.createSpan({ cls: "sd-theme-chip", text: `${label} (${tag})` });
       chip.addEventListener("click", () => void navigator.clipboard?.writeText(e.key));
     }
+  }
 
-    new Setting(containerEl).setName(t("settings.minFont.name")).setDesc(t("settings.minFont.desc"))
-      .addText((c) => c.setValue(String(this.plugin.settings.minFontPx)).onChange(async (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) { this.plugin.settings.minFontPx = n; await this.plugin.saveSettings(); } }));
-
-    new Setting(containerEl).setName(t("settings.imageScale.name")).setDesc(t("settings.imageScale.desc"))
-      .addText((c) => c.setValue(String(this.plugin.settings.imageScale)).onChange(async (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) { this.plugin.settings.imageScale = n; await this.plugin.saveSettings(); } }));
-
-    new Setting(containerEl).setName(t("settings.exportFolder.name")).setDesc(t("settings.exportFolder.desc"))
-      .addText((c) => c.setValue(this.plugin.settings.exportFolder).onChange(async (v) => { this.plugin.settings.exportFolder = v.trim() || "Slide-Deck-Export"; await this.plugin.saveSettings(); }));
-
-    // Themes folder path
-    new Setting(containerEl).setName(t("settings.themesFolder.name")).setDesc(t("settings.themesFolder.desc"))
-      .addText((c) => c.setValue(this.plugin.settings.themesFolder).onChange(async (v) => {
-        this.plugin.settings.themesFolder = v.trim() || "Slide-Deck-Themes";
-        await this.plugin.saveSettings();
-        await this.plugin.refreshThemes();
-        this.plugin.applyFolderHide();
-      }));
-
-    // Open in Finder
-    new Setting(containerEl).setName(t("settings.openFolder.name")).setDesc(t("settings.openFolder.desc"))
-      .addButton((b) => b.setButtonText(t("settings.openFolder.button")).onClick(() => revealFolder(this.app, this.plugin.settings.themesFolder)));
-
-    // Export a theme as .css
+  /** Export any theme as an editable `.css` starting point (dropdown picks which). */
+  private renderExportTheme(setting: Setting): void {
+    const themes = this.plugin.themeStore.getThemes();
     let exportPick = themes[0]?.key ?? "default";
-    new Setting(containerEl).setName(t("settings.exportTheme.name")).setDesc(t("settings.exportTheme.desc"))
-      .addDropdown((c) => { for (const e of themes) c.addOption(e.key, e.key); c.setValue(exportPick).onChange((v) => { exportPick = v; }); })
-      .addButton((b) => b.setButtonText(t("settings.exportTheme.button")).onClick(async () => {
-        const entry = this.plugin.themeStore.resolve(exportPick);
-        const path = await writeThemeCss(this.app.vault.adapter, this.plugin.settings.themesFolder, entry.key, entry.themeCss);
-        new Notice(t("notice.themeExported", path));
-        await this.plugin.refreshThemes();
-        this.display();
-      }));
-
-    // Hide themes folder
-    new Setting(containerEl).setName(t("settings.hideFolder.name")).setDesc(t("settings.hideFolder.desc"))
-      .addToggle((c) => c.setValue(this.plugin.settings.hideThemesFolder).onChange(async (v) => {
-        this.plugin.settings.hideThemesFolder = v; await this.plugin.saveSettings(); this.plugin.applyFolderHide();
-      }));
-
-    new Setting(containerEl).setName(t("settings.customCss.name")).setDesc(t("settings.customCss.desc"))
-      .addTextArea((c) => c.setValue(this.plugin.settings.customCss).onChange(async (v) => { this.plugin.settings.customCss = v; await this.plugin.saveSettings(); }));
+    setting.addDropdown((c) => { for (const e of themes) c.addOption(e.key, e.key); c.setValue(exportPick).onChange((v) => { exportPick = v; }); });
+    setting.addButton((b) => b.setButtonText(t("settings.exportTheme.button")).onClick(async () => {
+      const entry = this.plugin.themeStore.resolve(exportPick);
+      const path = await writeThemeCss(this.app.vault.adapter, this.plugin.settings.themesFolder, entry.key, entry.themeCss);
+      new Notice(t("notice.themeExported", path));
+      await this.plugin.refreshThemes();
+      this.update(); // a new theme file may have appeared → re-render definitions (dropdown + chips)
+    }));
   }
 }

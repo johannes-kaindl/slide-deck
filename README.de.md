@@ -17,9 +17,9 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 - **Live-Theme-Wechsler** — die Vorschau-Toolbar enthält ein Theme-Dropdown zum ephemeren Ausprobieren, eine Quell-Anzeige (`aus Frontmatter` / `aus Standard` / `● nicht gespeichert`), die zeigt, woher das aktive Theme stammt, und eine Schaltfläche **Setzen**, die `theme:` direkt in die Frontmatter der Notiz schreibt. Die Frontmatter ist die maßgebliche Quelle; der Einstellungs-Standard gilt nur für Notizen ohne `theme:`-Schlüssel.
 - **Eigene Themes** — `.css`-Dateien in einen konfigurierbaren Themes-Ordner (Standard `Slide-Deck-Themes/`) ablegen; der `theme:`-Frontmatter-Wert entspricht dem Dateinamen ohne `.css`-Erweiterung. Jede Datei enthält einen `--sd-*`-Token-Block mit optionalem zusätzlichem CSS; eigene Themes erben das Code-Highlighting- und Mermaid-Theme des eingebauten `default`-Themes. Der Einstellungs-Tab zeigt alle gültigen Theme-Schlüssel live an.
 - **Theme-Import/Export** — die Schaltfläche **Im Finder öffnen** zeigt den Themes-Ordner, sodass Dateien hineingezogen werden können; **Theme als .css exportieren** schreibt jedes Theme als editierbare `.css`-Ausgangsdatei; ein Schalter blendet den Themes-Ordner im Obsidian-Datei-Explorer aus.
-- **Neun Folien-Templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image` — je Folie per HTML-Kommentar-Direktive `<!-- layout: two-column -->` gesetzt; `<!-- column -->` trennt Bereiche in Mehrspalten-Layouts. In Mehrspalten-Templates spannt die führende Überschrift über alle Spalten.
-- **Kombinierbare Dichte-Modifier** — `compact` (engere Typografie) oder `code-heavy` (kleinerer Code) lassen sich in derselben Direktive an jedes Template anhängen, z. B. `<!-- layout: two-column compact -->`.
-- **Automatische Layout-Erkennung** — ohne explizite Direktive wird das Layout aus der Inhaltsform abgeleitet: eine einzelne Überschrift wird zu `section`, ein einzelnes Blockzitat zu `quote`, ein einzelnes Bild oder Diagramm zu `image-focus`, und `<!-- column -->`-Trennungen ergeben `two-column` / `columns-3`. Eine explizite `<!-- layout -->`-Direktive hat immer Vorrang.
+- **Neun Folien-Templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image` — je Folie per Layout-Direktive (ein HTML-Kommentar) gesetzt; Spalten werden per Spalten-Direktive getrennt, und in Mehrspalten-Templates spannt die führende Überschrift über alle Spalten. Siehe den [Layout-Leitfaden](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/layouts.de.md).
+- **Kombinierbare Dichte-Modifier** — `compact` (engere Typografie) oder `code-heavy` (kleinerer Code) lassen sich in derselben Layout-Direktive an jedes Template anhängen.
+- **Automatische Layout-Erkennung** — ohne explizite Direktive wird das Layout aus der Inhaltsform abgeleitet: eine einzelne Überschrift wird zu `section`, ein einzelnes Blockzitat zu `quote`, ein einzelnes Bild oder Diagramm zu `image-focus`, und Spalten-Trennungen ergeben `two-column` / `columns-3`. Eine explizite Layout-Direktive hat immer Vorrang.
 - **Deck-Slots** — die Frontmatter-Schlüssel `header:`, `footer:` und `paginate:` rendern als schwebende Eck-Slots auf jeder Folie (Paginierung zeigt `n / N`).
 - **Medien füllen und zentrieren** — Block-Bilder und Mermaid-Diagramme nutzen den verfügbaren Platz, horizontal und vertikal zentriert und einpassend skaliert (`object-fit: contain`), sowohl für Obsidian-`![[Einbettungen]]` als auch für Standard-`![](…)`-Bilder.
 - **Spärliche Folien zentrieren vertikal** — Folien mit wenig Inhalt werden vertikal zentriert, statt am oberen Rand zu kleben.
@@ -42,7 +42,7 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 
 ## Voraussetzungen
 
-- **Obsidian ≥ 1.8.7**
+- **Obsidian ≥ 1.13.0** (der Einstellungs-Tab nutzt die deklarative Settings-API aus 1.13.0)
 - **Desktop + Mobile** (`isDesktopOnly: false`) — läuft auf dem Desktop (Windows, macOS, Linux) und auf Mobilgeräten (iOS/iPadOS); Desktop-only-APIs sind plattformgesichert.
 - **PDF-Export auf dem Desktop** verwendet den **System-Druckdialog** — im Druckerdropdown „Als PDF speichern" wählen. Es wird keine PDF-Datei direkt erzeugt.
 - **PDF-Export auf Mobile** schreibt eine eigenständige HTML-Datei in den Export-Ordner und öffnet sie mit der Standard-App des Betriebssystems; von dort kann als PDF gedruckt oder geteilt werden. Der Dateiname lautet `<Export-Ordner>/<Notizname>.html`.
@@ -115,49 +115,9 @@ paginate: true
 | `footer` | beliebiger Text | Schwebender Footer-Slot auf jeder Folie |
 | `paginate` | `true` · `yes` · `on` | Seitenanzeige (`n / N`) auf jeder Folie einblenden |
 
-### Folien-Layouts
+### Folien-Layout & Syntax
 
-Füge am Anfang einer Folie einen HTML-Kommentar ein, um das Layout zu wählen:
-
-```markdown
-<!-- layout: two-column -->
-
-## Linke Überschrift
-
-- Punkt eins
-- Punkt zwei
-
-<!-- column -->
-
-![Ein Bild rechts](anhang.png)
-```
-
-| Wert | Beschreibung |
-|---|---|
-| `default` | Standard-Inhaltsfolie (Überschrift + Body); das implizite Layout |
-| `title` | Zentrierte Titelfolie mit großer Überschrift und Untertitel |
-| `section` | Vollflächiger Abschnittstrenner mit einer einzelnen großen Überschrift |
-| `quote` | Zentriertes Blockzitat mit Quellenangabe |
-| `image-focus` | Ein einzelnes Bild oder Diagramm, einpassend skaliert und zentriert |
-| `two-column` | Zwei Spalten, getrennt durch `<!-- column -->`; eine führende Überschrift spannt über beide |
-| `columns-3` | Drei Spalten, getrennt durch `<!-- column -->`; eine führende Überschrift spannt über alle |
-| `stat` | Eine große Zahl/Aussage mit kurzer Bildunterschrift |
-| `cover-image` | Das erste Bild wird zum vollflächigen Hintergrund mit Scrim und überlagertem Titel |
-
-Ohne `<!-- layout -->`-Direktive wird das Layout aus dem Inhalt der Folie abgeleitet (einzelne Überschrift → `section`, einzelnes Zitat → `quote`, einzelnes Bild/Diagramm → `image-focus`, zwei Bereiche → `two-column`, drei oder mehr → `columns-3`). Eine explizite Direktive überschreibt die Erkennung immer.
-
-### Dichte-Modifier
-
-Hänge `compact` und/oder `code-heavy` an dieselbe Direktive an, um die Dichte zusätzlich zu jedem Template anzupassen — sie kombinieren miteinander und mit jedem Layout:
-
-```markdown
-<!-- layout: two-column compact -->
-```
-
-| Modifier | Wirkung |
-|---|---|
-| `compact` | Engere Typografie und Abstände — passt mehr Inhalt hinein, bevor die Folie überläuft |
-| `code-heavy` | Kleinere Code-Blöcke — für Folien, die von Fenced-Code dominiert werden |
+Neun Folien-Templates (`default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`), kombinierbare Dichte-Modifier (`compact`, `code-heavy`), die Layout- und Spalten-Direktiven sowie die automatische Layout-Erkennung sind im **[Folien-Layouts- & Syntax-Leitfaden](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/layouts.de.md)** dokumentiert.
 
 ### Folien-Trenner
 

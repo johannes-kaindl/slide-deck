@@ -38,13 +38,4 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-member-access": "off",// shell.openPath — no types available
     },
   },
-  {
-    // settings.ts: no-deprecated is suppressed because this.display() calls our own override,
-    // which shadows the deprecated SettingTab.display() — the override itself is the canonical
-    // implementation.
-    files: ["src/settings.ts"],
-    rules: {
-      "@typescript-eslint/no-deprecated": "off",          // this.display() shadows deprecated SettingTab.display(); our override is the impl
-    },
-  },
 );

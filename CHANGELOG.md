@@ -6,6 +6,24 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Follow-up to the Obsidian community-plugin review — clears the remaining advisories.
+
+### Changed
+
+- **Settings tab migrated to the declarative settings API** (`getSettingDefinitions`), replacing
+  the deprecated imperative `display()`. Controls bind through `get`/`setControlValue`; the
+  theme-key chips and the export-theme picker use `render`. No change to which settings exist or
+  how they behave.
+- **Documentation** — the per-slide layout syntax (templates, density modifiers, the
+  layout/column directives, inference) moved into a dedicated guide (`docs/layouts.md`,
+  `docs/layouts.de.md`); the README links to it. This also clears the review's README
+  "placeholder text" warning, which the literal `<!-- layout -->` directive examples had tripped.
+
+### Compatibility
+
+- **`minAppVersion` raised from 1.8.7 to 1.13.0** — the declarative settings API requires
+  Obsidian 1.13.0. Users on older Obsidian releases should stay on 0.3.1.
+
 ## [0.3.1] — 2026-06-30
 
 Maintenance release for the Obsidian community-plugin review — no user-facing behaviour change.

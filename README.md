@@ -17,9 +17,9 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 - **Live theme switcher** — the preview toolbar has a theme dropdown for ephemeral try-on, a source label (`from frontmatter` / `from default` / `● unsaved`) that shows where the active theme comes from, and a **Set** button that writes `theme:` directly into the note's frontmatter. Frontmatter is the source of truth; the Settings default applies only to notes without a `theme:` key.
 - **User themes** — drop `.css` files into a configurable themes folder (default `Slide-Deck-Themes/`); the frontmatter `theme:` value is the filename without the `.css` extension. Each file is a `--sd-*` token block with optional extra CSS; user themes inherit the built-in `default` theme's code-highlight and Mermaid styles. The Settings tab shows all valid theme keys live.
 - **Theme import/export** — an **Open in Finder** button reveals the themes folder so you can drop files in; **Export theme as .css** writes any theme as an editable `.css` starting point; a toggle hides the themes folder in Obsidian's file explorer.
-- **Nine per-slide templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image` — set per slide with an HTML-comment directive `<!-- layout: two-column -->`; use `<!-- column -->` to separate regions in multi-column layouts. In multi-column templates the leading heading spans all columns.
-- **Combinable density modifiers** — add `compact` (tighter type) or `code-heavy` (smaller code) to any template in the same directive, e.g. `<!-- layout: two-column compact -->`.
-- **Smart layout inference** — with no explicit directive, the layout is inferred from content shape: a lone heading becomes `section`, a lone block quote becomes `quote`, a lone image or diagram becomes `image-focus`, and `<!-- column -->` splits pick `two-column` / `columns-3`. An explicit `<!-- layout -->` always wins.
+- **Nine per-slide templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image` — set per slide with a layout directive (an HTML comment); columns are separated by a column directive, and in multi-column templates the leading heading spans all columns. See the [layout guide](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/layouts.md).
+- **Combinable density modifiers** — add `compact` (tighter type) or `code-heavy` (smaller code) to any template in the same layout directive.
+- **Smart layout inference** — with no explicit directive, the layout is inferred from content shape: a lone heading becomes `section`, a lone block quote becomes `quote`, a lone image or diagram becomes `image-focus`, and column splits pick `two-column` / `columns-3`. An explicit layout directive always wins.
 - **Deck slots** — `header:`, `footer:`, and `paginate:` frontmatter keys render as floating corner slots on every slide (pagination shows `n / N`).
 - **Media that fills and centers** — block images and Mermaid diagrams occupy the available space, horizontally and vertically centered and scaled to fit (`object-fit: contain`), for both Obsidian `![[embeds]]` and standard `![](…)` images.
 - **Sparse slides compose vertically** — slides with little content are vertically centered instead of clinging to the top.
@@ -42,7 +42,7 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 
 ## Requirements
 
-- **Obsidian ≥ 1.8.7**
+- **Obsidian ≥ 1.13.0** (the settings tab uses the declarative settings API introduced in 1.13.0)
 - **Desktop + Mobile** (`isDesktopOnly: false`) — runs on desktop (Windows, macOS, Linux) and on mobile (iOS/iPadOS); desktop-only APIs are platform-guarded.
 - **Desktop PDF export** uses the **system print dialog** — choose "Save as PDF" in the printer dropdown. It does not produce a PDF file directly.
 - **Mobile PDF export** writes a self-contained HTML file into the export folder and opens it with the OS default app; from there you can print or share to PDF. The file name is `<export-folder>/<note-name>.html`.
@@ -115,49 +115,9 @@ paginate: true
 | `footer` | any text | Floating footer slot shown on every slide |
 | `paginate` | `true` · `yes` · `on` | Show a page indicator (`n / N`) on every slide |
 
-### Per-slide layouts
+### Slide layout & syntax
 
-Add an HTML comment at the start of a slide to choose its layout:
-
-```markdown
-<!-- layout: two-column -->
-
-## Left heading
-
-- Bullet one
-- Bullet two
-
-<!-- column -->
-
-![An image on the right](attachment.png)
-```
-
-| Value | Description |
-|---|---|
-| `default` | Standard content slide (heading + body); the implicit layout |
-| `title` | Centered title slide with large heading and subtitle |
-| `section` | Full-bleed section divider with a single large heading |
-| `quote` | Centered block quote with attribution |
-| `image-focus` | A single image or diagram, scaled to fill and centered |
-| `two-column` | Two columns separated by `<!-- column -->`; a leading heading spans both |
-| `columns-3` | Three columns separated by `<!-- column -->`; a leading heading spans all |
-| `stat` | One big number/fact with a short caption |
-| `cover-image` | First image becomes a full-bleed background with a scrim and overlaid title |
-
-If you set no `<!-- layout -->` directive, the layout is inferred from the slide's content (lone heading → `section`, lone quote → `quote`, lone image/diagram → `image-focus`, two regions → `two-column`, three or more → `columns-3`). An explicit directive always overrides inference.
-
-### Density modifiers
-
-Append `compact` and/or `code-heavy` to the same directive to tune density on top of any template — they combine with each other and with any layout:
-
-```markdown
-<!-- layout: two-column compact -->
-```
-
-| Modifier | Effect |
-|---|---|
-| `compact` | Tighter type and spacing — fits more content before the slide overflows |
-| `code-heavy` | Smaller code blocks — for slides dominated by fenced code |
+Nine per-slide templates (`default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`), combinable density modifiers (`compact`, `code-heavy`), the layout and column directives, and smart layout inference are documented in the **[Slide layouts & syntax guide](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/layouts.md)**.
 
 ### Slide separator
 
