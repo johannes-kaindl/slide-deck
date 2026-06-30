@@ -11,6 +11,16 @@ import { createIsolatedDeckIframe } from "./iframe-host";
 
 let mermaidSeq = 0;
 
+/** Replace an element's children from an HTML/SVG string without using innerHTML:
+ *  parse the string, then import the resulting nodes into the element's own
+ *  document. Native DOM + realm-safe (the iframe content lives in a different
+ *  realm than the plugin, so Obsidian's DOM helpers can't be used here). */
+function setHtml(el: HTMLElement, html: string): void {
+  const ownerDoc = el.ownerDocument;
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  el.replaceChildren(...Array.from(parsed.body.childNodes, (n) => ownerDoc.importNode(n, true)));
+}
+
 function appendSlots(doc: Document, box: HTMLElement, deck: SlideDeck, slideIndex: number): void {
   const d = deck.directives;
   const make = (cls: string, text: string) => {
@@ -31,7 +41,7 @@ async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnin
     try {
       const renderId = `sd-mm-${mermaidSeq++}`;
       const { svg } = await mermaid.render(renderId, src);
-      slots[i].innerHTML = svg;
+      setHtml(slots[i], svg);
       // mermaid injects an inline max-width on the <svg> that caps it small and
       // overrides the stylesheet — drop it so the media-cell CSS (width/height:100%)
       // can scale the diagram to fill its area.
@@ -71,7 +81,7 @@ export async function renderDeckToContainer(
       const r = renderMarkdown({ markdown: region, resolveEmbed });
       const regionEl = doc.createElement("div");
       regionEl.className = "sd-region";
-      regionEl.innerHTML = r.html; // self-generated, controlled core HTML
+      setHtml(regionEl, r.html); // self-generated controlled core HTML (parsed, not innerHTML)
       inner.appendChild(regionEl);
       renderWarnings.push(...r.warnings);
     }
@@ -150,8 +160,7 @@ export async function renderDeckToContainer(
       { width: inner.clientWidth, height: clientHeight },
       minScale,
     );
-    inner.style.transformOrigin = "top left";
-    inner.style.transform = `scale(${fit.scale})`;
+    inner.style.setProperty("transform", `scale(${fit.scale})`); // dynamic per-slide fit; origin is in .sd-content CSS
     const composable = slide.layout === "default" || slide.layout === "two-column" || slide.layout === "columns-3";
     if (composable && shouldCenterCompose(naturalHeight, clientHeight, fit)) {
       box.classList.add("sd-compose-center");

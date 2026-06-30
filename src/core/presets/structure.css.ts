@@ -12,8 +12,9 @@ export const STRUCTURE_CSS = `
 .sd-slide a{ color:var(--sd-accent); }
 .sd-slide ul,.sd-slide ol{ margin:0; padding-left:1.2em; }
 .sd-slide li{ margin:.25em 0; }
-/* Content fills the slide's padded area so overflow is measurable (scrollHeight > clientHeight). */
-.sd-content{ width:100%; height:100%; }
+/* Content fills the slide's padded area so overflow is measurable (scrollHeight > clientHeight).
+   transform-origin pins the per-slide fit-scale (set inline in render-dom) to the top-left corner. */
+.sd-content{ width:100%; height:100%; transform-origin:top left; }
 .sd-slide pre.hljs{ font-size:.8em; padding:.6em .8em; border-radius:8px; background:var(--sd-code-bg); overflow:hidden; }
 /* Block media: centered + contain. On a media-bearing single-region slide,
    render-dom marks .sd-content with .sd-has-media → the media cell fills the

@@ -4,7 +4,7 @@ import { STRUCTURE_CSS } from "../../src/core/presets/structure.css";
 
 describe("STRUCTURE_CSS", () => {
   it("references tokens and keeps fit-critical rules", () => {
-    expect(STRUCTURE_CSS).toContain(".sd-content{ width:100%; height:100%; }");
+    expect(STRUCTURE_CSS).toContain(".sd-content{ width:100%; height:100%; transform-origin:top left; }");
     expect(STRUCTURE_CSS).toContain("overflow:hidden");
     expect(STRUCTURE_CSS).toContain("var(--sd-bg)");
     expect(STRUCTURE_CSS).toContain("var(--sd-fg)");
@@ -67,6 +67,8 @@ describe("STRUCTURE_CSS area model", () => {
     expect(STRUCTURE_CSS).toContain("var(--sd-scrim,");
   });
   it("keeps .sd-content fill rule verbatim (fit-critical)", () => {
-    expect(STRUCTURE_CSS).toContain(".sd-content{ width:100%; height:100%; }");
+    // width/height:100% keeps overflow measurable; transform-origin pins the inline
+    // per-slide fit-scale (moved out of render-dom inline styles for the 0.3.1 lint pass).
+    expect(STRUCTURE_CSS).toContain(".sd-content{ width:100%; height:100%; transform-origin:top left; }");
   });
 });

@@ -147,7 +147,7 @@ export class SlideDeckView extends ItemView {
     this.previewFrame = await createIsolatedDeckIframe(this.deckHost.ownerDocument, { css, extraCss: PREVIEW_CHROME_CSS, bodyHtml, width: this.geoWidth, mount: this.deckHost });
     this.previewFrame.iframe.addClass("sd-deck-iframe");
     const ch = this.previewFrame.contentDoc.documentElement.scrollHeight;
-    this.previewFrame.iframe.style.height = `${ch}px`;
+    this.previewFrame.iframe.style.setProperty("height", `${ch}px`);
     this.fitToWidth();
     this.previewFrame.reveal();
     for (const w of warnings) {
@@ -185,11 +185,12 @@ export class SlideDeckView extends ItemView {
     // overflows the pane. Use transform:scale and size the host to the scaled box
     // so the parent lays out + scrolls correctly.
     const h = frame.contentDocument?.documentElement.scrollHeight ?? 0;
-    frame.style.transformOrigin = "top left";
-    frame.style.transform = `scale(${factor})`;
-    this.deckHost.style.width = `${this.geoWidth * factor}px`;
-    this.deckHost.style.height = `${h * factor}px`;
-    this.deckHost.style.overflow = "hidden";
+    // transform-origin is static (.sd-deck-iframe in styles.css); overflow:hidden is the
+    // .sd-deck-host-scaled modifier. Only the per-render scale + box size are inline.
+    frame.style.setProperty("transform", `scale(${factor})`);
+    this.deckHost.style.setProperty("width", `${this.geoWidth * factor}px`);
+    this.deckHost.style.setProperty("height", `${h * factor}px`);
+    this.deckHost.classList.add("sd-deck-host-scaled");
   }
 
   private jumpTo(line: number): void {

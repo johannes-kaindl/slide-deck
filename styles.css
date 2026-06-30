@@ -95,10 +95,26 @@
 .sd-deck-host {
   width: max-content;
 }
+/* On iOS/iPadOS the deck is transform:scaled, so the host must clip the scaled box. */
+.sd-deck-host-scaled {
+  overflow: hidden;
+}
 .sd-deck-iframe {
   display: block;
   border: 0;
   transform-origin: top left;
+}
+
+/* Isolated deck iframe staging geometry (iframe-host.ts). The iframe is parked
+   off-screen during layout measurement, then revealed by removing the modifier
+   (preview); export consumers just dispose it while still off-screen. */
+.sd-iso-frame {
+  border: 0;
+}
+.sd-iso-frame-offscreen {
+  position: fixed;
+  left: -99999px;
+  top: 0;
 }
 
 /* Theme switcher in the preview toolbar */

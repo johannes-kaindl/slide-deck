@@ -1,6 +1,13 @@
 // Obsidian-Guideline-Gate (PROF-OBS-08): type-checked gegen ECHTE obsidian-Typen.
 // KEIN Inline-`// eslint-disable` — genuin unvermeidbare Ausnahmen NUR als file-scoped
 // Override unten, mit Begruendung (Review verbietet Inline-disables).
+//
+// Stand 0.3.1: die fruheren Overrides fuer export.ts / render-dom.ts / iframe-host.ts /
+// preview-view.ts / frontmatter-writer.ts wurden ENTFERNT, weil der Code jetzt die von den
+// Regeln empfohlene Form nutzt: `el.style.setProperty(...)` statt `el.style.x = …`
+// (no-static-styles-assignment) und ein DOMParser-basierter `setHtml()`-Helfer statt
+// `innerHTML` (no-unsanitized / no-inner-html). Es bleiben nur zwei genuin unvermeidbare
+// Ausnahmen (theme-source.ts, settings.ts), jeweils begruendet.
 import tseslint from "typescript-eslint";
 import obsidianmd from "eslint-plugin-obsidianmd";
 
@@ -15,56 +22,6 @@ export default tseslint.config(
         project: ["./tsconfig.json"],
         tsconfigRootDir: import.meta.dirname,
       },
-    },
-  },
-  // --- file-scoped Overrides (Beispiel, auskommentiert) ---------------------
-  // {
-  //   files: ["src/streaming.ts"],
-  //   rules: { "obsidianmd/no-restricted-globals": "off" }, // SSE via activeWindow.fetch, requestUrl kann nicht streamen
-  // },
-  {
-    // export.ts: innerHTML writes are self-generated, isolated export-HTML (never user input).
-    // Inline positioning is intentional: fixed off-screen staging geometry for html2canvas capture.
-    files: ["src/export.ts"],
-    rules: {
-      "no-unsanitized/property": "off",       // innerHTML: self-generated export HTML, not user input
-      "no-unsanitized/method": "off",         // insertAdjacentHTML: self-generated export HTML, not user input
-      "@microsoft/sdl/no-inner-html": "off",  // same reason as above
-      "obsidianmd/no-static-styles-assignment": "off", // fixed off-screen staging geometry, not theme styles
-    },
-  },
-  {
-    // render-dom.ts: innerHTML writes are self-generated HTML from controlled core renderer (renderMarkdown),
-    // never user input. Per-slide inline styles (--sd-w/--sd-h, transform:scale) are genuinely dynamic
-    // (per-slide geometry from computeFit), not static theme styles. Off-screen staging div uses fixed
-    // positioning to measure layout outside the viewport.
-    files: ["src/render-dom.ts"],
-    rules: {
-      "no-unsanitized/property": "off",
-      "@microsoft/sdl/no-inner-html": "off",
-      "obsidianmd/no-static-styles-assignment": "off",
-    },
-  },
-  {
-    // preview-view.ts: a <style> element is required to inject the full deck CSS (katex + hljs + preset)
-    // into the live preview leaf so that math, code highlighting, and slide layout are correctly rendered.
-    // styles.css is insufficient here because the CSS content is dynamic (theme-dependent) and assembled
-    // at render time — it cannot be a static file loaded by Obsidian.
-    files: ["src/preview-view.ts"],
-    rules: {
-      "obsidianmd/no-forbidden-elements": "off",
-      // dynamic `zoom` scales the deck to the pane width at render time (not a static theme style)
-      "obsidianmd/no-static-styles-assignment": "off",
-    },
-  },
-  {
-    // iframe-host.ts: off-screen staging geometry (position:fixed; left:-99999px) and the
-    // iframe reset (border:0) are fixed layout-measurement styles, not theme styles —
-    // same rationale as export.ts / render-dom.ts. (Dynamic width/zoom are set as template
-    // strings elsewhere, which the rule already allows.)
-    files: ["src/iframe-host.ts"],
-    rules: {
-      "obsidianmd/no-static-styles-assignment": "off",
     },
   },
   {
@@ -82,19 +39,9 @@ export default tseslint.config(
     },
   },
   {
-    // frontmatter-writer.ts: processFrontMatter callback receives fm as `any` type by design
-    // in the Obsidian API, since frontmatter is dynamic YAML. Setting fm.theme is the intended
-    // usage pattern and is unavoidably unsafe-typed in the Obsidian SDK.
-    files: ["src/frontmatter-writer.ts"],
-    rules: {
-      "@typescript-eslint/no-unsafe-member-access": "off", // fm: any by design in processFrontMatter callback (dynamic YAML)
-    },
-  },
-  {
     // settings.ts: no-deprecated is suppressed because this.display() calls our own override,
     // which shadows the deprecated SettingTab.display() — the override itself is the canonical
-    // implementation. (The interim no-unsafe-* suppressions were removed once Task 16 typed
-    // themeStore on SlideDeckPlugin; theme-store access is now fully type-resolved.)
+    // implementation.
     files: ["src/settings.ts"],
     rules: {
       "@typescript-eslint/no-deprecated": "off",          // this.display() shadows deprecated SettingTab.display(); our override is the impl

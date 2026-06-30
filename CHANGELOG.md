@@ -6,11 +6,33 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+Maintenance release for the Obsidian community-plugin review — no user-facing behaviour change.
+
+### Changed
+
+- **Obsidian lint compliance** — cleared every `eslint-plugin-obsidianmd` finding from the
+  community-plugin review without inline `eslint-disable` comments:
+  - Static inline styles (off-screen iframe staging, the deck-scale transform origin, the
+    preview overflow clip) moved into CSS classes (`styles.css` / `STRUCTURE_CSS`); only
+    genuinely per-render values (the fit scale and box size) stay inline via `setProperty`.
+  - The realm-safe HTML insertion in the renderer no longer uses `innerHTML` — it parses with
+    `DOMParser` and imports nodes via `importNode` + `replaceChildren` (verified equivalent,
+    including Mermaid SVG namespacing).
+  - `processFrontMatter` access is typed instead of suppressed.
+  - The two remaining file-scoped overrides (a lazy `require("electron")`, a shadowed
+    deprecated `display()`) are unavoidable and documented in `eslint.config.mjs`.
+- **README** — refreshed for the 0.3.0 template model (nine templates, density modifiers, deck
+  slots, smart layout inference, media-fill) and bumped the release badge.
+
+### Fixed
+
+- CHANGELOG 0.3.0 incorrectly said "eleven" templates; the template count is **nine**.
+
 ## [0.3.0] — 2026-06-28
 
 ### Added
 
-- **Template/layout model** — eleven per-slide templates (`default`, `title`, `section`, `quote`,
+- **Template/layout model** — nine per-slide templates (`default`, `title`, `section`, `quote`,
   `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`) plus combinable density
   modifiers (`compact`, `code-heavy`), chosen with `<!-- layout: <template> [modifier…] -->`.
   In multi-column layouts the title spans all columns.

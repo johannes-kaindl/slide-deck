@@ -3,7 +3,7 @@
 Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilderserie exportieren — mit Live-Lesbarkeitsprüfung.
 
 [![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/LICENSE)
-[![Release](https://img.shields.io/badge/Release-0.1.0-green.svg)](https://codeberg.org/jkaindl/slide-deck/releases)
+[![Release](https://img.shields.io/badge/Release-0.3.1-green.svg)](https://codeberg.org/jkaindl/slide-deck/releases)
 [![Plattform: Desktop + Mobile](https://img.shields.io/badge/Plattform-Desktop%20%2B%20Mobile-blue.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/manifest.json)
 
 ![Slide Deck — eine Zwei-Spalten-Folie mit Aufzählung, Inline-Mathe und Bild](https://codeberg.org/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png)
@@ -17,7 +17,12 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 - **Live-Theme-Wechsler** — die Vorschau-Toolbar enthält ein Theme-Dropdown zum ephemeren Ausprobieren, eine Quell-Anzeige (`aus Frontmatter` / `aus Standard` / `● nicht gespeichert`), die zeigt, woher das aktive Theme stammt, und eine Schaltfläche **Setzen**, die `theme:` direkt in die Frontmatter der Notiz schreibt. Die Frontmatter ist die maßgebliche Quelle; der Einstellungs-Standard gilt nur für Notizen ohne `theme:`-Schlüssel.
 - **Eigene Themes** — `.css`-Dateien in einen konfigurierbaren Themes-Ordner (Standard `Slide-Deck-Themes/`) ablegen; der `theme:`-Frontmatter-Wert entspricht dem Dateinamen ohne `.css`-Erweiterung. Jede Datei enthält einen `--sd-*`-Token-Block mit optionalem zusätzlichem CSS; eigene Themes erben das Code-Highlighting- und Mermaid-Theme des eingebauten `default`-Themes. Der Einstellungs-Tab zeigt alle gültigen Theme-Schlüssel live an.
 - **Theme-Import/Export** — die Schaltfläche **Im Finder öffnen** zeigt den Themes-Ordner, sodass Dateien hineingezogen werden können; **Theme als .css exportieren** schreibt jedes Theme als editierbare `.css`-Ausgangsdatei; ein Schalter blendet den Themes-Ordner im Obsidian-Datei-Explorer aus.
-- **Fünf Folien-Layouts** — `title`, `two-column`, `image-focus`, `section`, `quote` — je Folie per HTML-Kommentar-Direktive `<!-- layout: two-column -->` gesetzt; `<!-- column -->` trennt Bereiche in Mehrspalten-Layouts.
+- **Neun Folien-Templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image` — je Folie per HTML-Kommentar-Direktive `<!-- layout: two-column -->` gesetzt; `<!-- column -->` trennt Bereiche in Mehrspalten-Layouts. In Mehrspalten-Templates spannt die führende Überschrift über alle Spalten.
+- **Kombinierbare Dichte-Modifier** — `compact` (engere Typografie) oder `code-heavy` (kleinerer Code) lassen sich in derselben Direktive an jedes Template anhängen, z. B. `<!-- layout: two-column compact -->`.
+- **Automatische Layout-Erkennung** — ohne explizite Direktive wird das Layout aus der Inhaltsform abgeleitet: eine einzelne Überschrift wird zu `section`, ein einzelnes Blockzitat zu `quote`, ein einzelnes Bild oder Diagramm zu `image-focus`, und `<!-- column -->`-Trennungen ergeben `two-column` / `columns-3`. Eine explizite `<!-- layout -->`-Direktive hat immer Vorrang.
+- **Deck-Slots** — die Frontmatter-Schlüssel `header:`, `footer:` und `paginate:` rendern als schwebende Eck-Slots auf jeder Folie (Paginierung zeigt `n / N`).
+- **Medien füllen und zentrieren** — Block-Bilder und Mermaid-Diagramme nutzen den verfügbaren Platz, horizontal und vertikal zentriert und einpassend skaliert (`object-fit: contain`), sowohl für Obsidian-`![[Einbettungen]]` als auch für Standard-`![](…)`-Bilder.
+- **Spärliche Folien zentrieren vertikal** — Folien mit wenig Inhalt werden vertikal zentriert, statt am oberen Rand zu kleben.
 - **Markdown-Notizen → Folien** — Folien werden durch eine Zeile, die nur `---` enthält, getrennt; YAML-Frontmatter steuert Theme, Seitenverhältnis und Schrift-Untergrenze je Notiz.
 - **Live-Vorschau** — rendert die aktive Notiz als Folien-Deck in einer Seitenleiste, skaliert auf die Fensterbreite; ein Klick auf Überlauf-Warnungen springt zur Quellzeile.
 - **Fit-or-warn-Lesbarkeit** — jede Folie skaliert den Inhalt automatisch herunter bis zur konfigurierbaren Lesbarkeits-Untergrenze (`minFontPx`); Folien, die noch kleineren Text bräuchten, werden als überlaufend markiert statt unleserlich zu werden.
@@ -95,6 +100,9 @@ Ein YAML-Frontmatter-Block am Anfang der Notiz steuert präsentationsweite Einst
 theme: dark
 aspect: 16:9
 minFontPx: 24
+header: Mein Vortrag
+footer: ACME GmbH
+paginate: true
 ---
 ```
 
@@ -103,6 +111,9 @@ minFontPx: 24
 | `theme` | `default` · `dark` · `serif` · `high-contrast` · *eigener-Theme-Schlüssel* | Visuelles Preset; eigener Theme-Schlüssel = Dateiname der `.css`-Datei ohne Erweiterung |
 | `aspect` | `16:9` (Standard), `4:3` | Canvas-Größe: 1280×720 (16:9) oder 960×720 (4:3) |
 | `minFontPx` | jede positive Zahl | Lesbarkeits-Untergrenze je Notiz; überschreibt die Plugin-Einstellung |
+| `header` | beliebiger Text | Schwebender Header-Slot auf jeder Folie |
+| `footer` | beliebiger Text | Schwebender Footer-Slot auf jeder Folie |
+| `paginate` | `true` · `yes` · `on` | Seitenanzeige (`n / N`) auf jeder Folie einblenden |
 
 ### Folien-Layouts
 
@@ -123,11 +134,30 @@ Füge am Anfang einer Folie einen HTML-Kommentar ein, um das Layout zu wählen:
 
 | Wert | Beschreibung |
 |---|---|
+| `default` | Standard-Inhaltsfolie (Überschrift + Body); das implizite Layout |
 | `title` | Zentrierte Titelfolie mit großer Überschrift und Untertitel |
-| `two-column` | Zwei gleiche Spalten, getrennt durch `<!-- column -->` |
-| `image-focus` | Großes Bild mit optionaler Bildunterschrift |
-| `section` | Vollflächiger Abschnittstrenner |
+| `section` | Vollflächiger Abschnittstrenner mit einer einzelnen großen Überschrift |
 | `quote` | Zentriertes Blockzitat mit Quellenangabe |
+| `image-focus` | Ein einzelnes Bild oder Diagramm, einpassend skaliert und zentriert |
+| `two-column` | Zwei Spalten, getrennt durch `<!-- column -->`; eine führende Überschrift spannt über beide |
+| `columns-3` | Drei Spalten, getrennt durch `<!-- column -->`; eine führende Überschrift spannt über alle |
+| `stat` | Eine große Zahl/Aussage mit kurzer Bildunterschrift |
+| `cover-image` | Das erste Bild wird zum vollflächigen Hintergrund mit Scrim und überlagertem Titel |
+
+Ohne `<!-- layout -->`-Direktive wird das Layout aus dem Inhalt der Folie abgeleitet (einzelne Überschrift → `section`, einzelnes Zitat → `quote`, einzelnes Bild/Diagramm → `image-focus`, zwei Bereiche → `two-column`, drei oder mehr → `columns-3`). Eine explizite Direktive überschreibt die Erkennung immer.
+
+### Dichte-Modifier
+
+Hänge `compact` und/oder `code-heavy` an dieselbe Direktive an, um die Dichte zusätzlich zu jedem Template anzupassen — sie kombinieren miteinander und mit jedem Layout:
+
+```markdown
+<!-- layout: two-column compact -->
+```
+
+| Modifier | Wirkung |
+|---|---|
+| `compact` | Engere Typografie und Abstände — passt mehr Inhalt hinein, bevor die Folie überläuft |
+| `code-heavy` | Kleinere Code-Blöcke — für Folien, die von Fenced-Code dominiert werden |
 
 ### Folien-Trenner
 

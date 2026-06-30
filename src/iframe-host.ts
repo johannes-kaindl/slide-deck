@@ -37,11 +37,11 @@ export async function createIsolatedDeckIframe(
   // contentDocument for measurement). The PDF path adds "allow-modals" so contentWindow.print()
   // is permitted — harmless here because without allow-scripts the content can't open modals itself.
   iframe.setAttribute("sandbox", opts.sandbox ?? "allow-same-origin");
-  iframe.style.border = "0";
-  iframe.style.position = "fixed";
-  iframe.style.left = "-99999px";
-  iframe.style.top = "0";
-  if (opts.width !== undefined) iframe.style.width = `${opts.width}px`;
+  // Static staging geometry lives in styles.css (.sd-iso-frame = border reset;
+  // .sd-iso-frame-offscreen = fixed off-screen parking). Only the dynamic width
+  // (per-deck geometry) is set inline. classList is native DOM → realm-safe.
+  iframe.classList.add("sd-iso-frame", "sd-iso-frame-offscreen");
+  if (opts.width !== undefined) iframe.style.setProperty("width", `${opts.width}px`);
 
   const loaded = new Promise<void>((resolve) => {
     const onLoad = () => { iframe.removeEventListener("load", onLoad); resolve(); };
@@ -66,10 +66,6 @@ export async function createIsolatedDeckIframe(
   await Promise.race([contentDoc.fonts.ready.then(() => undefined), timeout]);
   if (fontsTimer !== undefined) win.clearTimeout(fontsTimer);
 
-  const reveal = () => {
-    iframe.style.position = "";
-    iframe.style.left = "";
-    iframe.style.top = "";
-  };
+  const reveal = () => { iframe.classList.remove("sd-iso-frame-offscreen"); };
   return { iframe, contentDoc, reveal, dispose: () => iframe.remove() };
 }

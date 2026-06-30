@@ -42,8 +42,14 @@ function makeFakeOwnerDoc() {
   // continuation reads whatever document is current at THAT load — about:blank if it loaded
   // first. Modelling this (setTimeout, not queueMicrotask) is what exposes the race.
   const navigate = (doc: any) => setTimeout(() => { currentDoc = doc; (listeners["load"] ?? []).slice().forEach((cb) => cb()); }, 0);
+  const classes = new Set<string>();
   const iframe: any = {
     style: {}, sandbox: { value: "" },
+    classList: {
+      add: (...c: string[]) => c.forEach((x) => classes.add(x)),
+      remove: (...c: string[]) => c.forEach((x) => classes.delete(x)),
+      contains: (c: string) => classes.has(c),
+    },
     setAttribute(_k: string, v: string) { this.sandbox.value = v; },
     addEventListener(t: string, cb: () => void) { (listeners[t] ??= []).push(cb); },
     removeEventListener(t: string, cb: () => void) { listeners[t] = (listeners[t] ?? []).filter((x) => x !== cb); },
@@ -74,12 +80,12 @@ describe("createIsolatedDeckIframe", () => {
     f.fireFonts();
     const handle = await p;
     expect(f.iframe.sandbox.value).toBe("allow-same-origin");
-    expect(f.iframe.style.left).toBe("-99999px"); // parked offscreen during load
+    expect(f.iframe.classList.contains("sd-iso-frame-offscreen")).toBe(true); // parked offscreen during load
     expect(handle.contentDoc).toBe(f.srcdocDoc); // the populated doc, NOT about:blank
     expect(handle.contentDoc).not.toBe(f.aboutBlankDoc);
     expect(handle.contentDoc.URL).toBe("about:srcdoc");
     handle.reveal();
-    expect(f.iframe.style.left).toBe(""); // reveal clears the offscreen positioning
+    expect(f.iframe.classList.contains("sd-iso-frame-offscreen")).toBe(false); // reveal clears the offscreen positioning
     handle.dispose();
     expect(f.removed).toContain(f.iframe);
   });
