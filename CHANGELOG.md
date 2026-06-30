@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-06-30
+
 Follow-up to the Obsidian community-plugin review — clears the remaining advisories.
 
 ### Changed
