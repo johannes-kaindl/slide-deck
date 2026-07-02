@@ -150,6 +150,26 @@ Hinweis: Das `---` im YAML-Frontmatter-Block ist der Standard-YAML-Begrenzer und
 4. **Fit-or-warn** — der Inhalt jeder Folie wird im DOM gemessen. Überschreitet er den Canvas, wird er gleichmäßig skaliert. Die Skalierung stoppt bei `minFontPx` (Lesbarkeits-Untergrenze). Würde der Inhalt bei dieser Skalierung immer noch überlaufen, wird die Folie in der Vorschau mit einer Warnung markiert statt weiter skaliert.
 5. **Export** — dasselbe theme-isolierte iframe-Artefakt speist alle Export-Wege: die Druck-Pipeline (PDF) und die folienweise `modern-screenshot`-Erfassung (`domToCanvas`) (PNG). Auf dem Desktop wird PDF via `contentWindow.print()` gedruckt; auf Mobilgeräten wird eine eigenständige HTML-Datei in den Vault geschrieben und via `openWithDefaultApp` ans Betriebssystem übergeben.
 
+## Netzwerknutzung (lokale KI)
+
+Der Befehl **Präsentation aus Notiz erzeugen** sendet Notiz-Inhalte an einen **von dir
+konfigurierten OpenAI-kompatiblen LLM-Endpoint** (Standard `http://localhost:1234`, also ein
+lokales LM Studio). Kein Cloud-Dienst ist beteiligt, solange du den Endpoint nicht auf einen
+richtest.
+
+- **Erreichbarkeits-Pings und Modell-Listen** werden abgefragt, wenn du den Erzeugen-Dialog oder
+  den Einstellungs-Tab öffnest. Das sind automatische Requests an die konfigurierten Endpoints.
+- **Notiz-Inhalte werden nur beim Klick auf „Erzeugen" gesendet.**
+- Keine Telemetrie, keine Analyse, keine Drittanbieter.
+
+### Server-CORS
+
+Das Streaming läuft über `XMLHttpRequest` unter der Obsidian-Origin; der Endpoint muss also
+Cross-Origin-Requests erlauben. LM Studios CORS-Schalter muss an sein; Ollama braucht
+`OLLAMA_ORIGINS=app://obsidian.md` (oder `*`). Beantwortet der Endpoint den Ping, verweigert aber
+den Stream, **fällt das Plugin automatisch auf einen Non-Streaming-Request zurück** (die
+Live-Token-Ansicht entfällt, das Deck entsteht trotzdem).
+
 ## Lizenz
 
 Code: [AGPL-3.0-or-later](https://codeberg.org/jkaindl/slide-deck/src/branch/main/LICENSE).
