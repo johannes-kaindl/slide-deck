@@ -2340,3 +2340,167 @@ Deploy: `npm run deploy` (needs `$OBSIDIAN_PLUGIN_DIR`). Then walk the Spec §9 
 **Placeholder scan:** none — every code step contains complete code; no "TBD"/"handle errors"/"similar to Task N".
 
 **Type-consistency spot checks:** `ChatMessage` defined in Task 8, imported by 14/15/17. `StreamOpts`/`DeckStreamResult` defined in 14, consumed by 15/17. `GenState`/`GenerateResult`/`GenerationHandle` defined in 15/17, consumed by 17/18. `ModelContext` defined in 6, consumed by 14/18. `frontmatterRange` exported in 9, reused by 10/18. `parseEndpointList` from 3 used by 16/18. `StreamResult` from 13 used by 14.
+
+---
+
+## Verification corrections (v2) — apply these during implementation
+
+A 5-lens adversarial review (verify-deck-plan workflow, 2026-07-02) found real defects. These
+corrections OVERRIDE the task code above where they conflict. Each cites the finding.
+
+### C1 — Sanitizer key grammar (Task 9, finding: sanitizer #1 + #3) [certain]
+
+Replace the single `KEY_RE` with **two** regexes and use each in the right place:
+```ts
+// General frontmatter key grammar — mirrors slide-model.ts parseFrontmatter (`\s*` allows `theme:dark`).
+const FM_KEY_RE = /^\w+:\s*\S/;
+// Recognized deck directive keys — used ONLY to drop echoed frontmatter blocks mid-deck.
+const DIRECTIVE_KEY_RE = /^(theme|aspect|minFontPx|header|footer|paginate):\s*\S/;
+```
+- `fixLeadingSeparator` disambiguation uses `FM_KEY_RE` (so `theme:dark` no-space is kept as frontmatter; a stray `---` before a heading/bullet/prose slide is stripped).
+- `finalPass` key-only slide drop uses `DIRECTIVE_KEY_RE` (so an echoed `theme:/aspect:` block is dropped, but a real `Name: Ada\nRole: X` content slide is kept).
+
+### C2 — `unwrapFence` only unwraps a true wrapper (Task 9, finding: sanitizer #2) [certain]
+
+```ts
+function unwrapFence(md: string): string {
+  const lines = md.split("\n");
+  const openM = /^(```|~~~)(markdown|md)?[ \t]*$/.exec(lines[0] ?? "");
+  if (!openM || lines.length < 2) return md;
+  const marker = openM[1];
+  const closeIdx = lines.length - 1;
+  if (lines[closeIdx].trim() !== marker) return md;
+  for (let i = 1; i < closeIdx; i++) if (lines[i].trim() === marker) return md; // interior fence → real code, not a wrapper
+  return lines.slice(1, closeIdx).join("\n");
+}
+```
+Only an empty/`markdown`/`md` info-string wrapper with no interior fence line is unwrapped; a deck that opens/closes with ```python…``` code blocks is left intact.
+
+### C3 — `stripPreambleChatter` never eats a Markdown block (Task 9, finding: sanitizer #4) [likely]
+
+```ts
+function stripPreambleChatter(md: string): string {
+  const lines = md.split("\n");
+  let i = 0;
+  while (i < lines.length && lines[i].trim() === "") i++;
+  const l = lines[i]?.trim() ?? "";
+  const isBlock = /^([#>|`]|[-*+]\s|\d+[.)]\s|---)/.test(l) || FM_KEY_RE.test(l);
+  if (i < lines.length && !isBlock && /\S\s.*:$/.test(l)) {
+    i++;
+    while (i < lines.length && lines[i].trim() === "") i++;
+    return lines.slice(i).join("\n");
+  }
+  return md;
+}
+```
+Strips `Here is your deck:` but never a heading like `# Agenda:` / list item / blockquote / fence.
+
+### C4 — Extra Task 9 tests (add to `tests/core/deck-sanitize.test.ts`)
+
+```ts
+  it("keeps no-space frontmatter (theme:dark)", () => {
+    expect(parseDeck(extractDeckMarkdown("---\ntheme:dark\n---\n# A")).directives.theme).toBe("dark");
+  });
+  it("does NOT unwrap a deck whose slides are code fences", () => {
+    const raw = "```python\nprint(1)\n```\n\n---\n\n```python\nprint(2)\n```";
+    expect(parseDeck(extractDeckMarkdown(raw)).slides).toHaveLength(2);
+  });
+  it("does NOT strip a heading that ends with a colon", () => {
+    const out = extractDeckMarkdown("# Agenda:\n- Intro\n\n---\n\n# Details");
+    const slides = parseDeck(out).slides;
+    expect(slides).toHaveLength(2);
+    expect(slides[0].markdown).toContain("# Agenda:");
+  });
+  it("keeps a Name:/Role: content slide (not a directive echo)", () => {
+    const raw = "# A\n\n---\n\nName: Ada\nRole: programmer";
+    const slides = parseDeck(extractDeckMarkdown(raw)).slides;
+    expect(slides).toHaveLength(2);
+    expect(slides[1].markdown).toContain("Name: Ada");
+  });
+```
+
+### C5 — Source-frontmatter strip → pure core + tested (Task 8, finding: spec #11) [certain]
+
+In `src/core/llm/deck-prompt.ts`, import `frontmatterRange` from `./deck-sanitize` and add:
+```ts
+import { frontmatterRange } from "./deck-sanitize";
+
+/** Strip the note's own frontmatter block (schema keys would burn context / be echoed as content). */
+export function stripNoteFrontmatter(md: string): string {
+  const lines = md.replace(/\r\n/g, "\n").split("\n");
+  const range = frontmatterRange(lines);
+  return range ? lines.slice(range.end + 1).join("\n").replace(/^\n+/, "") : md;
+}
+```
+`buildDeckPrompt` calls it on `sourceBody` before embedding: `const bodyOnly = stripNoteFrontmatter(sourceBody);` and uses `bodyOnly` in the user message. Add the §9 "Body-only" test:
+```ts
+import { stripNoteFrontmatter } from "../../src/core/llm/deck-prompt";
+it("strips the source note frontmatter before embedding (body-only)", () => {
+  const [, user] = buildDeckPrompt("---\ntitle: X\ntags: [a]\n---\nReal body.", { slideTarget: "auto", hint: "" }, contract);
+  expect(user.content).toContain("Real body.");
+  expect(user.content).not.toContain("title: X");
+});
+it("stripNoteFrontmatter returns the body unchanged when there is no frontmatter", () => {
+  expect(stripNoteFrontmatter("Just body")).toBe("Just body");
+});
+```
+The modal (Task 18) then imports `stripNoteFrontmatter` from `deck-prompt` (drop its local `stripSourceFrontmatter`) and uses it for the context estimate; it passes the stripped body to `startDeckGeneration` (buildDeckPrompt re-stripping is idempotent).
+
+### C6 — `DeckLlmClient`: fallback-once flag + abort recheck (Task 14, findings: orchestration #2, spec #13) [likely/speculative]
+
+Add a `private streamRefused = false;` field. In `generate()`, before the try: `if (this.streamRefused) return this.generateNonStreaming(messages, opts, signal);`. In the catch, on `StreamNetworkError`: `this.streamRefused = true;` before returning the fallback. In `generateNonStreaming`, **after** `const res = await this.http(...)` add:
+```ts
+    if (signal?.aborted) { const e = new Error("Aborted"); e.name = "AbortError"; throw e; }
+```
+This bounds the worst case to 2 total generations (retry skips streaming) and honors Stop during the fallback. Add a test:
+```ts
+  it("skips streaming on the second call after a CORS fallback", async () => {
+    let streamCalls = 0;
+    const netErr: any = () => { streamCalls++; const e = new Error("net"); e.name = "StreamNetworkError"; return Promise.reject(e); };
+    const c = new DeckLlmClient("http://x", "m", fakeHttp(() => ({ status: 200, json: { choices: [{ message: { content: "# A" } }] }, text: "{}" })), netErr);
+    await c.generate(msg, opts, () => {}, () => {});
+    await c.generate(msg, opts, () => {}, () => {});
+    expect(streamCalls).toBe(1); // second generate went straight to non-streaming
+  });
+```
+
+### C7 — Thread `usedFallback` + fatal `kind` through the orchestrator (Task 15, findings: spec #8 + #10) [certain]
+
+`GenerateResult` gains `usedFallback?: boolean` and `kind?: "server" | "format"`:
+```ts
+export interface GenerateResult { status: "ok" | "fatal" | "aborted"; markdown?: string; incomplete?: boolean; error?: string; usedFallback?: boolean; kind?: "server" | "format" }
+```
+- Capture `usedFallback` from the successful `client.generate` result and set it on the `ok` return: `return { status: "ok", markdown: themed, incomplete: finishReason === "length", usedFallback: r.usedFallback };` (bind `const r = await deps.client.generate(...)` so you can read `r.usedFallback`).
+- In the catch (non-abort): `return { status: "fatal", error: (e as Error).message, kind: "server" };`
+- After the loop: `return { status: "fatal", error: lastReason, kind: "format" };`
+Add tests: happy path asserts `usedFallback` is falsy; a client that returns `{ usedFallback: true }` yields `result.usedFallback === true`; the envelope-throw test asserts `kind === "server"`; the give-up test asserts `kind === "format"`.
+
+### C8 — Surface CORS + envelope in `startDeckGeneration` (Task 17, findings: spec #8 + #10) [certain]
+
+`DeckGenInput` gains `model: string`. In `startDeckGeneration`, use `input.model` (not `this.settings.llmModel`) for `makeDeckLlmClient` and `streamOpts.model`. Replace the result handling:
+```ts
+      if (result.status === "ok" && result.markdown != null) {
+        await this.writeDeckNote(input.targetPath, result.markdown, input.replace);
+        await this.openDeckNote(input.targetPath);
+        if (result.usedFallback) new Notice(t("deck.error.cors"));
+        new Notice(result.incomplete ? t("deck.notice.incomplete") : t("deck.notice.done", input.targetPath));
+      } else if (result.status === "fatal") {
+        notify({ phase: "error", attempt: state.attempt, content: state.content, reasoning: state.reasoning, error: result.error });
+        new Notice(result.kind === "server" ? t("deck.error.envelope", result.error ?? "") : t("deck.error.invalid", result.error ?? ""));
+      }
+```
+Update `deck.error.envelope` (Task 12) to include the remedy, EN: `"Server error: {0}. Load the model or raise its context length, then retry."` / DE: `"Server-Fehler: {0}. Modell laden oder Kontextlänge erhöhen, dann erneut versuchen."`
+
+### C9 — Modal fixes (Task 18, findings: api #1, orchestration #1, spec #9 #12 #14) [certain/likely]
+
+1. **Import:** `import { App, Modal, TFile } from "obsidian";` (drop unused `Notice`). Also import `stripNoteFrontmatter` from `./core/llm/deck-prompt` and drop the local `stripSourceFrontmatter`; use `stripNoteFrontmatter` for `body`.
+2. **Model picker:** after resolving the endpoint, `const models = await makeDeckLlmClient(this.endpoint, "").listModels();`. Render a model control: if `models.length`, a `<select>` of models (default `settings.llmModel` if present in the list, else `models[0]`); else a text `<input>` defaulting to `settings.llmModel`. Track the chosen value in `let model = …`. **Disable Generate while `model` is empty.** Pass `model` in `DeckGenInput`.
+3. **Non-reentrant start:** first line of `start()`: `if (this.plugin.activeGeneration) return;`. Also set `genBtn.disabled = true;` inside `start()` before `renderRunning`.
+4. **Static context fallback:** when `limit` is undefined, still warn if `body.length > 30000` (spec §5.2 static ~30k fallback): `if (contextOverflow(inputTokens, maxTokens, limit) || (limit == null && body.length > 30000)) warnEl.setText(t("deck.modal.contextWarn", inputTokens, limit != null ? String(limit) : "?"));`
+5. **Ping color:** toggle a class on `pingEl`: `pingEl.classList.toggle("sd-gen-ping-ok", !!this.endpoint); pingEl.classList.toggle("sd-gen-ping-err", !this.endpoint);` and add to `styles.css`: `.sd-gen-ping-ok{color:var(--text-success)} .sd-gen-ping-err{color:var(--text-error)}`.
+
+### C10 — accepted without change
+
+The `SettingDefinitionList → textarea` deviation (Task 16) was reviewed and judged adequately
+justified — no capability lost (only the optional per-row ping icon, which the spec marked "ggf.").
+Keep as written.
