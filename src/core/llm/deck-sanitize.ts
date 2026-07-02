@@ -119,3 +119,18 @@ export function setDeckTheme(md: string, key: string): string {
   lines.splice(1, 0, `theme: ${key}`);
   return lines.join("\n");
 }
+
+/** Set a `source:` frontmatter link back to the origin note (Obsidian frontmatterLinks →
+ *  backlink/graph). `link` is a wikilink like `[[Note]]`; it MUST be quoted, otherwise YAML
+ *  reads `[[Note]]` as a nested sequence. Injects a block if none exists. Run AFTER setDeckTheme. */
+export function setDeckSource(md: string, link: string): string {
+  const value = `source: "${link}"`;
+  const lines = md.split("\n");
+  const range = frontmatterRange(lines);
+  if (!range) return `---\n${value}\n---\n${md}`;
+  for (let i = 1; i < range.end; i++) {
+    if (/^source:\s/.test(lines[i])) { lines[i] = value; return lines.join("\n"); }
+  }
+  lines.splice(1, 0, value);
+  return lines.join("\n");
+}

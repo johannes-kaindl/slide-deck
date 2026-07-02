@@ -14,6 +14,7 @@ import { getAuthoringContract } from "./core/constraints/contract";
 export interface DeckGenInput {
   sourceBody: string; slideTarget: number | "auto"; hint: string;
   themeKey: string; model: string; endpoint: string; targetPath: string; replace: boolean;
+  sourceLink: string; // "[[Note]]" backlink to the origin note
 }
 
 export default class SlideDeckPlugin extends Plugin {
@@ -134,7 +135,7 @@ export default class SlideDeckPlugin extends Plugin {
     const streamOpts = { model: input.model, temperature: this.settings.llmTemperature, maxTokens: this.settings.llmMaxTokens, suppressThinking: this.settings.llmSuppressThinking };
 
     const done: Promise<GenerateResult> = (async () => {
-      const result = await runGenerateDeck({ client, messages, streamOpts, themeKey: input.themeKey, signal: controller.signal, onState: notify });
+      const result = await runGenerateDeck({ client, messages, streamOpts, themeKey: input.themeKey, sourceLink: input.sourceLink, signal: controller.signal, onState: notify });
       if (result.status === "ok" && result.markdown != null) {
         try {
           const writtenPath = await this.writeDeckNote(input.targetPath, result.markdown, input.replace);

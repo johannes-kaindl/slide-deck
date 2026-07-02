@@ -17,6 +17,13 @@ describe("runGenerateDeck", () => {
     expect(r.usedFallback).toBe(false);
   });
 
+  it("writes a source backlink into the frontmatter when sourceLink is given", async () => {
+    const client = { generate: vi.fn(async () => ({ content: "# A", reasoning: "", usedFallback: false })) };
+    const r = await runGenerateDeck(deps(client, { sourceLink: "[[Original]]" }));
+    expect(r.markdown).toContain('source: "[[Original]]"');
+    expect(r.markdown).toContain("theme: dark");
+  });
+
   it("marks incomplete on finish_reason length", async () => {
     const client = { generate: vi.fn(async () => ({ content: "# A", reasoning: "", finishReason: "length", usedFallback: false })) };
     expect((await runGenerateDeck(deps(client))).incomplete).toBe(true);

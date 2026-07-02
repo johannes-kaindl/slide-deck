@@ -82,6 +82,51 @@ export class SlideDeckSettingTab extends PluginSettingTab {
     ];
   }
 
+  /** Imperative fallback for Obsidian < 1.13 (which does not call getSettingDefinitions).
+   *  On ≥ 1.13 the framework renders declaratively and this is never called; it just
+   *  delegates to the walker so there is a single source of truth. */
+  display(): void { this.renderImperative(); }
+
+  /** Walk the SAME declarative definitions and render them with the classic Setting API. */
+  private renderImperative(): void {
+    const { containerEl } = this;
+    containerEl.empty();
+    for (const def of this.getSettingDefinitions()) {
+      const group = def as { type?: string; heading?: string; items?: unknown[] };
+      if (group.type !== "group" && group.type !== "list") continue;
+      if (group.heading) new Setting(containerEl).setName(group.heading).setHeading();
+      for (const raw of group.items ?? []) {
+        const item = raw as { name?: string; desc?: string; render?: (s: Setting) => void; control?: { type: string; key: string; options?: Record<string, string>; placeholder?: string } };
+        const setting = new Setting(containerEl);
+        if (item.name) setting.setName(item.name);
+        if (item.desc) setting.setDesc(item.desc);
+        if (item.render) { item.render(setting); continue; }
+        const c = item.control;
+        if (!c) continue;
+        const cur = this.getControlValue(c.key) as string | number | boolean | undefined;
+        switch (c.type) {
+          case "dropdown":
+            setting.addDropdown((d) => {
+              for (const [k, v] of Object.entries(c.options ?? {})) d.addOption(k, v);
+              d.setValue(String(cur ?? "")).onChange((v) => void this.setControlValue(c.key, v));
+            });
+            break;
+          case "toggle":
+            setting.addToggle((t2) => t2.setValue(Boolean(cur)).onChange((v) => void this.setControlValue(c.key, v)));
+            break;
+          case "textarea":
+            setting.addTextArea((t2) => { t2.setValue(String(cur ?? "")); if (c.placeholder) t2.setPlaceholder(c.placeholder); t2.onChange((v) => void this.setControlValue(c.key, v)); });
+            break;
+          case "number":
+            setting.addText((t2) => { t2.inputEl.type = "number"; t2.setValue(String(cur ?? "")); if (c.placeholder) t2.setPlaceholder(c.placeholder); t2.onChange((v) => void this.setControlValue(c.key, v)); });
+            break;
+          default: // "text"
+            setting.addText((t2) => { t2.setValue(String(cur ?? "")); if (c.placeholder) t2.setPlaceholder(c.placeholder); t2.onChange((v) => void this.setControlValue(c.key, v)); });
+        }
+      }
+    }
+  }
+
   /** Read the current value for a bound control key. Called on every render. */
   getControlValue(key: string): unknown {
     const s = this.plugin.settings;
@@ -154,7 +199,15 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       const path = await writeThemeCss(this.app.vault.adapter, this.plugin.settings.themesFolder, entry.key, entry.themeCss);
       new Notice(t("notice.themeExported", path));
       await this.plugin.refreshThemes();
-      this.update(); // a new theme file may have appeared → re-render definitions (dropdown + chips)
+      this.refreshUi(); // a new theme file may have appeared → re-render definitions (dropdown + chips)
     }));
+  }
+
+  /** Re-render the tab. On ≥ 1.13 the declarative framework exposes update(); on the < 1.13
+   *  fallback that method does not exist, so re-run our imperative display() instead. */
+  private refreshUi(): void {
+    const self = this as unknown as { update?: () => void };
+    if (typeof self.update === "function") self.update();
+    else this.renderImperative();
   }
 }

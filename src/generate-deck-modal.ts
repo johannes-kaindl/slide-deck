@@ -137,7 +137,7 @@ export class GenerateDeckModal extends Modal {
       const slideTarget: number | "auto" = countSel.value === "auto" ? "auto" : Number(countSel.value);
       let targetPath = `${targetBase}.md`;
       if (!replace) { let n = 2; while (existsAt(targetPath)) { targetPath = `${targetBase} ${n}.md`; n++; } }
-      const input: DeckGenInput = { sourceBody: body, slideTarget, hint: hintInput.value, themeKey: themeSel.value, model, endpoint: this.endpoint, targetPath, replace };
+      const input: DeckGenInput = { sourceBody: body, slideTarget, hint: hintInput.value, themeKey: themeSel.value, model, endpoint: this.endpoint, targetPath, replace, sourceLink: `[[${this.sourceFile.basename}]]` };
       const handle = this.plugin.startDeckGeneration(input);
       this.renderRunning(handle);
     };

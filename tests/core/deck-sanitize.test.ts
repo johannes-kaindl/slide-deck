@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractDeckMarkdown, setDeckTheme } from "../../src/core/llm/deck-sanitize";
+import { extractDeckMarkdown, setDeckTheme, setDeckSource } from "../../src/core/llm/deck-sanitize";
 import { parseDeck } from "../../src/core/slide-model";
 
 describe("extractDeckMarkdown", () => {
@@ -104,5 +104,19 @@ describe("setDeckTheme", () => {
     const out = setDeckTheme(src, "serif");
     expect(out).toContain("theme: serif");
     expect(out).toContain("theme: light");
+  });
+});
+
+describe("setDeckSource", () => {
+  it("injects a quoted wikilink into an existing frontmatter block", () => {
+    const out = setDeckSource("---\ntheme: dark\n---\n# A", "[[Original]]");
+    expect(out).toBe('---\nsource: "[[Original]]"\ntheme: dark\n---\n# A');
+  });
+  it("creates a frontmatter block when none exists", () => {
+    expect(setDeckSource("# A", "[[Original]]")).toBe('---\nsource: "[[Original]]"\n---\n# A');
+  });
+  it("replaces an existing source: line", () => {
+    const out = setDeckSource('---\nsource: "[[Old]]"\ntheme: dark\n---\n# A', "[[New]]");
+    expect(out).toBe('---\nsource: "[[New]]"\ntheme: dark\n---\n# A');
   });
 });

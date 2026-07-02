@@ -1,4 +1,4 @@
-import { extractDeckMarkdown, setDeckTheme } from "./core/llm/deck-sanitize";
+import { extractDeckMarkdown, setDeckTheme, setDeckSource } from "./core/llm/deck-sanitize";
 import { validateDeckOutput } from "./core/llm/deck-validate";
 import { buildRetryFeedback, type ChatMessage } from "./core/llm/deck-prompt";
 import type { DeckLlmClient, StreamOpts } from "./llm-client";
@@ -11,6 +11,7 @@ export interface GenerateDeps {
   messages: ChatMessage[];
   streamOpts: StreamOpts;
   themeKey: string;
+  sourceLink?: string; // optional "[[Note]]" backlink written into the deck frontmatter
   signal: AbortSignal;
   onState: (s: GenState) => void;
 }
@@ -45,7 +46,8 @@ export async function runGenerateDeck(deps: GenerateDeps): Promise<GenerateResul
       return { status: "fatal", error: (e as Error).message, kind: "server" };
     }
 
-    const themed = setDeckTheme(extractDeckMarkdown(acc.content), deps.themeKey);
+    let themed = setDeckTheme(extractDeckMarkdown(acc.content), deps.themeKey);
+    if (deps.sourceLink) themed = setDeckSource(themed, deps.sourceLink);
     const validation = validateDeckOutput(themed);
     if (!validation.fatal) {
       deps.onState({ phase: "done", attempt, content: acc.content, reasoning: acc.reasoning });
