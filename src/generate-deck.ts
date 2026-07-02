@@ -67,4 +67,5 @@ export interface GenerationHandle {
   abort(): void;
   readonly done: Promise<GenerateResult>;
   readonly targetLabel: string;
+  readonly startedAt: number; // ms epoch of generation start (for a reattach-stable elapsed clock)
 }

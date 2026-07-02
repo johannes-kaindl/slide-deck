@@ -143,3 +143,5 @@
 .sd-gen-exists { margin: 8px 0; }
 .sd-gen-cta { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 .sd-gen-tail, .sd-gen-reasoning pre { max-height: 180px; overflow: auto; white-space: pre-wrap; font-size: 0.8em; }
+.sd-gen-view { padding: 10px; }
+.sd-gen-source-label { font-weight: 600; margin: 6px 0 10px; }

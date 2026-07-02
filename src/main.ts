@@ -5,7 +5,7 @@ import { t, pickLang, setLang } from "./i18n";
 import { DEFAULT_SETTINGS, SlideDeckSettings, SlideDeckSettingTab } from "./settings";
 import { ThemeStore } from "./theme-registry";
 import { buildHideCss, normalizeFolder } from "./core/folder-hide";
-import { GenerateDeckModal } from "./generate-deck-modal";
+import { GenerateDeckView, VIEW_TYPE_GENERATE } from "./generate-deck-view";
 import { runGenerateDeck, type GenState, type GenerateResult, type GenerationHandle } from "./generate-deck";
 import { makeDeckLlmClient } from "./llm-client";
 import { buildDeckPrompt } from "./core/llm/deck-prompt";
@@ -33,6 +33,8 @@ export default class SlideDeckPlugin extends Plugin {
 
     this.addSettingTab(new SlideDeckSettingTab(this.app, this));
     this.registerView(VIEW_TYPE, (leaf) => new SlideDeckView(leaf, this));
+    this.registerView(VIEW_TYPE_GENERATE, (leaf) => new GenerateDeckView(leaf, this));
+    this.addRibbonIcon("wand-2", t("cmd.generateDeck"), () => void this.activateGenerateView());
 
     this.addCommand({ id: "open-preview", name: t("cmd.openPreview"), callback: () => void this.activatePreview() });
     this.addCommand({
@@ -43,15 +45,7 @@ export default class SlideDeckPlugin extends Plugin {
       id: "export-images", name: t("cmd.exportImages"),
       callback: () => void exportImages(this.app, activeDocument, activeWindow, this.app.workspace.getActiveFile(), this.themeStore.getMap(), { theme: this.settings.defaultTheme, minFontPx: this.settings.minFontPx }, this.settings.imageScale, this.settings.customCss, this.settings.exportFolder),
     });
-    this.addCommand({
-      id: "generate-deck", name: t("cmd.generateDeck"),
-      checkCallback: (checking: boolean) => {
-        const file = this.app.workspace.getActiveFile();
-        if (!file || file.extension !== "md") return false;
-        if (!checking) new GenerateDeckModal(this.app, this, file).open();
-        return true;
-      },
-    });
+    this.addCommand({ id: "generate-deck", name: t("cmd.generateDeck"), callback: () => void this.activateGenerateView() });
 
     // Refresh the registry when a .css under the themes folder is added/removed/renamed.
     const underThemes = (path: string) => normalizeFolder(path).startsWith(normalizeFolder(this.settings.themesFolder) + "/") && path.toLowerCase().endsWith(".css");
@@ -87,6 +81,16 @@ export default class SlideDeckPlugin extends Plugin {
     const leaf = existing ?? workspace.getRightLeaf(false);
     if (!leaf) return;
     await leaf.setViewState({ type: VIEW_TYPE, active: true });
+    void workspace.revealLeaf(leaf);
+  }
+
+  /** Open (or reveal) the generation sidebar. */
+  async activateGenerateView(): Promise<void> {
+    const { workspace } = this.app;
+    const existing = workspace.getLeavesOfType(VIEW_TYPE_GENERATE)[0];
+    const leaf = existing ?? workspace.getRightLeaf(false);
+    if (!leaf) return;
+    await leaf.setViewState({ type: VIEW_TYPE_GENERATE, active: true });
     void workspace.revealLeaf(leaf);
   }
 
@@ -164,6 +168,7 @@ export default class SlideDeckPlugin extends Plugin {
       abort: () => controller.abort(),
       done,
       targetLabel: input.targetPath,
+      startedAt: Date.now(),
     };
     this.activeGeneration = handle;
     return handle;
