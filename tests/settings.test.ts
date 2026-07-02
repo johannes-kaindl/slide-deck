@@ -27,36 +27,42 @@ function makeFakePlugin(settings: SlideDeckSettings) {
 }
 
 function controlItems(tab: SlideDeckSettingTab) {
-  const defs = tab.getSettingDefinitions();
-  const group = defs[0] as { type: string; items: any[] };
-  expect(group.type).toBe("group");
-  return group.items.filter((i) => i && typeof i === "object" && "control" in i && i.control) as Array<{ control: { key: string; type: string } }>;
+  const defs = tab.getSettingDefinitions() as Array<{ type: string; items: any[] }>;
+  const items = defs.flatMap((g) => { expect(g.type).toBe("group"); return g.items; });
+  return items.filter((i) => i && typeof i === "object" && "control" in i && i.control) as Array<{ control: { key: string; type: string } }>;
 }
 
 describe("SlideDeckSettingTab (declarative)", () => {
-  it("returns one group whose every control key is a real settings key and round-trips", async () => {
+  it("every control key is a real settings key and round-trips", async () => {
     const settings: SlideDeckSettings = { ...DEFAULT_SETTINGS };
     const { plugin, calls } = makeFakePlugin(settings);
     const tab = new SlideDeckSettingTab({} as any, plugin as any);
 
     const controls = controlItems(tab);
     const keys = controls.map((c) => c.control.key);
-    // The exact bound set — guards against an accidentally dropped/added control.
-    expect(new Set(keys)).toEqual(new Set(["defaultTheme", "minFontPx", "imageScale", "exportFolder", "themesFolder", "hideThemesFolder", "customCss"]));
+    expect(new Set(keys)).toEqual(new Set([
+      "defaultTheme", "minFontPx", "imageScale", "exportFolder", "themesFolder", "hideThemesFolder", "customCss",
+      "llmEndpoints", "llmModel", "llmMaxTokens", "llmTemperature", "llmSuppressThinking",
+    ]));
+    for (const key of keys) expect(key in DEFAULT_SETTINGS).toBe(true);
 
-    // Every key must be a real SlideDeckSettings field and read back its current value.
     for (const key of keys) {
-      expect(key in DEFAULT_SETTINGS).toBe(true);
+      if (key === "llmEndpoints") { expect(tab.getControlValue(key)).toBe(settings.llmEndpoints.join("\n")); continue; }
       expect(tab.getControlValue(key)).toBe(settings[key as keyof SlideDeckSettings]);
     }
 
-    // Round-trip a new value through setControlValue for each key.
     const newValues: Record<string, unknown> = {
-      defaultTheme: "dark", minFontPx: 30, imageScale: 3,
-      exportFolder: "Out", themesFolder: "Themes", hideThemesFolder: false, customCss: "body{}",
+      defaultTheme: "dark", minFontPx: 30, imageScale: 3, exportFolder: "Out", themesFolder: "Themes",
+      hideThemesFolder: false, customCss: "body{}",
+      llmEndpoints: "http://a\nhttp://b", llmModel: "qwen3", llmMaxTokens: 4096, llmTemperature: 0.7, llmSuppressThinking: false,
     };
     for (const key of keys) {
       await tab.setControlValue(key, newValues[key]);
+      if (key === "llmEndpoints") {
+        expect(settings.llmEndpoints).toEqual(["http://a", "http://b"]);
+        expect(tab.getControlValue(key)).toBe("http://a\nhttp://b");
+        continue;
+      }
       expect(settings[key as keyof SlideDeckSettings]).toBe(newValues[key]);
       expect(tab.getControlValue(key)).toBe(newValues[key]);
     }

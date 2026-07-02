@@ -2,6 +2,7 @@ import { App, Notice, PluginSettingTab, Setting, type SettingDefinitionItem } fr
 import type SlideDeckPlugin from "./main";
 import { t } from "./i18n";
 import { revealFolder, writeThemeCss } from "./theme-source";
+import { parseEndpointList } from "./core/llm/endpoint";
 
 export interface SlideDeckSettings {
   defaultTheme: string;
@@ -11,10 +12,16 @@ export interface SlideDeckSettings {
   exportFolder: string;
   themesFolder: string;
   hideThemesFolder: boolean;
+  llmEndpoints: string[];
+  llmModel: string;
+  llmMaxTokens: number;
+  llmTemperature: number;
+  llmSuppressThinking: boolean;
 }
 export const DEFAULT_SETTINGS: SlideDeckSettings = {
   defaultTheme: "default", minFontPx: 24, imageScale: 2, customCss: "",
   exportFolder: "Slide-Deck-Export", themesFolder: "Slide-Deck-Themes", hideThemesFolder: true,
+  llmEndpoints: ["http://localhost:1234"], llmModel: "", llmMaxTokens: 8192, llmTemperature: 0.3, llmSuppressThinking: true,
 };
 
 /** Declarative settings tab (Obsidian ≥ 1.13: getSettingDefinitions, not the deprecated
@@ -56,6 +63,22 @@ export class SlideDeckSettingTab extends PluginSettingTab {
             control: { type: "textarea", key: "customCss" } },
         ],
       },
+      {
+        type: "group",
+        heading: t("deck.settings.heading"),
+        items: [
+          { name: t("deck.settings.endpoints.name"), desc: t("deck.settings.endpoints.desc"),
+            control: { type: "textarea", key: "llmEndpoints", placeholder: DEFAULT_SETTINGS.llmEndpoints[0] } },
+          { name: t("deck.settings.model.name"), desc: t("deck.settings.model.desc"),
+            control: { type: "text", key: "llmModel", placeholder: "qwen3" } },
+          { name: t("deck.settings.maxTokens.name"), desc: t("deck.settings.maxTokens.desc"),
+            control: { type: "number", key: "llmMaxTokens", min: 256 } },
+          { name: t("deck.settings.temperature.name"), desc: t("deck.settings.temperature.desc"),
+            control: { type: "number", key: "llmTemperature", min: 0, step: "any" } },
+          { name: t("deck.settings.suppressThinking.name"), desc: t("deck.settings.suppressThinking.desc"),
+            control: { type: "toggle", key: "llmSuppressThinking" } },
+        ],
+      },
     ];
   }
 
@@ -71,6 +94,11 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       case "themesFolder": return s.themesFolder;
       case "hideThemesFolder": return s.hideThemesFolder;
       case "customCss": return s.customCss;
+      case "llmEndpoints": return s.llmEndpoints.join("\n");
+      case "llmModel": return s.llmModel;
+      case "llmMaxTokens": return s.llmMaxTokens;
+      case "llmTemperature": return s.llmTemperature;
+      case "llmSuppressThinking": return s.llmSuppressThinking;
       default: return undefined;
     }
   }
@@ -84,6 +112,11 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       case "imageScale": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.imageScale = n; break; }
       case "exportFolder": s.exportFolder = String(value).trim() || DEFAULT_SETTINGS.exportFolder; break;
       case "customCss": s.customCss = String(value); break;
+      case "llmEndpoints": s.llmEndpoints = parseEndpointList(String(value)); break;
+      case "llmModel": s.llmModel = String(value).trim(); break;
+      case "llmMaxTokens": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.llmMaxTokens = Math.floor(n); break; }
+      case "llmTemperature": { const n = Number(value); if (Number.isFinite(n) && n >= 0) s.llmTemperature = n; break; }
+      case "llmSuppressThinking": s.llmSuppressThinking = Boolean(value); break;
       case "themesFolder":
         s.themesFolder = String(value).trim() || DEFAULT_SETTINGS.themesFolder;
         await this.plugin.saveSettings();

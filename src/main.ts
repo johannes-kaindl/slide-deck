@@ -1,15 +1,26 @@
-import { Plugin, getLanguage, TFile, TAbstractFile } from "obsidian";
+import { Plugin, getLanguage, TFile, TAbstractFile, Notice, normalizePath } from "obsidian";
 import { exportPdf, exportImages } from "./export";
 import { SlideDeckView, VIEW_TYPE } from "./preview-view";
 import { t, pickLang, setLang } from "./i18n";
 import { DEFAULT_SETTINGS, SlideDeckSettings, SlideDeckSettingTab } from "./settings";
 import { ThemeStore } from "./theme-registry";
 import { buildHideCss, normalizeFolder } from "./core/folder-hide";
+import { GenerateDeckModal } from "./generate-deck-modal";
+import { runGenerateDeck, type GenState, type GenerateResult, type GenerationHandle } from "./generate-deck";
+import { makeDeckLlmClient } from "./llm-client";
+import { buildDeckPrompt } from "./core/llm/deck-prompt";
+import { getAuthoringContract } from "./core/constraints/contract";
+
+export interface DeckGenInput {
+  sourceBody: string; slideTarget: number | "auto"; hint: string;
+  themeKey: string; model: string; endpoint: string; targetPath: string; replace: boolean;
+}
 
 export default class SlideDeckPlugin extends Plugin {
   declare public settings: SlideDeckSettings;
   public themeStore!: ThemeStore;
   private hideSheet: CSSStyleSheet | null = null;
+  public activeGeneration: GenerationHandle | null = null;
 
   async onload(): Promise<void> {
     setLang(pickLang(getLanguage()));
@@ -30,6 +41,15 @@ export default class SlideDeckPlugin extends Plugin {
     this.addCommand({
       id: "export-images", name: t("cmd.exportImages"),
       callback: () => void exportImages(this.app, activeDocument, activeWindow, this.app.workspace.getActiveFile(), this.themeStore.getMap(), { theme: this.settings.defaultTheme, minFontPx: this.settings.minFontPx }, this.settings.imageScale, this.settings.customCss, this.settings.exportFolder),
+    });
+    this.addCommand({
+      id: "generate-deck", name: t("cmd.generateDeck"),
+      checkCallback: (checking: boolean) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file || file.extension !== "md") return false;
+        if (!checking) new GenerateDeckModal(this.app, this, file).open();
+        return true;
+      },
     });
 
     // Refresh the registry when a .css under the themes folder is added/removed/renamed.
@@ -60,12 +80,73 @@ export default class SlideDeckPlugin extends Plugin {
     if (this.hideSheet) activeDocument.adoptedStyleSheets = activeDocument.adoptedStyleSheets.filter((s) => s !== this.hideSheet);
   }
 
-  private async activatePreview(): Promise<void> {
+  async activatePreview(): Promise<void> {
     const { workspace } = this.app;
     const existing = workspace.getLeavesOfType(VIEW_TYPE)[0];
     const leaf = existing ?? workspace.getRightLeaf(false);
     if (!leaf) return;
     await leaf.setViewState({ type: VIEW_TYPE, active: true });
     void workspace.revealLeaf(leaf);
+  }
+
+  /** Refresh every open preview leaf (SlideDeckView has no active-leaf listener). */
+  async refreshActivePreview(): Promise<void> {
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
+      if (leaf.view instanceof SlideDeckView) await leaf.view.refresh();
+    }
+  }
+
+  /** Open a generated deck note, then activate + refresh the preview (order matters). */
+  async openDeckNote(path: string): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(normalizePath(path));
+    if (!(file instanceof TFile)) return;
+    await this.app.workspace.getLeaf(false).openFile(file);
+    await this.activatePreview();
+    await this.refreshActivePreview();
+  }
+
+  private async writeDeckNote(path: string, markdown: string, replace: boolean): Promise<void> {
+    const p = normalizePath(path);
+    const existing = this.app.vault.getAbstractFileByPath(p);
+    if (existing instanceof TFile && replace) { await this.app.vault.modify(existing, markdown); return; }
+    await this.app.vault.create(p, markdown);
+  }
+
+  /** Start a generation. Returns a handle the modal attaches to; the run survives modal close. */
+  startDeckGeneration(input: DeckGenInput): GenerationHandle {
+    const controller = new AbortController();
+    let state: GenState = { phase: "running", attempt: 1, content: "", reasoning: "" };
+    const subs = new Set<(s: GenState) => void>();
+    const notify = (s: GenState): void => { state = s; for (const fn of subs) fn(s); };
+
+    const contract = getAuthoringContract({ theme: this.settings.defaultTheme, aspect: "16:9", minFontPx: this.settings.minFontPx });
+    const messages = buildDeckPrompt(input.sourceBody, { slideTarget: input.slideTarget, hint: input.hint }, contract);
+    const client = makeDeckLlmClient(input.endpoint, input.model);
+    const streamOpts = { model: input.model, temperature: this.settings.llmTemperature, maxTokens: this.settings.llmMaxTokens, suppressThinking: this.settings.llmSuppressThinking };
+
+    const done: Promise<GenerateResult> = (async () => {
+      const result = await runGenerateDeck({ client, messages, streamOpts, themeKey: input.themeKey, signal: controller.signal, onState: notify });
+      if (result.status === "ok" && result.markdown != null) {
+        await this.writeDeckNote(input.targetPath, result.markdown, input.replace);
+        await this.openDeckNote(input.targetPath);
+        if (result.usedFallback) new Notice(t("deck.error.cors"));
+        new Notice(result.incomplete ? t("deck.notice.incomplete") : t("deck.notice.done", input.targetPath));
+      } else if (result.status === "fatal") {
+        notify({ phase: "error", attempt: state.attempt, content: state.content, reasoning: state.reasoning, error: result.error });
+        new Notice(result.kind === "server" ? t("deck.error.envelope", result.error ?? "") : t("deck.error.invalid", result.error ?? ""));
+      }
+      return result;
+    })();
+    void done.finally(() => { if (this.activeGeneration === handle) this.activeGeneration = null; });
+
+    const handle: GenerationHandle = {
+      snapshot: () => state,
+      subscribe: (fn) => { subs.add(fn); return () => { subs.delete(fn); }; },
+      abort: () => controller.abort(),
+      done,
+      targetLabel: input.targetPath,
+    };
+    this.activeGeneration = handle;
+    return handle;
   }
 }

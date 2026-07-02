@@ -131,3 +131,15 @@
   background: var(--background-modifier-border); cursor: pointer;
 }
 .sd-theme-chip:hover { background: var(--background-modifier-hover); }
+
+/* Generate-presentation modal */
+.sd-gen-row { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+.sd-gen-row label { min-width: 120px; }
+.sd-gen-status { margin-bottom: 10px; opacity: 0.9; }
+.sd-gen-ping { margin-left: 8px; }
+.sd-gen-ping-ok { color: var(--text-success); }
+.sd-gen-ping-err { color: var(--text-error); }
+.sd-gen-hint { margin: 8px 0; font-size: 0.9em; opacity: 0.8; }
+.sd-gen-exists { margin: 8px 0; }
+.sd-gen-cta { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.sd-gen-tail, .sd-gen-reasoning pre { max-height: 180px; overflow: auto; white-space: pre-wrap; font-size: 0.8em; }
