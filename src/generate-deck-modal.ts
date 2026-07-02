@@ -1,4 +1,4 @@
-import { App, Modal, TFile } from "obsidian";
+import { App, Modal, TFile, type KeymapEventHandler } from "obsidian";
 import type SlideDeckPlugin from "./main";
 import type { DeckGenInput } from "./main";
 import { makeDeckLlmClient } from "./llm-client";
@@ -126,9 +126,13 @@ export class GenerateDeckModal extends Modal {
     }
     updateEnabled();
 
+    let enterHandler: KeymapEventHandler | null = null;
     const start = (): void => {
       if (this.plugin.activeGeneration) return;   // non-reentrant (review C9): never start a 2nd run
       if (!this.endpoint || !model) return;
+      // Retire the Enter shortcut once we leave the input view, so pressing Enter on the running
+      // or error screen can't silently launch a fresh generation.
+      if (enterHandler) { this.scope.unregister(enterHandler); enterHandler = null; }
       genBtn.disabled = true;
       const slideTarget: number | "auto" = countSel.value === "auto" ? "auto" : Number(countSel.value);
       let targetPath = `${targetBase}.md`;
@@ -138,7 +142,7 @@ export class GenerateDeckModal extends Modal {
       this.renderRunning(handle);
     };
     genBtn.addEventListener("click", start);
-    this.scope.register([], "Enter", (e) => { e.preventDefault(); start(); return false; });
+    enterHandler = this.scope.register([], "Enter", (e) => { e.preventDefault(); start(); return false; });
   }
 
   private renderRunning(handle: GenerationHandle): void {
@@ -169,6 +173,9 @@ export class GenerateDeckModal extends Modal {
     this.unsubscribe = handle.subscribe(render);
     this.timer = window.setInterval(() => { elapsedEl.setText(t("deck.modal.elapsed", Math.round((Date.now() - this.startedAt) / 1000))); }, 500);
 
-    void handle.done.then((r) => { if (r.status === "ok") this.close(); });
+    void handle.done.then(
+      (r) => { if (r.status === "ok") this.close(); },
+      () => { if (this.timer != null) { window.clearInterval(this.timer); this.timer = null; } }, // defensive: done should never reject
+    );
   }
 }

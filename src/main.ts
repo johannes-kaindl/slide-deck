@@ -105,11 +105,20 @@ export default class SlideDeckPlugin extends Plugin {
     await this.refreshActivePreview();
   }
 
-  private async writeDeckNote(path: string, markdown: string, replace: boolean): Promise<void> {
+  /** Write the deck note, returning the path actually written. Replace overwrites in place; a copy
+   *  (or a raced/occupied create target) gets a fresh " N" suffix so vault.create can never throw. */
+  private async writeDeckNote(path: string, markdown: string, replace: boolean): Promise<string> {
     const p = normalizePath(path);
     const existing = this.app.vault.getAbstractFileByPath(p);
-    if (existing instanceof TFile && replace) { await this.app.vault.modify(existing, markdown); return; }
-    await this.app.vault.create(p, markdown);
+    if (existing instanceof TFile && replace) { await this.app.vault.modify(existing, markdown); return p; }
+    let target = p;
+    if (this.app.vault.getAbstractFileByPath(target)) {
+      const base = p.replace(/\.md$/, "");
+      let n = 2;
+      while (this.app.vault.getAbstractFileByPath(target)) { target = `${base} ${n}.md`; n++; }
+    }
+    await this.app.vault.create(target, markdown);
+    return target;
   }
 
   /** Start a generation. Returns a handle the modal attaches to; the run survives modal close. */
@@ -127,10 +136,19 @@ export default class SlideDeckPlugin extends Plugin {
     const done: Promise<GenerateResult> = (async () => {
       const result = await runGenerateDeck({ client, messages, streamOpts, themeKey: input.themeKey, signal: controller.signal, onState: notify });
       if (result.status === "ok" && result.markdown != null) {
-        await this.writeDeckNote(input.targetPath, result.markdown, input.replace);
-        await this.openDeckNote(input.targetPath);
-        if (result.usedFallback) new Notice(t("deck.error.cors"));
-        new Notice(result.incomplete ? t("deck.notice.incomplete") : t("deck.notice.done", input.targetPath));
+        try {
+          const writtenPath = await this.writeDeckNote(input.targetPath, result.markdown, input.replace);
+          await this.openDeckNote(writtenPath);
+          if (result.usedFallback) new Notice(t("deck.error.cors"));
+          new Notice(result.incomplete ? t("deck.notice.incomplete") : t("deck.notice.done", writtenPath));
+        } catch (e) {
+          // A write/open failure (create race, folder collision, refresh error) must not reject `done`
+          // — surface it as an error state so the modal clears its timer and shows the reason.
+          const msg = (e as Error).message;
+          notify({ phase: "error", attempt: state.attempt, content: state.content, reasoning: state.reasoning, error: msg });
+          new Notice(t("deck.error.write", msg));
+          return { status: "fatal", error: msg, kind: "format" };
+        }
       } else if (result.status === "fatal") {
         notify({ phase: "error", attempt: state.attempt, content: state.content, reasoning: state.reasoning, error: result.error });
         new Notice(result.kind === "server" ? t("deck.error.envelope", result.error ?? "") : t("deck.error.invalid", result.error ?? ""));
