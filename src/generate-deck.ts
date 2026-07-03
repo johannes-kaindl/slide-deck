@@ -1,4 +1,4 @@
-import { extractDeckMarkdown, setDeckTheme, setDeckSource } from "./core/llm/deck-sanitize";
+import { extractDeckMarkdown, setDeckTheme, setDeckSource, hoistDeckSlots } from "./core/llm/deck-sanitize";
 import { validateDeckOutput } from "./core/llm/deck-validate";
 import { buildRetryFeedback, type ChatMessage } from "./core/llm/deck-prompt";
 import type { DeckLlmClient, StreamOpts } from "./llm-client";
@@ -46,7 +46,7 @@ export async function runGenerateDeck(deps: GenerateDeps): Promise<GenerateResul
       return { status: "fatal", error: (e as Error).message, kind: "server" };
     }
 
-    let themed = setDeckTheme(extractDeckMarkdown(acc.content), deps.themeKey);
+    let themed = hoistDeckSlots(setDeckTheme(extractDeckMarkdown(acc.content), deps.themeKey));
     if (deps.sourceLink) themed = setDeckSource(themed, deps.sourceLink);
     const validation = validateDeckOutput(themed);
     if (!validation.fatal) {

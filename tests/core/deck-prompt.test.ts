@@ -23,6 +23,13 @@ describe("buildDeckPrompt", () => {
     expect(system.content).toMatch(/do not invent/i);
     expect(system.content).toMatch(/same language as the (note|source)/i);
   });
+  it("hardens layout guidance: only listed names, slots in frontmatter, two-column title", () => {
+    const [system] = buildDeckPrompt("x", { slideTarget: "auto", hint: "" }, contract);
+    expect(system.content).toMatch(/ONLY the exact layout names/i);
+    expect(system.content).toMatch(/header:.*footer:.*paginate:.*INSIDE the top frontmatter/i);
+    expect(system.content).toMatch(/two-column.*leading # heading/i);
+  });
+
   it("auto target asks for content-driven count (typically 5–12)", () => {
     const [system] = buildDeckPrompt("x", { slideTarget: "auto", hint: "" }, contract);
     expect(system.content).toMatch(/5.?12/);

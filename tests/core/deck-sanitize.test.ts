@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractDeckMarkdown, setDeckTheme, setDeckSource } from "../../src/core/llm/deck-sanitize";
+import { extractDeckMarkdown, setDeckTheme, setDeckSource, hoistDeckSlots } from "../../src/core/llm/deck-sanitize";
 import { parseDeck } from "../../src/core/slide-model";
 
 describe("extractDeckMarkdown", () => {
@@ -104,6 +104,29 @@ describe("setDeckTheme", () => {
     const out = setDeckTheme(src, "serif");
     expect(out).toContain("theme: serif");
     expect(out).toContain("theme: light");
+  });
+});
+
+describe("hoistDeckSlots", () => {
+  it("moves leading body header/footer/paginate lines into the frontmatter", () => {
+    const raw = "---\ntheme: dark\n---\nheader: H\nfooter: F\npaginate: true\n\n# A";
+    expect(hoistDeckSlots(raw)).toBe("---\ntheme: dark\nheader: H\nfooter: F\npaginate: true\n---\n# A");
+  });
+  it("tolerates blank lines around the slot block", () => {
+    const raw = "---\ntheme: dark\n---\n\nheader: H\n\n# A";
+    expect(hoistDeckSlots(raw)).toBe("---\ntheme: dark\nheader: H\n---\n# A");
+  });
+  it("is a no-op without leading slot lines", () => {
+    const md = "---\ntheme: dark\n---\n# A";
+    expect(hoistDeckSlots(md)).toBe(md);
+  });
+  it("is a no-op without a frontmatter block", () => {
+    const md = "# A\nheader: H";
+    expect(hoistDeckSlots(md)).toBe(md);
+  });
+  it("does not touch a header: line that follows real content", () => {
+    const md = "---\ntheme: dark\n---\n# A\n\nheader: not a slot";
+    expect(hoistDeckSlots(md)).toBe(md);
   });
 });
 

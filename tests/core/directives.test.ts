@@ -108,4 +108,9 @@ describe("parseDirectives", () => {
     expect(r.modifiers).toEqual([]);
     expect(r.warnings).toEqual([{ kind: "directive-malformed", message: expect.any(String) }]);
   });
+
+  it("resolves forgiving layout aliases (cover → cover-image)", () => {
+    expect(parseDirectives("<!-- layout: cover -->\n# A").layout).toBe("cover-image");
+    expect(parseDirectives("<!-- layout: columns -->\n# A").layout).toBe("two-column");
+  });
 });

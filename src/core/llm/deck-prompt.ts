@@ -31,6 +31,9 @@ export function buildDeckPrompt(sourceBody: string, opts: DeckPromptOpts, contra
     "- Output ONLY the deck markdown. No preamble, no explanation, no surrounding code fences.",
     "- The output begins with the frontmatter block, and NEVER begins with a slide separator line.",
     "- Do not put quotes around frontmatter values.",
+    "- Use ONLY the exact layout names listed above in <!-- layout: NAME --> — never invent one (e.g. use cover-image or title, not \"cover\").",
+    "- Put header:, footer: and paginate: INSIDE the top frontmatter block (never as body lines on the first slide).",
+    "- For a two-column or columns-3 slide, write the slide title as one leading # heading, then split the columns with <!-- column -->.",
     "- Only image embeds (![[name]]) are supported; drop transclusions of other notes.",
     `- ${target}`,
   ].join("\n");

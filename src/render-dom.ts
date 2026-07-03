@@ -94,6 +94,10 @@ export async function renderDeckToContainer(
         titleEl.className = "sd-region sd-region-title";
         titleEl.appendChild(first); // moves the node
         inner.insertBefore(titleEl, firstRegion);
+        // If the heading was the region's only content (a title-only first region, e.g.
+        // "# Title" then two <!-- column --> splits), drop the now-empty region so it does
+        // not occupy a phantom grid cell and stagger the columns diagonally.
+        if (firstRegion && !firstRegion.textContent?.trim() && firstRegion.childElementCount === 0) firstRegion.remove();
       }
     }
     // cover-image: pull the first image out into a full-bleed background layer + scrim.

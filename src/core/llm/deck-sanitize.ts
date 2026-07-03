@@ -120,6 +120,29 @@ export function setDeckTheme(md: string, key: string): string {
   return lines.join("\n");
 }
 
+const SLOT_KEY_RE = /^(header|footer|paginate):\s*\S/;
+
+/** Move deck-slot lines (header:/footer:/paginate:) the model emitted as leading BODY content
+ *  into the frontmatter block, where parseFrontmatter reads them (otherwise they render as stray
+ *  text on slide 1). Assumes a frontmatter block exists (run after setDeckTheme). No-op otherwise. */
+export function hoistDeckSlots(md: string): string {
+  const lines = md.split("\n");
+  const range = frontmatterRange(lines);
+  if (!range) return md;
+  const slots: string[] = [];
+  let k = range.end + 1;
+  while (k < lines.length) {
+    const l = lines[k].trim();
+    if (l === "") { k++; continue; }
+    if (SLOT_KEY_RE.test(l)) { slots.push(l); k++; continue; }
+    break; // first real content → stop
+  }
+  if (slots.length === 0) return md;
+  const fm = [...lines.slice(0, range.end), ...slots, lines[range.end]]; // insert before closing ---
+  const body = lines.slice(k).join("\n").replace(/^\n+/, "");
+  return `${fm.join("\n")}\n${body}`;
+}
+
 /** Set a `source:` frontmatter link back to the origin note (Obsidian frontmatterLinks →
  *  backlink/graph). `link` is a wikilink like `[[Note]]`; it MUST be quoted, otherwise YAML
  *  reads `[[Note]]` as a nested sequence. Injects a block if none exists. Run AFTER setDeckTheme. */
