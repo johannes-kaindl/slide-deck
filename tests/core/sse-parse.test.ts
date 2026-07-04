@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseSSE } from "../../src/core/llm/sse-parse";
+import { parseSSE } from "../../src/vendor/kit/sse";
 
 describe("parseSSE", () => {
   it("extracts content deltas", () => {

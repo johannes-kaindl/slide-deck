@@ -1,7 +1,16 @@
-/** Accumulates OpenAI-SSE deltas (content + reasoning_content) from a (partial) buffer;
- *  an incomplete last line goes to `rest`. `model` = first chunk `model` seen.
- *  `finishReason` = first non-null `choices[0].finish_reason` seen (slide-deck addition —
- *  needed to detect a token-limit truncation). Pure function — no state. */
+// vendored from obsidian-kit#0.3.0, src/pure/sse.ts
+/** Akkumuliert OpenAI-SSE-Deltas (content + reasoning_content) aus einem (Teil-)Buffer;
+ *  unvollständige letzte Zeile → rest. `model` = erstes im Buffer gesehenes Chunk-`model`-Feld.
+ *  `finishReason` = erstes non-empty `choices[0].finish_reason` (OpenAI sendet in Zwischen-Chunks
+ *  `null`, im letzten Chunk den String) — erlaubt dem Aufrufer, eine Token-Limit-Truncation zu
+ *  erkennen (`finishReason === "length"`). Reine Funktion — kein Zustand.
+ *
+ *  Der Transport (`streamSSE`) bleibt bewusst plugin-lokal: er divergiert je nach Runtime
+ *  (fetch ReadableStream vs. XMLHttpRequest, PROF-OBS-12) und ist nicht teilbar.
+ *
+ *  @example
+ *  parseSSE('data: {"choices":[{"delta":{"content":"Hi"}}]}\n')
+ *  // → { content: ["Hi"], reasoning: [], model: undefined, finishReason: undefined, rest: "", done: false } */
 export function parseSSE(buffer: string): { content: string[]; reasoning: string[]; model?: string; finishReason?: string; rest: string; done: boolean } {
   const content: string[] = [];
   const reasoning: string[] = [];
@@ -23,7 +32,7 @@ export function parseSSE(buffer: string): { content: string[]; reasoning: string
       const d = c0?.delta;
       if (typeof d?.content === "string") content.push(d.content);
       if (typeof d?.reasoning_content === "string") reasoning.push(d.reasoning_content);
-    } catch { /* incomplete — should not happen for complete lines */ }
+    } catch { /* unvollständig — sollte bei kompletten Zeilen nicht passieren */ }
   }
   return { content, reasoning, model, finishReason, rest, done };
 }
