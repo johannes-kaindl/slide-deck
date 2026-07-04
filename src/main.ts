@@ -10,6 +10,7 @@ import { runGenerateDeck, type GenState, type GenerateResult, type GenerationHan
 import { makeDeckLlmClient } from "./llm-client";
 import { buildDeckPrompt } from "./core/llm/deck-prompt";
 import { getAuthoringContract } from "./core/constraints/contract";
+import { mergeSettings } from "./vendor/kit/settings";
 
 export interface DeckGenInput {
   sourceBody: string; slideTarget: number | "auto"; hint: string;
@@ -25,7 +26,7 @@ export default class SlideDeckPlugin extends Plugin {
 
   async onload(): Promise<void> {
     setLang(pickLang(getLanguage()));
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, (await this.loadData()) as Partial<SlideDeckSettings>);
+    this.settings = mergeSettings(DEFAULT_SETTINGS, await this.loadData());
 
     this.themeStore = new ThemeStore(this.app, () => this.settings.themesFolder);
     await this.themeStore.refresh();
