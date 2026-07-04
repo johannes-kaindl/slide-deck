@@ -65,7 +65,7 @@ export interface FitResult { scale: number; overflow: boolean; }
 - [ ] **Step 1: Template kopieren**
 
 ```bash
-cp -R /Users/Shared/code/_docs/templates/obsidian-plugin/. /Users/Shared/code/markdown-presentation/
+cp -R /Users/Shared/code/_docs/templates/obsidian-plugin/. /Users/Shared/code/obsidian-plugins/markdown-presentation/
 # Vorhandenen Spec/Plan-Ordner nicht überschreiben (cp -R . merged additiv).
 ```
 
@@ -90,7 +90,7 @@ cp -R /Users/Shared/code/_docs/templates/obsidian-plugin/. /Users/Shared/code/ma
 - [ ] **Step 3: Dependencies installieren**
 
 ```bash
-cd /Users/Shared/code/markdown-presentation
+cd /Users/Shared/code/obsidian-plugins/markdown-presentation
 npm install
 npm install markdown-it @vscode/markdown-it-katex katex highlight.js mermaid html2canvas
 npm install -D @types/markdown-it

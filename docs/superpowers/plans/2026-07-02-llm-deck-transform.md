@@ -168,7 +168,7 @@ git commit -m "feat(llm): vendor pure parseSSE with finish_reason extension"
 **Interfaces:**
 - Produces: `class ThinkSplitter { push(text): { content; reasoning }; flush(): { content; reasoning } }`.
 
-- [ ] **Step 1: Copy the seed test** — copy `/Users/Shared/code/vault-rag/tests/think_splitter.test.ts` verbatim to `tests/core/think-splitter.test.ts`, then change only the import line to:
+- [ ] **Step 1: Copy the seed test** — copy `/Users/Shared/code/obsidian-plugins/vault-rag/tests/think_splitter.test.ts` verbatim to `tests/core/think-splitter.test.ts`, then change only the import line to:
 ```ts
 import { ThinkSplitter } from "../../src/core/llm/think-splitter";
 ```
@@ -178,7 +178,7 @@ import { ThinkSplitter } from "../../src/core/llm/think-splitter";
 Run: `npx vitest run tests/core/think-splitter.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Vendor the implementation** — copy `/Users/Shared/code/vault-rag/src/think_splitter.ts` verbatim to `src/core/llm/think-splitter.ts` (no changes).
+- [ ] **Step 3: Vendor the implementation** — copy `/Users/Shared/code/obsidian-plugins/vault-rag/src/think_splitter.ts` verbatim to `src/core/llm/think-splitter.ts` (no changes).
 
 - [ ] **Step 4: Run to verify it passes**
 
@@ -203,7 +203,7 @@ git commit -m "feat(llm): vendor ThinkSplitter (copy-not-share)"
 **Interfaces:**
 - Produces: `normalizeEndpoint(endpoint: string): string`; `resolveActiveEndpoint(endpoints: string[], ping: (ep) => Promise<boolean>): Promise<string | null>`; `parseEndpointList(text: string): string[]` (slide-deck addition — splits a settings textarea into an ordered, trimmed, de-duplicated, non-empty list).
 
-- [ ] **Step 1: Write the failing test** — copy `/Users/Shared/code/vault-rag/tests/endpoint.test.ts` to `tests/core/endpoint.test.ts`, change the import to `from "../../src/core/llm/endpoint"`, and append:
+- [ ] **Step 1: Write the failing test** — copy `/Users/Shared/code/obsidian-plugins/vault-rag/tests/endpoint.test.ts` to `tests/core/endpoint.test.ts`, change the import to `from "../../src/core/llm/endpoint"`, and append:
 ```ts
 import { parseEndpointList } from "../../src/core/llm/endpoint";
 
@@ -225,7 +225,7 @@ describe("parseEndpointList", () => {
 Run: `npx vitest run tests/core/endpoint.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Vendor + extend** — copy `/Users/Shared/code/vault-rag/src/endpoint.ts` verbatim to `src/core/llm/endpoint.ts`, then append the slide-deck addition:
+- [ ] **Step 3: Vendor + extend** — copy `/Users/Shared/code/obsidian-plugins/vault-rag/src/endpoint.ts` verbatim to `src/core/llm/endpoint.ts`, then append the slide-deck addition:
 ```ts
 
 /** slide-deck addition (NOT vendored): parse the settings textarea (one endpoint per line)
@@ -263,14 +263,14 @@ git commit -m "feat(llm): vendor endpoint resolver + add parseEndpointList"
 **Interfaces:**
 - Produces: `suppressParams(suppress: boolean): Record<string, unknown>`; `reasoningHappened(content: string, reasoning: string | undefined): boolean`; `isAlwaysOnThinker(model: string): boolean`; `type ThinkingSupport = "none" | "hybrid" | "always"`.
 
-- [ ] **Step 1: Copy the seed test** — copy `/Users/Shared/code/vault-rag/tests/reasoning.test.ts` to `tests/core/reasoning.test.ts`, change the import to `from "../../src/core/llm/reasoning"`.
+- [ ] **Step 1: Copy the seed test** — copy `/Users/Shared/code/obsidian-plugins/vault-rag/tests/reasoning.test.ts` to `tests/core/reasoning.test.ts`, change the import to `from "../../src/core/llm/reasoning"`.
 
 - [ ] **Step 2: Run to verify it fails**
 
 Run: `npx vitest run tests/core/reasoning.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Vendor** — copy `/Users/Shared/code/vault-rag/src/reasoning.ts` verbatim to `src/core/llm/reasoning.ts` (no changes).
+- [ ] **Step 3: Vendor** — copy `/Users/Shared/code/obsidian-plugins/vault-rag/src/reasoning.ts` verbatim to `src/core/llm/reasoning.ts` (no changes).
 
 - [ ] **Step 4: Run to verify it passes**
 
@@ -1238,7 +1238,7 @@ git commit -m "feat(i18n): add deck-generation strings (EN+DE) + parity test"
 - Consumes: `parseSSE` (Task 1), `ThinkSplitter` (Task 2).
 - Produces: `interface StreamResult { content: string; reasoning: string; model: string; raw: string; finishReason?: string }`; `streamSSE(url, init, onContent, onReasoning, signal?): Promise<StreamResult>`. On `xhr.onerror` it rejects with an error whose `.name === "StreamNetworkError"` (so the client can branch to the CORS fallback); on abort, `.name === "AbortError"`.
 
-- [ ] **Step 1: Copy the fake XHR harness** — copy `/Users/Shared/code/vault-rag/tests/fake_xhr.ts` verbatim to `tests/fake_xhr.ts` (no changes).
+- [ ] **Step 1: Copy the fake XHR harness** — copy `/Users/Shared/code/obsidian-plugins/vault-rag/tests/fake_xhr.ts` verbatim to `tests/fake_xhr.ts` (no changes).
 
 - [ ] **Step 2: Write the failing test**
 
