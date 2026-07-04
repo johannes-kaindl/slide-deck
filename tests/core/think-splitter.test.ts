@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ThinkSplitter } from "../../src/core/llm/think-splitter";
+import { ThinkSplitter } from "../../src/vendor/kit/think";
 
 describe("ThinkSplitter", () => {
   it("Plaintext ohne Tags → alles content", () => {

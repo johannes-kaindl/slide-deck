@@ -1,5 +1,5 @@
 import { parseSSE } from "./core/llm/sse-parse";
-import { ThinkSplitter } from "./core/llm/think-splitter";
+import { ThinkSplitter } from "./vendor/kit/think";
 
 export interface StreamResult { content: string; reasoning: string; model: string; raw: string; finishReason?: string }
 
