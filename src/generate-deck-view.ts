@@ -2,7 +2,7 @@ import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import type SlideDeckPlugin from "./main";
 import type { DeckGenInput } from "./main";
 import { makeDeckLlmClient } from "./llm-client";
-import { resolveActiveEndpoint } from "./core/llm/endpoint";
+import { resolveActiveEndpoint } from "./vendor/kit/endpoint";
 import { frontmatterRange } from "./core/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./core/llm/deck-prompt";
 import { estimateTokens, contextOverflow } from "./core/llm/model-info";

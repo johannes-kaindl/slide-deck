@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeEndpoint, parseEndpointList } from "../../src/core/llm/endpoint";
+import { normalizeEndpoint, parseEndpointList } from "../../src/vendor/kit/endpoint";
 
 describe("normalizeEndpoint", () => {
   it("lässt einen sauberen Endpoint unverändert", () => {

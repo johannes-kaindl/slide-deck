@@ -2,7 +2,7 @@ import { App, Notice, PluginSettingTab, Setting, type SettingDefinitionItem } fr
 import type SlideDeckPlugin from "./main";
 import { t } from "./i18n";
 import { revealFolder, writeThemeCss } from "./theme-source";
-import { parseEndpointList } from "./core/llm/endpoint";
+import { parseEndpointList } from "./vendor/kit/endpoint";
 
 export interface SlideDeckSettings {
   defaultTheme: string;
