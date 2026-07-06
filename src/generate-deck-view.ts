@@ -162,8 +162,8 @@ export class GenerateDeckView extends ItemView {
     if (this.existsAt(`${this.targetBase(this.currentSource)}.md`)) {
       const box = this.existsBox.createDiv({ cls: "sd-gen-exists" });
       box.createEl("p", { text: t("deck.modal.existsLabel") });
-      const rep = box.createEl("label"); const repRadio = rep.createEl("input", { type: "radio" }); repRadio.name = "sd-collide"; repRadio.checked = true; rep.createSpan({ text: ` ${t("deck.modal.existsReplace")}` });
-      const cop = box.createEl("label"); const copRadio = cop.createEl("input", { type: "radio" }); copRadio.name = "sd-collide"; cop.createSpan({ text: ` ${t("deck.modal.existsCopy")}` });
+      const rep = box.createEl("label", { cls: "sd-collide-opt" }); const repRadio = rep.createEl("input", { type: "radio" }); repRadio.name = "sd-collide"; repRadio.checked = true; rep.createSpan({ text: t("deck.modal.existsReplace") });
+      const cop = box.createEl("label", { cls: "sd-collide-opt" }); const copRadio = cop.createEl("input", { type: "radio" }); copRadio.name = "sd-collide"; cop.createSpan({ text: t("deck.modal.existsCopy") });
       repRadio.addEventListener("change", () => { this.replace = true; });
       copRadio.addEventListener("change", () => { this.replace = false; });
     }
