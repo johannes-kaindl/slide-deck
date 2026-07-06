@@ -27,15 +27,17 @@ export function getAuthoringContract(d: DeckDirectives): AuthoringContract {
   };
 }
 
-export function contractToPrompt(c: AuthoringContract): string {
-  return [
+export function contractToPrompt(c: AuthoringContract, opts?: { includeTheme?: boolean }): string {
+  const includeTheme = opts?.includeTheme ?? true;
+  const lines = [
     `Build a slide deck as Markdown. Separate slides with a line containing only "${c.slideSeparator}".`,
     `Each slide must fit a fixed ${c.geometry.width}x${c.geometry.height}px canvas with body text no smaller than ${c.minFontPx}px.`,
     `Keep slides sparse: few bullets, short lines. Every element must have a clear function.`,
     `Per-slide layout via "<!-- layout: NAME [modifier] -->" (split columns with "<!-- column -->"). Available: ${c.layouts.join(", ")}. Modifiers: compact, code-heavy.`,
     `Optional deck slots via frontmatter: header:, footer:, paginate: true.`,
-    `Deck theme via frontmatter "theme:". Available: ${c.themes.join(", ")}.`,
+    ...(includeTheme ? [`Deck theme via frontmatter "theme:". Available: ${c.themes.join(", ")}.`] : []),
     `Supported: ${c.features.join(", ")}.`,
     `Not supported (do not use): ${c.unsupported.join(", ")}.`,
-  ].join("\n");
+  ];
+  return lines.join("\n");
 }

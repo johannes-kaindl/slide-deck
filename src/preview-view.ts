@@ -94,7 +94,7 @@ export class SlideDeckView extends ItemView {
   /** Rebuild the theme dropdown options from the registry and select the effective theme. */
   private syncThemeControls(): void {
     this.themeSelect.empty();
-    for (const e of this.plugin.themeStore.getThemes()) this.themeSelect.createEl("option", { value: e.key, text: e.key });
+    for (const e of this.plugin.themeStore.getThemes()) this.themeSelect.createEl("option", { value: e.key, text: e.label ?? e.key });
     this.themeSelect.value = this.effectiveTheme;
     this.sourceLabel.setText(this.dirty ? `● ${t("source.unsaved")}` : `ⓘ ${this.persistedTheme ? t("source.frontmatter") : t("source.default")}`);
     this.sourceLabel.toggleClass("sd-source-dirty", this.dirty);

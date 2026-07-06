@@ -15,13 +15,15 @@ export function parseBaseFontPx(css: string): number | undefined {
 
 const HLJS_META_RE = /\/\*\s*sd-hljs\s*:\s*([A-Za-z0-9-]+)\s*\*\//i;
 const MERMAID_META_RE = /\/\*\s*sd-mermaid\s*:\s*([A-Za-z]+)\s*\*\//i;
+const LABEL_META_RE = /\/\*\s*sd-label\s*:\s*(.+?)\s*\*\//i;
 const MERMAID_VALUES = ["default", "dark", "neutral", "forest"];
 
-/** Read optional `sd-hljs` and `sd-mermaid` header directives from a
+/** Read optional `sd-hljs`, `sd-mermaid` and `sd-label` header directives from a
  *  theme's CSS (analogous to parseBaseFontPx). hljs is returned raw (validated against the
- *  HLJS map by the adapter); mermaid is validated against the MermaidTheme union here. */
-export function parseThemeMeta(css: string): { hljs?: string; mermaid?: MermaidTheme } {
-  const out: { hljs?: string; mermaid?: MermaidTheme } = {};
+ *  HLJS map by the adapter); mermaid is validated against the MermaidTheme union here;
+ *  label is a free-text display name (spaces + unicode allowed, single line). */
+export function parseThemeMeta(css: string): { hljs?: string; mermaid?: MermaidTheme; label?: string } {
+  const out: { hljs?: string; mermaid?: MermaidTheme; label?: string } = {};
   const h = HLJS_META_RE.exec(css);
   if (h) out.hljs = h[1];
   const m = MERMAID_META_RE.exec(css);
@@ -29,5 +31,7 @@ export function parseThemeMeta(css: string): { hljs?: string; mermaid?: MermaidT
     const v = m[1].toLowerCase();
     if (MERMAID_VALUES.includes(v)) out.mermaid = v as MermaidTheme;
   }
+  const l = LABEL_META_RE.exec(css);
+  if (l) out.label = l[1].trim();
   return out;
 }

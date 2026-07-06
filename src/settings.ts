@@ -2,6 +2,7 @@ import { App, Notice, PluginSettingTab, Setting, type SettingDefinitionItem } fr
 import type SlideDeckPlugin from "./main";
 import { t } from "./i18n";
 import { revealFolder, writeThemeCss } from "./theme-source";
+import { parseEndpointList } from "./vendor/kit/endpoint";
 
 export interface SlideDeckSettings {
   defaultTheme: string;
@@ -11,10 +12,16 @@ export interface SlideDeckSettings {
   exportFolder: string;
   themesFolder: string;
   hideThemesFolder: boolean;
+  llmEndpoints: string[];
+  llmModel: string;
+  llmMaxTokens: number;
+  llmTemperature: number;
+  llmSuppressThinking: boolean;
 }
 export const DEFAULT_SETTINGS: SlideDeckSettings = {
   defaultTheme: "default", minFontPx: 24, imageScale: 2, customCss: "",
   exportFolder: "Slide-Deck-Export", themesFolder: "Slide-Deck-Themes", hideThemesFolder: true,
+  llmEndpoints: ["http://localhost:1234"], llmModel: "", llmMaxTokens: 8192, llmTemperature: 0.3, llmSuppressThinking: true,
 };
 
 /** Declarative settings tab (Obsidian ≥ 1.13: getSettingDefinitions, not the deprecated
@@ -25,7 +32,7 @@ export class SlideDeckSettingTab extends PluginSettingTab {
 
   getSettingDefinitions(): SettingDefinitionItem[] {
     const themes = this.plugin.themeStore.getThemes();
-    const themeOptions = Object.fromEntries(themes.map((e) => [e.key, e.key]));
+    const themeOptions = Object.fromEntries(themes.map((e) => [e.key, e.label ?? e.key]));
     return [
       {
         type: "group",
@@ -56,7 +63,68 @@ export class SlideDeckSettingTab extends PluginSettingTab {
             control: { type: "textarea", key: "customCss" } },
         ],
       },
+      {
+        type: "group",
+        heading: t("deck.settings.heading"),
+        items: [
+          { name: t("deck.settings.endpoints.name"), desc: t("deck.settings.endpoints.desc"),
+            control: { type: "textarea", key: "llmEndpoints", placeholder: DEFAULT_SETTINGS.llmEndpoints[0] } },
+          { name: t("deck.settings.model.name"), desc: t("deck.settings.model.desc"),
+            control: { type: "text", key: "llmModel", placeholder: "qwen3" } },
+          { name: t("deck.settings.maxTokens.name"), desc: t("deck.settings.maxTokens.desc"),
+            control: { type: "number", key: "llmMaxTokens", min: 256 } },
+          { name: t("deck.settings.temperature.name"), desc: t("deck.settings.temperature.desc"),
+            control: { type: "number", key: "llmTemperature", min: 0, step: "any" } },
+          { name: t("deck.settings.suppressThinking.name"), desc: t("deck.settings.suppressThinking.desc"),
+            control: { type: "toggle", key: "llmSuppressThinking" } },
+        ],
+      },
     ];
+  }
+
+  /** Imperative fallback for Obsidian < 1.13 (which does not call getSettingDefinitions).
+   *  On ≥ 1.13 the framework renders declaratively and this is never called; it just
+   *  delegates to the walker so there is a single source of truth. */
+  display(): void { this.renderImperative(); }
+
+  /** Walk the SAME declarative definitions and render them with the classic Setting API. */
+  private renderImperative(): void {
+    const { containerEl } = this;
+    containerEl.empty();
+    for (const def of this.getSettingDefinitions()) {
+      const group = def as { type?: string; heading?: string; items?: unknown[] };
+      if (group.type !== "group" && group.type !== "list") continue;
+      if (group.heading) new Setting(containerEl).setName(group.heading).setHeading();
+      for (const raw of group.items ?? []) {
+        const item = raw as { name?: string; desc?: string; render?: (s: Setting) => void; control?: { type: string; key: string; options?: Record<string, string>; placeholder?: string } };
+        const setting = new Setting(containerEl);
+        if (item.name) setting.setName(item.name);
+        if (item.desc) setting.setDesc(item.desc);
+        if (item.render) { item.render(setting); continue; }
+        const c = item.control;
+        if (!c) continue;
+        const cur = this.getControlValue(c.key) as string | number | boolean | undefined;
+        switch (c.type) {
+          case "dropdown":
+            setting.addDropdown((d) => {
+              for (const [k, v] of Object.entries(c.options ?? {})) d.addOption(k, v);
+              d.setValue(String(cur ?? "")).onChange((v) => void this.setControlValue(c.key, v));
+            });
+            break;
+          case "toggle":
+            setting.addToggle((t2) => t2.setValue(Boolean(cur)).onChange((v) => void this.setControlValue(c.key, v)));
+            break;
+          case "textarea":
+            setting.addTextArea((t2) => { t2.setValue(String(cur ?? "")); if (c.placeholder) t2.setPlaceholder(c.placeholder); t2.onChange((v) => void this.setControlValue(c.key, v)); });
+            break;
+          case "number":
+            setting.addText((t2) => { t2.inputEl.type = "number"; t2.setValue(String(cur ?? "")); if (c.placeholder) t2.setPlaceholder(c.placeholder); t2.onChange((v) => void this.setControlValue(c.key, v)); });
+            break;
+          default: // "text"
+            setting.addText((t2) => { t2.setValue(String(cur ?? "")); if (c.placeholder) t2.setPlaceholder(c.placeholder); t2.onChange((v) => void this.setControlValue(c.key, v)); });
+        }
+      }
+    }
   }
 
   /** Read the current value for a bound control key. Called on every render. */
@@ -71,6 +139,11 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       case "themesFolder": return s.themesFolder;
       case "hideThemesFolder": return s.hideThemesFolder;
       case "customCss": return s.customCss;
+      case "llmEndpoints": return s.llmEndpoints.join("\n");
+      case "llmModel": return s.llmModel;
+      case "llmMaxTokens": return s.llmMaxTokens;
+      case "llmTemperature": return s.llmTemperature;
+      case "llmSuppressThinking": return s.llmSuppressThinking;
       default: return undefined;
     }
   }
@@ -84,6 +157,11 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       case "imageScale": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.imageScale = n; break; }
       case "exportFolder": s.exportFolder = String(value).trim() || DEFAULT_SETTINGS.exportFolder; break;
       case "customCss": s.customCss = String(value); break;
+      case "llmEndpoints": s.llmEndpoints = parseEndpointList(String(value)); break;
+      case "llmModel": s.llmModel = String(value).trim(); break;
+      case "llmMaxTokens": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.llmMaxTokens = Math.floor(n); break; }
+      case "llmTemperature": { const n = Number(value); if (Number.isFinite(n) && n >= 0) s.llmTemperature = n; break; }
+      case "llmSuppressThinking": s.llmSuppressThinking = Boolean(value); break;
       case "themesFolder":
         s.themesFolder = String(value).trim() || DEFAULT_SETTINGS.themesFolder;
         await this.plugin.saveSettings();
@@ -115,13 +193,21 @@ export class SlideDeckSettingTab extends PluginSettingTab {
   private renderExportTheme(setting: Setting): void {
     const themes = this.plugin.themeStore.getThemes();
     let exportPick = themes[0]?.key ?? "default";
-    setting.addDropdown((c) => { for (const e of themes) c.addOption(e.key, e.key); c.setValue(exportPick).onChange((v) => { exportPick = v; }); });
+    setting.addDropdown((c) => { for (const e of themes) c.addOption(e.key, e.label ?? e.key); c.setValue(exportPick).onChange((v) => { exportPick = v; }); });
     setting.addButton((b) => b.setButtonText(t("settings.exportTheme.button")).onClick(async () => {
       const entry = this.plugin.themeStore.resolve(exportPick);
       const path = await writeThemeCss(this.app.vault.adapter, this.plugin.settings.themesFolder, entry.key, entry.themeCss);
       new Notice(t("notice.themeExported", path));
       await this.plugin.refreshThemes();
-      this.update(); // a new theme file may have appeared → re-render definitions (dropdown + chips)
+      this.refreshUi(); // a new theme file may have appeared → re-render definitions (dropdown + chips)
     }));
+  }
+
+  /** Re-render the tab. On ≥ 1.13 the declarative framework exposes update(); on the < 1.13
+   *  fallback that method does not exist, so re-run our imperative display() instead. */
+  private refreshUi(): void {
+    const self = this as unknown as { update?: () => void };
+    if (typeof self.update === "function") self.update();
+    else this.renderImperative();
   }
 }

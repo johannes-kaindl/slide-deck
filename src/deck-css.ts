@@ -12,6 +12,7 @@ const HLJS: Record<string, string> = { github: githubCss, "github-dark": githubD
 export function builtinThemeEntries(): ThemeEntry[] {
   return Object.values(PRESETS).map((p) => ({
     key: p.id,
+    label: p.label,
     source: "builtin" as const,
     themeCss: presetTokensCss(p),
     hljs: HLJS[p.hljs] ?? HLJS["github-dark"],
@@ -28,6 +29,7 @@ export function userThemeEntry(key: string, fileCss: string): ThemeEntry {
   const meta = parseThemeMeta(fileCss);
   return {
     key,
+    label: meta.label,
     source: "user" as const,
     themeCss: fileCss,
     hljs: HLJS[meta.hljs ?? ""] ?? HLJS[d.hljs] ?? HLJS["github-dark"],

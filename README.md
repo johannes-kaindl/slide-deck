@@ -150,6 +150,25 @@ Note: the `---` in the YAML frontmatter block is the standard YAML delimiter and
 4. **Fit-or-warn** — each slide's content is measured in the DOM. If it exceeds the canvas, the content is scaled down uniformly. Scaling stops at `minFontPx` (the legibility floor). If the content would still overflow at that scale, the slide is flagged with a warning in the preview pane rather than scaled further.
 5. **Export** — the same theme-isolated iframe artifact feeds all export paths: the print pipeline (PDF) and per-slide `modern-screenshot` (`domToCanvas`) capture (PNG). On desktop, PDF is printed via `contentWindow.print()`; on mobile, a self-contained HTML file is written to the vault and handed to the OS via `openWithDefaultApp`.
 
+## Network use (local AI)
+
+The **Generate presentation from note** command sends note content to an **OpenAI-compatible
+LLM endpoint that you configure** (default `http://localhost:1234`, i.e. a local LM Studio).
+No cloud service is involved unless you point the endpoint at one.
+
+- **Reachability pings and model lists** are requested when you open the generation dialog or
+  the settings tab. These are automatic requests to the configured endpoint(s).
+- **Note contents are sent only when you press "Generate".**
+- No telemetry, no analytics, no third-party services.
+
+### Server CORS
+
+Streaming runs over `XMLHttpRequest` under the Obsidian origin, so the endpoint must allow
+cross-origin requests. LM Studio's CORS toggle must be on; Ollama needs
+`OLLAMA_ORIGINS=app://obsidian.md` (or `*`). If the endpoint answers the reachability ping but
+refuses the stream, the plugin **automatically falls back to a non-streaming request** (you lose
+the live token view, but the deck still generates).
+
 ## License
 
 Code: [AGPL-3.0-or-later](https://codeberg.org/jkaindl/slide-deck/src/branch/main/LICENSE).
