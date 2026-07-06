@@ -32,7 +32,7 @@ export class SlideDeckSettingTab extends PluginSettingTab {
 
   getSettingDefinitions(): SettingDefinitionItem[] {
     const themes = this.plugin.themeStore.getThemes();
-    const themeOptions = Object.fromEntries(themes.map((e) => [e.key, e.key]));
+    const themeOptions = Object.fromEntries(themes.map((e) => [e.key, e.label ?? e.key]));
     return [
       {
         type: "group",
@@ -193,7 +193,7 @@ export class SlideDeckSettingTab extends PluginSettingTab {
   private renderExportTheme(setting: Setting): void {
     const themes = this.plugin.themeStore.getThemes();
     let exportPick = themes[0]?.key ?? "default";
-    setting.addDropdown((c) => { for (const e of themes) c.addOption(e.key, e.key); c.setValue(exportPick).onChange((v) => { exportPick = v; }); });
+    setting.addDropdown((c) => { for (const e of themes) c.addOption(e.key, e.label ?? e.key); c.setValue(exportPick).onChange((v) => { exportPick = v; }); });
     setting.addButton((b) => b.setButtonText(t("settings.exportTheme.button")).onClick(async () => {
       const entry = this.plugin.themeStore.resolve(exportPick);
       const path = await writeThemeCss(this.app.vault.adapter, this.plugin.settings.themesFolder, entry.key, entry.themeCss);

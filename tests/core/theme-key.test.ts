@@ -38,4 +38,7 @@ describe("parseThemeMeta", () => {
   it("returns an empty object when no directives present", () => {
     expect(parseThemeMeta(".sd-slide{ --sd-bg:#000 }")).toEqual({});
   });
+  it("reads an sd-label header directive (spaces + unicode allowed)", () => {
+    expect(parseThemeMeta("/* sd-label: Kuro · 黒 — the chamber */").label).toBe("Kuro · 黒 — the chamber");
+  });
 });

@@ -37,6 +37,7 @@ export function assembleDeckCss(parts: string[]): string { return parts.join("\n
 
 export interface ThemeEntry {
   key: string;
+  label?: string; // human-readable display name; UIs fall back to key when absent
   source: "builtin" | "user";
   themeCss: string;
   hljs: string;

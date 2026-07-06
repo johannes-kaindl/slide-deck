@@ -107,7 +107,7 @@ export class GenerateDeckView extends ItemView {
     const themeRow = contentEl.createDiv({ cls: "sd-gen-row" });
     themeRow.createEl("label", { text: t("deck.modal.theme") });
     this.themeSel = themeRow.createEl("select");
-    for (const e of this.plugin.themeStore.getThemes()) this.themeSel.createEl("option", { value: e.key, text: e.key });
+    for (const e of this.plugin.themeStore.getThemes()) this.themeSel.createEl("option", { value: e.key, text: e.label ?? e.key });
     this.themeSel.value = this.plugin.settings.defaultTheme;
 
     this.existsBox = contentEl.createDiv();
