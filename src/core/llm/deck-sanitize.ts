@@ -157,3 +157,18 @@ export function setDeckSource(md: string, link: string): string {
   lines.splice(1, 0, value);
   return lines.join("\n");
 }
+
+/** Record the model that generated the deck as a `model:` frontmatter line (unquoted plain
+ *  string — a model id has no YAML-hostile chars). Injects a block if none exists. Run AFTER
+ *  setDeckTheme. */
+export function setDeckModel(md: string, model: string): string {
+  const value = `model: ${model}`;
+  const lines = md.split("\n");
+  const range = frontmatterRange(lines);
+  if (!range) return `---\n${value}\n---\n${md}`;
+  for (let i = 1; i < range.end; i++) {
+    if (/^model:\s/.test(lines[i])) { lines[i] = value; return lines.join("\n"); }
+  }
+  lines.splice(1, 0, value);
+  return lines.join("\n");
+}

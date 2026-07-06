@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractDeckMarkdown, setDeckTheme, setDeckSource, hoistDeckSlots } from "../../src/core/llm/deck-sanitize";
+import { extractDeckMarkdown, setDeckTheme, setDeckSource, setDeckModel, hoistDeckSlots } from "../../src/core/llm/deck-sanitize";
 import { parseDeck } from "../../src/core/slide-model";
 
 describe("extractDeckMarkdown", () => {
@@ -141,5 +141,19 @@ describe("setDeckSource", () => {
   it("replaces an existing source: line", () => {
     const out = setDeckSource('---\nsource: "[[Old]]"\ntheme: dark\n---\n# A', "[[New]]");
     expect(out).toBe('---\nsource: "[[New]]"\ntheme: dark\n---\n# A');
+  });
+});
+
+describe("setDeckModel", () => {
+  it("injects the model name into an existing frontmatter block (unquoted)", () => {
+    const out = setDeckModel("---\ntheme: dark\n---\n# A", "gemma4-31b");
+    expect(out).toBe("---\nmodel: gemma4-31b\ntheme: dark\n---\n# A");
+  });
+  it("creates a frontmatter block when none exists", () => {
+    expect(setDeckModel("# A", "gemma4-31b")).toBe("---\nmodel: gemma4-31b\n---\n# A");
+  });
+  it("replaces an existing model: line", () => {
+    const out = setDeckModel("---\nmodel: old-model\ntheme: dark\n---\n# A", "new-model");
+    expect(out).toBe("---\nmodel: new-model\ntheme: dark\n---\n# A");
   });
 });
