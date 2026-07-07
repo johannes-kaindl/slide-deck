@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { assembleDeckCss, presetFor, presetTokensCss, type ThemeEntry } from "../src/core/presets";
 import { STRUCTURE_CSS } from "../src/core/presets/structure.css";
 import { LAYOUTS_CSS } from "../src/core/presets/layouts.css";
+import { builtinThemeEntries, userThemeEntry } from "../src/deck-css";
 
 // Mirror deckCss(entry) assembly using filesystem-read CSS (vitest cannot import .css via the
 // esbuild text-loader; the real deckCss() is exercised end-to-end in bundle-smoke).
@@ -30,5 +31,19 @@ describe("deck css assembly (entry-based)", () => {
     const entry: ThemeEntry = { key: "ocean", source: "user", themeCss: ".sd-slide{ --sd-bg:#012 }", hljs, mermaid: "default", baseFontPx: 30 };
     const css = mirror(entry);
     expect(css).toContain("--sd-bg:#012");
+  });
+});
+
+describe("builtin and user theme entries", () => {
+  it("builtin entries append the preset's extraCss after the token block", () => {
+    const kairo = builtinThemeEntries().find((e) => e.key === "kairo")!;
+    expect(kairo.themeCss).toContain("--sd-accent:#4ac8d8");
+    expect(kairo.themeCss).toContain("text-shadow");
+    expect(kairo.themeCss.indexOf("--sd-accent")).toBeLessThan(kairo.themeCss.indexOf("text-shadow"));
+  });
+  it("user themes inherit code/mermaid scheme from shiro", () => {
+    const u = userThemeEntry("mytheme", ".sd-slide{ --sd-bg:#123 }");
+    expect(u.mermaid).toBe("default");
+    expect(u.baseFontPx).toBe(28);
   });
 });

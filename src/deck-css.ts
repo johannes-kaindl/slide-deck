@@ -8,13 +8,13 @@ import { LAYOUTS_CSS } from "./core/presets/layouts.css";
 
 const HLJS: Record<string, string> = { github: githubCss, "github-dark": githubDarkCss };
 
-/** The four built-in themes as registry entries (token block + their hljs + mermaid). */
+/** The five nordstern built-in themes as registry entries (token block + extraCss + their hljs + mermaid). */
 export function builtinThemeEntries(): ThemeEntry[] {
   return Object.values(PRESETS).map((p) => ({
     key: p.id,
     label: p.label,
     source: "builtin" as const,
-    themeCss: presetTokensCss(p),
+    themeCss: presetTokensCss(p) + (p.extraCss ? "\n" + p.extraCss : ""),
     hljs: HLJS[p.hljs] ?? HLJS["github-dark"],
     mermaid: p.mermaid,
     baseFontPx: p.baseFontPx,
@@ -22,10 +22,10 @@ export function builtinThemeEntries(): ThemeEntry[] {
 }
 
 /** A user .css theme as a registry entry. Code/Mermaid scheme come from the file's optional
- *  `/* sd-hljs / sd-mermaid *\/` directives (falling back to the default builtin); baseFontPx
- *  from the file's --sd-base if present, else the default builtin's. */
+ *  `/* sd-hljs / sd-mermaid *\/` directives (falling back to the shiro builtin); baseFontPx
+ *  from the file's --sd-base if present, else the shiro builtin's. */
 export function userThemeEntry(key: string, fileCss: string): ThemeEntry {
-  const d = presetFor("default");
+  const d = presetFor("shiro");
   const meta = parseThemeMeta(fileCss);
   return {
     key,
