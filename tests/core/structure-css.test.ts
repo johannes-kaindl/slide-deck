@@ -84,7 +84,12 @@ describe("design system tokens", () => {
     expect(STRUCTURE_CSS).toContain(".sd-region > * + *{ margin-top:var(--sd-space-s,.75em); }");
     expect(STRUCTURE_CSS).toContain(".sd-region > * + h2{ margin-top:var(--sd-space-xl,2.25em); }");
     expect(STRUCTURE_CSS).toContain(".sd-region > h1 + h2{ margin-top:var(--sd-space-xs,.5em); }");
-    expect(STRUCTURE_CSS).toContain("li + li{ margin-top:var(--sd-space-2xs,.25em); }");
+    // display-sized headings need more separation than the owl default — the
+    // heading must read as its own level, not as line 1 of the list below it
+    expect(STRUCTURE_CSS).toContain(".sd-region > h1 + *{ margin-top:var(--sd-space-m,1em); }");
+    // list items read as units: compact within (line-height), air between (gap)
+    expect(STRUCTURE_CSS).toContain("li{ margin:0; line-height:var(--sd-lh-list,1.35); }");
+    expect(STRUCTURE_CSS).toContain("li + li{ margin-top:var(--sd-space-xs,.5em); }");
   });
   it("headings and blocks own no ad-hoc margins", () => {
     expect(STRUCTURE_CSS).not.toMatch(/margin:0 0 \.4em/);

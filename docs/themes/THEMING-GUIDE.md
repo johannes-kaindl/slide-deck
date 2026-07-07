@@ -111,15 +111,16 @@ layout CSS — these are the only tokens the renderer actually reads).
 | `--sd-lh-body` | `1.45` | Body text line-height |
 | `--sd-lh-display` | `1.08` | Heading (`h1`) line-height |
 | `--sd-lh-heading` | `1.2` | Subheading (`h2`) and eyebrow line-height |
+| `--sd-lh-list` | `1.35` | List item line-height — tighter than body prose so items read as units |
 
 ### Spacing scale (vertical rhythm)
 
 | Token | Default | Purpose |
 |---|---|---|
-| `--sd-space-2xs` | `.25em` | Blockquote vertical padding; gap between consecutive list items |
-| `--sd-space-xs` | `.5em` | Code panel padding; gap after a lone `h1` → `h2`; `compact` mode's block gap; media gap |
+| `--sd-space-2xs` | `.25em` | Blockquote vertical padding |
+| `--sd-space-xs` | `.5em` | Gap between consecutive list items; code panel padding; gap after a lone `h1` → `h2`; `compact` mode's block gap; media gap |
 | `--sd-space-s` | `.75em` | Default gap between adjacent blocks (the vertical-rhythm "owl" selector); code panel padding |
-| `--sd-space-m` | `1em` | Blockquote left indent; `columns-3` layout's column gap |
+| `--sd-space-m` | `1em` | Gap after `h1` (heading → its content); blockquote left indent; `columns-3` layout's column gap |
 | `--sd-space-l` | `1.5em` | `two-column` layout's column gap |
 | `--sd-space-xl` | `2.25em` | Extra gap before a new `h2` section |
 | `--sd-pad` | `64px` | Slide padding on all four sides |
