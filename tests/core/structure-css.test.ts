@@ -99,6 +99,9 @@ describe("design system tokens", () => {
     expect(STRUCTURE_CSS).toContain(".sd-slide li > ul,.sd-slide li > ol{ margin-top:var(--sd-space-2xs,.25em); }");
     expect(STRUCTURE_CSS).toContain(".sd-slide li li + li{ margin-top:var(--sd-space-2xs,.25em); }");
   });
+  it("inline code chips never break internally", () => {
+    expect(STRUCTURE_CSS).toMatch(/:not\(pre\) > code\{[^}]*white-space:nowrap/);
+  });
   it("slots speak the deck's metadata voice (mono, tracked, eyebrow-sized)", () => {
     expect(STRUCTURE_CSS).toContain("font-size:var(--sd-slot-size,var(--sd-size-eyebrow,.68em))");
     expect(STRUCTURE_CSS).toContain("font-family:var(--sd-slot-font,var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace))");

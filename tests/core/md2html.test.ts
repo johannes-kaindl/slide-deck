@@ -15,6 +15,12 @@ describe("renderMarkdown", () => {
     expect(html).toContain("katex");
   });
 
+  it("binds an inline math arrow to the code chip that follows it (no orphaned arrows)", () => {
+    const { html } = renderMarkdown({ markdown: "$\\rightarrow$ `summarize`", resolveEmbed: noEmbed });
+    expect(html).toContain("&nbsp;<code");
+    expect(html).not.toMatch(/<\/span> +<code/);
+  });
+
   it("highlights fenced code", () => {
     const { html } = renderMarkdown({ markdown: "```js\nconst x=1\n```", resolveEmbed: noEmbed });
     expect(html).toContain("hljs");

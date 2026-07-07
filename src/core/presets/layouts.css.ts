@@ -82,8 +82,10 @@ export const LAYOUTS_CSS = `
 .sd-mod-compact li + li{ margin-top:0; }
 .sd-mod-code-heavy pre.hljs{ font-size:1em; }
 
-/* compose-center: vertically center sparse, non-overflowing content */
-.sd-compose-center:not(.sd-layout-two-column):not(.sd-layout-columns-3) .sd-content{ display:flex; flex-direction:column; justify-content:center; }
-.sd-compose-center.sd-layout-two-column .sd-content,
-.sd-compose-center.sd-layout-columns-3 .sd-content{ align-content:center; }
+/* compose-center: vertically center sparse, non-overflowing content — but only
+   on TITLE-LESS slides. A slide with an h1 keeps its title on the fixed top
+   baseline (titles must not jump between slides); spare room runs out below. */
+.sd-compose-center:not(.sd-layout-two-column):not(.sd-layout-columns-3):not(:has(h1)) .sd-content{ display:flex; flex-direction:column; justify-content:center; }
+.sd-compose-center.sd-layout-two-column:not(:has(h1)) .sd-content,
+.sd-compose-center.sd-layout-columns-3:not(:has(h1)) .sd-content{ align-content:center; }
 `;

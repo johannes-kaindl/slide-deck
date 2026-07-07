@@ -54,7 +54,8 @@ export const STRUCTURE_CSS = `
   background:var(--sd-code-bg); overflow:hidden;
   font-family:var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace); }
 .sd-slide :not(pre) > code{ font-family:var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace);
-  font-size:.88em; background:var(--sd-code-bg); padding:.08em .34em; border-radius:4px; }
+  font-size:.88em; background:var(--sd-code-bg); padding:.08em .34em; border-radius:4px;
+  white-space:nowrap; }
 
 /* ── Character defaults, tokenized — a 7-token user theme looks finished out of the box. ── */
 .sd-slide blockquote{ padding:var(--sd-space-2xs,.25em) 0 var(--sd-space-2xs,.25em) var(--sd-space-m,1em);

@@ -35,6 +35,9 @@ describe("nordstern presets", () => {
     expect(extra).toContain("box-shadow: inset");
     expect(extra).toContain("text-shadow");
     expect(extra).toContain("rgba(199, 154, 74, 0.16)");
+    // per-type callout hues from the design template — type is readable at a glance
+    expect(extra).toContain(".sd-callout-note{ border-left-color:#7ab8c4;");
+    expect(extra).toContain(".sd-callout-danger{ border-left-color:#d4203a;");
   });
   it("sumi stays atmosphere-free by design (high contrast)", () => {
     expect(sumiPreset.extraCss ?? "").not.toContain("background-image");

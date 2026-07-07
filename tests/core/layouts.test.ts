@@ -35,8 +35,12 @@ describe("LAYOUTS_CSS", () => {
 
 describe("LAYOUTS_CSS compose-center", () => {
   it("centers single-column composed content with flex (excluding grids)", () => {
-    expect(LAYOUTS_CSS).toContain(".sd-compose-center:not(.sd-layout-two-column):not(.sd-layout-columns-3) .sd-content");
+    expect(LAYOUTS_CSS).toContain(".sd-compose-center:not(.sd-layout-two-column):not(.sd-layout-columns-3):not(:has(h1)) .sd-content");
     expect(LAYOUTS_CSS).toContain("justify-content:center");
+  });
+  it("titled slides keep a fixed top baseline — compose-center only centers title-less content", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-compose-center.sd-layout-two-column:not(:has(h1)) .sd-content");
+    expect(LAYOUTS_CSS).toContain(".sd-compose-center.sd-layout-columns-3:not(:has(h1)) .sd-content");
   });
   it("centers grid composed content via align-content", () => {
     expect(LAYOUTS_CSS).toContain(".sd-layout-columns-3 .sd-content");
