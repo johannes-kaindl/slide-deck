@@ -25,9 +25,9 @@ export const STRUCTURE_CSS = `
 .sd-slide h1,.sd-slide h2,.sd-slide p,.sd-slide ul,.sd-slide ol,.sd-slide pre,.sd-slide blockquote{ margin:0; }
 .sd-region > * + *{ margin-top:var(--sd-space-s,.75em); }
 .sd-region > * + h2{ margin-top:var(--sd-space-xl,2.25em); }
-/* A display-sized h1 needs more separation below than the owl default, or it
+/* A display-sized h1 needs ~0.7× its own size as separation below, or it
    reads as line 1 of its content. The h1+h2 eyebrow/subtitle pair stays tight. */
-.sd-region > h1 + *{ margin-top:var(--sd-space-m,1em); }
+.sd-region > h1 + *{ margin-top:var(--sd-space-l,1.5em); }
 .sd-region > h1 + h2{ margin-top:var(--sd-space-xs,.5em); }
 .sd-slide ul,.sd-slide ol{ padding-left:1.2em; }
 /* List items read as units: compact within (tighter line-height than body
@@ -35,6 +35,10 @@ export const STRUCTURE_CSS = `
    neighbour and the list looks like undifferentiated lines. */
 .sd-slide li{ margin:0; line-height:var(--sd-lh-list,1.35); }
 .sd-slide li + li{ margin-top:var(--sd-space-xs,.5em); }
+/* Nested lists: bound to their parent item and tighter than top-level items,
+   so list levels read as hierarchy instead of one undifferentiated column. */
+.sd-slide li > ul,.sd-slide li > ol{ margin-top:var(--sd-space-2xs,.25em); }
+.sd-slide li li + li{ margin-top:var(--sd-space-2xs,.25em); }
 
 /* Content fills the slide's padded area so overflow is measurable (scrollHeight > clientHeight).
    transform-origin pins the per-slide fit-scale (set inline in render-dom) to the top-left corner. */

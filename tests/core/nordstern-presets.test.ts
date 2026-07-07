@@ -29,6 +29,16 @@ describe("nordstern presets", () => {
     expect(sumiPreset.baseFontPx).toBe(32);
     for (const p of [shiroPreset, kuroPreset, kairoPreset, kurenaiPreset]) expect(p.baseFontPx).toBe(28);
   });
+  it("kuro carries the design-template atmosphere (glow, veil, vignette, h1 text glow)", () => {
+    const extra = kuroPreset.extraCss ?? "";
+    expect(extra).toContain("radial-gradient");
+    expect(extra).toContain("box-shadow: inset");
+    expect(extra).toContain("text-shadow");
+    expect(extra).toContain("rgba(199, 154, 74, 0.16)");
+  });
+  it("sumi stays atmosphere-free by design (high contrast)", () => {
+    expect(sumiPreset.extraCss ?? "").not.toContain("background-image");
+  });
   it("extraCss never overrides the type scale", () => {
     for (const p of all) {
       const extra = p.extraCss ?? "";

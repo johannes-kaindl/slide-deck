@@ -117,11 +117,11 @@ layout CSS — these are the only tokens the renderer actually reads).
 
 | Token | Default | Purpose |
 |---|---|---|
-| `--sd-space-2xs` | `.25em` | Blockquote vertical padding |
+| `--sd-space-2xs` | `.25em` | Blockquote vertical padding; nested-list gaps (binding + between nested items) |
 | `--sd-space-xs` | `.5em` | Gap between consecutive list items; code panel padding; gap after a lone `h1` → `h2`; `compact` mode's block gap; media gap |
 | `--sd-space-s` | `.75em` | Default gap between adjacent blocks (the vertical-rhythm "owl" selector); code panel padding |
-| `--sd-space-m` | `1em` | Gap after `h1` (heading → its content); blockquote left indent; `columns-3` layout's column gap |
-| `--sd-space-l` | `1.5em` | `two-column` layout's column gap |
+| `--sd-space-m` | `1em` | Blockquote left indent; `columns-3` layout's column gap |
+| `--sd-space-l` | `1.5em` | Gap after `h1` (heading → its content); `two-column` layout's column gap |
 | `--sd-space-xl` | `2.25em` | Extra gap before a new `h2` section |
 | `--sd-pad` | `64px` | Slide padding on all four sides |
 
