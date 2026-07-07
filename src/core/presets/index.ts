@@ -10,6 +10,9 @@ export interface Preset {
   label: string;
   baseFontPx: number;
   tokens: Record<string, string>;
+  /** Optional character/atmosphere CSS appended after the token block.
+   *  MUST NOT set font-size/font-family/letter-spacing/margins — the scale is token-only. */
+  extraCss?: string;
   hljs: string;
   mermaid: MermaidTheme;
 }
