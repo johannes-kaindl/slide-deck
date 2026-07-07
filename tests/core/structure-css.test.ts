@@ -124,6 +124,13 @@ describe("design system tokens", () => {
     expect(STRUCTURE_CSS).toContain(".sd-slide hr{");
     expect(STRUCTURE_CSS).toContain(":not(pre) > code{");
     expect(STRUCTURE_CSS).toContain("var(--sd-mono");
-    expect(STRUCTURE_CSS).toContain("li::marker{ color:var(--sd-accent); }");
+    // export-safe accent bullets: ::marker styling is dropped by the PNG
+    // export's foreignObject clone → real ::before glyphs instead
+    expect(STRUCTURE_CSS).toContain('.sd-slide ul > li::before{ content:"•"');
+    expect(STRUCTURE_CSS).toContain('.sd-slide li li::before{ content:"◦"; }');
+    expect(STRUCTURE_CSS).toContain(".sd-slide ol > li::marker{ color:var(--sd-accent); }");
+  });
+  it("cover scrim protects header (top) and title/footer (bottom)", () => {
+    expect(STRUCTURE_CSS).toContain("linear-gradient(180deg,rgba(0,0,0,.5),transparent 24%)");
   });
 });

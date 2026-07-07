@@ -48,10 +48,30 @@ export interface ThemeEntry {
   themeCss: string;
   hljs: string;
   mermaid: MermaidTheme;
+  /** Mermaid themeVariables derived from the preset tokens (mermaid inlines
+   *  colors into its SVG, so CSS vars can't reach it). Absent for user themes
+   *  → render falls back to the named `mermaid` theme. */
+  mermaidVars?: Record<string, string>;
   baseFontPx: number;
   overridesBuiltin?: boolean;
 }
 export type ThemeRegistry = Map<string, ThemeEntry>;
+
+/** Map preset tokens onto mermaid themeVariables so diagrams speak the theme
+ *  (font, panel surfaces, muted lines, ink) instead of mermaid's default look. */
+export function mermaidVarsFor(tokens: Record<string, string>): Record<string, string> {
+  const fg = tokens["--sd-fg"] ?? "#16181d";
+  const muted = tokens["--sd-muted"] ?? fg;
+  const surface = tokens["--sd-surface"] ?? tokens["--sd-code-bg"] ?? "#f4f6f8";
+  const bg = tokens["--sd-bg"] ?? surface;
+  return {
+    fontFamily: tokens["--sd-font"] ?? "sans-serif",
+    primaryColor: surface, primaryTextColor: fg, primaryBorderColor: muted,
+    lineColor: muted, textColor: fg,
+    secondaryColor: surface, tertiaryColor: bg,
+    clusterBkg: surface, edgeLabelBackground: bg,
+  };
+}
 
 /** TOTAL — exact key first (a user theme may shadow a legacy name), then alias, then shiro. */
 export function resolveTheme(reg: ThemeRegistry, key: string): ThemeEntry {

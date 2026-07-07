@@ -63,6 +63,24 @@ describe("LAYOUTS_CSS templates & modifiers", () => {
 });
 
 describe("alignment axioms & eyebrow context", () => {
+  it("eyebrow renders ABOVE the title on hero layouts (kicker pattern)", () => {
+    expect(LAYOUTS_CSS).toContain("order:-1");
+    expect(LAYOUTS_CSS).toContain(".sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-layout-cover-image .sd-region,.sd-cover-empty .sd-region{ display:flex; flex-direction:column; }");
+  });
+  it("quote layout: bar hugs the centered blockquote, attribution is the small meta voice", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-layout-quote .sd-region blockquote{ width:fit-content; max-width:100%; margin-inline:auto; text-align:start; color:var(--sd-fg); }");
+    expect(LAYOUTS_CSS).toContain(".sd-layout-quote .sd-region blockquote ~ p{");
+  });
+  it("stat: number couples tightly to its caption and may take the accent", () => {
+    expect(LAYOUTS_CSS).toContain("color:var(--sd-stat-fg,var(--sd-accent))");
+    expect(LAYOUTS_CSS).toContain(".sd-layout-stat .sd-region > h1 + *{ margin-top:var(--sd-space-xs,.5em); }");
+  });
+  it("hero paragraphs balance their line breaks (no single-word orphans)", () => {
+    expect(LAYOUTS_CSS).toContain("text-wrap:balance");
+  });
+  it("cover content keeps clearance above the footer zone", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-layout-cover-image .sd-region{ padding-bottom:var(--sd-space-m,1em); }");
+  });
   it("hero blocks sit at the optical center (lifted above geometric middle)", () => {
     expect(LAYOUTS_CSS).toContain(
       ".sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-cover-empty .sd-region{ padding-bottom:var(--sd-space-2xl,3.5em); }"

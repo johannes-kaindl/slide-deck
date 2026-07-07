@@ -97,3 +97,21 @@ describe("mergeThemes", () => {
     expect(warnings.some((w) => w.includes("mine"))).toBe(true);
   });
 });
+
+describe("mermaidVarsFor", () => {
+  it("maps preset tokens onto mermaid themeVariables (diagrams speak the theme)", async () => {
+    const { mermaidVarsFor } = await import("../../src/core/presets");
+    const vars = mermaidVarsFor({
+      "--sd-bg": "#100e0c", "--sd-fg": "#ece4d3", "--sd-font": "Inter, sans-serif",
+      "--sd-muted": "#a99e89", "--sd-surface": "#17140f",
+    });
+    expect(vars.fontFamily).toBe("Inter, sans-serif");
+    expect(vars.primaryColor).toBe("#17140f");
+    expect(vars.primaryTextColor).toBe("#ece4d3");
+    expect(vars.lineColor).toBe("#a99e89");
+  });
+  it("falls back to code-bg when a preset has no surface token", async () => {
+    const { mermaidVarsFor } = await import("../../src/core/presets");
+    expect(mermaidVarsFor({ "--sd-code-bg": "#eee" }).primaryColor).toBe("#eee");
+  });
+});

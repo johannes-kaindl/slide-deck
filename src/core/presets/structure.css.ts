@@ -35,6 +35,14 @@ export const STRUCTURE_CSS = `
 .sd-region > h1 + *{ margin-top:var(--sd-space-l,1.5em); }
 .sd-region > h1 + h2{ margin-top:var(--sd-space-s,.75em); }
 .sd-slide ul,.sd-slide ol{ padding-left:1.2em; }
+/* Export-safe accent bullets: ::marker styling is dropped by the PNG export's
+   foreignObject clone (preview gold, export cream) — so bullets are real
+   ::before glyphs hanging into the list padding. Ordered lists keep ::marker. */
+.sd-slide ul{ list-style:none; }
+.sd-slide ul > li{ position:relative; }
+.sd-slide ul > li::before{ content:"•"; position:absolute; left:-1em; color:var(--sd-accent); }
+.sd-slide li li::before{ content:"◦"; }
+.sd-slide ol > li::marker{ color:var(--sd-accent); }
 /* List items read as units: compact within (tighter line-height than body
    prose), clear air between — otherwise a wrapped item merges with its
    neighbour and the list looks like undifferentiated lines. */
@@ -63,7 +71,6 @@ export const STRUCTURE_CSS = `
   color:var(--sd-muted,inherit); }
 .sd-slide hr{ border:none; height:2px; width:min(200px,30%);
   background:linear-gradient(to right,var(--sd-accent),transparent); }
-.sd-slide li::marker{ color:var(--sd-accent); }
 
 /* Block media: centered + contain. On a media-bearing single-region slide,
    render-dom marks .sd-content with .sd-has-media → the media cell fills the
@@ -107,7 +114,9 @@ export const STRUCTURE_CSS = `
 
 /* cover-image: full-bleed background + readability scrim behind the content. */
 .sd-cover-media{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+/* Scrim: protects the bottom (title/footer) AND the top (header) against
+   bright image regions. */
 .sd-cover-scrim{ position:absolute; inset:0; z-index:1;
-  background:var(--sd-scrim,linear-gradient(0deg,rgba(0,0,0,.78),rgba(0,0,0,.12) 60%,transparent)); }
+  background:var(--sd-scrim,linear-gradient(0deg,rgba(0,0,0,.78),rgba(0,0,0,.12) 55%,transparent 75%),linear-gradient(180deg,rgba(0,0,0,.5),transparent 24%)); }
 .sd-layout-cover-image .sd-content{ position:relative; z-index:3; }
 `;

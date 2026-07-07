@@ -42,6 +42,13 @@ export const LAYOUTS_CSS = `
 /* Optical center: exact geometric centering reads as "hanging" — lift the
    hero block slightly above the middle (padding participates in centering). */
 .sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-cover-empty .sd-region{ padding-bottom:var(--sd-space-2xl,3.5em); }
+/* Kicker pattern (design template): the eyebrow renders ABOVE the title.
+   flex+order is display-only — DOM order (h1 then h2) stays untouched. */
+.sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-layout-cover-image .sd-region,.sd-cover-empty .sd-region{ display:flex; flex-direction:column; }
+.sd-layout-title .sd-region > h2,.sd-layout-section .sd-region > h2,.sd-layout-cover-image .sd-region > h2,.sd-cover-empty .sd-region > h2{
+  order:-1; margin-top:0; margin-bottom:var(--sd-space-xs,.5em); }
+/* Hero paragraphs balance their line breaks (no single-word orphans). */
+.sd-layout-title .sd-region p,.sd-layout-section .sd-region p,.sd-cover-empty .sd-region p{ text-wrap:balance; }
 .sd-layout-title .sd-region :is(ul,ol),.sd-layout-section .sd-region :is(ul,ol),.sd-layout-quote .sd-region :is(ul,ol){
   text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
 .sd-layout-title .sd-region :is(pre,.sd-callout),.sd-layout-section .sd-region :is(pre,.sd-callout),.sd-layout-quote .sd-region :is(pre,.sd-callout){ text-align:start; }
@@ -58,9 +65,15 @@ export const LAYOUTS_CSS = `
 
 /* quote keeps its serif voice on the scale */
 .sd-layout-quote .sd-region{ font-size:var(--sd-size-h2,1.25em); font-style:italic; }
+/* The blockquote IS the quote: full ink, bar hugging the centered block.
+   Any paragraph after it is the attribution — the small muted meta voice. */
+.sd-layout-quote .sd-region blockquote{ width:fit-content; max-width:100%; margin-inline:auto; text-align:start; color:var(--sd-fg); }
+.sd-layout-quote .sd-region blockquote ~ p{ font-family:var(--sd-eyebrow-font,var(--sd-font)); font-size:.75em;
+  font-style:normal; letter-spacing:.08em; color:var(--sd-muted,inherit); }
 
-/* stat: oversized lead number */
-.sd-layout-stat h1{ font-size:var(--sd-stat-size,4.5em); line-height:1; }
+/* stat: oversized lead number as a deliberate accent moment, caption tightly coupled */
+.sd-layout-stat h1{ font-size:var(--sd-stat-size,4.5em); line-height:1; color:var(--sd-stat-fg,var(--sd-accent)); }
+.sd-layout-stat .sd-region > h1 + *{ margin-top:var(--sd-space-xs,.5em); }
 
 /* image-focus: media-dominant — the media fill is handled by .sd-has-media
    (structure.css); here we only center an optional title/caption. Axiom 1: the
@@ -68,8 +81,10 @@ export const LAYOUTS_CSS = `
 .sd-layout-image-focus .sd-content{ text-align:center; }
 .sd-layout-image-focus .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
 
-/* cover-image: title overlays the full-bleed background, anchored bottom-left */
+/* cover-image: title overlays the full-bleed background, anchored bottom-left,
+   with clearance above the footer zone */
 .sd-layout-cover-image .sd-content{ display:flex; flex-direction:column; justify-content:flex-end; }
+.sd-layout-cover-image .sd-region{ padding-bottom:var(--sd-space-m,1em); }
 .sd-cover-empty .sd-content{ justify-content:center; align-items:center; text-align:center; }
 .sd-cover-empty .sd-region{ text-align:center; max-width:85%; }
 .sd-cover-empty .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }

@@ -19,11 +19,11 @@ const ATMOSPHERE = `
   box-shadow: inset 0 0 240px 26px rgba(0,0,0,0.5);
 }
 .sd-slide h1{ text-shadow: 0 0 34px rgba(199, 154, 74, 0.16); }
-.sd-slide .sd-callout-note{ border-left-color:#7ab8c4; background:rgba(122,184,196,0.07); }
-.sd-slide .sd-callout-info{ border-left-color:#4ac8d8; background:rgba(74,200,216,0.07); }
-.sd-slide .sd-callout-tip{ border-left-color:#8bbf87; background:rgba(139,191,135,0.07); }
-.sd-slide .sd-callout-warning{ border-left-color:#ffb442; background:rgba(255,180,66,0.07); }
-.sd-slide .sd-callout-danger{ border-left-color:#d4203a; background:rgba(212,32,58,0.08); }
+.sd-slide .sd-callout-note{ border-left-color:#86a69b; background:rgba(134,166,155,0.08); }
+.sd-slide .sd-callout-info{ border-left-color:#6fa89e; background:rgba(111,168,158,0.08); }
+.sd-slide .sd-callout-tip{ border-left-color:#96a877; background:rgba(150,168,119,0.08); }
+.sd-slide .sd-callout-warning{ border-left-color:#dba05c; background:rgba(219,160,92,0.08); }
+.sd-slide .sd-callout-danger{ border-left-color:#c9574a; background:rgba(201,87,74,0.09); }
 `;
 export const kuroPreset: Preset = {
   id: "kuro", label: "Kuro · 黒 — the chamber", baseFontPx: 28,
@@ -42,5 +42,5 @@ export const kuroPreset: Preset = {
     "--sd-eyebrow-font": "var(--sd-mono)",
   },
   extraCss: ATMOSPHERE,
-  hljs: "github-dark", mermaid: "dark",
+  hljs: "gruvbox-dark-hard", mermaid: "dark",
 };

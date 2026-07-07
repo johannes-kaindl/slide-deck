@@ -171,8 +171,9 @@ only sets the seven §1 tokens still gets a legible blockquote.
 
 | Token | Default | Purpose |
 |---|---|---|
-| `--sd-scrim` | `linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,.12) 60%, transparent)` | `cover-image` readability scrim over the background media |
+| `--sd-scrim` | bottom + top gradient pair | `cover-image` readability scrim over the background media — protects title/footer (bottom) and header (top) |
 | `--sd-stat-size` | `4.5em` | `stat` layout's oversized lead number (`h1`) |
+| `--sd-stat-fg` | `var(--sd-accent)` | `stat` number colour — a deliberate accent moment |
 | `--sd-compact-scale` | `0.82em` | `compact` density modifier's base font-size |
 
 See `example.css` §2 for the same list as ready-to-uncomment declarations.

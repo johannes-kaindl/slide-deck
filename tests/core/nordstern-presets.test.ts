@@ -19,9 +19,11 @@ describe("nordstern presets", () => {
   });
   it("dark presets use a dark code + mermaid scheme", () => {
     for (const p of [kuroPreset, sumiPreset, kairoPreset, kurenaiPreset]) {
-      expect(p.hljs).toBe("github-dark");
       expect(p.mermaid).toBe("dark");
     }
+    // kuro speaks a WARM code palette (gruvbox) so highlighting stays in the deck's world
+    expect(kuroPreset.hljs).toBe("gruvbox-dark-hard");
+    for (const p of [sumiPreset, kairoPreset, kurenaiPreset]) expect(p.hljs).toBe("github-dark");
     expect(shiroPreset.hljs).toBe("github");
     expect(shiroPreset.mermaid).toBe("default");
   });
@@ -35,9 +37,11 @@ describe("nordstern presets", () => {
     expect(extra).toContain("box-shadow: inset");
     expect(extra).toContain("text-shadow");
     expect(extra).toContain("rgba(199, 154, 74, 0.16)");
-    // per-type callout hues from the design template — type is readable at a glance
-    expect(extra).toContain(".sd-callout-note{ border-left-color:#7ab8c4;");
-    expect(extra).toContain(".sd-callout-danger{ border-left-color:#d4203a;");
+    // per-type callout hues, warm-shifted + desaturated to sit inside the
+    // cream/gold/brown world (no cold cyan) — type stays readable at a glance
+    expect(extra).toContain(".sd-callout-note{ border-left-color:#86a69b;");
+    expect(extra).toContain(".sd-callout-danger{ border-left-color:#c9574a;");
+    expect(extra).not.toContain("#4ac8d8"); // kaltes Circuit-Cyan gehört kairo, nicht kuro
   });
   it("sumi stays atmosphere-free by design (high contrast)", () => {
     expect(sumiPreset.extraCss ?? "").not.toContain("background-image");

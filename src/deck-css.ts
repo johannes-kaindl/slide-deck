@@ -1,12 +1,13 @@
 import katexCss from "katex/dist/katex.min.css";
 import githubCss from "highlight.js/styles/github.css";
 import githubDarkCss from "highlight.js/styles/github-dark.css";
-import { PRESETS, presetFor, presetTokensCss, assembleDeckCss, type ThemeEntry } from "./core/presets";
+import gruvboxDarkHardCss from "highlight.js/styles/base16/gruvbox-dark-hard.css";
+import { PRESETS, presetFor, presetTokensCss, assembleDeckCss, mermaidVarsFor, type ThemeEntry } from "./core/presets";
 import { parseBaseFontPx, parseThemeMeta } from "./core/theme-key";
 import { STRUCTURE_CSS } from "./core/presets/structure.css";
 import { LAYOUTS_CSS } from "./core/presets/layouts.css";
 
-const HLJS: Record<string, string> = { github: githubCss, "github-dark": githubDarkCss };
+const HLJS: Record<string, string> = { github: githubCss, "github-dark": githubDarkCss, "gruvbox-dark-hard": gruvboxDarkHardCss };
 
 /** The five nordstern built-in themes as registry entries (token block + extraCss + their hljs + mermaid). */
 export function builtinThemeEntries(): ThemeEntry[] {
@@ -17,6 +18,7 @@ export function builtinThemeEntries(): ThemeEntry[] {
     themeCss: presetTokensCss(p) + (p.extraCss ? "\n" + p.extraCss : ""),
     hljs: HLJS[p.hljs] ?? HLJS["github-dark"],
     mermaid: p.mermaid,
+    mermaidVars: mermaidVarsFor(p.tokens),
     baseFontPx: p.baseFontPx,
   }));
 }
