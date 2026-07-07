@@ -30,6 +30,14 @@ describe("buildDeckPrompt", () => {
     expect(system.content).toMatch(/two-column.*leading # heading/i);
   });
 
+  it("hardens layout choice: hero layouts only for sparse content", () => {
+    const [system] = buildDeckPrompt("body", { slideTarget: "auto", hint: "" }, contract);
+    expect(system.content).toContain("ONLY for sparse content");
+    expect(system.content).toContain("never lists or code blocks");
+    expect(system.content).toContain("at most 5 bullets per region");
+    expect(system.content).toContain("kicker");
+  });
+
   it("auto target asks for content-driven count (typically 5–12)", () => {
     const [system] = buildDeckPrompt("x", { slideTarget: "auto", hint: "" }, contract);
     expect(system.content).toMatch(/5.?12/);
