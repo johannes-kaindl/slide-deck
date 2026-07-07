@@ -1,7 +1,8 @@
-import { defaultPreset } from "./default";
-import { darkPreset } from "./dark";
-import { serifPreset } from "./serif";
-import { highContrastPreset } from "./high-contrast";
+import { shiroPreset } from "./shiro";
+import { kuroPreset } from "./kuro";
+import { sumiPreset } from "./sumi";
+import { kairoPreset } from "./kairo";
+import { kurenaiPreset } from "./kurenai";
 
 export type MermaidTheme = "default" | "dark" | "neutral" | "forest";
 
@@ -18,15 +19,17 @@ export interface Preset {
 }
 
 export const PRESETS: Record<string, Preset> = {
-  default: defaultPreset,
-  dark: darkPreset,
-  serif: serifPreset,
-  "high-contrast": highContrastPreset,
+  shiro: shiroPreset, kuro: kuroPreset, sumi: sumiPreset, kairo: kairoPreset, kurenai: kurenaiPreset,
 };
 
-/** TOTAL — unknown id falls back to default. Never throws. */
+/** Legacy 0.4.x keys resolve silently to their nordstern successor. */
+export const THEME_ALIASES: Record<string, string> = {
+  default: "shiro", dark: "kuro", serif: "shiro", "high-contrast": "sumi",
+};
+
+/** TOTAL — legacy keys alias, unknown ids fall back to shiro. Never throws. */
 export function presetFor(id: string): Preset {
-  return PRESETS[id] ?? PRESETS.default;
+  return PRESETS[id] ?? PRESETS[THEME_ALIASES[id] ?? ""] ?? PRESETS.shiro;
 }
 
 /** Emit the preset's tokens as a .sd-slide rule. --sd-base is derived from baseFontPx
@@ -50,9 +53,9 @@ export interface ThemeEntry {
 }
 export type ThemeRegistry = Map<string, ThemeEntry>;
 
-/** TOTAL — unknown key falls back to the always-present "default" builtin. */
+/** TOTAL — exact key first (a user theme may shadow a legacy name), then alias, then shiro. */
 export function resolveTheme(reg: ThemeRegistry, key: string): ThemeEntry {
-  return reg.get(key) ?? reg.get("default")!;
+  return reg.get(key) ?? reg.get(THEME_ALIASES[key] ?? "") ?? reg.get("shiro")!;
 }
 
 /** Built-ins first (in PRESETS order), then user themes alphabetically. */

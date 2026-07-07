@@ -62,6 +62,11 @@ describe("collectDeckWarnings (registry-aware)", () => {
     expect(w).toHaveLength(1);
     expect(w[0].kind).toBe("theme-unknown");
   });
+  it("does not warn for alias theme keys", () => {
+    const regMap = new Map([["shiro", { key: "shiro", source: "builtin", themeCss: "", hljs: "", mermaid: "default", baseFontPx: 28 } as ThemeEntry]]);
+    const deck = parseDeck("---\ntheme: default\n---\n# T");
+    expect(collectDeckWarnings(deck, regMap).filter((w) => w.kind === "theme-unknown")).toEqual([]);
+  });
 });
 
 describe("authoring contract", () => {
@@ -74,7 +79,7 @@ describe("authoring contract", () => {
   });
   it("lists available layouts and themes", () => {
     const c = getAuthoringContract({ theme: "default", aspect: "16:9", minFontPx: 24 });
-    expect(c.themes).toContain("dark");
+    expect(c.themes).toEqual(["shiro", "kuro", "sumi", "kairo", "kurenai"]);
     expect(c.layouts).toContain("two-column");
     expect(contractToPrompt(c)).toContain("two-column");
   });

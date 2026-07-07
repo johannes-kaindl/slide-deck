@@ -2,7 +2,7 @@
 import type { FitResult } from "../layout/fit";
 import type { Slide, SlideDeck } from "../slide-model";
 import { LAYOUTS, layoutFor } from "../presets/layouts.css";
-import type { ThemeRegistry } from "../presets";
+import { THEME_ALIASES, type ThemeRegistry } from "../presets";
 
 export type WarningKind =
   | "overflow" | "belowFloor" | "missing-embed" | "mermaid-error" | "low-contrast"
@@ -13,8 +13,9 @@ export type SlideWarning = Omit<Warning, "slideIndex">;
 
 export function collectDeckWarnings(deck: SlideDeck, registry: ThemeRegistry): Warning[] {
   const out: Warning[] = [];
-  if (!registry.has(deck.directives.theme)) {
-    out.push({ slideIndex: 0, kind: "theme-unknown", message: `Unknown theme "${deck.directives.theme}" — using default.`, sourceLine: 0 });
+  const t = deck.directives.theme;
+  if (!registry.has(t) && !registry.has(THEME_ALIASES[t] ?? "")) {
+    out.push({ slideIndex: 0, kind: "theme-unknown", message: `Unknown theme "${t}" — using shiro.`, sourceLine: 0 });
   }
   return out;
 }
