@@ -25,6 +25,14 @@ export const DEFAULT_SETTINGS: SlideDeckSettings = {
   llmEndpoints: ["http://localhost:1234"], llmModel: "", llmMaxTokens: 8192, llmTemperature: 0.3, llmSuppressThinking: true,
 };
 
+/** Migrate a persisted 0.4.x `defaultTheme` (e.g. "default"/"dark") to its Nordstern successor
+ *  via THEME_ALIASES. Pure — call once right after settings are loaded, before anything reads
+ *  `settings.defaultTheme`. Unknown/canonical keys pass through untouched. */
+export function migrateLegacyThemeKeys(s: SlideDeckSettings): SlideDeckSettings {
+  const alias = THEME_ALIASES[s.defaultTheme];
+  return alias ? { ...s, defaultTheme: alias } : s;
+}
+
 /** Declarative settings tab (Obsidian ≥ 1.13: getSettingDefinitions, not the deprecated
  *  imperative display()). Plain controls bind via key ↔ get/setControlValue; the two pieces
  *  that need bespoke UI (the theme-key chip list, the export dropdown+button) use render. */

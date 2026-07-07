@@ -2,7 +2,7 @@ import { Plugin, getLanguage, TFile, TAbstractFile, Notice, normalizePath } from
 import { exportPdf, exportImages } from "./export";
 import { SlideDeckView, VIEW_TYPE } from "./preview-view";
 import { t, pickLang, setLang } from "./i18n";
-import { DEFAULT_SETTINGS, SlideDeckSettings, SlideDeckSettingTab } from "./settings";
+import { DEFAULT_SETTINGS, SlideDeckSettings, SlideDeckSettingTab, migrateLegacyThemeKeys } from "./settings";
 import { ThemeStore } from "./theme-registry";
 import { buildHideCss, normalizeFolder } from "./core/folder-hide";
 import { GenerateDeckView, VIEW_TYPE_GENERATE } from "./generate-deck-view";
@@ -26,7 +26,7 @@ export default class SlideDeckPlugin extends Plugin {
 
   async onload(): Promise<void> {
     setLang(pickLang(getLanguage()));
-    this.settings = mergeSettings(DEFAULT_SETTINGS, await this.loadData());
+    this.settings = migrateLegacyThemeKeys(mergeSettings(DEFAULT_SETTINGS, await this.loadData()));
 
     this.themeStore = new ThemeStore(this.app, () => this.settings.themesFolder);
     await this.themeStore.refresh();

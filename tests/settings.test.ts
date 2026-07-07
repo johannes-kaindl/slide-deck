@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { SlideDeckSettingTab, DEFAULT_SETTINGS, type SlideDeckSettings } from "../src/settings";
+import { SlideDeckSettingTab, DEFAULT_SETTINGS, migrateLegacyThemeKeys, type SlideDeckSettings } from "../src/settings";
 
 // A control definition's `key` is a plain string, so the compiler cannot prove it matches a
 // case in get/setControlValue. These tests exercise the round-trip to catch a typo'd or
@@ -104,5 +104,27 @@ describe("SlideDeckSettingTab (declarative)", () => {
     const { plugin } = makeFakePlugin(settings);
     const tab = new SlideDeckSettingTab({} as any, plugin as any);
     expect(tab.getControlValue("defaultTheme")).toBe("kuro"); // Alias dark→kuro
+  });
+});
+
+describe("migrateLegacyThemeKeys", () => {
+  it("maps legacy 0.4.x keys through THEME_ALIASES", () => {
+    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "default" }).defaultTheme).toBe("shiro");
+    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "dark" }).defaultTheme).toBe("kuro");
+    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "serif" }).defaultTheme).toBe("shiro");
+    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "high-contrast" }).defaultTheme).toBe("sumi");
+  });
+
+  it("leaves canonical or unknown keys untouched", () => {
+    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "shiro" }).defaultTheme).toBe("shiro");
+    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "kurenai" }).defaultTheme).toBe("kurenai");
+    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "ghost" }).defaultTheme).toBe("ghost");
+  });
+
+  it("does not mutate the input settings object", () => {
+    const s: SlideDeckSettings = { ...DEFAULT_SETTINGS, defaultTheme: "dark" };
+    const out = migrateLegacyThemeKeys(s);
+    expect(s.defaultTheme).toBe("dark");
+    expect(out).not.toBe(s);
   });
 });
