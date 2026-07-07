@@ -97,7 +97,7 @@ Ein YAML-Frontmatter-Block am Anfang der Notiz steuert präsentationsweite Einst
 
 ```yaml
 ---
-theme: dark
+theme: kuro
 aspect: 16:9
 minFontPx: 24
 header: Mein Vortrag
@@ -125,7 +125,7 @@ Eine Zeile, die **nur `---`** enthält, trennt Folien:
 
 ```markdown
 ---
-theme: default
+theme: shiro
 aspect: 16:9
 ---
 

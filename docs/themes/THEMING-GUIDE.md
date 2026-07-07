@@ -33,7 +33,7 @@ your file.
 The structure now ships a full design system: a modular type scale (ratio
 1.25), a spacing scale, vertical rhythm (blocks own no margins; space comes
 from adjacency), and tokenized blockquotes, rules, code panels and callouts.
-Concretely: **a 7-token theme already looks finished** — §3 lists the optional
+Concretely: **a 7-token theme already looks finished** — §2 lists the optional
 tokens for adding character on top of that.
 
 ### CSS layer order (later overrides earlier)
@@ -179,12 +179,12 @@ See `example.css` §2 for the same list as ready-to-uncomment declarations.
 
 ## 4. What you should NOT style anymore
 
-The design system in §3 replaces a handful of things themes used to hand-roll.
+The design system in §2 replaces a handful of things themes used to hand-roll.
 Don't re-add these — they fight the rhythm/scale system instead of composing
 with it:
 
 - **`h1`/`h2` `font-size` rules.** Use `--sd-size-h1` / `--sd-size-h2` /
-  `--sd-size-display` (§3) instead of a raw `.sd-slide h1 { font-size: … }`
+  `--sd-size-display` (§2) instead of a raw `.sd-slide h1 { font-size: … }`
   override — the scale is a single ratio (1.25); changing one rung by hand
   desyncs it from the others.
 - **List/paragraph alignment tweaks.** Axiom: lists are never line-centered.
@@ -198,7 +198,7 @@ with it:
   layout at once.
 
 Rule-level overrides are still *technically* possible — your file loads after
-`structure`/`layouts` in the cascade (§1), so a raw `.sd-slide h1 { … }` rule
+`structure`/`layouts` in the cascade (see "CSS layer order" above), so a raw `.sd-slide h1 { … }` rule
 in your theme does win. It's just **unsupported**: it isn't covered by the fit
 engine's assumptions and will drift the next time the design system changes.
 Prefer setting a token.
@@ -208,7 +208,7 @@ Prefer setting a token.
 ## 5. Built-in themes
 
 Five Nordstern presets ship with the plugin. Each sets the §1 contract plus
-most of the §3 character tokens; pick one as a reading example, or as a
+most of the §2 character tokens; pick one as a reading example, or as a
 starting point via **Export theme as .css** (Settings).
 
 | Key | Label | Voice | Base px |
@@ -247,24 +247,24 @@ When asked to build or modify a slide-deck `.css` theme, follow these exactly:
 
 1. **One file. Scope everything to `.sd-slide`** (or its descendants). Never
    style `html`/`body`, never change geometry, padding-box, or `--sd-w`/`--sd-h`.
-2. **Always include the seven §2 tokens** (§1 above: `--sd-bg`, `--sd-fg`,
+2. **Always include the seven §1 tokens** (above: `--sd-bg`, `--sd-fg`,
    `--sd-accent`, `--sd-code-bg`, `--sd-font`, `--sd-heading-font`,
    `--sd-base`) with valid values. The file name (without `.css`) is the theme
    key — tell the user what to put in `theme:`.
 3. **Set `--sd-base` to a plain `NNpx`** (e.g. `28px`); it is parsed by the
    plugin as the legibility floor.
 4. **Don't hand-roll type size, spacing, or margins** (§4) — if you want a
-   bigger hero title or tighter section gaps, set the matching §3 token
+   bigger hero title or tighter section gaps, set the matching §2 token
    (`--sd-size-display`, `--sd-space-xl`, …) instead of a raw rule.
 5. **No network:** never emit `@import` or remote `url(...)`. For exact fonts,
    use data-URI `@font-face` (§8); otherwise name families + system fallback.
 6. **Contrast/WCAG:** ensure `--sd-fg` on `--sd-bg` and text on `--sd-accent`
    meet at least AA (4.5:1 for body). Verify, don't guess.
-7. **If the theme is dark, set `--sd-surface` and `--sd-callout-fg`** (§3) to a
+7. **If the theme is dark, set `--sd-surface` and `--sd-callout-fg`** (§2) to a
    dark panel + light text pair, or callouts render light-on-dark. Also
    consider a `/* sd-hljs: github-dark */` and `/* sd-mermaid: dark */` header
    directive (§7) so code and diagrams aren't stuck on the light scheme.
-8. **Keep optional §3 tokens optional and commented**; the §1 token block must
+8. **Keep optional §2 tokens optional and commented**; the §1 token block must
    work standalone. Prefer one accent colour reused via a local `--my-*`
    variable.
 

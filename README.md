@@ -97,7 +97,7 @@ Add a YAML frontmatter block at the top of your note to control presentation-lev
 
 ```yaml
 ---
-theme: dark
+theme: kuro
 aspect: 16:9
 minFontPx: 24
 header: My talk
@@ -125,7 +125,7 @@ Use a line containing **only `---`** to split slides:
 
 ```markdown
 ---
-theme: default
+theme: shiro
 aspect: 16:9
 ---
 
