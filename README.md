@@ -13,9 +13,9 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 ## Features
 
 - **Theme isolation** — slides render inside a sandboxed iframe, so the active Obsidian theme never leaks into the preview or the exports. A deck looks identical regardless of the vault theme.
-- **Four built-in themes** — `default` (light), `dark`, `serif`, `high-contrast` — selected per deck via the `theme:` frontmatter key; each carries a matching code-highlight and Mermaid theme.
+- **Five built-in themes** — the Nordstern set: `shiro` 白 (light, default), `kuro` 黒 (dark), `sumi` 墨 (true-black, high-contrast), `kairo` 回路 (dark, cyan), `kurenai` 紅 (dark, red) — selected per deck via the `theme:` frontmatter key; each carries a matching code-highlight and Mermaid theme. Legacy 0.4.x keys (`default`, `dark`, `serif`, `high-contrast`) still work — they resolve silently to their Nordstern successor.
 - **Live theme switcher** — the preview toolbar has a theme dropdown for ephemeral try-on, a source label (`from frontmatter` / `from default` / `● unsaved`) that shows where the active theme comes from, and a **Set** button that writes `theme:` directly into the note's frontmatter. Frontmatter is the source of truth; the Settings default applies only to notes without a `theme:` key.
-- **User themes** — drop `.css` files into a configurable themes folder (default `Slide-Deck-Themes/`); the frontmatter `theme:` value is the filename without the `.css` extension. Each file is a `--sd-*` token block with optional extra CSS; user themes inherit the built-in `default` theme's code-highlight and Mermaid styles. The Settings tab shows all valid theme keys live.
+- **User themes** — drop `.css` files into a configurable themes folder (default `Slide-Deck-Themes/`); the frontmatter `theme:` value is the filename without the `.css` extension. Each file is a `--sd-*` token block with optional extra CSS on top of the plugin's design system (type scale, spacing, rhythm) — a 7-token theme already looks finished; user themes inherit the `shiro` theme's code-highlight and Mermaid styles unless overridden. See the [theming guide](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/themes/THEMING-GUIDE.md). The Settings tab shows all valid theme keys live.
 - **Theme import/export** — an **Open in Finder** button reveals the themes folder so you can drop files in; **Export theme as .css** writes any theme as an editable `.css` starting point; a toggle hides the themes folder in Obsidian's file explorer.
 - **Nine per-slide templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image` — set per slide with a layout directive (an HTML comment); columns are separated by a column directive, and in multi-column templates the leading heading spans all columns. See the [layout guide](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/layouts.md).
 - **Combinable density modifiers** — add `compact` (tighter type) or `code-heavy` (smaller code) to any template in the same layout directive.
@@ -83,7 +83,7 @@ cp main.js manifest.json styles.css /path/to/vault/.obsidian/plugins/slide-deck/
 
 | Setting | Key | Default | Description |
 |---|---|---|---|
-| Default preset | `defaultTheme` | `default` | Preset used when a note has no `theme` frontmatter directive |
+| Default preset | `defaultTheme` | `shiro` | Preset used when a note has no `theme` frontmatter directive |
 | Minimum body font size (px) | `minFontPx` | `24` | Legibility floor — slides that would need smaller text are flagged as overflowing |
 | Image export scale | `imageScale` | `2` | Pixel multiplier for PNG export (`2` = 2×, crisp on HiDPI screens) |
 | Custom CSS | `customCss` | *(empty)* | CSS appended to the deck styles in preview and exports, for branding or tweaks |
@@ -108,7 +108,7 @@ paginate: true
 
 | Key | Values | Description |
 |---|---|---|
-| `theme` | `default` · `dark` · `serif` · `high-contrast` · *user-theme-key* | Visual preset name; user theme key = the `.css` filename without the extension |
+| `theme` | `shiro` · `kuro` · `sumi` · `kairo` · `kurenai` · *user-theme-key* (legacy `default`/`dark`/`serif`/`high-contrast` still resolve) | Visual preset name; user theme key = the `.css` filename without the extension |
 | `aspect` | `16:9` (default), `4:3` | Canvas size: 1280×720 (16:9) or 960×720 (4:3) |
 | `minFontPx` | any positive number | Per-note legibility floor; overrides the plugin setting |
 | `header` | any text | Floating header slot shown on every slide |
