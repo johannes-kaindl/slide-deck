@@ -72,3 +72,37 @@ describe("STRUCTURE_CSS area model", () => {
     expect(STRUCTURE_CSS).toContain(".sd-content{ width:100%; height:100%; transform-origin:top left; }");
   });
 });
+
+describe("design system tokens", () => {
+  it("defines the modular type scale as tokens with defaults", () => {
+    for (const t of [
+      "var(--sd-size-h1,1.95em)", "var(--sd-size-h2,1.25em)",
+      "var(--sd-lh-body,1.45)", "var(--sd-lh-display,1.08)", "var(--sd-lh-heading,1.2)",
+    ]) expect(STRUCTURE_CSS).toContain(t);
+  });
+  it("derives all spacing from the space scale (owl rhythm)", () => {
+    expect(STRUCTURE_CSS).toContain(".sd-region > * + *{ margin-top:var(--sd-space-s,.75em); }");
+    expect(STRUCTURE_CSS).toContain(".sd-region > * + h2{ margin-top:var(--sd-space-xl,2.25em); }");
+    expect(STRUCTURE_CSS).toContain(".sd-region > h1 + h2{ margin-top:var(--sd-space-xs,.5em); }");
+    expect(STRUCTURE_CSS).toContain("li + li{ margin-top:var(--sd-space-2xs,.25em); }");
+  });
+  it("headings and blocks own no ad-hoc margins", () => {
+    expect(STRUCTURE_CSS).not.toMatch(/margin:0 0 \.4em/);
+    expect(STRUCTURE_CSS).not.toMatch(/margin:\.25em 0/);
+  });
+  it("exposes display treatment tokens instead of theme rules", () => {
+    expect(STRUCTURE_CSS).toContain("font-style:var(--sd-display-style,normal)");
+    expect(STRUCTURE_CSS).toContain("font-weight:var(--sd-display-weight,700)");
+    expect(STRUCTURE_CSS).toContain("letter-spacing:var(--sd-display-tracking,normal)");
+  });
+  it("keeps the fit-critical content invariant", () => {
+    expect(STRUCTURE_CSS).toContain(".sd-content{ width:100%; height:100%; transform-origin:top left; }");
+  });
+  it("styles blockquote/hr/inline-code once, tokenized (themes supply values)", () => {
+    expect(STRUCTURE_CSS).toContain(".sd-slide blockquote{");
+    expect(STRUCTURE_CSS).toContain(".sd-slide hr{");
+    expect(STRUCTURE_CSS).toContain(":not(pre) > code{");
+    expect(STRUCTURE_CSS).toContain("var(--sd-mono");
+    expect(STRUCTURE_CSS).toContain("li::marker{ color:var(--sd-accent); }");
+  });
+});
