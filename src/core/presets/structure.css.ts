@@ -40,7 +40,8 @@ export const STRUCTURE_CSS = `
    ::before glyphs hanging into the list padding. Ordered lists keep ::marker. */
 .sd-slide ul{ list-style:none; }
 .sd-slide ul > li{ position:relative; }
-.sd-slide ul > li::before{ content:"•"; position:absolute; left:-1em; color:var(--sd-accent); }
+.sd-slide ul > li::before{ content:"•"; position:absolute; left:-1em; color:var(--sd-accent);
+  transform:scale(1.4); transform-origin:center; }
 .sd-slide li li::before{ content:"◦"; }
 .sd-slide ol > li::marker{ color:var(--sd-accent); }
 /* List items read as units: compact within (tighter line-height than body
@@ -69,7 +70,7 @@ export const STRUCTURE_CSS = `
 .sd-slide blockquote{ padding:var(--sd-space-2xs,.25em) 0 var(--sd-space-2xs,.25em) var(--sd-space-m,1em);
   border-left:3px solid var(--sd-accent); font-family:var(--sd-heading-font); font-style:italic;
   color:var(--sd-muted,inherit); }
-.sd-slide hr{ border:none; height:2px; width:min(200px,30%);
+.sd-slide hr{ border:none; height:2px; width:min(200px,30%); margin-inline:0;
   background:linear-gradient(to right,var(--sd-accent),transparent); }
 
 /* Block media: centered + contain. On a media-bearing single-region slide,
@@ -114,9 +115,9 @@ export const STRUCTURE_CSS = `
 
 /* cover-image: full-bleed background + readability scrim behind the content. */
 .sd-cover-media{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
-/* Scrim: protects the bottom (title/footer) AND the top (header) against
-   bright image regions. */
+/* Scrim: one smooth multi-stop curve — protects the top (header) and the
+   bottom (title/footer) without visible gradient banding across the image. */
 .sd-cover-scrim{ position:absolute; inset:0; z-index:1;
-  background:var(--sd-scrim,linear-gradient(0deg,rgba(0,0,0,.78),rgba(0,0,0,.12) 55%,transparent 75%),linear-gradient(180deg,rgba(0,0,0,.5),transparent 24%)); }
+  background:var(--sd-scrim,linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.25) 12%,transparent 30%,transparent 52%,rgba(0,0,0,.35) 72%,rgba(0,0,0,.78) 100%)); }
 .sd-layout-cover-image .sd-content{ position:relative; z-index:3; }
 `;

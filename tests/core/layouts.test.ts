@@ -67,9 +67,12 @@ describe("alignment axioms & eyebrow context", () => {
     expect(LAYOUTS_CSS).toContain("order:-1");
     expect(LAYOUTS_CSS).toContain(".sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-layout-cover-image .sd-region,.sd-cover-empty .sd-region{ display:flex; flex-direction:column; }");
   });
-  it("quote layout: bar hugs the centered blockquote, attribution is the small meta voice", () => {
-    expect(LAYOUTS_CSS).toContain(".sd-layout-quote .sd-region blockquote{ width:fit-content; max-width:100%; margin-inline:auto; text-align:start; color:var(--sd-fg); }");
-    expect(LAYOUTS_CSS).toContain(".sd-layout-quote .sd-region blockquote ~ p{");
+  it("quote layout: the whole region is a centered start-aligned block — quote and attribution share a left edge", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-layout-quote .sd-region{ font-size:var(--sd-size-h2,1.25em); font-style:italic; max-width:85%; width:fit-content; text-align:start; }");
+    expect(LAYOUTS_CSS).toContain(".sd-layout-quote .sd-region blockquote{ color:var(--sd-fg); }");
+    // attribution aligns with the quote's TEXT edge — /0.75 compensates its
+    // own smaller font-size so the absolute indent matches the blockquote's
+    expect(LAYOUTS_CSS).toContain("padding-left:calc(var(--sd-space-m,1em) / 0.75 + 3px)");
   });
   it("stat: number couples tightly to its caption and may take the accent", () => {
     expect(LAYOUTS_CSS).toContain("color:var(--sd-stat-fg,var(--sd-accent))");

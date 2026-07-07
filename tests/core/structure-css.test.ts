@@ -130,7 +130,13 @@ describe("design system tokens", () => {
     expect(STRUCTURE_CSS).toContain('.sd-slide li li::before{ content:"◦"; }');
     expect(STRUCTURE_CSS).toContain(".sd-slide ol > li::marker{ color:var(--sd-accent); }");
   });
-  it("cover scrim protects header (top) and title/footer (bottom)", () => {
-    expect(STRUCTURE_CSS).toContain("linear-gradient(180deg,rgba(0,0,0,.5),transparent 24%)");
+  it("cover scrim protects header (top) and title/footer (bottom), banding-free", () => {
+    // one smooth multi-stop curve instead of two abrupt gradients
+    expect(STRUCTURE_CSS).toContain(
+      "linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.25) 12%,transparent 30%,transparent 52%,rgba(0,0,0,.35) 72%,rgba(0,0,0,.78) 100%)"
+    );
+  });
+  it("accent bullets are large enough to read as accents", () => {
+    expect(STRUCTURE_CSS).toMatch(/ul > li::before\{[^}]*transform:scale\(1\.4\)/);
   });
 });

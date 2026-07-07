@@ -63,13 +63,16 @@ export const LAYOUTS_CSS = `
   letter-spacing:var(--sd-eyebrow-tracking,.14em); color:var(--sd-eyebrow-fg,var(--sd-accent));
   line-height:var(--sd-lh-heading,1.2); }
 
-/* quote keeps its serif voice on the scale */
-.sd-layout-quote .sd-region{ font-size:var(--sd-size-h2,1.25em); font-style:italic; }
-/* The blockquote IS the quote: full ink, bar hugging the centered block.
-   Any paragraph after it is the attribution — the small muted meta voice. */
-.sd-layout-quote .sd-region blockquote{ width:fit-content; max-width:100%; margin-inline:auto; text-align:start; color:var(--sd-fg); }
+/* quote keeps its serif voice on the scale. The whole region is a centered,
+   start-aligned fit-content block — quote and attribution share a left edge. */
+.sd-layout-quote .sd-region{ font-size:var(--sd-size-h2,1.25em); font-style:italic; max-width:85%; width:fit-content; text-align:start; }
+/* The blockquote IS the quote: full ink, bar hugging the text. Any paragraph
+   after it is the attribution — the small muted meta voice, aligned to the
+   quote's TEXT edge (bar 3px + 1em padding). */
+.sd-layout-quote .sd-region blockquote{ color:var(--sd-fg); }
 .sd-layout-quote .sd-region blockquote ~ p{ font-family:var(--sd-eyebrow-font,var(--sd-font)); font-size:.75em;
-  font-style:normal; letter-spacing:.08em; color:var(--sd-muted,inherit); }
+  font-style:normal; letter-spacing:.08em; color:var(--sd-muted,inherit);
+  padding-left:calc(var(--sd-space-m,1em) / 0.75 + 3px); }
 
 /* stat: oversized lead number as a deliberate accent moment, caption tightly coupled */
 .sd-layout-stat h1{ font-size:var(--sd-stat-size,4.5em); line-height:1; color:var(--sd-stat-fg,var(--sd-accent)); }

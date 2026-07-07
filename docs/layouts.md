@@ -5,6 +5,10 @@ modifiers, the layout/column directives, and how layouts are inferred when you d
 For deck-level settings (theme, aspect ratio, header/footer/pagination slots, the slide
 separator) see the [README](https://codeberg.org/jkaindl/slide-deck/src/branch/main/README.md).
 
+> **`---` is always the slide separator** (Marp convention) — it never renders as a
+> horizontal rule inside a slide. For a visible rule use `***`, `___`, or a literal
+> `<hr>` (the HTML form survives Markdown linters that normalize rule markers to `---`).
+
 ## Choosing a layout
 
 Add an HTML comment at the start of a slide to choose its template, and use a column comment

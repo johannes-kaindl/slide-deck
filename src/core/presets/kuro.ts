@@ -20,8 +20,8 @@ const ATMOSPHERE = `
 }
 .sd-slide h1{ text-shadow: 0 0 34px rgba(199, 154, 74, 0.16); }
 .sd-slide .sd-callout-note{ border-left-color:#86a69b; background:rgba(134,166,155,0.08); }
-.sd-slide .sd-callout-info{ border-left-color:#6fa89e; background:rgba(111,168,158,0.08); }
-.sd-slide .sd-callout-tip{ border-left-color:#96a877; background:rgba(150,168,119,0.08); }
+.sd-slide .sd-callout-info{ border-left-color:#7da39a; background:rgba(125,163,154,0.08); }
+.sd-slide .sd-callout-tip{ border-left-color:#9aa87c; background:rgba(154,168,124,0.08); }
 .sd-slide .sd-callout-warning{ border-left-color:#dba05c; background:rgba(219,160,92,0.08); }
 .sd-slide .sd-callout-danger{ border-left-color:#c9574a; background:rgba(201,87,74,0.09); }
 `;
