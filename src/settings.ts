@@ -3,6 +3,7 @@ import type SlideDeckPlugin from "./main";
 import { t } from "./i18n";
 import { revealFolder, writeThemeCss } from "./theme-source";
 import { parseEndpointList } from "./vendor/kit/endpoint";
+import { THEME_ALIASES } from "./core/presets";
 
 export interface SlideDeckSettings {
   defaultTheme: string;
@@ -19,7 +20,7 @@ export interface SlideDeckSettings {
   llmSuppressThinking: boolean;
 }
 export const DEFAULT_SETTINGS: SlideDeckSettings = {
-  defaultTheme: "default", minFontPx: 24, imageScale: 2, customCss: "",
+  defaultTheme: "shiro", minFontPx: 24, imageScale: 2, customCss: "",
   exportFolder: "Slide-Deck-Export", themesFolder: "Slide-Deck-Themes", hideThemesFolder: true,
   llmEndpoints: ["http://localhost:1234"], llmModel: "", llmMaxTokens: 8192, llmTemperature: 0.3, llmSuppressThinking: true,
 };
@@ -131,8 +132,13 @@ export class SlideDeckSettingTab extends PluginSettingTab {
   getControlValue(key: string): unknown {
     const s = this.plugin.settings;
     switch (key) {
-      // Coerce an unknown persisted default to "default" so the dropdown shows a valid option.
-      case "defaultTheme": return this.plugin.themeStore.getMap().has(s.defaultTheme) ? s.defaultTheme : "default";
+      // Coerce an unknown persisted default to "shiro" so the dropdown shows a valid option.
+      case "defaultTheme": {
+        const map = this.plugin.themeStore.getMap();
+        if (map.has(s.defaultTheme)) return s.defaultTheme;
+        const alias = THEME_ALIASES[s.defaultTheme];
+        return alias && map.has(alias) ? alias : "shiro";
+      }
       case "minFontPx": return s.minFontPx;
       case "imageScale": return s.imageScale;
       case "exportFolder": return s.exportFolder;
