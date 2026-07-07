@@ -65,6 +65,10 @@ describe("alignment axioms & eyebrow context", () => {
     );
     expect(LAYOUTS_CSS).toContain("max-width:85%");
   });
+  it("image-focus and cover-empty center the block, never list lines (axiom 1)", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-layout-image-focus .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }");
+    expect(LAYOUTS_CSS).toContain(".sd-cover-empty .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }");
+  });
   it("h1 on hero layouts uses the display role", () => {
     expect(LAYOUTS_CSS).toContain(".sd-layout-title h1,.sd-layout-section h1,.sd-layout-cover-image h1{ font-size:var(--sd-size-display,2.44em); }");
   });

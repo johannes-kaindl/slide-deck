@@ -60,13 +60,16 @@ export const LAYOUTS_CSS = `
 .sd-layout-stat h1{ font-size:var(--sd-stat-size,4.5em); line-height:1; }
 
 /* image-focus: media-dominant — the media fill is handled by .sd-has-media
-   (structure.css); here we only center an optional title/caption. */
+   (structure.css); here we only center an optional title/caption. Axiom 1: the
+   text-align:center is a BLOCK center — lists stay start-aligned (see carve-out below). */
 .sd-layout-image-focus .sd-content{ text-align:center; }
+.sd-layout-image-focus .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
 
 /* cover-image: title overlays the full-bleed background, anchored bottom-left */
 .sd-layout-cover-image .sd-content{ display:flex; flex-direction:column; justify-content:flex-end; }
 .sd-cover-empty .sd-content{ justify-content:center; align-items:center; text-align:center; }
 .sd-cover-empty .sd-region{ text-align:center; max-width:85%; }
+.sd-cover-empty .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
 
 /* density modifiers (combine with any layout) */
 .sd-mod-compact .sd-content{ font-size:var(--sd-compact-scale,0.82em); line-height:1.3; }
