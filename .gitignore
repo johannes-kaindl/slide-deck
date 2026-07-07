@@ -9,3 +9,6 @@ node_modules/
 
 # DS reference, kept out of the repo on purpose (untracked → ignored so release-clean checks pass)
 design/
+
+# Visual-Smoke-Harness output (scripts/visual-smoke.mjs) — generated PNGs, never committed
+_visual/
