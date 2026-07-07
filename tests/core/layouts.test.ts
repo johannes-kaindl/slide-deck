@@ -57,3 +57,24 @@ describe("LAYOUTS_CSS templates & modifiers", () => {
     expect(LAYOUTS_CSS).toContain(".sd-mod-code-heavy");
   });
 });
+
+describe("alignment axioms & eyebrow context", () => {
+  it("hero layouts center the block, never list lines (axiom 2)", () => {
+    expect(LAYOUTS_CSS).toContain(
+      ".sd-layout-title .sd-region :is(ul,ol),.sd-layout-section .sd-region :is(ul,ol),.sd-layout-quote .sd-region :is(ul,ol){\n  text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }"
+    );
+    expect(LAYOUTS_CSS).toContain("max-width:85%");
+  });
+  it("h1 on hero layouts uses the display role", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-layout-title h1,.sd-layout-section h1,.sd-layout-cover-image h1{ font-size:var(--sd-size-display,2.44em); }");
+  });
+  it("h2 on hero layouts becomes a small tracked eyebrow", () => {
+    expect(LAYOUTS_CSS).toContain("font-size:var(--sd-size-eyebrow,.68em)");
+    expect(LAYOUTS_CSS).toContain("letter-spacing:var(--sd-eyebrow-tracking,.14em)");
+    expect(LAYOUTS_CSS).toContain("color:var(--sd-eyebrow-fg,var(--sd-accent))");
+  });
+  it("column gaps come from the space scale", () => {
+    expect(LAYOUTS_CSS).toContain("gap:var(--sd-space-l,1.5em)");
+    expect(LAYOUTS_CSS).toContain("gap:var(--sd-space-m,1em)");
+  });
+});
