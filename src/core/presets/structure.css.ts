@@ -24,11 +24,16 @@ export const STRUCTURE_CSS = `
    More air before a new section, tight binding after a heading. ── */
 .sd-slide h1,.sd-slide h2,.sd-slide p,.sd-slide ul,.sd-slide ol,.sd-slide pre,.sd-slide blockquote{ margin:0; }
 .sd-region > * + *{ margin-top:var(--sd-space-s,.75em); }
+/* Panels (code, callouts) are visually heavy boxes — they breathe on both
+   sides. :where() keeps specificity flat so heading rules below still win. */
+.sd-region > * + :where(pre,.sd-callout),
+.sd-region > :where(pre,.sd-callout) + *{ margin-top:var(--sd-space-m,1em); }
 .sd-region > * + h2{ margin-top:var(--sd-space-xl,2.25em); }
-/* A display-sized h1 needs ~0.7× its own size as separation below, or it
-   reads as line 1 of its content. The h1+h2 eyebrow/subtitle pair stays tight. */
+/* Headings get ~0.7× their own size as separation below, or they read as
+   line 1 of their content. The h1+h2 subtitle pair binds tighter. */
+.sd-region > h2 + *{ margin-top:var(--sd-space-m,1em); }
 .sd-region > h1 + *{ margin-top:var(--sd-space-l,1.5em); }
-.sd-region > h1 + h2{ margin-top:var(--sd-space-xs,.5em); }
+.sd-region > h1 + h2{ margin-top:var(--sd-space-s,.75em); }
 .sd-slide ul,.sd-slide ol{ padding-left:1.2em; }
 /* List items read as units: compact within (tighter line-height than body
    prose), clear air between — otherwise a wrapped item merges with its
@@ -88,10 +93,13 @@ export const STRUCTURE_CSS = `
 .sd-callout-tip{ border-left-color:var(--sd-callout-tip,#2e8b6f); } .sd-callout-tip .sd-callout-icon::before{ content:"★"; }
 .sd-callout-info{ border-left-color:var(--sd-callout-info,#3b6db5); } .sd-callout-info .sd-callout-icon::before{ content:"ℹ"; }
 
-/* Floating slots — live in the padding margin, outside the scaled .sd-content. */
+/* Floating slots — live in the padding margin, outside the scaled .sd-content.
+   They speak the deck's metadata voice (the eyebrow register): small, mono,
+   tracked — framing the slide instead of competing with body text. */
 .sd-slide-header,.sd-slide-footer,.sd-slide-pagination{ position:absolute; z-index:4;
-  font-size:var(--sd-slot-size,var(--sd-size-small,.8em)); color:var(--sd-slot-fg,var(--sd-muted,#6b7280));
-  letter-spacing:.04em; }
+  font-size:var(--sd-slot-size,var(--sd-size-eyebrow,.68em)); color:var(--sd-slot-fg,var(--sd-muted,#6b7280));
+  font-family:var(--sd-slot-font,var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace));
+  letter-spacing:.08em; }
 .sd-slide-header{ top:24px; right:32px; text-transform:uppercase; }
 .sd-slide-footer{ bottom:24px; left:32px; }
 .sd-slide-pagination{ bottom:24px; right:32px; }

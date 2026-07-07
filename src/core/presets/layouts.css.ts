@@ -39,6 +39,9 @@ export const LAYOUTS_CSS = `
 .sd-layout-section .sd-content,
 .sd-layout-quote .sd-content{ align-items:center; }
 .sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-layout-quote .sd-region{ text-align:center; max-width:85%; }
+/* Optical center: exact geometric centering reads as "hanging" — lift the
+   hero block slightly above the middle (padding participates in centering). */
+.sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-cover-empty .sd-region{ padding-bottom:var(--sd-space-2xl,3.5em); }
 .sd-layout-title .sd-region :is(ul,ol),.sd-layout-section .sd-region :is(ul,ol),.sd-layout-quote .sd-region :is(ul,ol){
   text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
 .sd-layout-title .sd-region :is(pre,.sd-callout),.sd-layout-section .sd-region :is(pre,.sd-callout),.sd-layout-quote .sd-region :is(pre,.sd-callout){ text-align:start; }

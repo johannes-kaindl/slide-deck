@@ -59,6 +59,11 @@ describe("LAYOUTS_CSS templates & modifiers", () => {
 });
 
 describe("alignment axioms & eyebrow context", () => {
+  it("hero blocks sit at the optical center (lifted above geometric middle)", () => {
+    expect(LAYOUTS_CSS).toContain(
+      ".sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-cover-empty .sd-region{ padding-bottom:var(--sd-space-2xl,3.5em); }"
+    );
+  });
   it("hero layouts center the block, never list lines (axiom 2)", () => {
     expect(LAYOUTS_CSS).toContain(
       ".sd-layout-title .sd-region :is(ul,ol),.sd-layout-section .sd-region :is(ul,ol),.sd-layout-quote .sd-region :is(ul,ol){\n  text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }"

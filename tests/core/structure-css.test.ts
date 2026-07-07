@@ -83,7 +83,11 @@ describe("design system tokens", () => {
   it("derives all spacing from the space scale (owl rhythm)", () => {
     expect(STRUCTURE_CSS).toContain(".sd-region > * + *{ margin-top:var(--sd-space-s,.75em); }");
     expect(STRUCTURE_CSS).toContain(".sd-region > * + h2{ margin-top:var(--sd-space-xl,2.25em); }");
-    expect(STRUCTURE_CSS).toContain(".sd-region > h1 + h2{ margin-top:var(--sd-space-xs,.5em); }");
+    expect(STRUCTURE_CSS).toContain(".sd-region > h1 + h2{ margin-top:var(--sd-space-s,.75em); }");
+    // h2 gets proportional air below (~0.7× its size), same rule as h1
+    expect(STRUCTURE_CSS).toContain(".sd-region > h2 + *{ margin-top:var(--sd-space-m,1em); }");
+    // panels (code, callouts) are visually heavy boxes — they breathe on both sides
+    expect(STRUCTURE_CSS).toContain(".sd-region > * + :where(pre,.sd-callout),\n.sd-region > :where(pre,.sd-callout) + *{ margin-top:var(--sd-space-m,1em); }");
     // display-sized headings need ~0.7× their own size as separation — the
     // heading must read as its own level, not as line 1 of the list below it
     expect(STRUCTURE_CSS).toContain(".sd-region > h1 + *{ margin-top:var(--sd-space-l,1.5em); }");
@@ -94,6 +98,11 @@ describe("design system tokens", () => {
     // otherwise list levels blur into one undifferentiated column
     expect(STRUCTURE_CSS).toContain(".sd-slide li > ul,.sd-slide li > ol{ margin-top:var(--sd-space-2xs,.25em); }");
     expect(STRUCTURE_CSS).toContain(".sd-slide li li + li{ margin-top:var(--sd-space-2xs,.25em); }");
+  });
+  it("slots speak the deck's metadata voice (mono, tracked, eyebrow-sized)", () => {
+    expect(STRUCTURE_CSS).toContain("font-size:var(--sd-slot-size,var(--sd-size-eyebrow,.68em))");
+    expect(STRUCTURE_CSS).toContain("font-family:var(--sd-slot-font,var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace))");
+    expect(STRUCTURE_CSS).not.toContain("--sd-size-small"); // retired: slots were its only consumer
   });
   it("headings and blocks own no ad-hoc margins", () => {
     expect(STRUCTURE_CSS).not.toMatch(/margin:0 0 \.4em/);

@@ -101,8 +101,7 @@ layout CSS — these are the only tokens the renderer actually reads).
 | `--sd-size-h1` | `1.95em` | Non-hero heading size (`.sd-slide h1`) |
 | `--sd-size-h2` | `1.25em` | Non-hero subheading size; also the `quote` layout's body size |
 | `--sd-size-display` | `2.44em` | Hero title size (`title` / `section` / `cover-image` layouts) |
-| `--sd-size-eyebrow` | `.68em` | Hero "eyebrow" kicker size (an `h2` used as a tracked label in hero layouts) |
-| `--sd-size-small` | `.8em` | Type-scale rung used as the floating-slot font-size fallback (see `--sd-slot-size`) |
+| `--sd-size-eyebrow` | `.68em` | Hero "eyebrow" kicker size (an `h2` used as a tracked label in hero layouts); also the floating-slot font-size fallback (see `--sd-slot-size`) |
 
 ### Line-height
 
@@ -118,11 +117,12 @@ layout CSS — these are the only tokens the renderer actually reads).
 | Token | Default | Purpose |
 |---|---|---|
 | `--sd-space-2xs` | `.25em` | Blockquote vertical padding; nested-list gaps (binding + between nested items) |
-| `--sd-space-xs` | `.5em` | Gap between consecutive list items; code panel padding; gap after a lone `h1` → `h2`; `compact` mode's block gap; media gap |
-| `--sd-space-s` | `.75em` | Default gap between adjacent blocks (the vertical-rhythm "owl" selector); code panel padding |
-| `--sd-space-m` | `1em` | Blockquote left indent; `columns-3` layout's column gap |
+| `--sd-space-xs` | `.5em` | Gap between consecutive list items; code panel padding; `compact` mode's block gap; media gap |
+| `--sd-space-s` | `.75em` | Default gap between adjacent blocks (the vertical-rhythm "owl" selector); gap in the `h1` → `h2` subtitle pair; code panel padding |
+| `--sd-space-m` | `1em` | Gap after `h2` (heading → its content); breathing room around panels (code blocks, callouts); blockquote left indent; `columns-3` layout's column gap |
 | `--sd-space-l` | `1.5em` | Gap after `h1` (heading → its content); `two-column` layout's column gap |
 | `--sd-space-xl` | `2.25em` | Extra gap before a new `h2` section |
+| `--sd-space-2xl` | `3.5em` | Optical-center lift on hero regions (`title`/`section`/empty cover) |
 | `--sd-pad` | `64px` | Slide padding on all four sides |
 
 ### Code face
@@ -163,7 +163,8 @@ only sets the seven §1 tokens still gets a legible blockquote.
 
 | Token | Default | Purpose |
 |---|---|---|
-| `--sd-slot-size` | `var(--sd-size-small, .8em)` | Slot font-size |
+| `--sd-slot-size` | `var(--sd-size-eyebrow, .68em)` | Slot font-size |
+| `--sd-slot-font` | `var(--sd-mono, …)` | Slot font family — slots speak the deck's metadata (eyebrow) voice |
 | `--sd-slot-fg` | `var(--sd-muted, #6b7280)` | Slot colour |
 
 ### Layout-specific
