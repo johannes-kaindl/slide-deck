@@ -63,15 +63,15 @@ export const STRUCTURE_CSS = `
   background:var(--sd-code-bg); overflow:hidden;
   font-family:var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace); }
 .sd-slide :not(pre) > code{ font-family:var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace);
-  font-size:.88em; background:var(--sd-code-bg); padding:.08em .34em; border-radius:4px;
+  font-size:.88em; background:var(--sd-code-bg); padding:.08em .2em; border-radius:4px;
   white-space:nowrap; }
 
 /* ── Character defaults, tokenized — a 7-token user theme looks finished out of the box. ── */
 .sd-slide blockquote{ padding:var(--sd-space-2xs,.25em) 0 var(--sd-space-2xs,.25em) var(--sd-space-m,1em);
   border-left:3px solid var(--sd-accent); font-family:var(--sd-heading-font); font-style:italic;
   color:var(--sd-muted,inherit); }
-.sd-slide hr{ border:none; height:2px; width:min(200px,30%); margin-inline:0;
-  background:linear-gradient(to right,var(--sd-accent),transparent); }
+.sd-slide hr{ border:none; height:2px; width:40%; margin-inline:auto;
+  background:linear-gradient(90deg,transparent,var(--sd-accent) 50%,transparent); }
 
 /* Block media: centered + contain. On a media-bearing single-region slide,
    render-dom marks .sd-content with .sd-has-media → the media cell fills the
@@ -115,9 +115,19 @@ export const STRUCTURE_CSS = `
 
 /* cover-image: full-bleed background + readability scrim behind the content. */
 .sd-cover-media{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
-/* Scrim: one smooth multi-stop curve — protects the top (header) and the
-   bottom (title/footer) without visible gradient banding across the image. */
+/* Scrim: bottom-only, eased. The top band was dropped — a dark-over-photo
+   gradient bands visibly at its upper edge; the header/footer get a local
+   text-shadow instead (below), which can never band. The remaining bottom
+   scrim (behind the title block) uses ~6% stops on a quadratic opacity ramp
+   so the ramp itself stays banding-free. */
 .sd-cover-scrim{ position:absolute; inset:0; z-index:1;
-  background:var(--sd-scrim,linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.25) 12%,transparent 30%,transparent 52%,rgba(0,0,0,.35) 72%,rgba(0,0,0,.78) 100%)); }
+  background:var(--sd-scrim,linear-gradient(180deg,
+    transparent 0%,transparent 48%,
+    rgba(0,0,0,.05) 54%,rgba(0,0,0,.11) 60%,rgba(0,0,0,.19) 66%,
+    rgba(0,0,0,.29) 72%,rgba(0,0,0,.40) 78%,rgba(0,0,0,.52) 84%,
+    rgba(0,0,0,.64) 90%,rgba(0,0,0,.75) 96%,rgba(0,0,0,.82) 100%)); }
+/* Slots over a full-bleed image carry their own shadow (the top scrim is gone). */
+.sd-layout-cover-image :is(.sd-slide-header,.sd-slide-footer,.sd-slide-pagination){
+  text-shadow:0 1px 12px rgba(0,0,0,.7),0 0 4px rgba(0,0,0,.5); }
 .sd-layout-cover-image .sd-content{ position:relative; z-index:3; }
 `;

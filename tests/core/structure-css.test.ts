@@ -130,10 +130,15 @@ describe("design system tokens", () => {
     expect(STRUCTURE_CSS).toContain('.sd-slide li li::before{ content:"◦"; }');
     expect(STRUCTURE_CSS).toContain(".sd-slide ol > li::marker{ color:var(--sd-accent); }");
   });
-  it("cover scrim protects header (top) and title/footer (bottom), banding-free", () => {
-    // one smooth multi-stop curve instead of two abrupt gradients
-    expect(STRUCTURE_CSS).toContain(
-      "linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.25) 12%,transparent 30%,transparent 52%,rgba(0,0,0,.35) 72%,rgba(0,0,0,.78) 100%)"
+  it("cover scrim is bottom-only + eased; slots carry their own shadow (no top-band banding)", () => {
+    // top dark band dropped — it banded visibly at its upper edge over the photo
+    expect(STRUCTURE_CSS).not.toContain("rgba(0,0,0,.55) 0%");
+    // scrim stays transparent through the upper half, darkens only toward the bottom
+    expect(STRUCTURE_CSS).toContain("transparent 0%,transparent 48%,");
+    expect(STRUCTURE_CSS).toContain("rgba(0,0,0,.82) 100%)");
+    // header/footer/pagination over a full-bleed image get a local text-shadow instead
+    expect(STRUCTURE_CSS).toMatch(
+      /\.sd-layout-cover-image :is\(\.sd-slide-header,\.sd-slide-footer,\.sd-slide-pagination\)\{\s*text-shadow:/
     );
   });
   it("accent bullets are large enough to read as accents", () => {

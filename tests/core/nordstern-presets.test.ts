@@ -39,9 +39,9 @@ describe("nordstern presets", () => {
     expect(extra).toContain("rgba(199, 154, 74, 0.16)");
     // per-type callout hues, warm-shifted + desaturated to sit inside the
     // cream/gold/brown world (no cold cyan) — type stays readable at a glance
-    expect(extra).toContain(".sd-callout-note{ border-left-color:#86a69b;");
-    expect(extra).toContain(".sd-callout-info{ border-left-color:#7da39a;");
-    expect(extra).toContain(".sd-callout-tip{ border-left-color:#9aa87c;");
+    expect(extra).toContain(".sd-callout-note{ border-left-color:#8c9e96;");
+    expect(extra).toContain(".sd-callout-info{ border-left-color:#8faa7e;");
+    expect(extra).toContain(".sd-callout-tip{ border-left-color:#aeb072;");
     expect(extra).toContain(".sd-callout-danger{ border-left-color:#c9574a;");
     expect(extra).not.toContain("#4ac8d8"); // kaltes Circuit-Cyan gehört kairo, nicht kuro
   });
