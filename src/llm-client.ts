@@ -1,7 +1,7 @@
 import { requestUrl } from "obsidian";
 import { streamSSE, type StreamResult } from "./llm-stream";
 import { normalizeEndpoint } from "./vendor/kit/endpoint";
-import { suppressParams } from "./core/llm/reasoning";
+import { suppressParams } from "./vendor/kit/reasoning";
 import { parseErrorEnvelope } from "./core/llm/error-envelope";
 import { parseLmStudioContext, parseOllamaContext, type ModelContext } from "./core/llm/model-info";
 import type { ChatMessage } from "./core/llm/deck-prompt";
