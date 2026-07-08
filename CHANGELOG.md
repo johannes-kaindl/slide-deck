@@ -5,12 +5,51 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
+
+First release to ship local-LLM deck generation (developed but never released on 0.4.x)
+alongside the new design system.
+
+### Added
+- **Generate a deck from a note with a local LLM** — a sidebar view (ribbon 🪄) turns the active
+  note into a slide deck via an OpenAI-compatible local endpoint (LM Studio / Ollama). Model
+  picker from the endpoint, streaming with a non-streaming fallback for the CORS "ping ✓, stream ✗"
+  asymmetry, a retry cap, and an "AI (local)" settings group. No cloud, no telemetry.
+- Generated decks record their origin (`source: "[[Note]]"` backlink) and the model used
+  (`model:` in frontmatter).
+
 ### Changed (BREAKING)
-- Design system: modular type scale (ratio 1.25), spacing tokens, vertical rhythm, alignment axioms (lists never line-centered; hero layouts center blocks). Existing decks render differently (better).
-- Built-in themes replaced: shiro 白 (new default, light), kuro 黒, sumi 墨, kairo 回路, kurenai 紅. Legacy keys (default, dark, serif, high-contrast) resolve silently via aliases.
-- Dark built-ins now use a real dark highlight.js scheme and mermaid "dark" (fixes light mermaid on dark themes).
-- User themes inherit code/mermaid scheme from shiro; new optional character tokens (see THEMING-GUIDE).
+- **Design system**: modular type scale (ratio 1.25), spacing tokens, vertical rhythm, alignment
+  axioms (lists never line-centered; hero layouts center blocks). Existing decks render
+  differently (better).
+- **Built-in themes replaced**: shiro 白 (new default, light), kuro 黒, sumi 墨, kairo 回路,
+  kurenai 紅. Legacy keys (default, dark, serif, high-contrast) resolve silently via aliases;
+  a persisted `defaultTheme` migrates on load.
+- Dark built-ins use a real dark highlight.js scheme and mermaid "dark" (fixes light mermaid on
+  dark themes); kuro carries an atmosphere layer (grain, glow, vignette) and warm, semantically
+  separated callout hues.
+- User themes inherit the code/mermaid scheme from shiro; new optional character tokens
+  (display style/weight/tracking, eyebrow font — see THEMING-GUIDE) and a `/* sd-label */` meta
+  for readable dropdown names.
 - LLM deck prompts: hero layouts restricted to sparse content, bullet budgets, kicker convention.
+
+### Fixed
+- **Plugin failed to re-enable or update** ("could not be loaded") — the themes-folder hide built
+  its stylesheet in the main-window realm but adopted it into `activeDocument`; adopting a
+  constructed stylesheet across documents throws `NotAllowedError`. Now built in the active
+  document's own realm.
+- **Settings tab rendered blank on Obsidian < 1.13** — the imperative `display()` fallback is
+  restored (walks the same `getSettingDefinitions`), so the tab works on public Obsidian again.
+- **Export layout**: two-column stagger (phantom grid cell), the missing `cover` layout alias,
+  and `header/footer/paginate` landing in the body instead of the frontmatter.
+
+### Compatibility
+- **`minAppVersion` back to 1.8.7** (reverses the 0.4.0 raise to 1.13.0). 0.4.0 was effectively
+  gated to Obsidian Catalyst/Insider; 0.5.0 runs on public Obsidian again.
+
+### Internal
+- Regression net: canonical testdeck fixture + per-slide HTML and owned-CSS snapshots + targeted
+  guards (separator vs. `<hr>`, embed refs with spaces/em-dash, callout token cascade).
+- Shared modules vendored from obsidian-kit (ThinkSplitter, parseSSE, endpoint, mergeSettings).
 
 ## [0.4.0] — 2026-06-30
 
