@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-07-08
+
 First release to ship local-LLM deck generation (developed but never released on 0.4.x)
 alongside the new design system.
 

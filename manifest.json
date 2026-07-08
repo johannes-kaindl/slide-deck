@@ -1,7 +1,7 @@
 {
   "id": "slide-deck",
   "name": "Slide Deck",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "minAppVersion": "1.8.7",
   "description": "Turn a Markdown note into a slide deck and export it to PDF or a PNG image series, with live readability checks.",
   "author": "Johannes Kaindl",
