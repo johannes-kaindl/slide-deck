@@ -55,7 +55,8 @@ try {
   const js = readFileSync(entryOut, "utf8");
   mkdirSync("_visual", { recursive: true });
   for (const theme of themes) {
-    const html = `<!doctype html><meta charset="utf-8"><body></body><script>window.__DECK_MD__=${JSON.stringify(md)};window.__THEME__=${JSON.stringify(theme)};</script><script>${js}</script>`;
+    const extraCss = process.env.SD_EXTRA_CSS ?? "";
+    const html = `<!doctype html><meta charset="utf-8"><body></body><script>window.__DECK_MD__=${JSON.stringify(md)};window.__THEME__=${JSON.stringify(theme)};window.__EXTRA_CSS__=${JSON.stringify(extraCss)};</script><script>${js}</script>`;
     const htmlPath = join(dir, `${theme}.html`);
     writeFileSync(htmlPath, html);
     const out = resolve("_visual", `${theme}.png`);

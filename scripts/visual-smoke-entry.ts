@@ -6,7 +6,7 @@ import { mergeThemes, resolveTheme } from "../src/core/presets";
 import { builtinThemeEntries, deckCss } from "../src/deck-css";
 import { renderDeckToContainer } from "../src/render-dom";
 
-declare global { interface Window { __DECK_MD__: string; __THEME__: string; __DONE__?: boolean } }
+declare global { interface Window { __DECK_MD__: string; __THEME__: string; __EXTRA_CSS__?: string; __DONE__?: boolean } }
 
 (async () => {
   const deck = parseDeck(window.__DECK_MD__);
@@ -14,7 +14,9 @@ declare global { interface Window { __DECK_MD__: string; __THEME__: string; __DO
   const { map } = mergeThemes(builtinThemeEntries(), []);
   const entry = resolveTheme(map, deck.directives.theme);
   const style = document.createElement("style");
-  style.textContent = deckCss(entry);
+  // __EXTRA_CSS__ (optional): appended last so it can override token/theme rules —
+  // used to preview candidate token values without editing a preset.
+  style.textContent = deckCss(entry) + (window.__EXTRA_CSS__ ? "\n" + window.__EXTRA_CSS__ : "");
   document.head.appendChild(style);
   document.body.style.margin = "0";
   const container = document.createElement("div");
