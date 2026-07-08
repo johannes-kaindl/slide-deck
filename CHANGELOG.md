@@ -6,6 +6,12 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Cover-image corner slots (header/footer/pagination) no longer double their glyph edge into
+  a faint "ghost" ring over bright backgrounds — one soft `text-shadow` instead of two.
+- The content `<hr>` gradient is symmetric now: both ends fade equally through matching
+  gold-tinted shoulders (previously the left edge read slightly harder than the right).
+
 ## [0.5.0] — 2026-07-08
 
 First release to ship local-LLM deck generation (developed but never released on 0.4.x)

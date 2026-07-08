@@ -250,7 +250,13 @@ exports[`testdeck fixture snapshots > owned CSS (structure + layouts + preset to
   border-left:3px solid var(--sd-accent); font-family:var(--sd-heading-font); font-style:italic;
   color:var(--sd-muted,inherit); }
 .sd-slide hr{ border:none; height:2px; width:40%; margin-inline:auto;
-  background:linear-gradient(90deg,transparent,var(--sd-accent) 50%,transparent); }
+  /* Symmetric, eased both ways: matching 28%/72% gold-tinted shoulders around the
+     centre so neither end reads as a harder edge than the other. */
+  background:linear-gradient(90deg,transparent 0%,
+    color-mix(in srgb,var(--sd-accent) 45%,transparent) 28%,
+    var(--sd-accent) 50%,
+    color-mix(in srgb,var(--sd-accent) 45%,transparent) 72%,
+    transparent 100%); }
 
 /* Block media: centered + contain. On a media-bearing single-region slide,
    render-dom marks .sd-content with .sd-has-media → the media cell fills the
@@ -305,9 +311,11 @@ exports[`testdeck fixture snapshots > owned CSS (structure + layouts + preset to
     rgba(0,0,0,.05) 54%,rgba(0,0,0,.11) 60%,rgba(0,0,0,.19) 66%,
     rgba(0,0,0,.29) 72%,rgba(0,0,0,.40) 78%,rgba(0,0,0,.52) 84%,
     rgba(0,0,0,.64) 90%,rgba(0,0,0,.75) 96%,rgba(0,0,0,.82) 100%)); }
-/* Slots over a full-bleed image carry their own shadow (the top scrim is gone). */
+/* Slots over a full-bleed image carry their own shadow (the top scrim is gone).
+   One soft shadow, not two — a tight second shadow doubled the glyph edge into a
+   faint "ghost" ring over bright sky. */
 .sd-layout-cover-image :is(.sd-slide-header,.sd-slide-footer,.sd-slide-pagination){
-  text-shadow:0 1px 12px rgba(0,0,0,.7),0 0 4px rgba(0,0,0,.5); }
+  text-shadow:0 2px 16px rgba(0,0,0,.8); }
 .sd-layout-cover-image .sd-content{ position:relative; z-index:3; }
 ",
 }
