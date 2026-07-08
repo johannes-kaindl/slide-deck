@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
+### Changed (BREAKING)
+- Design system: modular type scale (ratio 1.25), spacing tokens, vertical rhythm, alignment axioms (lists never line-centered; hero layouts center blocks). Existing decks render differently (better).
+- Built-in themes replaced: shiro 白 (new default, light), kuro 黒, sumi 墨, kairo 回路, kurenai 紅. Legacy keys (default, dark, serif, high-contrast) resolve silently via aliases.
+- Dark built-ins now use a real dark highlight.js scheme and mermaid "dark" (fixes light mermaid on dark themes).
+- User themes inherit code/mermaid scheme from shiro; new optional character tokens (see THEMING-GUIDE).
+- LLM deck prompts: hero layouts restricted to sparse content, bullet budgets, kicker convention.
 
 ## [0.4.0] — 2026-06-30
 

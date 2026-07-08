@@ -87,6 +87,10 @@ export function renderMarkdown(input: RenderInput): RenderedSlide {
     return `<span class="sd-missing-embed">⟪ ${md.utils.escapeHtml(trimmed)} ⟫</span>`;
   });
 
-  const html = md.render(preprocessed);
+  // Bind an inline element (e.g. a KaTeX "→") to the code chip that follows it:
+  // a chain like `a` → `b` must never break AFTER the arrow, or the arrow's
+  // target starts a line alone ("orphaned arrow"). Chips themselves are
+  // nowrap via CSS; the joining space becomes non-breaking here.
+  const html = md.render(preprocessed).replace(/(<\/span>) +(<code)/g, "$1&nbsp;$2");
   return { html, warnings };
 }

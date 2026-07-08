@@ -22,47 +22,88 @@ export function layoutFor(id: string): LayoutSpec {
 export const LAYOUTS_CSS = `
 .sd-region{ min-width:0; min-height:0; }
 
-/* multi-column: title spans all columns */
-.sd-layout-two-column .sd-content{ display:grid; grid-template-columns:1fr 1fr; gap:48px; align-content:start; }
-.sd-layout-columns-3 .sd-content{ display:grid; grid-template-columns:repeat(3,1fr); gap:36px; align-content:start; }
+/* multi-column: title spans all columns; gaps from the space scale */
+.sd-layout-two-column .sd-content{ display:grid; grid-template-columns:1fr 1fr; gap:var(--sd-space-l,1.5em); align-content:start; }
+.sd-layout-columns-3 .sd-content{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sd-space-m,1em); align-content:start; }
 .sd-layout-two-column .sd-region-title,
 .sd-layout-columns-3 .sd-region-title{ grid-column:1/-1; }
 
-/* centered hero/divider templates */
+/* ── Hero/divider templates. Axiom 2: center the BLOCK, never the line —
+   headings/paragraphs may center; lists/code/callouts stay start-aligned and
+   are centered as a block. Axiom 3: content layouts keep a left edge (no rules needed). ── */
 .sd-layout-title .sd-content,
 .sd-layout-section .sd-content,
 .sd-layout-quote .sd-content,
 .sd-layout-stat .sd-content{ display:flex; flex-direction:column; justify-content:center; align-items:flex-start; }
 .sd-layout-title .sd-content,
 .sd-layout-section .sd-content,
-.sd-layout-quote .sd-content{ align-items:center; text-align:center; }
-.sd-layout-quote .sd-region{ font-size:1.4em; font-style:italic; max-width:80%; }
-.sd-layout-section .sd-region{ font-size:1.2em; }
-.sd-layout-title h1{ font-size:3em; }
+.sd-layout-quote .sd-content{ align-items:center; }
+.sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-layout-quote .sd-region{ text-align:center; max-width:85%; }
+/* Optical center: exact geometric centering reads as "hanging" — lift the
+   hero block slightly above the middle (padding participates in centering). */
+.sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-cover-empty .sd-region{ padding-bottom:var(--sd-space-2xl,3.5em); }
+/* Kicker pattern (design template): the eyebrow renders ABOVE the title.
+   flex+order is display-only — DOM order (h1 then h2) stays untouched. */
+.sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-layout-cover-image .sd-region,.sd-cover-empty .sd-region{ display:flex; flex-direction:column; }
+.sd-layout-title .sd-region > h2,.sd-layout-section .sd-region > h2,.sd-layout-cover-image .sd-region > h2,.sd-cover-empty .sd-region > h2{
+  order:-1; margin-top:0; margin-bottom:var(--sd-space-xs,.5em); }
+/* Hero paragraphs balance their line breaks (no single-word orphans). */
+.sd-layout-title .sd-region p,.sd-layout-section .sd-region p,.sd-cover-empty .sd-region p{ text-wrap:balance; }
+.sd-layout-title .sd-region :is(ul,ol),.sd-layout-section .sd-region :is(ul,ol),.sd-layout-quote .sd-region :is(ul,ol){
+  text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
+.sd-layout-title .sd-region :is(pre,.sd-callout),.sd-layout-section .sd-region :is(pre,.sd-callout),.sd-layout-quote .sd-region :is(pre,.sd-callout){ text-align:start; }
 
-/* stat: oversized lead number */
-.sd-layout-stat h1{ font-size:var(--sd-stat-size,4.5em); line-height:1; margin:0; }
+/* display role on hero titles */
+.sd-layout-title h1,.sd-layout-section h1,.sd-layout-cover-image h1{ font-size:var(--sd-size-display,2.44em); }
+
+/* eyebrow: h2 in hero context is a small tracked kicker, not a heading */
+.sd-layout-title h2,.sd-layout-section h2,.sd-layout-cover-image h2{
+  font-family:var(--sd-eyebrow-font,var(--sd-font)); font-size:var(--sd-size-eyebrow,.68em);
+  font-weight:600; font-style:normal; text-transform:uppercase;
+  letter-spacing:var(--sd-eyebrow-tracking,.14em); color:var(--sd-eyebrow-fg,var(--sd-accent));
+  line-height:var(--sd-lh-heading,1.2); }
+
+/* quote keeps its serif voice on the scale. The whole region is a centered,
+   start-aligned fit-content block — quote and attribution share a left edge. */
+.sd-layout-quote .sd-region{ font-size:var(--sd-size-h2,1.25em); font-style:italic; max-width:85%; width:fit-content; text-align:start; }
+/* The blockquote IS the quote: full ink, bar hugging the text. Any paragraph
+   after it is the attribution — the small muted meta voice, aligned to the
+   quote's TEXT edge (bar 3px + 1em padding). */
+.sd-layout-quote .sd-region blockquote{ color:var(--sd-fg); }
+.sd-layout-quote .sd-region blockquote ~ p{ font-family:var(--sd-eyebrow-font,var(--sd-font)); font-size:.75em;
+  font-style:normal; letter-spacing:.08em; color:var(--sd-muted,inherit);
+  padding-left:calc(var(--sd-space-m,1em) / 0.75 + 3px); }
+
+/* stat: oversized lead number as a deliberate accent moment, caption tightly coupled */
+.sd-layout-stat h1{ font-size:var(--sd-stat-size,4.5em); line-height:1; color:var(--sd-stat-fg,var(--sd-accent)); }
+.sd-layout-stat .sd-region > h1 + *{ margin-top:var(--sd-space-xs,.5em); }
 
 /* image-focus: media-dominant — the media fill is handled by .sd-has-media
-   (structure.css); here we only center an optional title/caption. */
+   (structure.css); here we only center an optional title/caption. Axiom 1: the
+   text-align:center is a BLOCK center — lists stay start-aligned (see carve-out below). */
 .sd-layout-image-focus .sd-content{ text-align:center; }
+.sd-layout-image-focus .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
 
-/* cover-image: title overlays the full-bleed background, anchored bottom-left */
+/* cover-image: title overlays the full-bleed background, anchored bottom-left,
+   with clearance above the footer zone */
 .sd-layout-cover-image .sd-content{ display:flex; flex-direction:column; justify-content:flex-end; }
-/* cover-image without an image (.sd-cover-empty, set by render-dom): center the
-   title instead of stranding it at the bottom of an empty slide. */
+.sd-layout-cover-image .sd-region{ padding-bottom:var(--sd-space-m,1em); }
 .sd-cover-empty .sd-content{ justify-content:center; align-items:center; text-align:center; }
+.sd-cover-empty .sd-region{ text-align:center; max-width:85%; }
+.sd-cover-empty .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
 
 /* density modifiers (combine with any layout) */
-.sd-mod-compact .sd-content{ font-size:var(--sd-compact-scale,0.82em); line-height:1.25; }
-.sd-mod-compact h1{ font-size:1.7em; margin:0 0 .25em; }
-.sd-mod-compact h2{ font-size:1.3em; margin:0 0 .25em; }
-.sd-mod-compact p{ margin:.3em 0; }
-.sd-mod-compact li{ margin:.08em 0; }
+.sd-mod-compact .sd-content{ font-size:var(--sd-compact-scale,0.82em); line-height:1.3; }
+.sd-mod-compact h1{ font-size:1.5em; }
+.sd-mod-compact h2{ font-size:1.1em; }
+.sd-mod-compact .sd-region > * + *{ margin-top:var(--sd-space-xs,.5em); }
+.sd-mod-compact li + li{ margin-top:0; }
 .sd-mod-code-heavy pre.hljs{ font-size:1em; }
 
-/* compose-center: vertically center sparse, non-overflowing content */
-.sd-compose-center:not(.sd-layout-two-column):not(.sd-layout-columns-3) .sd-content{ display:flex; flex-direction:column; justify-content:center; }
-.sd-compose-center.sd-layout-two-column .sd-content,
-.sd-compose-center.sd-layout-columns-3 .sd-content{ align-content:center; }
+/* compose-center: vertically center sparse, non-overflowing content — but only
+   on TITLE-LESS slides. A slide with an h1 keeps its title on the fixed top
+   baseline (titles must not jump between slides); spare room runs out below. */
+.sd-compose-center:not(.sd-layout-two-column):not(.sd-layout-columns-3):not(:has(h1)) .sd-content{ display:flex; flex-direction:column; justify-content:center; }
+.sd-compose-center.sd-layout-two-column:not(:has(h1)) .sd-content,
+.sd-compose-center.sd-layout-columns-3:not(:has(h1)) .sd-content{ align-content:center; }
 `;

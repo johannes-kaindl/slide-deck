@@ -45,7 +45,11 @@ async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnin
       // mermaid injects an inline max-width on the <svg> that caps it small and
       // overrides the stylesheet — drop it so the media-cell CSS (width/height:100%)
       // can scale the diagram to fill its area.
-      slots[i].querySelector("svg")?.style.removeProperty("max-width");
+      const svgEl = slots[i].querySelector("svg");
+      svgEl?.style.removeProperty("max-width");
+      // Top-align the diagram in its media cell (default xMidYMid floats it
+      // vertically centered with a gap to the title above).
+      svgEl?.setAttribute("preserveAspectRatio", "xMidYMin meet");
     } catch {
       slots[i].textContent = "⚠ Mermaid error";
       warnings.push({ slideIndex, kind: "mermaid-error", message: "Mermaid diagram failed to parse" });
@@ -60,7 +64,12 @@ export async function renderDeckToContainer(
   const geo = geometryFor(deck.directives.aspect);
   const entry = resolveTheme(registry, deck.directives.theme);
   const minScale = deck.directives.minFontPx / entry.baseFontPx;
-  mermaid.initialize({ startOnLoad: false, theme: entry.mermaid });
+  // Built-ins carry token-derived themeVariables (mermaid inlines colors into
+  // its SVG — CSS custom properties can't reach it); user themes fall back to
+  // the named mermaid theme as before.
+  mermaid.initialize(entry.mermaidVars
+    ? { startOnLoad: false, theme: "base", themeVariables: entry.mermaidVars }
+    : { startOnLoad: false, theme: entry.mermaid });
   const warnings: Warning[] = [];
   warnings.push(...collectDeckWarnings(deck, registry));
   container.replaceChildren();

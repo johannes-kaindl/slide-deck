@@ -108,7 +108,9 @@ export class GenerateDeckView extends ItemView {
     themeRow.createEl("label", { text: t("deck.modal.theme") });
     this.themeSel = themeRow.createEl("select");
     for (const e of this.plugin.themeStore.getThemes()) this.themeSel.createEl("option", { value: e.key, text: e.label ?? e.key });
-    this.themeSel.value = this.plugin.settings.defaultTheme;
+    // Resolve through the theme store — a legacy/alias/unknown persisted default (or a stale
+    // 0.4.x key that slipped past the settings migration) must still land on a real <option>.
+    this.themeSel.value = this.plugin.themeStore.resolve(this.plugin.settings.defaultTheme).key;
 
     this.existsBox = contentEl.createDiv();
     this.deckHintEl = contentEl.createDiv({ cls: "sd-gen-hint" });

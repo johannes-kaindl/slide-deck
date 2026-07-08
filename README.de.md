@@ -13,9 +13,9 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 ## Funktionen
 
 - **Theme-Isolation** — Folien werden in einem sandboxed iframe gerendert, sodass das aktive Obsidian-Theme niemals in die Vorschau oder die Exporte durchsickert. Ein Deck sieht unabhängig vom Vault-Theme identisch aus.
-- **Vier eingebaute Themes** — `default` (hell), `dark`, `serif`, `high-contrast` — über den `theme:`-Frontmatter-Schlüssel je Deck gewählt; jedes Theme bringt ein passendes Code-Highlighting- und Mermaid-Theme mit.
+- **Fünf eingebaute Themes** — das Nordstern-Set: `shiro` 白 (hell, Standard), `kuro` 黒 (dunkel), `sumi` 墨 (echtes Schwarz, high-contrast), `kairo` 回路 (dunkel, cyan), `kurenai` 紅 (dunkel, rot) — über den `theme:`-Frontmatter-Schlüssel je Deck gewählt; jedes Theme bringt ein passendes Code-Highlighting- und Mermaid-Theme mit. Alte 0.4.x-Schlüssel (`default`, `dark`, `serif`, `high-contrast`) funktionieren weiterhin — sie lösen sich still zu ihrem Nordstern-Nachfolger auf.
 - **Live-Theme-Wechsler** — die Vorschau-Toolbar enthält ein Theme-Dropdown zum ephemeren Ausprobieren, eine Quell-Anzeige (`aus Frontmatter` / `aus Standard` / `● nicht gespeichert`), die zeigt, woher das aktive Theme stammt, und eine Schaltfläche **Setzen**, die `theme:` direkt in die Frontmatter der Notiz schreibt. Die Frontmatter ist die maßgebliche Quelle; der Einstellungs-Standard gilt nur für Notizen ohne `theme:`-Schlüssel.
-- **Eigene Themes** — `.css`-Dateien in einen konfigurierbaren Themes-Ordner (Standard `Slide-Deck-Themes/`) ablegen; der `theme:`-Frontmatter-Wert entspricht dem Dateinamen ohne `.css`-Erweiterung. Jede Datei enthält einen `--sd-*`-Token-Block mit optionalem zusätzlichem CSS; eigene Themes erben das Code-Highlighting- und Mermaid-Theme des eingebauten `default`-Themes. Der Einstellungs-Tab zeigt alle gültigen Theme-Schlüssel live an.
+- **Eigene Themes** — `.css`-Dateien in einen konfigurierbaren Themes-Ordner (Standard `Slide-Deck-Themes/`) ablegen; der `theme:`-Frontmatter-Wert entspricht dem Dateinamen ohne `.css`-Erweiterung. Jede Datei enthält einen `--sd-*`-Token-Block mit optionalem zusätzlichem CSS obendrauf auf das Design-System des Plugins (Type-Scale, Abstände, Rhythmus) — ein 7-Token-Theme sieht schon fertig aus; eigene Themes erben das Code-Highlighting- und Mermaid-Theme des `shiro`-Themes, sofern nicht überschrieben. Siehe den [Theming-Guide](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/themes/THEMING-GUIDE.md). Der Einstellungs-Tab zeigt alle gültigen Theme-Schlüssel live an.
 - **Theme-Import/Export** — die Schaltfläche **Im Finder öffnen** zeigt den Themes-Ordner, sodass Dateien hineingezogen werden können; **Theme als .css exportieren** schreibt jedes Theme als editierbare `.css`-Ausgangsdatei; ein Schalter blendet den Themes-Ordner im Obsidian-Datei-Explorer aus.
 - **Neun Folien-Templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image` — je Folie per Layout-Direktive (ein HTML-Kommentar) gesetzt; Spalten werden per Spalten-Direktive getrennt, und in Mehrspalten-Templates spannt die führende Überschrift über alle Spalten. Siehe den [Layout-Leitfaden](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/layouts.de.md).
 - **Kombinierbare Dichte-Modifier** — `compact` (engere Typografie) oder `code-heavy` (kleinerer Code) lassen sich in derselben Layout-Direktive an jedes Template anhängen.
@@ -83,7 +83,7 @@ cp main.js manifest.json styles.css /pfad/zum/vault/.obsidian/plugins/slide-deck
 
 | Einstellung | Schlüssel | Standard | Beschreibung |
 |---|---|---|---|
-| Standard-Preset | `defaultTheme` | `default` | Preset, wenn eine Notiz keine `theme`-Frontmatter-Direktive hat |
+| Standard-Preset | `defaultTheme` | `shiro` | Preset, wenn eine Notiz keine `theme`-Frontmatter-Direktive hat |
 | Mindest-Schriftgröße Body (px) | `minFontPx` | `24` | Lesbarkeits-Untergrenze — Folien, die kleineren Text bräuchten, werden als überlaufend markiert |
 | Bild-Export-Skalierung | `imageScale` | `2` | Pixel-Multiplikator für PNG-Export (`2` = 2×, scharf auf HiDPI) |
 | Eigenes CSS | `customCss` | *(leer)* | CSS, das in Vorschau und Exporten an die Deck-Styles angehängt wird, für Branding oder Anpassungen |
@@ -97,7 +97,7 @@ Ein YAML-Frontmatter-Block am Anfang der Notiz steuert präsentationsweite Einst
 
 ```yaml
 ---
-theme: dark
+theme: kuro
 aspect: 16:9
 minFontPx: 24
 header: Mein Vortrag
@@ -108,7 +108,7 @@ paginate: true
 
 | Schlüssel | Werte | Beschreibung |
 |---|---|---|
-| `theme` | `default` · `dark` · `serif` · `high-contrast` · *eigener-Theme-Schlüssel* | Visuelles Preset; eigener Theme-Schlüssel = Dateiname der `.css`-Datei ohne Erweiterung |
+| `theme` | `shiro` · `kuro` · `sumi` · `kairo` · `kurenai` · *eigener-Theme-Schlüssel* (alte Schlüssel `default`/`dark`/`serif`/`high-contrast` funktionieren weiterhin) | Visuelles Preset; eigener Theme-Schlüssel = Dateiname der `.css`-Datei ohne Erweiterung |
 | `aspect` | `16:9` (Standard), `4:3` | Canvas-Größe: 1280×720 (16:9) oder 960×720 (4:3) |
 | `minFontPx` | jede positive Zahl | Lesbarkeits-Untergrenze je Notiz; überschreibt die Plugin-Einstellung |
 | `header` | beliebiger Text | Schwebender Header-Slot auf jeder Folie |
@@ -125,7 +125,7 @@ Eine Zeile, die **nur `---`** enthält, trennt Folien:
 
 ```markdown
 ---
-theme: default
+theme: shiro
 aspect: 16:9
 ---
 

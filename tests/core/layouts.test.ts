@@ -35,8 +35,12 @@ describe("LAYOUTS_CSS", () => {
 
 describe("LAYOUTS_CSS compose-center", () => {
   it("centers single-column composed content with flex (excluding grids)", () => {
-    expect(LAYOUTS_CSS).toContain(".sd-compose-center:not(.sd-layout-two-column):not(.sd-layout-columns-3) .sd-content");
+    expect(LAYOUTS_CSS).toContain(".sd-compose-center:not(.sd-layout-two-column):not(.sd-layout-columns-3):not(:has(h1)) .sd-content");
     expect(LAYOUTS_CSS).toContain("justify-content:center");
+  });
+  it("titled slides keep a fixed top baseline — compose-center only centers title-less content", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-compose-center.sd-layout-two-column:not(:has(h1)) .sd-content");
+    expect(LAYOUTS_CSS).toContain(".sd-compose-center.sd-layout-columns-3:not(:has(h1)) .sd-content");
   });
   it("centers grid composed content via align-content", () => {
     expect(LAYOUTS_CSS).toContain(".sd-layout-columns-3 .sd-content");
@@ -55,5 +59,56 @@ describe("LAYOUTS_CSS templates & modifiers", () => {
   it("defines combinable modifiers", () => {
     expect(LAYOUTS_CSS).toContain(".sd-mod-compact");
     expect(LAYOUTS_CSS).toContain(".sd-mod-code-heavy");
+  });
+});
+
+describe("alignment axioms & eyebrow context", () => {
+  it("eyebrow renders ABOVE the title on hero layouts (kicker pattern)", () => {
+    expect(LAYOUTS_CSS).toContain("order:-1");
+    expect(LAYOUTS_CSS).toContain(".sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-layout-cover-image .sd-region,.sd-cover-empty .sd-region{ display:flex; flex-direction:column; }");
+  });
+  it("quote layout: the whole region is a centered start-aligned block — quote and attribution share a left edge", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-layout-quote .sd-region{ font-size:var(--sd-size-h2,1.25em); font-style:italic; max-width:85%; width:fit-content; text-align:start; }");
+    expect(LAYOUTS_CSS).toContain(".sd-layout-quote .sd-region blockquote{ color:var(--sd-fg); }");
+    // attribution aligns with the quote's TEXT edge — /0.75 compensates its
+    // own smaller font-size so the absolute indent matches the blockquote's
+    expect(LAYOUTS_CSS).toContain("padding-left:calc(var(--sd-space-m,1em) / 0.75 + 3px)");
+  });
+  it("stat: number couples tightly to its caption and may take the accent", () => {
+    expect(LAYOUTS_CSS).toContain("color:var(--sd-stat-fg,var(--sd-accent))");
+    expect(LAYOUTS_CSS).toContain(".sd-layout-stat .sd-region > h1 + *{ margin-top:var(--sd-space-xs,.5em); }");
+  });
+  it("hero paragraphs balance their line breaks (no single-word orphans)", () => {
+    expect(LAYOUTS_CSS).toContain("text-wrap:balance");
+  });
+  it("cover content keeps clearance above the footer zone", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-layout-cover-image .sd-region{ padding-bottom:var(--sd-space-m,1em); }");
+  });
+  it("hero blocks sit at the optical center (lifted above geometric middle)", () => {
+    expect(LAYOUTS_CSS).toContain(
+      ".sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-cover-empty .sd-region{ padding-bottom:var(--sd-space-2xl,3.5em); }"
+    );
+  });
+  it("hero layouts center the block, never list lines (axiom 2)", () => {
+    expect(LAYOUTS_CSS).toContain(
+      ".sd-layout-title .sd-region :is(ul,ol),.sd-layout-section .sd-region :is(ul,ol),.sd-layout-quote .sd-region :is(ul,ol){\n  text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }"
+    );
+    expect(LAYOUTS_CSS).toContain("max-width:85%");
+  });
+  it("image-focus and cover-empty center the block, never list lines (axiom 1)", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-layout-image-focus .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }");
+    expect(LAYOUTS_CSS).toContain(".sd-cover-empty .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }");
+  });
+  it("h1 on hero layouts uses the display role", () => {
+    expect(LAYOUTS_CSS).toContain(".sd-layout-title h1,.sd-layout-section h1,.sd-layout-cover-image h1{ font-size:var(--sd-size-display,2.44em); }");
+  });
+  it("h2 on hero layouts becomes a small tracked eyebrow", () => {
+    expect(LAYOUTS_CSS).toContain("font-size:var(--sd-size-eyebrow,.68em)");
+    expect(LAYOUTS_CSS).toContain("letter-spacing:var(--sd-eyebrow-tracking,.14em)");
+    expect(LAYOUTS_CSS).toContain("color:var(--sd-eyebrow-fg,var(--sd-accent))");
+  });
+  it("column gaps come from the space scale", () => {
+    expect(LAYOUTS_CSS).toContain("gap:var(--sd-space-l,1.5em)");
+    expect(LAYOUTS_CSS).toContain("gap:var(--sd-space-m,1em)");
   });
 });

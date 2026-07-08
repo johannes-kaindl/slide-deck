@@ -1,0 +1,475 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`testdeck fixture snapshots > owned CSS (structure + layouts + preset tokens) is stable 1`] = `
+{
+  "layouts": "
+.sd-region{ min-width:0; min-height:0; }
+
+/* multi-column: title spans all columns; gaps from the space scale */
+.sd-layout-two-column .sd-content{ display:grid; grid-template-columns:1fr 1fr; gap:var(--sd-space-l,1.5em); align-content:start; }
+.sd-layout-columns-3 .sd-content{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sd-space-m,1em); align-content:start; }
+.sd-layout-two-column .sd-region-title,
+.sd-layout-columns-3 .sd-region-title{ grid-column:1/-1; }
+
+/* ── Hero/divider templates. Axiom 2: center the BLOCK, never the line —
+   headings/paragraphs may center; lists/code/callouts stay start-aligned and
+   are centered as a block. Axiom 3: content layouts keep a left edge (no rules needed). ── */
+.sd-layout-title .sd-content,
+.sd-layout-section .sd-content,
+.sd-layout-quote .sd-content,
+.sd-layout-stat .sd-content{ display:flex; flex-direction:column; justify-content:center; align-items:flex-start; }
+.sd-layout-title .sd-content,
+.sd-layout-section .sd-content,
+.sd-layout-quote .sd-content{ align-items:center; }
+.sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-layout-quote .sd-region{ text-align:center; max-width:85%; }
+/* Optical center: exact geometric centering reads as "hanging" — lift the
+   hero block slightly above the middle (padding participates in centering). */
+.sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-cover-empty .sd-region{ padding-bottom:var(--sd-space-2xl,3.5em); }
+/* Kicker pattern (design template): the eyebrow renders ABOVE the title.
+   flex+order is display-only — DOM order (h1 then h2) stays untouched. */
+.sd-layout-title .sd-region,.sd-layout-section .sd-region,.sd-layout-cover-image .sd-region,.sd-cover-empty .sd-region{ display:flex; flex-direction:column; }
+.sd-layout-title .sd-region > h2,.sd-layout-section .sd-region > h2,.sd-layout-cover-image .sd-region > h2,.sd-cover-empty .sd-region > h2{
+  order:-1; margin-top:0; margin-bottom:var(--sd-space-xs,.5em); }
+/* Hero paragraphs balance their line breaks (no single-word orphans). */
+.sd-layout-title .sd-region p,.sd-layout-section .sd-region p,.sd-cover-empty .sd-region p{ text-wrap:balance; }
+.sd-layout-title .sd-region :is(ul,ol),.sd-layout-section .sd-region :is(ul,ol),.sd-layout-quote .sd-region :is(ul,ol){
+  text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
+.sd-layout-title .sd-region :is(pre,.sd-callout),.sd-layout-section .sd-region :is(pre,.sd-callout),.sd-layout-quote .sd-region :is(pre,.sd-callout){ text-align:start; }
+
+/* display role on hero titles */
+.sd-layout-title h1,.sd-layout-section h1,.sd-layout-cover-image h1{ font-size:var(--sd-size-display,2.44em); }
+
+/* eyebrow: h2 in hero context is a small tracked kicker, not a heading */
+.sd-layout-title h2,.sd-layout-section h2,.sd-layout-cover-image h2{
+  font-family:var(--sd-eyebrow-font,var(--sd-font)); font-size:var(--sd-size-eyebrow,.68em);
+  font-weight:600; font-style:normal; text-transform:uppercase;
+  letter-spacing:var(--sd-eyebrow-tracking,.14em); color:var(--sd-eyebrow-fg,var(--sd-accent));
+  line-height:var(--sd-lh-heading,1.2); }
+
+/* quote keeps its serif voice on the scale. The whole region is a centered,
+   start-aligned fit-content block — quote and attribution share a left edge. */
+.sd-layout-quote .sd-region{ font-size:var(--sd-size-h2,1.25em); font-style:italic; max-width:85%; width:fit-content; text-align:start; }
+/* The blockquote IS the quote: full ink, bar hugging the text. Any paragraph
+   after it is the attribution — the small muted meta voice, aligned to the
+   quote's TEXT edge (bar 3px + 1em padding). */
+.sd-layout-quote .sd-region blockquote{ color:var(--sd-fg); }
+.sd-layout-quote .sd-region blockquote ~ p{ font-family:var(--sd-eyebrow-font,var(--sd-font)); font-size:.75em;
+  font-style:normal; letter-spacing:.08em; color:var(--sd-muted,inherit);
+  padding-left:calc(var(--sd-space-m,1em) / 0.75 + 3px); }
+
+/* stat: oversized lead number as a deliberate accent moment, caption tightly coupled */
+.sd-layout-stat h1{ font-size:var(--sd-stat-size,4.5em); line-height:1; color:var(--sd-stat-fg,var(--sd-accent)); }
+.sd-layout-stat .sd-region > h1 + *{ margin-top:var(--sd-space-xs,.5em); }
+
+/* image-focus: media-dominant — the media fill is handled by .sd-has-media
+   (structure.css); here we only center an optional title/caption. Axiom 1: the
+   text-align:center is a BLOCK center — lists stay start-aligned (see carve-out below). */
+.sd-layout-image-focus .sd-content{ text-align:center; }
+.sd-layout-image-focus .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
+
+/* cover-image: title overlays the full-bleed background, anchored bottom-left,
+   with clearance above the footer zone */
+.sd-layout-cover-image .sd-content{ display:flex; flex-direction:column; justify-content:flex-end; }
+.sd-layout-cover-image .sd-region{ padding-bottom:var(--sd-space-m,1em); }
+.sd-cover-empty .sd-content{ justify-content:center; align-items:center; text-align:center; }
+.sd-cover-empty .sd-region{ text-align:center; max-width:85%; }
+.sd-cover-empty .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
+
+/* density modifiers (combine with any layout) */
+.sd-mod-compact .sd-content{ font-size:var(--sd-compact-scale,0.82em); line-height:1.3; }
+.sd-mod-compact h1{ font-size:1.5em; }
+.sd-mod-compact h2{ font-size:1.1em; }
+.sd-mod-compact .sd-region > * + *{ margin-top:var(--sd-space-xs,.5em); }
+.sd-mod-compact li + li{ margin-top:0; }
+.sd-mod-code-heavy pre.hljs{ font-size:1em; }
+
+/* compose-center: vertically center sparse, non-overflowing content — but only
+   on TITLE-LESS slides. A slide with an h1 keeps its title on the fixed top
+   baseline (titles must not jump between slides); spare room runs out below. */
+.sd-compose-center:not(.sd-layout-two-column):not(.sd-layout-columns-3):not(:has(h1)) .sd-content{ display:flex; flex-direction:column; justify-content:center; }
+.sd-compose-center.sd-layout-two-column:not(:has(h1)) .sd-content,
+.sd-compose-center.sd-layout-columns-3:not(:has(h1)) .sd-content{ align-content:center; }
+",
+  "presets": {
+    "kairo": ".sd-slide{ --sd-bg:#0d0f10; --sd-fg:#e7eae6; --sd-accent:#4ac8d8; --sd-code-bg:#11181a; --sd-font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; --sd-heading-font:"EB Garamond", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; --sd-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; --sd-muted:#8ea0a2; --sd-surface:#11181a; --sd-callout-fg:#e7eae6; --sd-display-style:italic; --sd-display-weight:500; --sd-display-tracking:-0.02em; --sd-eyebrow-font:var(--sd-mono); --sd-base:28px; }
+.sd-slide{
+  background-color: var(--sd-bg);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
+    radial-gradient(125% 85% at 16% -8%, rgba(74,200,216,0.12) 0%, transparent 46%),
+    repeating-linear-gradient(0deg, rgba(74,200,216,0.025) 0 1px, transparent 1px 4px);
+  background-size: 150px 150px, cover, cover;
+  background-position: 0 0, center, center;
+  background-repeat: repeat, no-repeat, repeat;
+  box-shadow: inset 0 0 240px 26px rgba(0,0,0,0.5);
+}
+.sd-slide h1{ text-shadow: 0 0 34px rgba(74,200,216,0.12); }
+.sd-slide pre.hljs{ border:1px solid rgba(74,200,216,0.22); border-left:3px solid var(--sd-accent); }
+.sd-slide .sd-callout{ border-left-color:var(--sd-accent); }
+.sd-slide .sd-callout-note{ border-left-color:#7ab8c4; background:rgba(122,184,196,0.07); } .sd-slide .sd-callout-note .sd-callout-title{ color:#7ab8c4; }
+.sd-slide .sd-callout-info{ border-left-color:#4ac8d8; background:rgba(74,200,216,0.08); } .sd-slide .sd-callout-info .sd-callout-title{ color:#4ac8d8; }
+.sd-slide .sd-callout-tip{ border-left-color:#8bbf87; background:rgba(139,191,135,0.07); } .sd-slide .sd-callout-tip .sd-callout-title{ color:#8bbf87; }
+.sd-slide .sd-callout-warning{ border-left-color:#ffb442; background:rgba(255,180,66,0.07); } .sd-slide .sd-callout-warning .sd-callout-title{ color:#ffb442; }
+.sd-slide .sd-callout-danger{ border-left-color:#e8455c; background:rgba(212,32,58,0.08); } .sd-slide .sd-callout-danger .sd-callout-title{ color:#e8455c; }
+",
+    "kurenai": ".sd-slide{ --sd-bg:#100e0c; --sd-fg:#ece4d3; --sd-accent:#e8455c; --sd-code-bg:#1b1411; --sd-font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; --sd-heading-font:"EB Garamond", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; --sd-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; --sd-muted:#a99e89; --sd-surface:#181210; --sd-callout-fg:#ece4d3; --sd-display-style:italic; --sd-display-weight:500; --sd-display-tracking:-0.02em; --sd-eyebrow-font:var(--sd-mono); --sd-base:28px; }
+.sd-slide{
+  background-color: var(--sd-bg);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
+    radial-gradient(125% 85% at 16% -8%, rgba(212,32,58,0.14) 0%, transparent 46%),
+    radial-gradient(100% 70% at 85% 110%, rgba(212,32,58,0.06) 0%, transparent 55%);
+  background-size: 150px 150px, cover, cover;
+  background-position: 0 0, center, center;
+  background-repeat: repeat, no-repeat, no-repeat;
+  box-shadow: inset 0 0 240px 26px rgba(0,0,0,0.5);
+}
+.sd-slide h1{ text-shadow: 0 0 34px rgba(212,32,58,0.14); }
+.sd-slide pre.hljs{ border:1px solid rgba(232,69,92,0.24); border-left:3px solid var(--sd-accent); }
+.sd-slide .sd-callout{ border-left-color:var(--sd-accent); }
+.sd-slide .sd-callout-note{ border-left-color:#7ab8c4; background:rgba(122,184,196,0.07); } .sd-slide .sd-callout-note .sd-callout-title{ color:#7ab8c4; }
+.sd-slide .sd-callout-info{ border-left-color:#4ac8d8; background:rgba(74,200,216,0.07); } .sd-slide .sd-callout-info .sd-callout-title{ color:#4ac8d8; }
+.sd-slide .sd-callout-tip{ border-left-color:#8bbf87; background:rgba(139,191,135,0.07); } .sd-slide .sd-callout-tip .sd-callout-title{ color:#8bbf87; }
+.sd-slide .sd-callout-warning{ border-left-color:#ffb442; background:rgba(255,180,66,0.07); } .sd-slide .sd-callout-warning .sd-callout-title{ color:#ffb442; }
+.sd-slide .sd-callout-danger{ border-left-color:#e8455c; background:rgba(212,32,58,0.1); } .sd-slide .sd-callout-danger .sd-callout-title{ color:#e8455c; }
+",
+    "kuro": ".sd-slide{ --sd-bg:#100e0c; --sd-fg:#ece4d3; --sd-accent:#c79a4a; --sd-code-bg:#1b1712; --sd-font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; --sd-heading-font:"EB Garamond", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; --sd-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; --sd-muted:#a99e89; --sd-surface:#17140f; --sd-callout-fg:#ece4d3; --sd-display-style:italic; --sd-display-weight:500; --sd-display-tracking:-0.02em; --sd-eyebrow-font:var(--sd-mono); --sd-base:28px; }
+.sd-slide {
+  position: relative;
+  background-color: var(--sd-bg);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
+    radial-gradient(125% 85% at 16% -8%, rgba(199, 154, 74, 0.16) 0%, transparent 48%),
+    linear-gradient(180deg, rgba(16,14,12,0.74) 0%, rgba(16,14,12,0.82) 100%),
+    url("data:image/jpeg;base64,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");
+  background-size: 150px 150px, cover, cover, cover;
+  background-position: 0 0, center, center, center;
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+  box-shadow: inset 0 0 240px 26px rgba(0,0,0,0.5);
+}
+.sd-slide h1{ text-shadow: 0 0 34px rgba(199, 154, 74, 0.16); }
+.sd-slide .sd-callout-note{ border-left-color:#8c9e96; background:rgba(140,158,150,0.08); }
+.sd-slide .sd-callout-info{ border-left-color:#8faa7e; background:rgba(143,170,126,0.09); }
+.sd-slide .sd-callout-tip{ border-left-color:#aeb072; background:rgba(174,176,114,0.09); }
+.sd-slide .sd-callout-warning{ border-left-color:#dba05c; background:rgba(219,160,92,0.08); }
+.sd-slide .sd-callout-danger{ border-left-color:#c9574a; background:rgba(201,87,74,0.09); }
+",
+    "shiro": ".sd-slide{ --sd-bg:#f7f2e8; --sd-fg:#1f1a13; --sd-accent:#7d5e26; --sd-code-bg:#efe7d6; --sd-font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; --sd-heading-font:"EB Garamond", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; --sd-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; --sd-muted:#5f574a; --sd-surface:#efe7d6; --sd-callout-fg:#1f1a13; --sd-display-style:italic; --sd-display-weight:500; --sd-display-tracking:-0.02em; --sd-eyebrow-font:var(--sd-mono); --sd-base:28px; }
+.sd-slide {
+  position: relative;
+  background-color: var(--sd-bg);
+  background-image:
+    radial-gradient(120% 80% at 16% -6%, rgba(125, 94, 38, 0.05) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(247,242,232,0.82) 0%, rgba(247,242,232,0.88) 100%),
+    url("data:image/jpeg;base64,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");
+  background-size: cover, cover, cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.sd-slide pre.hljs{ border:1px solid rgba(125,94,38,0.24); border-left:3px solid var(--sd-accent); }
+.sd-slide .sd-callout{ border-left-color:var(--sd-accent); }
+.sd-slide .sd-callout-note{ border-left-color:#5f8d96; }
+.sd-slide .sd-callout-info{ border-left-color:#2f97a6; }
+.sd-slide .sd-callout-tip{ border-left-color:#4a8c54; }
+.sd-slide .sd-callout-warning{ border-left-color:#b07d1f; }
+.sd-slide .sd-callout-danger{ border-left-color:#b54545; }
+",
+    "sumi": ".sd-slide{ --sd-bg:#000000; --sd-fg:#f4efe2; --sd-accent:#d8b264; --sd-code-bg:#0d0c0a; --sd-font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; --sd-heading-font:"EB Garamond", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; --sd-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; --sd-muted:#c2b694; --sd-surface:#0e0d0b; --sd-callout-fg:#f4efe2; --sd-display-style:italic; --sd-display-weight:500; --sd-display-tracking:-0.02em; --sd-eyebrow-font:var(--sd-mono); --sd-base:32px; }
+.sd-slide pre.hljs{ border:1px solid rgba(216,178,100,0.3); border-left:3px solid var(--sd-accent); }
+.sd-slide .sd-callout{ border-left-color:var(--sd-accent); }
+.sd-slide .sd-callout-note{ border-left-color:#8fcfdb; } .sd-slide .sd-callout-note .sd-callout-title{ color:#8fcfdb; }
+.sd-slide .sd-callout-info{ border-left-color:#6fd6e6; } .sd-slide .sd-callout-info .sd-callout-title{ color:#6fd6e6; }
+.sd-slide .sd-callout-tip{ border-left-color:#9fd49a; } .sd-slide .sd-callout-tip .sd-callout-title{ color:#9fd49a; }
+.sd-slide .sd-callout-warning{ border-left-color:#ffc25e; } .sd-slide .sd-callout-warning .sd-callout-title{ color:#ffc25e; }
+.sd-slide .sd-callout-danger{ border-left-color:#f4566c; } .sd-slide .sd-callout-danger .sd-callout-title{ color:#f4566c; }
+",
+  },
+  "structure": "
+.sd-slide{ width:var(--sd-w,1280px); height:var(--sd-h,720px); box-sizing:border-box;
+  padding:var(--sd-pad,64px); overflow:hidden; position:relative; background:var(--sd-bg); color:var(--sd-fg);
+  font-size:var(--sd-base); line-height:var(--sd-lh-body,1.45); font-family:var(--sd-font); }
+
+/* ── Type roles — modular scale, ratio 1.25 (see docs/themes/THEMING-GUIDE.md).
+   Themes override token VALUES only; the display treatment (italic serif etc.)
+   comes from --sd-display-* treatment tokens, never from theme h1/h2 rules. ── */
+.sd-slide h1{ font-family:var(--sd-heading-font); font-size:var(--sd-size-h1,1.95em);
+  line-height:var(--sd-lh-display,1.08); font-style:var(--sd-display-style,normal);
+  font-weight:var(--sd-display-weight,700); letter-spacing:var(--sd-display-tracking,normal); }
+.sd-slide h2{ font-family:var(--sd-heading-font); font-size:var(--sd-size-h2,1.25em);
+  line-height:var(--sd-lh-heading,1.2); font-weight:600; }
+.sd-slide a{ color:var(--sd-accent); text-decoration:underline; text-underline-offset:2px; }
+
+/* ── Vertical rhythm: blocks own NO margins; space comes from adjacency (owl).
+   More air before a new section, tight binding after a heading. ── */
+.sd-slide h1,.sd-slide h2,.sd-slide p,.sd-slide ul,.sd-slide ol,.sd-slide pre,.sd-slide blockquote{ margin:0; }
+.sd-region > * + *{ margin-top:var(--sd-space-s,.75em); }
+/* Panels (code, callouts) are visually heavy boxes — they breathe on both
+   sides. :where() keeps specificity flat so heading rules below still win. */
+.sd-region > * + :where(pre,.sd-callout),
+.sd-region > :where(pre,.sd-callout) + *{ margin-top:var(--sd-space-m,1em); }
+.sd-region > * + h2{ margin-top:var(--sd-space-xl,2.25em); }
+/* Headings get ~0.7× their own size as separation below, or they read as
+   line 1 of their content. The h1+h2 subtitle pair binds tighter. */
+.sd-region > h2 + *{ margin-top:var(--sd-space-m,1em); }
+.sd-region > h1 + *{ margin-top:var(--sd-space-l,1.5em); }
+.sd-region > h1 + h2{ margin-top:var(--sd-space-s,.75em); }
+.sd-slide ul,.sd-slide ol{ padding-left:1.2em; }
+/* Export-safe accent bullets: ::marker styling is dropped by the PNG export's
+   foreignObject clone (preview gold, export cream) — so bullets are real
+   ::before glyphs hanging into the list padding. Ordered lists keep ::marker. */
+.sd-slide ul{ list-style:none; }
+.sd-slide ul > li{ position:relative; }
+.sd-slide ul > li::before{ content:"•"; position:absolute; left:-1em; color:var(--sd-accent);
+  transform:scale(1.4); transform-origin:center; }
+.sd-slide li li::before{ content:"◦"; }
+.sd-slide ol > li::marker{ color:var(--sd-accent); }
+/* List items read as units: compact within (tighter line-height than body
+   prose), clear air between — otherwise a wrapped item merges with its
+   neighbour and the list looks like undifferentiated lines. */
+.sd-slide li{ margin:0; line-height:var(--sd-lh-list,1.35); }
+.sd-slide li + li{ margin-top:var(--sd-space-xs,.5em); }
+/* Nested lists: bound to their parent item and tighter than top-level items,
+   so list levels read as hierarchy instead of one undifferentiated column. */
+.sd-slide li > ul,.sd-slide li > ol{ margin-top:var(--sd-space-2xs,.25em); }
+.sd-slide li li + li{ margin-top:var(--sd-space-2xs,.25em); }
+
+/* Content fills the slide's padded area so overflow is measurable (scrollHeight > clientHeight).
+   transform-origin pins the per-slide fit-scale (set inline in render-dom) to the top-left corner. */
+.sd-content{ width:100%; height:100%; transform-origin:top left; }
+
+/* ── Code ── */
+.sd-slide pre.hljs{ font-size:.8em; padding:var(--sd-space-xs,.5em) var(--sd-space-s,.75em); border-radius:8px;
+  background:var(--sd-code-bg); overflow:hidden;
+  font-family:var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace); }
+.sd-slide :not(pre) > code{ font-family:var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace);
+  font-size:.88em; background:var(--sd-code-bg); padding:.08em .2em; border-radius:4px;
+  white-space:nowrap; }
+
+/* ── Character defaults, tokenized — a 7-token user theme looks finished out of the box. ── */
+.sd-slide blockquote{ padding:var(--sd-space-2xs,.25em) 0 var(--sd-space-2xs,.25em) var(--sd-space-m,1em);
+  border-left:3px solid var(--sd-accent); font-family:var(--sd-heading-font); font-style:italic;
+  color:var(--sd-muted,inherit); }
+.sd-slide hr{ border:none; height:2px; width:40%; margin-inline:auto;
+  background:linear-gradient(90deg,transparent,var(--sd-accent) 50%,transparent); }
+
+/* Block media: centered + contain. On a media-bearing single-region slide,
+   render-dom marks .sd-content with .sd-has-media → the media cell fills the
+   remaining vertical space via flex, so media sizing is independent of raster
+   image decode timing and never relies on (unresolved) percentage heights. */
+.sd-embed{ display:block; margin-inline:auto; max-width:100%; max-height:100%; object-fit:contain; }
+.sd-mermaid{ text-align:center; }
+.sd-mermaid svg{ display:block; margin-inline:auto; max-width:100%; max-height:100%; }
+.sd-content.sd-has-media{ display:flex; flex-direction:column; }
+.sd-content.sd-has-media > .sd-region{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+.sd-content.sd-has-media .sd-region > p:has(> img.sd-embed:only-child),
+.sd-content.sd-has-media .sd-region > .sd-media-cell,
+.sd-content.sd-has-media .sd-region > .sd-mermaid{ flex:1 1 0; min-height:0; margin:var(--sd-space-xs,.5em) 0; }
+.sd-content.sd-has-media .sd-region > p > img.sd-embed:only-child,
+.sd-content.sd-has-media .sd-region > .sd-media-cell > img.sd-embed,
+.sd-content.sd-has-media .sd-region > .sd-mermaid > svg{ width:100%; height:100%; object-fit:contain; }
+.sd-missing-embed{ color:#8a4b00; border:2px dashed #8a4b00; padding:0 .3em; border-radius:4px; }
+
+/* Callouts: Bedeutung redundant — Rahmenfarbe + Form (::before) + Label-Wort.
+   Surface/Text sind tokenisiert; dunkle Themes setzen --sd-surface/--sd-callout-fg. */
+.sd-callout{ border-left:3px solid var(--sd-callout-base,#5b6470); background:var(--sd-surface,#f4f6f8);
+  padding:var(--sd-space-xs,.5em) var(--sd-space-s,.75em); border-radius:8px; color:var(--sd-callout-fg,#16181d); }
+.sd-callout-title{ display:flex; align-items:center; gap:var(--sd-space-xs,.5em); font-weight:600; }
+.sd-callout-icon::before{ font-size:1em; }
+.sd-callout-note{ border-left-color:var(--sd-callout-note,#3b6db5); } .sd-callout-note .sd-callout-icon::before{ content:"ℹ"; }
+.sd-callout-warning{ border-left-color:var(--sd-callout-warning,#b58a1e); } .sd-callout-warning .sd-callout-icon::before{ content:"▲"; }
+.sd-callout-danger{ border-left-color:var(--sd-callout-danger,#b5443b); } .sd-callout-danger .sd-callout-icon::before{ content:"✕"; }
+.sd-callout-tip{ border-left-color:var(--sd-callout-tip,#2e8b6f); } .sd-callout-tip .sd-callout-icon::before{ content:"★"; }
+.sd-callout-info{ border-left-color:var(--sd-callout-info,#3b6db5); } .sd-callout-info .sd-callout-icon::before{ content:"ℹ"; }
+
+/* Floating slots — live in the padding margin, outside the scaled .sd-content.
+   They speak the deck's metadata voice (the eyebrow register): small, mono,
+   tracked — framing the slide instead of competing with body text. */
+.sd-slide-header,.sd-slide-footer,.sd-slide-pagination{ position:absolute; z-index:4;
+  font-size:var(--sd-slot-size,var(--sd-size-eyebrow,.68em)); color:var(--sd-slot-fg,var(--sd-muted,#6b7280));
+  font-family:var(--sd-slot-font,var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace));
+  letter-spacing:.08em; }
+.sd-slide-header{ top:24px; right:32px; text-transform:uppercase; }
+.sd-slide-footer{ bottom:24px; left:32px; }
+.sd-slide-pagination{ bottom:24px; right:32px; }
+
+/* cover-image: full-bleed background + readability scrim behind the content. */
+.sd-cover-media{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+/* Scrim: bottom-only, eased. The top band was dropped — a dark-over-photo
+   gradient bands visibly at its upper edge; the header/footer get a local
+   text-shadow instead (below), which can never band. The remaining bottom
+   scrim (behind the title block) uses ~6% stops on a quadratic opacity ramp
+   so the ramp itself stays banding-free. */
+.sd-cover-scrim{ position:absolute; inset:0; z-index:1;
+  background:var(--sd-scrim,linear-gradient(180deg,
+    transparent 0%,transparent 48%,
+    rgba(0,0,0,.05) 54%,rgba(0,0,0,.11) 60%,rgba(0,0,0,.19) 66%,
+    rgba(0,0,0,.29) 72%,rgba(0,0,0,.40) 78%,rgba(0,0,0,.52) 84%,
+    rgba(0,0,0,.64) 90%,rgba(0,0,0,.75) 96%,rgba(0,0,0,.82) 100%)); }
+/* Slots over a full-bleed image carry their own shadow (the top scrim is gone). */
+.sd-layout-cover-image :is(.sd-slide-header,.sd-slide-footer,.sd-slide-pagination){
+  text-shadow:0 1px 12px rgba(0,0,0,.7),0 0 4px rgba(0,0,0,.5); }
+.sd-layout-cover-image .sd-content{ position:relative; z-index:3; }
+",
+}
+`;
+
+exports[`testdeck fixture snapshots > renders each slide to stable HTML 1`] = `
+[
+  {
+    "html": "<img class="sd-embed" alt="IMG_8291.png" src="stub://IMG_8291.png">
+<h1>Das Testdeck</h1>
+<h2>Alle Folientypen · ein Durchlauf</h2>
+",
+    "i": 0,
+    "layout": "cover-image",
+    "modifiers": [],
+  },
+  {
+    "html": "<h1>Titelfolie</h1>
+<h2>Layout · Title</h2>
+<p>Eyebrow über dieser Zeile, Display-Titel, optischer Mittelpunkt leicht über der Mitte.</p>
+",
+    "i": 1,
+    "layout": "title",
+    "modifiers": [],
+  },
+  {
+    "html": "<h1>Abschnitts-Trenner</h1>
+<h2>Layout · Section</h2>
+",
+    "i": 2,
+    "layout": "section",
+    "modifiers": [],
+  },
+  {
+    "html": "<h1>Standard-Folie</h1>
+<p>Das <code>default</code>-Layout: Titel auf fester Baseline, Content läuft nach unten aus.</p>
+<ul>
+<li>Bullets an der linken Kante, Marker in Akzentfarbe</li>
+<li>Inline-Chips wie <code>parseDeck()</code> brechen nie intern</li>
+<li>Chip-Ketten: <code>prepare</code> <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>→</mo></mrow><annotation encoding="application/x-tex">\\rightarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span>&nbsp;<code>research</code> <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>→</mo></mrow><annotation encoding="application/x-tex">\\rightarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span>&nbsp;<code>summarize</code> binden am Pfeil</li>
+<li>Ein <a href="https://codeberg.org/jkaindl/slide-deck">Link</a> in Gold, unterstrichen</li>
+</ul>
+",
+    "i": 3,
+    "layout": "default",
+    "modifiers": [],
+  },
+  {
+    "html": "<h1>Zwei Spalten</h1>
+<h2>Links</h2>
+<ul>
+<li>Titel spannt beide Spalten</li>
+<li>Spaltenüberschriften als <code>##</code></li>
+<li>Gemeinsame Baseline im Grid</li>
+</ul>
+<h2>Rechts</h2>
+<ul>
+<li>Verschachtelte Listen:
+<ul>
+<li>enger gebunden</li>
+<li>als Hierarchie lesbar</li>
+</ul>
+</li>
+<li>Gap aus der Spacing-Skala</li>
+</ul>
+",
+    "i": 4,
+    "layout": "two-column",
+    "modifiers": [],
+  },
+  {
+    "html": "<h1>Drei Spalten</h1>
+<h2>Eins</h2>
+<p>Kurzer Text pro Zelle.</p>
+<h2>Zwei</h2>
+<p>Noch ein Absatz.</p>
+<h2>Drei</h2>
+<p>Und der dritte.</p>
+",
+    "i": 5,
+    "layout": "columns-3",
+    "modifiers": [],
+  },
+  {
+    "html": "<blockquote>
+<p>Ein Theme malt die Kammer schwarz; ein Protokoll sagt dir, was die Dunkelheit bedeutet.</p>
+</blockquote>
+<p><em>— Kuro Signal Protocol</em></p>
+",
+    "i": 6,
+    "layout": "quote",
+    "modifiers": [],
+  },
+  {
+    "html": "<h1>296</h1>
+<p>Tests halten dieses Design-System fest — die Zahl ist das <code>stat</code>-Layout.</p>
+",
+    "i": 7,
+    "layout": "stat",
+    "modifiers": [],
+  },
+  {
+    "html": "<h1>Bild im Fokus</h1>
+<img class="sd-embed" alt="IMG_8291.png" src="stub://IMG_8291.png">
+<p>Caption zentriert, Media füllt die restliche Höhe.</p>
+",
+    "i": 8,
+    "layout": "image-focus",
+    "modifiers": [],
+  },
+  {
+    "html": "<h1>Callouts · die Signale</h1>
+<div class="sd-callout sd-callout-info" role="note"><div class="sd-callout-title"><span class="sd-callout-icon" data-icon="info"></span><span class="sd-callout-label">Info</span></div><div class="sd-callout-body"><p>Zusätzlicher Kontext, getönter Grund.</p>
+</div></div><div class="sd-callout sd-callout-warning" role="note"><div class="sd-callout-title"><span class="sd-callout-icon" data-icon="warning"></span><span class="sd-callout-label">Warnung</span></div><div class="sd-callout-body"><p>Hier ist Vorsicht geboten.</p>
+</div></div><div class="sd-callout sd-callout-tip" role="note"><div class="sd-callout-title"><span class="sd-callout-icon" data-icon="tip"></span><span class="sd-callout-label">Tipp</span></div><div class="sd-callout-body"><p>Panels atmen beidseitig mit einem Grundabstand.</p>
+</div></div>",
+    "i": 9,
+    "layout": "default",
+    "modifiers": [],
+  },
+  {
+    "html": "<h1>Code-Folie</h1>
+<p>Der <code>code-heavy</code>-Modifier hebt Blockcode auf volle Body-Größe:</p>
+<pre class="hljs"><code><span class="hljs-keyword">export</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">deckCss</span>(<span class="hljs-params"><span class="hljs-attr">entry</span>: <span class="hljs-title class_">ThemeEntry</span>, customCss = <span class="hljs-string">&quot;&quot;</span></span>): <span class="hljs-built_in">string</span> {
+  <span class="hljs-keyword">return</span> <span class="hljs-title function_">assembleDeckCss</span>([katexCss, entry.<span class="hljs-property">hljs</span>, <span class="hljs-variable constant_">STRUCTURE_CSS</span>,
+    <span class="hljs-variable constant_">LAYOUTS_CSS</span>, entry.<span class="hljs-property">themeCss</span>, customCss]);
+}
+</code></pre>
+<p>Mathe inline — <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">E = mc^2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8141em;"></span><span class="mord mathnormal">m</span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span></span></span></span> — und als Block:</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msubsup><mo>∫</mo><mn>0</mn><mi mathvariant="normal">∞</mi></msubsup><msup><mi>e</mi><mrow><mo>−</mo><mi>x</mi></mrow></msup><mtext> </mtext><mi>d</mi><mi>x</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\\int_0^\\infty e^{-x}\\,dx = 1
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:2.3262em;vertical-align:-0.9119em;"></span><span class="mop"><span class="mop op-symbol large-op" style="margin-right:0.4445em;position:relative;top:-0.0011em;">∫</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.4143em;"><span style="top:-1.7881em;margin-left:-0.4445em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">0</span></span></span><span style="top:-3.8129em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">∞</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.9119em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">e</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8213em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mathnormal mtight">x</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">d</span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span></span></p>
+",
+    "i": 10,
+    "layout": "default",
+    "modifiers": [
+      "code-heavy",
+    ],
+  },
+  {
+    "html": "<h1>Kompakt-Modifier</h1>
+<p>Der <code>compact</code>-Modifier verdichtet Skala und Rhythmus für listenlastige Folien:</p>
+<ul>
+<li>Kleinere Überschriften, engere Abstände</li>
+<li>Blockquote bleibt gestylt:</li>
+</ul>
+<blockquote>
+<p>Struktur kommt vom Plugin, Charakter vom Theme.</p>
+</blockquote>
+<p>Eine Trennlinie als Motiv (als <code>&lt;hr&gt;</code>, denn <code>---</code> wäre ein Folien-Trenner):</p>
+<hr />",
+    "i": 11,
+    "layout": "default",
+    "modifiers": [
+      "compact",
+    ],
+  },
+  {
+    "html": "<h1>Diagramm</h1>
+<div class="sd-mermaid" data-src="Z3JhcGggTFI7CiAgQVtNYXJrZG93bl0gLS0+IEJbcGFyc2VEZWNrXTsKICBCIC0tPiBDW1RoZW1lLVJlZ2lzdHJ5XTsKICBDIC0tPiBEW0ZvbGllbl07"></div>",
+    "i": 12,
+    "layout": "default",
+    "modifiers": [],
+  },
+]
+`;

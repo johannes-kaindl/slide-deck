@@ -2,7 +2,7 @@ import { Plugin, getLanguage, TFile, TAbstractFile, Notice, normalizePath } from
 import { exportPdf, exportImages } from "./export";
 import { SlideDeckView, VIEW_TYPE } from "./preview-view";
 import { t, pickLang, setLang } from "./i18n";
-import { DEFAULT_SETTINGS, SlideDeckSettings, SlideDeckSettingTab } from "./settings";
+import { DEFAULT_SETTINGS, SlideDeckSettings, SlideDeckSettingTab, migrateLegacyThemeKeys } from "./settings";
 import { ThemeStore } from "./theme-registry";
 import { buildHideCss, normalizeFolder } from "./core/folder-hide";
 import { GenerateDeckView, VIEW_TYPE_GENERATE } from "./generate-deck-view";
@@ -26,7 +26,7 @@ export default class SlideDeckPlugin extends Plugin {
 
   async onload(): Promise<void> {
     setLang(pickLang(getLanguage()));
-    this.settings = mergeSettings(DEFAULT_SETTINGS, await this.loadData());
+    this.settings = migrateLegacyThemeKeys(mergeSettings(DEFAULT_SETTINGS, await this.loadData()));
 
     this.themeStore = new ThemeStore(this.app, () => this.settings.themesFolder);
     await this.themeStore.refresh();
@@ -66,9 +66,22 @@ export default class SlideDeckPlugin extends Plugin {
     }
   }
 
-  /** Apply (or clear) the explorer-hide stylesheet for the themes folder. */
+  /** Apply (or clear) the explorer-hide stylesheet for the themes folder.
+   *  Build the sheet with the *active document's own realm* constructor
+   *  (`activeDocument.defaultView.CSSStyleSheet`), NOT the bundle's ambient `new
+   *  CSSStyleSheet()`. A constructed CSSStyleSheet is bound to the document of the realm that
+   *  built it; adopting it into a *different* document throws NotAllowedError ("Sharing
+   *  constructed stylesheets in multiple documents"). That broke onload on re-enable while
+   *  `activeDocument` pointed at a popout window (bundle realm = main window ≠ popout).
+   *  Sourcing the constructor from `activeDocument.defaultView` keeps constructor-document ==
+   *  adopt target (`activeDocument`) in every window, popout included. */
   applyFolderHide(): void {
-    if (!this.hideSheet) { this.hideSheet = new CSSStyleSheet(); activeDocument.adoptedStyleSheets = [...activeDocument.adoptedStyleSheets, this.hideSheet]; }
+    if (!this.hideSheet) {
+      const win = activeDocument.defaultView;
+      if (!win) return; // detached document — no realm to build in; retried on next apply
+      this.hideSheet = new win.CSSStyleSheet();
+      activeDocument.adoptedStyleSheets = [...activeDocument.adoptedStyleSheets, this.hideSheet];
+    }
     this.hideSheet.replaceSync(buildHideCss(this.settings.themesFolder, this.settings.hideThemesFolder));
   }
 

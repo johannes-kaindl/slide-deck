@@ -64,7 +64,7 @@ if (!userCss.includes("--sd-bg:#012738") || !userCss.includes(".katex")) {
 }
 
 // 3) presetFor/layoutFor totality
-if (presetFor("nope").id !== "default" || layoutFor("nope").id !== "default") {
+if (presetFor("nope").id !== "shiro" || layoutFor("nope").id !== "default") {
   console.error("bundle-smoke FAILED — presetFor/layoutFor not total");
   process.exit(5);
 }

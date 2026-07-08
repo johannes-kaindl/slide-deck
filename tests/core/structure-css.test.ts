@@ -72,3 +72,76 @@ describe("STRUCTURE_CSS area model", () => {
     expect(STRUCTURE_CSS).toContain(".sd-content{ width:100%; height:100%; transform-origin:top left; }");
   });
 });
+
+describe("design system tokens", () => {
+  it("defines the modular type scale as tokens with defaults", () => {
+    for (const t of [
+      "var(--sd-size-h1,1.95em)", "var(--sd-size-h2,1.25em)",
+      "var(--sd-lh-body,1.45)", "var(--sd-lh-display,1.08)", "var(--sd-lh-heading,1.2)",
+    ]) expect(STRUCTURE_CSS).toContain(t);
+  });
+  it("derives all spacing from the space scale (owl rhythm)", () => {
+    expect(STRUCTURE_CSS).toContain(".sd-region > * + *{ margin-top:var(--sd-space-s,.75em); }");
+    expect(STRUCTURE_CSS).toContain(".sd-region > * + h2{ margin-top:var(--sd-space-xl,2.25em); }");
+    expect(STRUCTURE_CSS).toContain(".sd-region > h1 + h2{ margin-top:var(--sd-space-s,.75em); }");
+    // h2 gets proportional air below (~0.7× its size), same rule as h1
+    expect(STRUCTURE_CSS).toContain(".sd-region > h2 + *{ margin-top:var(--sd-space-m,1em); }");
+    // panels (code, callouts) are visually heavy boxes — they breathe on both sides
+    expect(STRUCTURE_CSS).toContain(".sd-region > * + :where(pre,.sd-callout),\n.sd-region > :where(pre,.sd-callout) + *{ margin-top:var(--sd-space-m,1em); }");
+    // display-sized headings need ~0.7× their own size as separation — the
+    // heading must read as its own level, not as line 1 of the list below it
+    expect(STRUCTURE_CSS).toContain(".sd-region > h1 + *{ margin-top:var(--sd-space-l,1.5em); }");
+    // list items read as units: compact within (line-height), air between (gap)
+    expect(STRUCTURE_CSS).toContain("li{ margin:0; line-height:var(--sd-lh-list,1.35); }");
+    expect(STRUCTURE_CSS).toContain("li + li{ margin-top:var(--sd-space-xs,.5em); }");
+    // nested lists: bound to their parent item, tighter than top-level items —
+    // otherwise list levels blur into one undifferentiated column
+    expect(STRUCTURE_CSS).toContain(".sd-slide li > ul,.sd-slide li > ol{ margin-top:var(--sd-space-2xs,.25em); }");
+    expect(STRUCTURE_CSS).toContain(".sd-slide li li + li{ margin-top:var(--sd-space-2xs,.25em); }");
+  });
+  it("inline code chips never break internally", () => {
+    expect(STRUCTURE_CSS).toMatch(/:not\(pre\) > code\{[^}]*white-space:nowrap/);
+  });
+  it("slots speak the deck's metadata voice (mono, tracked, eyebrow-sized)", () => {
+    expect(STRUCTURE_CSS).toContain("font-size:var(--sd-slot-size,var(--sd-size-eyebrow,.68em))");
+    expect(STRUCTURE_CSS).toContain("font-family:var(--sd-slot-font,var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace))");
+    expect(STRUCTURE_CSS).not.toContain("--sd-size-small"); // retired: slots were its only consumer
+  });
+  it("headings and blocks own no ad-hoc margins", () => {
+    expect(STRUCTURE_CSS).not.toMatch(/margin:0 0 \.4em/);
+    expect(STRUCTURE_CSS).not.toMatch(/margin:\.25em 0/);
+  });
+  it("exposes display treatment tokens instead of theme rules", () => {
+    expect(STRUCTURE_CSS).toContain("font-style:var(--sd-display-style,normal)");
+    expect(STRUCTURE_CSS).toContain("font-weight:var(--sd-display-weight,700)");
+    expect(STRUCTURE_CSS).toContain("letter-spacing:var(--sd-display-tracking,normal)");
+  });
+  it("keeps the fit-critical content invariant", () => {
+    expect(STRUCTURE_CSS).toContain(".sd-content{ width:100%; height:100%; transform-origin:top left; }");
+  });
+  it("styles blockquote/hr/inline-code once, tokenized (themes supply values)", () => {
+    expect(STRUCTURE_CSS).toContain(".sd-slide blockquote{");
+    expect(STRUCTURE_CSS).toContain(".sd-slide hr{");
+    expect(STRUCTURE_CSS).toContain(":not(pre) > code{");
+    expect(STRUCTURE_CSS).toContain("var(--sd-mono");
+    // export-safe accent bullets: ::marker styling is dropped by the PNG
+    // export's foreignObject clone → real ::before glyphs instead
+    expect(STRUCTURE_CSS).toContain('.sd-slide ul > li::before{ content:"•"');
+    expect(STRUCTURE_CSS).toContain('.sd-slide li li::before{ content:"◦"; }');
+    expect(STRUCTURE_CSS).toContain(".sd-slide ol > li::marker{ color:var(--sd-accent); }");
+  });
+  it("cover scrim is bottom-only + eased; slots carry their own shadow (no top-band banding)", () => {
+    // top dark band dropped — it banded visibly at its upper edge over the photo
+    expect(STRUCTURE_CSS).not.toContain("rgba(0,0,0,.55) 0%");
+    // scrim stays transparent through the upper half, darkens only toward the bottom
+    expect(STRUCTURE_CSS).toContain("transparent 0%,transparent 48%,");
+    expect(STRUCTURE_CSS).toContain("rgba(0,0,0,.82) 100%)");
+    // header/footer/pagination over a full-bleed image get a local text-shadow instead
+    expect(STRUCTURE_CSS).toMatch(
+      /\.sd-layout-cover-image :is\(\.sd-slide-header,\.sd-slide-footer,\.sd-slide-pagination\)\{\s*text-shadow:/
+    );
+  });
+  it("accent bullets are large enough to read as accents", () => {
+    expect(STRUCTURE_CSS).toMatch(/ul > li::before\{[^}]*transform:scale\(1\.4\)/);
+  });
+});

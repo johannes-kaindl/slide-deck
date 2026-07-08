@@ -48,7 +48,13 @@ export class SlideDeckView extends ItemView {
     await this.refresh();
   }
 
-  private get effectiveTheme(): string { return this.ephemeralTheme ?? this.persistedTheme ?? this.plugin.settings.defaultTheme; }
+  /** Canonical key — resolves any legacy/alias/unknown source (ephemeral try-on, note
+   *  frontmatter, or the persisted default) through the theme store so the dropdown always
+   *  finds a matching option and commitTheme never re-persists a stale key. */
+  private get effectiveTheme(): string {
+    const raw = this.ephemeralTheme ?? this.persistedTheme ?? this.plugin.settings.defaultTheme;
+    return this.plugin.themeStore.resolve(raw).key;
+  }
   private get dirty(): boolean { return this.ephemeralTheme !== undefined && this.ephemeralTheme !== this.persistedTheme; }
 
   private buildToolbar(): void {

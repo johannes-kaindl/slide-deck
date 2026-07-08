@@ -1,0 +1,38 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   EXAMPLE — slide-deck user theme template
+   ───────────────────────────────────────────────────────────────────────────
+   Copy this file into your themes folder (Settings → Slide deck → Themes
+   folder), rename it, change the values. The file name without ".css" IS the
+   frontmatter value:  theme: example
+   The plugin styles structure, scale, spacing, blockquotes, code panels and
+   callouts for you — §1 alone produces a finished look. §2 lists optional
+   tokens for character. Full reference: THEMING-GUIDE.md.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* sd-label: Example · a friendly starting point */
+
+/* ─── §1 · REQUIRED — the seven-token contract ─────────────────────────────── */
+.sd-slide {
+  --sd-bg: #ffffff;          /* slide background                         */
+  --sd-code-bg: #f4f6f8;     /* code panel background                    */
+  --sd-fg: #16181d;          /* body text                                */
+  --sd-accent: #3b6db5;      /* links, rules, list markers, eyebrows     */
+  --sd-font: ui-sans-serif, system-ui, sans-serif;          /* body      */
+  --sd-heading-font: ui-sans-serif, system-ui, sans-serif;  /* headings  */
+  --sd-base: 28px;           /* legibility floor for the fit engine      */
+}
+
+/* ─── §2 · OPTIONAL — character tokens (all have sensible defaults) ────────── */
+.sd-slide {
+  /* --sd-mono: ui-monospace, monospace;      inline/block code face          */
+  /* --sd-muted: #6b7280;                     secondary text, slots, quotes   */
+  /* --sd-surface: #f4f6f8;                   callout panel                   */
+  /* --sd-callout-fg: #16181d;                callout text                    */
+  /* --sd-display-style: italic;              hero titles italic              */
+  /* --sd-display-weight: 500;                hero title weight               */
+  /* --sd-display-tracking: -0.02em;          hero title letter-spacing       */
+  /* --sd-eyebrow-font: var(--sd-mono);       kicker face                     */
+  /* --sd-eyebrow-fg: var(--sd-accent);       kicker color                    */
+  /* --sd-eyebrow-tracking: .14em;            kicker letter-spacing           */
+  /* --sd-size-display: 2.44em;               type scale overrides…           */
+  /* --sd-space-m: 1em;                       …and spacing scale overrides    */
+}
