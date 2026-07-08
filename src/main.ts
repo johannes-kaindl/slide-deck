@@ -66,9 +66,22 @@ export default class SlideDeckPlugin extends Plugin {
     }
   }
 
-  /** Apply (or clear) the explorer-hide stylesheet for the themes folder. */
+  /** Apply (or clear) the explorer-hide stylesheet for the themes folder.
+   *  Build the sheet with the *active document's own realm* constructor
+   *  (`activeDocument.defaultView.CSSStyleSheet`), NOT the bundle's ambient `new
+   *  CSSStyleSheet()`. A constructed CSSStyleSheet is bound to the document of the realm that
+   *  built it; adopting it into a *different* document throws NotAllowedError ("Sharing
+   *  constructed stylesheets in multiple documents"). That broke onload on re-enable while
+   *  `activeDocument` pointed at a popout window (bundle realm = main window ≠ popout).
+   *  Sourcing the constructor from `activeDocument.defaultView` keeps constructor-document ==
+   *  adopt target (`activeDocument`) in every window, popout included. */
   applyFolderHide(): void {
-    if (!this.hideSheet) { this.hideSheet = new CSSStyleSheet(); activeDocument.adoptedStyleSheets = [...activeDocument.adoptedStyleSheets, this.hideSheet]; }
+    if (!this.hideSheet) {
+      const win = activeDocument.defaultView;
+      if (!win) return; // detached document — no realm to build in; retried on next apply
+      this.hideSheet = new win.CSSStyleSheet();
+      activeDocument.adoptedStyleSheets = [...activeDocument.adoptedStyleSheets, this.hideSheet];
+    }
     this.hideSheet.replaceSync(buildHideCss(this.settings.themesFolder, this.settings.hideThemesFolder));
   }
 
