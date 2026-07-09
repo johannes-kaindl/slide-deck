@@ -22,12 +22,14 @@ export const STRUCTURE_CSS = `
 
 /* ── Vertical rhythm: blocks own NO margins; space comes from adjacency (owl).
    More air before a new section, tight binding after a heading. ── */
-.sd-slide h1,.sd-slide h2,.sd-slide p,.sd-slide ul,.sd-slide ol,.sd-slide pre,.sd-slide blockquote{ margin:0; }
+.sd-slide h1,.sd-slide h2,.sd-slide p,.sd-slide ul,.sd-slide ol,.sd-slide pre,.sd-slide blockquote,.sd-slide table{ margin:0; }
 .sd-region > * + *{ margin-top:var(--sd-space-s,.75em); }
-/* Panels (code, callouts) are visually heavy boxes — they breathe on both
-   sides. :where() keeps specificity flat so heading rules below still win. */
-.sd-region > * + :where(pre,.sd-callout),
-.sd-region > :where(pre,.sd-callout) + *{ margin-top:var(--sd-space-m,1em); }
+/* Panels (code, callouts, tables, lists) are visually heavy boxes — they
+   breathe on both sides, clearly more than the tight rhythm within them
+   (li+li, row+row). :where() keeps specificity flat so heading rules below
+   still win. */
+.sd-region > * + :where(pre,.sd-callout,table,ul,ol),
+.sd-region > :where(pre,.sd-callout,table,ul,ol) + *{ margin-top:var(--sd-space-m,1em); }
 .sd-region > * + h2{ margin-top:var(--sd-space-xl,2.25em); }
 /* Headings get ~0.7× their own size as separation below, or they read as
    line 1 of their content. The h1+h2 subtitle pair binds tighter. */
@@ -65,6 +67,31 @@ export const STRUCTURE_CSS = `
 .sd-slide :not(pre) > code{ font-family:var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace);
   font-size:.88em; background:var(--sd-code-bg); padding:.08em .2em; border-radius:4px;
   white-space:nowrap; }
+
+/* ── Tables — container-type:inline-size on the table itself, so the column
+   gutter (cqw) scales to the table's OWN available width, not the slide's:
+   a table dropped into a two/three-column region gets a proportionally
+   smaller gutter than one spanning the full slide. ── */
+.sd-slide table{ width:100%; border-collapse:separate; border-spacing:0; container-type:inline-size; }
+.sd-slide th,.sd-slide td{ text-align:left; vertical-align:top; padding-block:.6em;
+  padding-inline:calc(3cqw / 2); }
+.sd-slide th:first-child,.sd-slide td:first-child{ padding-inline-start:0; }
+.sd-slide th:last-child,.sd-slide td:last-child{ padding-inline-end:0; }
+/* Header reads as a label row: bold, left-aligned with the body, a stronger
+   rule below it than the hairline between ordinary rows. */
+.sd-slide thead th{ font-weight:600; border-bottom:2px solid var(--sd-accent); }
+/* Row rhythm: a hairline between rows, not a zebra tint (pick one — both
+   reads as noise). No line above the first body row; the header rule already
+   closes that edge. */
+.sd-slide tbody td{ border-top:1px solid color-mix(in srgb,var(--sd-fg) 12%,transparent); }
+.sd-slide tbody tr:first-child td{ border-top:none; }
+/* First column carries row labels — often the longest single word in the
+   table (compound nouns). width gives auto table-layout a sizing target;
+   without it, overflow-wrap:anywhere (needed for that long word) also lets
+   the algorithm read short labels as needing near-zero space and crush the
+   column well under 30% — a plain "Bedingung" ends up wrapping mid-word for
+   no reason. max-width keeps 30% as the hard ceiling. */
+.sd-slide th:first-child,.sd-slide td:first-child{ width:20%; max-width:30%; hyphens:auto; overflow-wrap:anywhere; }
 
 /* ── Character defaults, tokenized — a 7-token user theme looks finished out of the box. ── */
 .sd-slide blockquote{ padding:var(--sd-space-2xs,.25em) 0 var(--sd-space-2xs,.25em) var(--sd-space-m,1em);

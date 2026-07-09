@@ -168,6 +168,13 @@ export async function renderDeckToContainer(
       contentBottom = Math.max(contentBottom, child.getBoundingClientRect().bottom);
     }
     const naturalHeight = contentBottom - innerTop;
+    // Proactive heads-up, well below the hard overflow floor (fit.overflow): a slide
+    // already this full is one edit away from tipping over. Console-only — no badge,
+    // no auto-fix; the author decides whether to condense.
+    if (clientHeight > 0 && naturalHeight / clientHeight > 0.85) {
+      const pct = Math.round((naturalHeight / clientHeight) * 100);
+      console.warn(`[slide-deck] Folie ${slide.index + 1} läuft voll (${pct}% der Content-Höhe) — compact-Modifier erwägen.`);
+    }
     const fit = computeFit(
       { contentWidth: inner.scrollWidth, contentHeight },
       { width: inner.clientWidth, height: clientHeight },

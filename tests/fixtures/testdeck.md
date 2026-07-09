@@ -50,6 +50,18 @@ Das `default`-Layout: Titel auf fester Baseline, Content läuft nach unten aus.
 
 ---
 
+# Tabellen
+
+| Kategorie | Beschreibung | Status |
+|---|---|---|
+| Veranstaltungsmanagement | Mehrzeilige Zelle: Termin-Vor- und Nachbereitung mit strukturierter Übergabe an die nächste Zuständigkeit | ✅ erledigt |
+| Wissensmanagement | Kurzer Text | 🔜 geplant |
+| Kommunikation | Noch ein Beispiel mit etwas mehr Länge, damit die Zeile zuverlässig umbricht | ⏳ läuft |
+
+Dieser Absatz gehört nicht mehr zur Tabelle — eigener Block, eigener Abstand.
+
+---
+
 <!-- layout: two-column -->
 
 # Zwei Spalten

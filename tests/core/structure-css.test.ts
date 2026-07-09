@@ -86,8 +86,8 @@ describe("design system tokens", () => {
     expect(STRUCTURE_CSS).toContain(".sd-region > h1 + h2{ margin-top:var(--sd-space-s,.75em); }");
     // h2 gets proportional air below (~0.7× its size), same rule as h1
     expect(STRUCTURE_CSS).toContain(".sd-region > h2 + *{ margin-top:var(--sd-space-m,1em); }");
-    // panels (code, callouts) are visually heavy boxes — they breathe on both sides
-    expect(STRUCTURE_CSS).toContain(".sd-region > * + :where(pre,.sd-callout),\n.sd-region > :where(pre,.sd-callout) + *{ margin-top:var(--sd-space-m,1em); }");
+    // panels (code, callouts, tables, lists) are visually heavy boxes — they breathe on both sides
+    expect(STRUCTURE_CSS).toContain(".sd-region > * + :where(pre,.sd-callout,table,ul,ol),\n.sd-region > :where(pre,.sd-callout,table,ul,ol) + *{ margin-top:var(--sd-space-m,1em); }");
     // display-sized headings need ~0.7× their own size as separation — the
     // heading must read as its own level, not as line 1 of the list below it
     expect(STRUCTURE_CSS).toContain(".sd-region > h1 + *{ margin-top:var(--sd-space-l,1.5em); }");
@@ -101,6 +101,18 @@ describe("design system tokens", () => {
   });
   it("inline code chips never break internally", () => {
     expect(STRUCTURE_CSS).toMatch(/:not\(pre\) > code\{[^}]*white-space:nowrap/);
+  });
+  it("tables get a container-scoped gutter, row rhythm, and a bounded label column", () => {
+    // gutter scales to the table's own width (not the slide's) via a container query unit
+    expect(STRUCTURE_CSS).toContain(".sd-slide table{ width:100%; border-collapse:separate; border-spacing:0; container-type:inline-size; }");
+    expect(STRUCTURE_CSS).toMatch(/th,\.sd-slide td\{[^}]*vertical-align:top[^}]*padding-inline:calc\(3cqw \/ 2\)/);
+    // header reads as a label row: bold, stronger rule than the row hairline
+    expect(STRUCTURE_CSS).toContain(".sd-slide thead th{ font-weight:600; border-bottom:2px solid var(--sd-accent); }");
+    expect(STRUCTURE_CSS).toContain(".sd-slide tbody td{ border-top:1px solid color-mix(in srgb,var(--sd-fg) 12%,transparent); }");
+    // first column carries row labels — sized so a plain short label doesn't get
+    // crushed by overflow-wrap:anywhere, capped so a long compound noun can't
+    // crush the content columns
+    expect(STRUCTURE_CSS).toContain(".sd-slide th:first-child,.sd-slide td:first-child{ width:20%; max-width:30%; hyphens:auto; overflow-wrap:anywhere; }");
   });
   it("slots speak the deck's metadata voice (mono, tracked, eyebrow-sized)", () => {
     expect(STRUCTURE_CSS).toContain("font-size:var(--sd-slot-size,var(--sd-size-eyebrow,.68em))");
