@@ -7,6 +7,14 @@ versioning follows [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
+- Plugin activation no longer crashes with `NotAllowedError` when a popout window is active
+  at load time: the explorer-hide stylesheet is now built and adopted in the main window's
+  document (where the file explorer lives), wrapped so the cosmetic hide can never break
+  `onload`.
+- `npm run release` now verifies the GitHub mirror after the dual-push: tag and default
+  branch must carry the release commit, otherwise the release fails loudly. A silently
+  failed branch push had frozen the community store on 0.4.0 (the store reads the plugin
+  version from the default branch's `manifest.json`).
 - Cover-image corner slots (header/footer/pagination) no longer double their glyph edge into
   a faint "ghost" ring over bright backgrounds — one soft `text-shadow` instead of two.
 - The content `<hr>` gradient is symmetric now: both ends fade equally through matching
