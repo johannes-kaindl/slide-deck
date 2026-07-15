@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createCodebergRelease } from "./lib/codeberg-release.mjs";
+import { verifyMirrorRefs } from "./lib/verify-mirror.mjs";
 
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
@@ -85,9 +86,45 @@ if (dryRun) {
 // manuell nachgezogen. Steht außerhalb des !tagExists-Guards → läuft auch im Resume-Pfad.
 mirrorToGithub(target, defaultBranch);
 
+// 10. Mirror-Verifikation: Tag UND Branch müssen auf GitHub auf dem Release-Commit stehen.
+// Der Store liest die Plugin-Version aus der manifest.json des Default-Branch — ein still
+// fehlgeschlagener Branch-Push friert den Store ein (0.5.0-Störfall). Schlägt die Prüfung
+// fehl, endet der Release mit Exit 1, damit der Fehler nicht wieder unbemerkt bleibt.
+verifyGithubMirror(target, defaultBranch);
+
 console.log(`release: ${target} fertig.`);
 
 // --- Helfer ---
+function verifyGithubMirror(tag, branch) {
+  if (dryRun) { console.log(`[dry-run] Mirror-Verifikation: git ls-remote github refs/tags/${tag}* refs/heads/${branch}`); return; }
+  let remotes;
+  try { remotes = sh("git", ["remote"]).split("\n"); } catch { return; }
+  if (!remotes.includes("github")) return; // mirrorToGithub hat bereits gewarnt
+
+  const expectedSha = sh("git", ["rev-list", "-1", tag]); // Commit hinter dem (annotierten) Tag
+  let lsRemoteOutput;
+  try {
+    lsRemoteOutput = execFileSync(
+      "git", ["ls-remote", "github", `refs/tags/${tag}*`, `refs/heads/${branch}`],
+      { encoding: "utf8", env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } },
+    );
+  } catch (err) {
+    die(`Mirror-Verifikation fehlgeschlagen — GitHub nicht erreichbar (${err?.message ?? err}). `
+      + `Manuell prüfen: git ls-remote github refs/tags/${tag}* refs/heads/${branch}`);
+    return;
+  }
+  // Ancestor-Check gegen die lokale Historie; ein lokal unbekannter SHA (echter Divergenz-Fall)
+  // lässt merge-base fehlschlagen → false → wird als Problem gemeldet.
+  const isAncestor = (ancestor, descendant) => {
+    try { execFileSync("git", ["merge-base", "--is-ancestor", ancestor, descendant]); return true; }
+    catch { return false; }
+  };
+  const { ok, problems } = verifyMirrorRefs({ lsRemoteOutput, expectedSha, tag, branch, isAncestor });
+  if (ok) { console.log(`release: GitHub-Mirror verifiziert — Tag ${tag} + ${branch} auf ${expectedSha.slice(0, 8)}.`); return; }
+  for (const p of problems) console.error(`release: ❌ Mirror-Verifikation: ${p}`);
+  die(`GitHub-Mirror unvollständig — nachziehen mit: git push github ${tag} && git push github HEAD:${branch}`);
+}
+
 function mirrorToGithub(tag, branch) {
   let remotes;
   try {
