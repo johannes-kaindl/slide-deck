@@ -67,26 +67,30 @@ export default class SlideDeckPlugin extends Plugin {
   }
 
   /** Apply (or clear) the explorer-hide stylesheet for the themes folder.
-   *  Build the sheet with the *active document's own realm* constructor
-   *  (`activeDocument.defaultView.CSSStyleSheet`), NOT the bundle's ambient `new
-   *  CSSStyleSheet()`. A constructed CSSStyleSheet is bound to the document of the realm that
-   *  built it; adopting it into a *different* document throws NotAllowedError ("Sharing
-   *  constructed stylesheets in multiple documents"). That broke onload on re-enable while
-   *  `activeDocument` pointed at a popout window (bundle realm = main window ≠ popout).
-   *  Sourcing the constructor from `activeDocument.defaultView` keeps constructor-document ==
-   *  adopt target (`activeDocument`) in every window, popout included. */
+   *  Build AND adopt in the bundle realm's `document` (main window) — deliberately NOT
+   *  `activeDocument`: the file explorer this CSS targets lives in the main window's sidebar,
+   *  and at load time `activeDocument` can point at a restored popout window. Adopting a
+   *  sheet into a document from another realm throws NotAllowedError ("Sharing constructed
+   *  stylesheets in multiple documents") — that killed onload (0.4.0, Windows + popout) and
+   *  the 0.5.0 activeDocument-realm fix still parked the CSS in the popout, away from the
+   *  explorer. Bundle realm == main window keeps constructor-document == adopt target always.
+   *  try/catch as last resort: the hide is cosmetic and must never break plugin load. */
   applyFolderHide(): void {
-    if (!this.hideSheet) {
-      const win = activeDocument.defaultView;
-      if (!win) return; // detached document — no realm to build in; retried on next apply
-      this.hideSheet = new win.CSSStyleSheet();
-      activeDocument.adoptedStyleSheets = [...activeDocument.adoptedStyleSheets, this.hideSheet];
+    try {
+      if (!this.hideSheet) {
+        this.hideSheet = new CSSStyleSheet();
+        // eslint-disable-next-line obsidianmd/prefer-active-doc -- deliberate: explorer lives in the main window; activeDocument (popout) was the NotAllowedError bug
+        document.adoptedStyleSheets = [...document.adoptedStyleSheets, this.hideSheet];
+      }
+      this.hideSheet.replaceSync(buildHideCss(this.settings.themesFolder, this.settings.hideThemesFolder));
+    } catch (err) {
+      console.error("slide-deck: applyFolderHide failed — themes folder stays visible (cosmetic)", err);
     }
-    this.hideSheet.replaceSync(buildHideCss(this.settings.themesFolder, this.settings.hideThemesFolder));
   }
 
   onunload(): void {
-    if (this.hideSheet) activeDocument.adoptedStyleSheets = activeDocument.adoptedStyleSheets.filter((s) => s !== this.hideSheet);
+    // eslint-disable-next-line obsidianmd/prefer-active-doc -- deliberate: sheet was adopted into the main window document (see applyFolderHide)
+    if (this.hideSheet) document.adoptedStyleSheets = document.adoptedStyleSheets.filter((s) => s !== this.hideSheet);
   }
 
   async activatePreview(): Promise<void> {
