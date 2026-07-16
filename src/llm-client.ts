@@ -32,9 +32,14 @@ export class DeckLlmClient {
    *  a failure degrades to a classified status (settings must never die on a probe). */
   async probe(timeoutMs = 5000): Promise<EndpointStatus> {
     const timeout = new Promise<ProbeInput>((r) => setTimeout(() => r({ kind: "timeout" }), timeoutMs));
-    const call: Promise<ProbeInput> = this.http({ url: `${this.endpoint}/v1/models` })
-      .then((r) => ({ kind: "response", status: r.status, body: r.json }) as ProbeInput)
-      .catch((e: unknown) => ({ kind: "error", message: (e as Error)?.message ?? String(e) }) as ProbeInput);
+    const call: Promise<ProbeInput> = (async () => {
+      try {
+        const r = await this.http({ url: `${this.endpoint}/v1/models` });
+        return { kind: "response", status: r.status, body: r.json } as ProbeInput;
+      } catch (e: unknown) {
+        return { kind: "error", message: (e as Error)?.message ?? String(e) } as ProbeInput;
+      }
+    })();
     return classifyEndpointStatus(await Promise.race([call, timeout]));
   }
 

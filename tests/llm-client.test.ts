@@ -103,4 +103,10 @@ describe("probe", () => {
     expect(await ok.ping()).toBe(true);
     expect(await bad.ping()).toBe(false);
   });
+
+  it("does not throw when the injected http fn throws synchronously", async () => {
+    const syncThrow = (() => { throw new Error("sync boom"); }) as never;
+    const c = new DeckLlmClient("http://x:1", "m", syncThrow, (() => { throw new Error("nope"); }) as never);
+    await expect(c.probe()).resolves.toMatchObject({ reachable: false, kind: "unknown" });
+  });
 });
