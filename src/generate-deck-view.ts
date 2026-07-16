@@ -6,6 +6,8 @@ import { resolveActiveEndpoint } from "./vendor/kit/endpoint";
 import { frontmatterRange } from "./core/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./core/llm/deck-prompt";
 import { estimateTokens, contextOverflow } from "./core/llm/model-info";
+import { modelFieldMode, statusKindKey } from "./core/llm/ai-settings-model";
+import { paintStatus } from "./ai-settings-ui";
 import type { GenState, GenerationHandle } from "./generate-deck";
 import { t } from "./i18n";
 
@@ -80,7 +82,9 @@ export class GenerateDeckView extends ItemView {
     contentEl.empty();
 
     const status = contentEl.createDiv({ cls: "sd-gen-status" });
-    const pingEl = status.createSpan({ cls: "sd-gen-ping", text: "…" });
+    const pingEl = status.createSpan({ cls: "sd-gen-ping" });
+    const pingLabelEl = status.createSpan({ cls: "sd-gen-ping-label" });
+    paintStatus(pingEl, null, t("deck.settings.endpoint.probing"));
 
     this.sourceLabel = contentEl.createDiv({ cls: "sd-gen-source-label" });
 
@@ -124,19 +128,30 @@ export class GenerateDeckView extends ItemView {
 
     // Resolve endpoint + ping + models (once per open).
     this.endpoint = await resolveActiveEndpoint(this.plugin.settings.llmEndpoints, (ep) => makeDeckLlmClient(ep, "").ping());
-    pingEl.classList.toggle("sd-gen-ping-ok", !!this.endpoint);
-    pingEl.classList.toggle("sd-gen-ping-err", !this.endpoint);
     if (!this.endpoint) {
-      pingEl.setText(`✗ ${t("deck.modal.unreachable")}`);
+      // No resolved endpoint → nothing left to probe() for a kind; "unknown" carries the
+      // shared error visual (circle-x/is-error) while the label stays the specific,
+      // actionable message instead of the generic "not reachable" klartext.
+      paintStatus(pingEl, "unknown", t("deck.modal.noEndpoint"));
+      pingLabelEl.setText(t("deck.modal.noEndpoint"));
       this.warnEl.setText(t("deck.modal.noEndpoint"));
     } else {
-      pingEl.setText(`✓ ${this.endpoint} (${t("deck.modal.reachable")})`);
+      const st = await makeDeckLlmClient(this.endpoint, "").probe();
+      const label = st.kind === "unknown" && st.raw
+        ? `${t(statusKindKey("unknown"))} — ${st.raw}`
+        : t(statusKindKey(st.kind));
+      paintStatus(pingEl, st.kind, label);
+      pingLabelEl.setText(`${this.endpoint} — ${label}`);
       const models = await makeDeckLlmClient(this.endpoint, "").listModels();
-      if (models.length) {
+      if (modelFieldMode(models) === "dropdown") {
+        const saved = this.plugin.settings.llmModel;
+        // Keep a saved-but-absent model selectable instead of losing it (UI-STANDARD §8,
+        // same rule as the settings model field).
+        const options = saved && !models.includes(saved) ? [saved, ...models] : models;
         modelHolder.empty();
         const sel = modelHolder.createEl("select");
-        for (const m of models) sel.createEl("option", { value: m, text: m });
-        this.model = models.includes(this.plugin.settings.llmModel) ? this.plugin.settings.llmModel : models[0];
+        for (const m of options) sel.createEl("option", { value: m, text: m });
+        this.model = saved && options.includes(saved) ? saved : options[0];
         sel.value = this.model;
         sel.addEventListener("change", () => { this.model = sel.value; this.updateEnabled(); });
       }

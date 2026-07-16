@@ -136,9 +136,11 @@
 .sd-gen-row { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
 .sd-gen-row label { min-width: 120px; }
 .sd-gen-status { margin-bottom: 10px; opacity: 0.9; }
-.sd-gen-ping { margin-left: 8px; }
-.sd-gen-ping-ok { color: var(--text-success); }
-.sd-gen-ping-err { color: var(--text-error); }
+.sd-gen-ping { margin-left: 8px; display: inline-flex; align-items: center; }
+.sd-gen-ping.is-checking { color: var(--text-faint); }
+.sd-gen-ping.is-ok { color: var(--text-success); }
+.sd-gen-ping.is-error { color: var(--text-error); }
+.sd-gen-ping-label { margin-left: var(--size-4-2); opacity: 0.9; }
 .sd-gen-hint { margin: 8px 0; font-size: 0.9em; opacity: 0.8; }
 .sd-gen-exists { margin: 8px 0; display: flex; flex-direction: column; gap: var(--size-4-2); }
 .sd-collide-opt { display: flex; align-items: center; gap: var(--size-4-1); }
