@@ -146,3 +146,17 @@
 .sd-gen-tail, .sd-gen-reasoning pre { max-height: 180px; overflow: auto; white-space: pre-wrap; font-size: 0.8em; }
 .sd-gen-view { padding: 10px; }
 .sd-gen-source-label { font-weight: 600; margin: 6px 0 10px; }
+
+/* --- AI settings: endpoint row editor (UI-STANDARD §8) --- */
+.sd-endpoint-row .sd-endpoint-status,
+.sd-endpoint-row .sd-endpoint-warn {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--size-4-2);
+}
+.sd-endpoint-status.is-checking { color: var(--text-faint); }
+.sd-endpoint-status.is-ok { color: var(--text-success); }
+.sd-endpoint-status.is-error { color: var(--text-error); }
+.sd-endpoint-status.is-active { outline: 1px solid var(--text-success); border-radius: var(--radius-s); }
+.sd-endpoint-warn { color: var(--text-warning); }
+.sd-endpoint-actions .setting-item-control { justify-content: flex-start; }
