@@ -62,6 +62,14 @@ describe("DeckLlmClient.generate", () => {
     await c.generate(msg, opts, () => {}, () => {});
     expect(streamCalls).toBe(1);
   });
+
+  it("never sends suppress params to an always-on thinker", async () => {
+    let sentBody = "";
+    const http = async (p: { body?: string }) => { sentBody = p.body ?? ""; return { status: 200, json: { choices: [{ message: { content: "ok" } }] }, text: "" }; };
+    const c = new DeckLlmClient("http://x:1", "gpt-oss-20b", http, (() => { const e = new Error("x"); e.name = "StreamNetworkError"; throw e; }) as never);
+    await c.generate([{ role: "user", content: "hi" }], { model: "gpt-oss-20b", temperature: 0, maxTokens: 8, suppressThinking: true }, () => {}, () => {});
+    expect(JSON.parse(sentBody).reasoning_effort).toBeUndefined();
+  });
 });
 
 describe("probe", () => {

@@ -3,6 +3,7 @@ import { streamSSE, type StreamResult } from "./llm-stream";
 import { normalizeEndpoint } from "./vendor/kit/endpoint";
 import { suppressParams } from "./vendor/kit/reasoning";
 import { classifyEndpointStatus, type EndpointStatus, type ProbeInput } from "./vendor/kit/endpoint_diagnostics";
+import { effectiveSuppress } from "./core/llm/ai-settings-model";
 import { parseErrorEnvelope } from "./core/llm/error-envelope";
 import { parseLmStudioContext, parseOllamaContext, type ModelContext } from "./core/llm/model-info";
 import type { ChatMessage } from "./core/llm/deck-prompt";
@@ -77,7 +78,7 @@ export class DeckLlmClient {
       messages, stream,
       temperature: opts.temperature,
       max_tokens: opts.maxTokens,
-      ...suppressParams(opts.suppressThinking),
+      ...suppressParams(effectiveSuppress(opts.model || this.model, opts.suppressThinking)),
     });
   }
 

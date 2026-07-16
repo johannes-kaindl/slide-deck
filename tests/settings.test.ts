@@ -42,31 +42,39 @@ describe("SlideDeckSettingTab (declarative)", () => {
     const keys = controls.map((c) => c.control.key);
     expect(new Set(keys)).toEqual(new Set([
       "defaultTheme", "minFontPx", "imageScale", "exportFolder", "themesFolder", "hideThemesFolder", "customCss",
-      "llmEndpoints", "llmModel", "llmMaxTokens", "llmTemperature", "llmSuppressThinking",
+      "llmMaxTokens", "llmTemperature",
     ]));
     for (const key of keys) expect(key in DEFAULT_SETTINGS).toBe(true);
 
     for (const key of keys) {
-      if (key === "llmEndpoints") { expect(tab.getControlValue(key)).toBe(settings.llmEndpoints.join("\n")); continue; }
       expect(tab.getControlValue(key)).toBe(settings[key as keyof SlideDeckSettings]);
     }
 
     const newValues: Record<string, unknown> = {
       defaultTheme: "kuro", minFontPx: 30, imageScale: 3, exportFolder: "Out", themesFolder: "Themes",
       hideThemesFolder: false, customCss: "body{}",
-      llmEndpoints: "http://a\nhttp://b", llmModel: "qwen3", llmMaxTokens: 4096, llmTemperature: 0.7, llmSuppressThinking: false,
+      llmMaxTokens: 4096, llmTemperature: 0.7,
     };
     for (const key of keys) {
       await tab.setControlValue(key, newValues[key]);
-      if (key === "llmEndpoints") {
-        expect(settings.llmEndpoints).toEqual(["http://a", "http://b"]);
-        expect(tab.getControlValue(key)).toBe("http://a\nhttp://b");
-        continue;
-      }
       expect(settings[key as keyof SlideDeckSettings]).toBe(newValues[key]);
       expect(tab.getControlValue(key)).toBe(newValues[key]);
     }
     expect(calls.saveSettings).toBeGreaterThanOrEqual(keys.length);
+  });
+
+  // llmModel is no longer a `control` definition item (Task 7 moved the model field to the
+  // §8 render block — renderModel), but get/setControlValue("llmModel", …) stays alive for
+  // Task 8's view to read/write through the same abstraction. Cover it directly.
+  it("keeps the llmModel get/setControlValue round-trip alive for the generate view", async () => {
+    const settings: SlideDeckSettings = { ...DEFAULT_SETTINGS };
+    const { plugin } = makeFakePlugin(settings);
+    const tab = new SlideDeckSettingTab({} as any, plugin as any);
+
+    expect(tab.getControlValue("llmModel")).toBe(settings.llmModel);
+    await tab.setControlValue("llmModel", "  qwen3  ");
+    expect(settings.llmModel).toBe("qwen3");
+    expect(tab.getControlValue("llmModel")).toBe("qwen3");
   });
 
   it("runs the themesFolder + hideThemesFolder side effects", async () => {
