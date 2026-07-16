@@ -5,7 +5,7 @@ import { Notice, Setting, setIcon } from "obsidian";
 import { t } from "./i18n";
 import {
   applyEndpointEdit, activeIndexFromStatuses, statusKindKey, warnRuleKey,
-  modelFieldMode, thinkToggleView,
+  modelFieldMode, thinkToggleView, initialModelSelection,
 } from "./core/llm/ai-settings-model";
 import type { ModelContext } from "./core/llm/model-info";
 import {
@@ -159,11 +159,7 @@ export function renderModelField(containerEl: HTMLElement, deps: ModelFieldDeps)
    *  anything: a `<select>` must display a value, but that display choice is not a user
    *  decision yet (see drawDropdown). */
   function computeSelection(models: string[]): { options: string[]; initial: string } {
-    const saved = deps.getModel();
-    // Keep a saved-but-absent model selectable instead of losing it (UI-STANDARD §8).
-    const options = saved && !models.includes(saved) ? [saved, ...models] : models;
-    const initial = saved && options.includes(saved) ? saved : options[0];
-    return { options, initial };
+    return initialModelSelection(models, deps.getModel());
   }
 
   /** Draws the dropdown and returns the model it shows as selected. Never writes to settings

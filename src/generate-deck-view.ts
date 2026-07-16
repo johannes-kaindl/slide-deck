@@ -6,7 +6,7 @@ import { resolveActiveEndpoint } from "./vendor/kit/endpoint";
 import { frontmatterRange } from "./core/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./core/llm/deck-prompt";
 import { estimateTokens, contextOverflow } from "./core/llm/model-info";
-import { modelFieldMode, statusKindKey } from "./core/llm/ai-settings-model";
+import { modelFieldMode, statusKindKey, initialModelSelection } from "./core/llm/ai-settings-model";
 import { paintStatus } from "./ai-settings-ui";
 import type { GenState, GenerationHandle } from "./generate-deck";
 import { t } from "./i18n";
@@ -144,14 +144,13 @@ export class GenerateDeckView extends ItemView {
       pingLabelEl.setText(`${this.endpoint} — ${label}`);
       const models = await makeDeckLlmClient(this.endpoint, "").listModels();
       if (modelFieldMode(models) === "dropdown") {
-        const saved = this.plugin.settings.llmModel;
         // Keep a saved-but-absent model selectable instead of losing it (UI-STANDARD §8,
         // same rule as the settings model field).
-        const options = saved && !models.includes(saved) ? [saved, ...models] : models;
+        const { options, initial } = initialModelSelection(models, this.plugin.settings.llmModel);
         modelHolder.empty();
         const sel = modelHolder.createEl("select");
         for (const m of options) sel.createEl("option", { value: m, text: m });
-        this.model = saved && options.includes(saved) ? saved : options[0];
+        this.model = initial;
         sel.value = this.model;
         sel.addEventListener("change", () => { this.model = sel.value; this.updateEnabled(); });
       }
