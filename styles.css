@@ -147,6 +147,18 @@
 .sd-gen-view { padding: 10px; }
 .sd-gen-source-label { font-weight: 600; margin: 6px 0 10px; }
 
+/* Neutral block host for a §8 render block (see hostFor() in settings.ts). The definition
+   walker hands the block a real Setting whose settingEl is normally a flex row styled by
+   Obsidian's own ".setting-item" — unsuited to host several stacked ".setting-item" rows of
+   our own, so that class is stripped there. This carries the vertical rhythm (border + padding)
+   a top-level setting would otherwise have contributed, so spacing to neighboring settings
+   in the tab is preserved even though the row itself is no longer a ".setting-item". */
+.sd-settings-host {
+  display: block;
+  padding: var(--size-4-4) 0;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
 /* --- AI settings: endpoint row editor (UI-STANDARD §8) --- */
 .sd-endpoint-row .sd-endpoint-status,
 .sd-endpoint-row .sd-endpoint-warn {

@@ -94,10 +94,14 @@ export class SlideDeckSettingTab extends PluginSettingTab {
     ];
   }
 
-  /** The §8 blocks render into their own container: they draw multiple Setting rows, while the
-   *  definition walker hands us exactly one. settingEl is emptied and used as the host. */
+  /** The §8 blocks draw several Setting rows, but the walker hands us exactly one. settingEl
+   *  keeps Obsidian's own "setting-item" class, which core CSS styles as a flex row with
+   *  exactly two children (info + control) — nested `.setting-item` rows drawn inside it would
+   *  become flex children of that row instead of stacking. Strip the class so the host is a
+   *  neutral block container; the rows drawn into it lay out normally, top to bottom. */
   private hostFor(setting: Setting): HTMLElement {
     setting.settingEl.empty();
+    setting.settingEl.removeClass("setting-item");
     setting.settingEl.addClass("sd-settings-host");
     return setting.settingEl;
   }
