@@ -54,6 +54,19 @@ bisher das einzige Repo, das sie erfüllt).
 Sie schrumpft auf einen Re-Export des vendorten Moduls plus die echte Eigenleistung
 `estimateTokens`/`contextOverflow`.
 
+#### Vorbedingung: `src/core/**` darf aus `src/vendor/kit/**` importieren
+
+Heute tut das **kein einziges** Core-Modul (null Treffer) — was die Handkopie in `model-info.ts`
+erklärt. Der Grund ist real: `scripts/check-core-purity.mjs` walkt nur `src/core` und prüft dort auf
+`obsidian`/DOM. Ein Import core→vendor wäre ungesichert — würde ein Vendor-Modul je unpure, verseuchte
+es den Core still, ohne dass ein Gate anschlägt.
+
+Das Gate walkt deshalb zusätzlich `src/vendor/kit`. Kit-Module sind per Kit-Design obsidian-frei; das
+Gate pinnt damit nur zu, was ohnehin gilt, und macht den Import legitim statt geduldet. Erst dadurch
+ist der Re-Export in `model-info.ts` und der `EndpointStatusKind`-Import in `ai-settings-model.ts`
+sauber — sonst müsste jedes Kit-Modul weiter von Hand in den Core kopiert werden (genau die Drift,
+die dieser Sweep beseitigt).
+
 ### Pure Zustandslogik (`src/core/llm/ai-settings-model.ts`, neu)
 
 Obsidian-frei, keine Netzwerk-Calls, voll vitest-bar ohne DOM:
