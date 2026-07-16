@@ -6,7 +6,19 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- AI settings: endpoint row editor with a live connection check, one-click provider presets
+  (LM Studio / Ollama), a plain-text diagnosis per endpoint, and non-blocking input warnings.
+- AI settings: model dropdown populated from the endpoint, with a plain-text fallback when
+  offline and the model's context length shown when the server reports it.
+- AI settings: a "Test" button next to the thinking toggle — runs one real minimal call and
+  reports whether the model actually stopped thinking. Models that cannot disable thinking
+  (gpt-oss/harmony) now show a disabled toggle instead of a silently ineffective one.
+
 ### Fixed
+- Connection checks reported "reachable" for any endpoint answering HTTP 200, including
+  servers that are not an OpenAI-compatible API.
+- Thinking suppression parameters were sent to always-on reasoning models that reject them.
 - Plugin activation no longer crashes with `NotAllowedError` when a popout window is active
   at load time: the explorer-hide stylesheet is now built and adopted in the main window's
   document (where the file explorer lives), wrapped so the cosmetic hide can never break
