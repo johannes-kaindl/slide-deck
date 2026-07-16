@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { pickLang, setLang, t, STRINGS_EN, STRINGS_DE } from "../src/i18n";
+import { statusKindKey, warnRuleKey } from "../src/core/llm/ai-settings-model";
+import type { EndpointStatusKind } from "../src/vendor/kit/endpoint_diagnostics";
 
 describe("i18n", () => {
   beforeEach(() => setLang("en"));
@@ -46,5 +48,22 @@ describe("deck-generation strings", () => {
 describe("EN/DE parity", () => {
   it("every EN key has a DE translation and vice versa", () => {
     expect(Object.keys(STRINGS_DE).sort()).toEqual(Object.keys(STRINGS_EN).sort());
+  });
+});
+
+describe("AI settings i18n coverage", () => {
+  const KINDS: EndpointStatusKind[] = ["ok", "refused", "unknown-host", "timeout", "not-an-llm-api", "unknown"];
+  const RULES = ["scheme", "malformed", "port", "placeholder-ip"];
+
+  it.each(KINDS)("has EN+DE for status kind %s", (kind) => {
+    const key = statusKindKey(kind);
+    setLang("en"); expect(t(key)).not.toBe(key);
+    setLang("de"); expect(t(key)).not.toBe(key);
+  });
+
+  it.each(RULES)("has EN+DE for warn rule %s", (rule) => {
+    const key = warnRuleKey(rule);
+    setLang("en"); expect(t(key)).not.toBe(key);
+    setLang("de"); expect(t(key)).not.toBe(key);
   });
 });
