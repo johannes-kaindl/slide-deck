@@ -36,6 +36,8 @@ export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEdi
   const rows = [...list, ""]; // trailing adder
   const statuses: (EndpointStatusKind | null)[] = list.map(() => null);
   const icons: HTMLElement[] = [];
+  // Generation counter: guards probeAll() against overlapping runs (see below).
+  let probeGen = 0;
 
   rows.forEach((value, index) => {
     const isAdder = index === list.length;
@@ -96,17 +98,23 @@ export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEdi
     .onClick(() => void probeAll()));
 
   /** Probe every row in parallel — one dead endpoint must not block the others. Never throws:
-   *  probe() already degrades a failure to a classified status. */
+   *  probe() already degrades a failure to a classified status.
+   *  `probeGen` guards against overlapping runs (auto-probe on open + manual "check"
+   *  button): a superseded run must not paint over a newer run's results, nor place the
+   *  active marker from a statuses[] mix of two runs. */
   async function probeAll(): Promise<void> {
+    const gen = ++probeGen;
     for (const icon of icons) paintStatus(icon, null, t("deck.settings.endpoint.probing"));
     await Promise.all(list.map(async (ep, i) => {
       const st = await deps.probe(ep);
+      if (gen !== probeGen) return; // superseded — a newer run owns the icons now
       statuses[i] = st.kind;
       const label = st.kind === "unknown" && st.raw
         ? `${t(statusKindKey("unknown"))} — ${st.raw}`
         : t(statusKindKey(st.kind));
       paintStatus(icons[i], st.kind, label);
     }));
+    if (gen !== probeGen) return; // superseded — do not place the active marker
     const active = activeIndexFromStatuses(statuses);
     if (active >= 0) icons[active]?.addClass("is-active");
   }
