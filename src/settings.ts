@@ -2,8 +2,11 @@ import { App, Notice, PluginSettingTab, Setting, type SettingDefinitionItem } fr
 import type SlideDeckPlugin from "./main";
 import { t } from "./i18n";
 import { revealFolder, writeThemeCss } from "./theme-source";
-import { parseEndpointList } from "./vendor/kit/endpoint";
 import { THEME_ALIASES } from "./core/presets";
+import { renderEndpointEditor, renderModelField, renderThinkingRow } from "./ai-settings-ui";
+import { makeDeckLlmClient } from "./llm-client";
+import { resolveActiveEndpoint } from "./vendor/kit/endpoint";
+import { reasoningHappened } from "./vendor/kit/reasoning";
 
 export interface SlideDeckSettings {
   defaultTheme: string;
@@ -77,18 +80,82 @@ export class SlideDeckSettingTab extends PluginSettingTab {
         heading: t("deck.settings.heading"),
         items: [
           { name: t("deck.settings.endpoints.name"), desc: t("deck.settings.endpoints.desc"),
-            control: { type: "textarea", key: "llmEndpoints", placeholder: DEFAULT_SETTINGS.llmEndpoints[0] } },
+            render: (setting) => this.renderEndpoints(setting) },
           { name: t("deck.settings.model.name"), desc: t("deck.settings.model.desc"),
-            control: { type: "text", key: "llmModel", placeholder: "qwen3" } },
+            render: (setting) => this.renderModel(setting) },
           { name: t("deck.settings.maxTokens.name"), desc: t("deck.settings.maxTokens.desc"),
             control: { type: "number", key: "llmMaxTokens", min: 256 } },
           { name: t("deck.settings.temperature.name"), desc: t("deck.settings.temperature.desc"),
             control: { type: "number", key: "llmTemperature", min: 0, step: "any" } },
           { name: t("deck.settings.suppressThinking.name"), desc: t("deck.settings.suppressThinking.desc"),
-            control: { type: "toggle", key: "llmSuppressThinking" } },
+            render: (setting) => this.renderThinking(setting) },
         ],
       },
     ];
+  }
+
+  /** The §8 blocks draw several Setting rows, but the walker hands us exactly one. settingEl
+   *  keeps Obsidian's own "setting-item" class, which core CSS styles as a flex row with
+   *  exactly two children (info + control) — nested `.setting-item` rows drawn inside it would
+   *  become flex children of that row instead of stacking. Strip the class so the host is a
+   *  neutral block container; the rows drawn into it lay out normally, top to bottom. */
+  private hostFor(setting: Setting): HTMLElement {
+    setting.settingEl.empty();
+    setting.settingEl.removeClass("setting-item");
+    setting.settingEl.addClass("sd-settings-host");
+    return setting.settingEl;
+  }
+
+  private renderEndpoints(setting: Setting): void {
+    renderEndpointEditor(this.hostFor(setting), {
+      getList: () => this.plugin.settings.llmEndpoints,
+      setList: async (next) => { this.plugin.settings.llmEndpoints = next; await this.plugin.saveSettings(); },
+      probe: (ep) => makeDeckLlmClient(ep, "").probe(),
+      rerender: () => this.refreshUi(),
+    });
+  }
+
+  private renderModel(setting: Setting): void {
+    renderModelField(this.hostFor(setting), {
+      getModel: () => this.plugin.settings.llmModel,
+      setModel: async (m) => { this.plugin.settings.llmModel = m.trim(); await this.plugin.saveSettings(); },
+      listModels: async () => {
+        const ep = await this.activeEndpoint();
+        return ep ? makeDeckLlmClient(ep, "").listModels() : [];
+      },
+      modelContext: async (m) => {
+        const ep = await this.activeEndpoint();
+        return ep ? makeDeckLlmClient(ep, m).modelContext(m) : null;
+      },
+    });
+  }
+
+  private renderThinking(setting: Setting): void {
+    renderThinkingRow(this.hostFor(setting), {
+      getModel: () => this.plugin.settings.llmModel,
+      getSuppress: () => this.plugin.settings.llmSuppressThinking,
+      setSuppress: async (v) => { this.plugin.settings.llmSuppressThinking = v; await this.plugin.saveSettings(); },
+      testSuppress: (model) => this.runSuppressTest(model),
+      rerender: () => this.refreshUi(),
+    });
+  }
+
+  private async activeEndpoint(): Promise<string | null> {
+    return resolveActiveEndpoint(this.plugin.settings.llmEndpoints, (ep) => makeDeckLlmClient(ep, "").ping());
+  }
+
+  /** One real, minimal call with suppression on: did the model think anyway?
+   *  This is the only place that replaces the gpt-oss/harmony name heuristic with evidence. */
+  private async runSuppressTest(model: string): Promise<{ thought: boolean }> {
+    const ep = await this.activeEndpoint();
+    if (!ep) throw new Error(t("deck.modal.noEndpoint"));
+    const client = makeDeckLlmClient(ep, model);
+    const r = await client.generate(
+      [{ role: "user", content: "Reply with the single word: ok" }],
+      { model, temperature: 0, maxTokens: 32, suppressThinking: true },
+      () => {}, () => {},
+    );
+    return { thought: reasoningHappened(r.content, r.reasoning) };
   }
 
   /** Imperative fallback for Obsidian < 1.13 (which does not call getSettingDefinitions).
@@ -153,7 +220,6 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       case "themesFolder": return s.themesFolder;
       case "hideThemesFolder": return s.hideThemesFolder;
       case "customCss": return s.customCss;
-      case "llmEndpoints": return s.llmEndpoints.join("\n");
       case "llmModel": return s.llmModel;
       case "llmMaxTokens": return s.llmMaxTokens;
       case "llmTemperature": return s.llmTemperature;
@@ -171,7 +237,6 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       case "imageScale": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.imageScale = n; break; }
       case "exportFolder": s.exportFolder = String(value).trim() || DEFAULT_SETTINGS.exportFolder; break;
       case "customCss": s.customCss = String(value); break;
-      case "llmEndpoints": s.llmEndpoints = parseEndpointList(String(value)); break;
       case "llmModel": s.llmModel = String(value).trim(); break;
       case "llmMaxTokens": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.llmMaxTokens = Math.floor(n); break; }
       case "llmTemperature": { const n = Number(value); if (Number.isFinite(n) && n >= 0) s.llmTemperature = n; break; }

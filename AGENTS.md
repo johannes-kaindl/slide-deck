@@ -58,6 +58,24 @@ src/core/          Reiner Kern — kein obsidian-Import, kein DOM. Vollständig 
   folder-hide.ts     normalizeFolder(raw) — kanonische Pfadform; buildHideCss(folder, hide) —
                      CSS, das einen Vault-Ordner im Datei-Explorer ausblendet (vault-rag-Muster,
                      data-path-Attribut, activeDocument.adoptedStyleSheets in main.applyFolderHide()).
+  llm/
+    deck-prompt.ts        buildDeckPrompt(sourceBody, opts, contract) → ChatMessage[] — System+User-
+                          Prompt, der eine Notiz in Deck-Markdown verwandelt (contractToPrompt ohne
+                          Theme-Zeile — das Theme wird deterministisch gesetzt, nie vom Modell
+                          gewählt). stripNoteFrontmatter() kappt die Notiz-eigene Frontmatter.
+    deck-sanitize.ts      Nachbearbeitung generierter Deck-Markdown (Frontmatter-Range-Erkennung,
+                          bare `<think>`-Reste kappen, …).
+    deck-validate.ts      validateDeckOutput(md) → DeckValidation — parseDeck() + Warnings; fatal
+                          nur bei leerer Ausgabe oder 0 Folien (fit-or-warn, sonst nie blockierend).
+    error-envelope.ts     parseErrorEnvelope(text) — erkennt OpenAI-kompatible Fehler-Envelopes in
+                          HTTP-200-Bodies (LM Studio antwortet Fehlern oft ohne Fehlerstatus).
+    model-info.ts         Re-Export von Kits parseLmStudioContext/parseOllamaContext/ModelContext
+                          (model-context.ts) + eigene estimateTokens(chars), contextOverflow(...).
+    ai-settings-model.ts  Pure Zustandslogik der KI-Settings: applyEndpointEdit,
+                          activeIndexFromStatuses, modelFieldMode, initialModelSelection (+ Typ
+                          ModelSelection — hält einen serverseitig nicht mehr gelisteten,
+                          gespeicherten Modellwert als Extra-Option statt ihn stumm zu verlieren),
+                          thinkToggleView, effectiveSuppress, statusKindKey/warnRuleKey.
   presets/
     index.ts        Preset-Typ + PRESETS-Registry; presetFor() (total); presetTokensCss();
                     assembleDeckCss().
@@ -98,6 +116,14 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
                      geklebt). Beide konsumieren buildIsolatedDeck() für ein einheitliches Artefakt.
   dom-safe.ts        Popout-sichere DOM-Helfer (activeDocument, activeWindow).
   i18n.ts            t(key, ...args) · pickLang · setLang/getLang. EN kanonisch, DE übersetzt.
+  ai-settings-ui.ts  Render der KI-Settings-Bausteine (UI-STANDARD §8): paintStatus (gemeinsame
+                     Status-Icon-Vokabel — Form + Farbe + State-Klasse + aria-label, WCAG 1.4.1),
+                     renderEndpointEditor (Zeilen-Editor, mutiert bei blur + Live-Probe + Presets),
+                     renderModelField (Dropdown aus listModels()/modelContext() + Freitext-Fallback
+                     + Kontextlängen-Anzeige), renderThinkingRow (Toggle + Live-Suppress-Test via
+                     echtem Minimal-Call). Die render*-Funktionen sind settings.ts-exklusiv;
+                     paintStatus wird zusätzlich von generate-deck-view.ts importiert (identische
+                     Icon-Sprache in Settings und Generate-View).
   settings.ts        SlideDeckSettings (defaultTheme, minFontPx, imageScale, themesFolder,
                      hideThemesFolder) + SettingTab (inkl. „Verfügbare Themes"-Referenz,
                      Open-in-Finder-Button, Export-as-.css-Button, Ordner-Ausblenden-Toggle).
@@ -207,6 +233,19 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
   (Codeberg/Forgejo ignoriert `.github/`). SemVer-Tag pushen → Mirror trägt ihn zu GitHub →
   Pipeline baut + attestiert + legt das GitHub-Release an. Das Codeberg-Release (kanonisch)
   bleibt manuell via Forgejo-API.
+- **Kit-Vendoring:** `src/vendor/kit/**` sind **verbatim** Kopien aus `obsidian-kit/src/pure/` —
+  nie hier editieren, sondern vom gepinnten sha neu vendoren (`src/vendor/VENDOR.json` hält
+  `version` + `sha`). Das Purity-Gate walkt `src/core` **und** `src/vendor/kit`; deshalb darf
+  Core aus vendor importieren, ohne dass ein unpure gewordenes Kit-Modul still durchschlägt.
+- **Kit-Klartexte sind deutsch:** `EndpointStatus.klartext` ist im Kit hartkodiert deutsch.
+  Dieses Plugin ist EN-kanonisch → nie `klartext` rendern, immer über `kind` →
+  `statusKindKey(kind)` → `t(key)`. Einzige Ausnahme: `kind === "unknown"` (dort trägt `raw`
+  die einzige Information).
+- **Endpoint-Zeilen-Editor mutiert bei `blur`, nie bei `onChange`** (UI-STANDARD §8) — sonst
+  persistiert jeder Tastendruck und der Adder sammelt `h`, `ht`, `htt`.
+- **`ping()` ist nicht `status===200`:** LM Studio antwortet auf `/v1/v1/...` mit HTTP 200 +
+  Fehler-Body. `probe()` gibt das Rohsignal an `classifyEndpointStatus`, das erst die API-Form
+  (`data`-Array) prüft — deshalb erkennt es `not-an-llm-api`.
 
 ## Memory
 

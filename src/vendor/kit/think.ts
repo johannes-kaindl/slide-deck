@@ -1,4 +1,4 @@
-// vendored from obsidian-kit#0.2.0, src/pure/think-splitter.ts
+// vendored from obsidian-kit@0.14.0 (644603c) — src/pure/think-splitter.ts — verbatim, do not edit here.
 const OPEN = "<think>";
 const CLOSE = "</think>";
 

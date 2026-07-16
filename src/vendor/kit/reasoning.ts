@@ -1,4 +1,4 @@
-// vendored from obsidian-kit#0.6.0, src/pure/reasoning.ts
+// vendored from obsidian-kit@0.14.0 (644603c) — src/pure/reasoning.ts — verbatim, do not edit here.
 export type ThinkingSupport = "none" | "hybrid" | "always";
 
 /** Union-Params zum Abschalten von Reasoning über viele lokale Server hinweg.

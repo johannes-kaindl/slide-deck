@@ -12,7 +12,7 @@ const okStream = (over: any = {}): any =>
 
 describe("DeckLlmClient reachability", () => {
   it("ping true on 200", async () => {
-    expect(await new DeckLlmClient("http://x", "m", fakeHttp(() => ({ status: 200 })), okStream()).ping()).toBe(true);
+    expect(await new DeckLlmClient("http://x", "m", fakeHttp(() => ({ status: 200, json: { data: [] } })), okStream()).ping()).toBe(true);
   });
   it("listModels returns sorted ids", async () => {
     const c = new DeckLlmClient("http://x", "m", fakeHttp(() => ({ status: 200, json: { data: [{ id: "b" }, { id: "a" }] } })), okStream());
@@ -61,5 +61,60 @@ describe("DeckLlmClient.generate", () => {
     await c.generate(msg, opts, () => {}, () => {});
     await c.generate(msg, opts, () => {}, () => {});
     expect(streamCalls).toBe(1);
+  });
+
+  it("never sends suppress params to an always-on thinker", async () => {
+    let sentBody = "";
+    const http = async (p: { body?: string }) => { sentBody = p.body ?? ""; return { status: 200, json: { choices: [{ message: { content: "ok" } }] }, text: "" }; };
+    const c = new DeckLlmClient("http://x:1", "gpt-oss-20b", http, (() => { const e = new Error("x"); e.name = "StreamNetworkError"; throw e; }) as never);
+    await c.generate([{ role: "user", content: "hi" }], { model: "gpt-oss-20b", temperature: 0, maxTokens: 8, suppressThinking: true }, () => {}, () => {});
+    expect(JSON.parse(sentBody).reasoning_effort).toBeUndefined();
+  });
+});
+
+describe("probe", () => {
+  const noStream = (() => { throw new Error("not used"); }) as never;
+
+  it("classifies a model-list response as ok", async () => {
+    const http = async () => ({ status: 200, json: { data: [{ id: "qwen3" }] }, text: "" });
+    const c = new DeckLlmClient("http://x:1", "m", http, noStream);
+    expect(await c.probe()).toMatchObject({ reachable: true, kind: "ok" });
+  });
+
+  it("classifies HTTP 200 with an error body as not-an-llm-api — the /v1/v1 trap", async () => {
+    const http = async () => ({ status: 200, json: { error: "Unexpected endpoint" }, text: "" });
+    const c = new DeckLlmClient("http://x:1", "m", http, noStream);
+    expect(await c.probe()).toMatchObject({ reachable: false, kind: "not-an-llm-api" });
+  });
+
+  it("classifies a refused connection", async () => {
+    const http = async () => { throw new Error("net::ERR_CONNECTION_REFUSED"); };
+    const c = new DeckLlmClient("http://x:1", "m", http, noStream);
+    expect(await c.probe()).toMatchObject({ reachable: false, kind: "refused" });
+  });
+
+  it("classifies an unknown host", async () => {
+    const http = async () => { throw new Error("getaddrinfo ENOTFOUND nope.invalid"); };
+    const c = new DeckLlmClient("http://x:1", "m", http, noStream);
+    expect(await c.probe()).toMatchObject({ reachable: false, kind: "unknown-host" });
+  });
+
+  it("keeps the raw message for an unclassifiable error", async () => {
+    const http = async () => { throw new Error("weird failure"); };
+    const c = new DeckLlmClient("http://x:1", "m", http, noStream);
+    expect(await c.probe()).toMatchObject({ kind: "unknown", raw: "weird failure" });
+  });
+
+  it("ping stays a boolean and now rejects a non-LLM 200", async () => {
+    const ok = new DeckLlmClient("http://x:1", "m", async () => ({ status: 200, json: { data: [] }, text: "" }), noStream);
+    const bad = new DeckLlmClient("http://x:1", "m", async () => ({ status: 200, json: { error: "nope" }, text: "" }), noStream);
+    expect(await ok.ping()).toBe(true);
+    expect(await bad.ping()).toBe(false);
+  });
+
+  it("does not throw when the injected http fn throws synchronously", async () => {
+    const syncThrow = (() => { throw new Error("sync boom"); }) as never;
+    const c = new DeckLlmClient("http://x:1", "m", syncThrow, (() => { throw new Error("nope"); }) as never);
+    await expect(c.probe()).resolves.toMatchObject({ reachable: false, kind: "unknown" });
   });
 });

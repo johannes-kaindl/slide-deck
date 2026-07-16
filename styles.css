@@ -136,9 +136,11 @@
 .sd-gen-row { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
 .sd-gen-row label { min-width: 120px; }
 .sd-gen-status { margin-bottom: 10px; opacity: 0.9; }
-.sd-gen-ping { margin-left: 8px; }
-.sd-gen-ping-ok { color: var(--text-success); }
-.sd-gen-ping-err { color: var(--text-error); }
+.sd-gen-ping { margin-left: 8px; display: inline-flex; align-items: center; }
+.sd-gen-ping.is-checking { color: var(--text-faint); }
+.sd-gen-ping.is-ok { color: var(--text-success); }
+.sd-gen-ping.is-error { color: var(--text-error); }
+.sd-gen-ping-label { margin-left: var(--size-4-2); opacity: 0.9; }
 .sd-gen-hint { margin: 8px 0; font-size: 0.9em; opacity: 0.8; }
 .sd-gen-exists { margin: 8px 0; display: flex; flex-direction: column; gap: var(--size-4-2); }
 .sd-collide-opt { display: flex; align-items: center; gap: var(--size-4-1); }
@@ -146,3 +148,35 @@
 .sd-gen-tail, .sd-gen-reasoning pre { max-height: 180px; overflow: auto; white-space: pre-wrap; font-size: 0.8em; }
 .sd-gen-view { padding: 10px; }
 .sd-gen-source-label { font-weight: 600; margin: 6px 0 10px; }
+
+/* Neutral block host for a §8 render block (see hostFor() in settings.ts). The definition
+   walker hands the block a real Setting whose settingEl is normally a flex row styled by
+   Obsidian's own ".setting-item" — unsuited to host several stacked ".setting-item" rows of
+   our own, so that class is stripped there. This carries the vertical rhythm (border + padding)
+   a top-level setting would otherwise have contributed, so spacing to neighboring settings
+   in the tab is preserved even though the row itself is no longer a ".setting-item". */
+.sd-settings-host {
+  display: block;
+  padding: var(--size-4-4) 0;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* --- AI settings: endpoint row editor (UI-STANDARD §8) --- */
+.sd-endpoint-row .sd-endpoint-status,
+.sd-endpoint-row .sd-endpoint-warn {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--size-4-2);
+}
+.sd-endpoint-status.is-checking { color: var(--text-faint); }
+.sd-endpoint-status.is-ok { color: var(--text-success); }
+.sd-endpoint-status.is-error { color: var(--text-error); }
+.sd-endpoint-status.is-active { outline: 1px solid var(--text-success); border-radius: var(--radius-s); }
+.sd-endpoint-warn { color: var(--text-warning); }
+.sd-endpoint-actions .setting-item-control { justify-content: flex-start; }
+
+/* --- AI settings: model field + thinking row --- */
+.sd-model-holder { display: flex; gap: var(--size-4-2); align-items: center; }
+.sd-model-input { width: 100%; }
+.sd-model-info { color: var(--text-muted); font-size: var(--font-ui-smaller); padding: 0 0 var(--size-4-2) 0; }
+.setting-item.is-disabled .setting-item-name { color: var(--text-muted); }
