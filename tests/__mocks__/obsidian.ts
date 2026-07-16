@@ -625,6 +625,13 @@ export interface MarkdownPostProcessorContext {
 }
 
 // ---------------------------------------------------------------------------
+// Window polyfill for Node.js test environment (used by window.setTimeout, etc.)
+// ---------------------------------------------------------------------------
+if (typeof globalThis.window === "undefined") {
+  (globalThis as any).window = globalThis;
+}
+
+// ---------------------------------------------------------------------------
 // Factory: the full superset as defaults, with shallow override merge.
 // `defaultStubs` is assembled from the top-level definitions above, so the
 // named exports and the factory defaults can never drift apart.
