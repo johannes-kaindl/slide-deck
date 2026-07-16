@@ -32,7 +32,10 @@ export class DeckLlmClient {
    *  timeout/abort, so the race is the only way to bound a dead endpoint. Never throws:
    *  a failure degrades to a classified status (settings must never die on a probe). */
   async probe(timeoutMs = 5000): Promise<EndpointStatus> {
-    const timeout = new Promise<ProbeInput>((r) => window.setTimeout(() => r({ kind: "timeout" }), timeoutMs));
+    let timer: number | undefined;
+    const timeout = new Promise<ProbeInput>((r) => {
+      timer = window.setTimeout(() => r({ kind: "timeout" }), timeoutMs);
+    });
     const call: Promise<ProbeInput> = (async () => {
       try {
         const r = await this.http({ url: `${this.endpoint}/v1/models` });
@@ -41,7 +44,13 @@ export class DeckLlmClient {
         return { kind: "error", message: (e as Error)?.message ?? String(e) };
       }
     })();
-    return classifyEndpointStatus(await Promise.race([call, timeout]));
+    try {
+      return classifyEndpointStatus(await Promise.race([call, timeout]));
+    } finally {
+      // A fast success/error must not leave the losing timer armed for up to `timeoutMs` —
+      // Promise.race never cancels the loser on its own (Finding 6).
+      window.clearTimeout(timer);
+    }
   }
 
   /** Boolean reachability for resolveActiveEndpoint's injected ping. Delegates to probe() so

@@ -4,8 +4,8 @@
 import { Notice, Setting, setIcon } from "obsidian";
 import { t } from "./i18n";
 import {
-  applyEndpointEdit, activeIndexFromStatuses, statusKindKey, warnRuleKey,
-  modelFieldMode, thinkToggleView, initialModelSelection,
+  applyEndpointEdit, activeIndexFromStatuses, warnRuleKey,
+  modelFieldMode, thinkToggleView, initialModelSelection, statusLabelParts,
 } from "./core/llm/ai-settings-model";
 import type { ModelContext } from "./core/llm/model-info";
 import {
@@ -107,18 +107,28 @@ export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEdi
   async function probeAll(): Promise<void> {
     const gen = ++probeGen;
     for (const icon of icons) paintStatus(icon, null, t("deck.settings.endpoint.probing"));
+    const labels: string[] = [];
     await Promise.all(list.map(async (ep, i) => {
       const st = await deps.probe(ep);
       if (gen !== probeGen) return; // superseded — a newer run owns the icons now
       statuses[i] = st.kind;
-      const label = st.kind === "unknown" && st.raw
-        ? `${t(statusKindKey("unknown"))} — ${st.raw}`
-        : t(statusKindKey(st.kind));
+      const parts = statusLabelParts(st.kind, st.raw);
+      const label = parts.suffix ? `${t(parts.key)} — ${parts.suffix}` : t(parts.key);
+      labels[i] = label;
       paintStatus(icons[i], st.kind, label);
     }));
     if (gen !== probeGen) return; // superseded — do not place the active marker
     const active = activeIndexFromStatuses(statuses);
-    if (active >= 0) icons[active]?.addClass("is-active");
+    if (active < 0) return;
+    const icon = icons[active];
+    if (!icon) return;
+    icon.addClass("is-active");
+    // Colour/outline alone would fail WCAG 1.4.1 when two endpoints are reachable at once —
+    // a screen-reader user needs a text channel that says WHICH one is in use, not just that
+    // this one is reachable (Finding 3 / UI-STANDARD §8).
+    const activeLabel = `${labels[active]} · ${t("deck.settings.endpoint.active")}`;
+    icon.setAttribute("aria-label", activeLabel);
+    icon.setAttribute("title", activeLabel);
   }
 
   void probeAll(); // auto-probe on open
@@ -129,7 +139,6 @@ export interface ModelFieldDeps {
   setModel: (m: string) => Promise<void>;
   listModels: () => Promise<string[]>;
   modelContext: (m: string) => Promise<ModelContext | null>;
-  rerender: () => void;
 }
 
 /** Model field: dropdown from the server probe, freetext fallback when offline.
@@ -233,7 +242,11 @@ export function renderThinkingRow(containerEl: HTMLElement, deps: ThinkingDeps):
   const view = thinkToggleView(deps.getModel(), deps.getSuppress());
   const setting = new Setting(containerEl)
     .setName(t("deck.settings.suppressThinking.name"))
-    .setDesc(t(view.labelKey));
+    // hostFor() blanks settingEl before this block draws, so unlike the plain fields this
+    // block must restate its own description — dropping it here silently removed the
+    // explanation that the five plain-text fields still show (Finding 2). Keep both: the
+    // static "what this does" plus the live on/off/always-on state.
+    .setDesc(`${t("deck.settings.suppressThinking.desc")} — ${t(view.labelKey)}`);
   if (view.cls) setting.settingEl.addClass(view.cls);
 
   setting.addToggle((tg) => {

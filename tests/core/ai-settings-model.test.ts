@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   applyEndpointEdit, activeIndexFromStatuses, modelFieldMode, initialModelSelection,
-  thinkToggleView, effectiveSuppress, statusKindKey, warnRuleKey,
+  thinkToggleView, effectiveSuppress, statusKindKey, warnRuleKey, statusLabelParts,
 } from "../../src/core/llm/ai-settings-model";
 
 describe("applyEndpointEdit", () => {
@@ -68,8 +68,8 @@ describe("thinkToggleView", () => {
   it("shows an always-on model as disabled", () => {
     expect(thinkToggleView("gpt-oss-20b", true)).toEqual({ labelKey: "deck.settings.thinking.always", cls: "is-disabled", disabled: true });
   });
-  it("shows suppressed thinking as off", () => {
-    expect(thinkToggleView("qwen3", true)).toEqual({ labelKey: "deck.settings.thinking.off", cls: "is-off", disabled: false });
+  it("shows suppressed thinking as off — no row cls, the toggle control itself carries the state", () => {
+    expect(thinkToggleView("qwen3", true)).toEqual({ labelKey: "deck.settings.thinking.off", cls: "", disabled: false });
   });
   it("shows unsuppressed thinking as on", () => {
     expect(thinkToggleView("qwen3", false)).toEqual({ labelKey: "deck.settings.thinking.on", cls: "", disabled: false });
@@ -95,4 +95,20 @@ describe("i18n key mappers", () => {
   it("maps a warn rule to its key", () => {
     expect(warnRuleKey("port")).toBe("deck.settings.endpoint.warn.port");
   });
+});
+
+describe("statusLabelParts", () => {
+  it("adds the raw detail as a suffix only for unknown WITH raw", () => {
+    expect(statusLabelParts("unknown", "weird failure")).toEqual({
+      key: "deck.settings.endpoint.status.unknown", suffix: "weird failure",
+    });
+  });
+  it("drops the suffix for unknown WITHOUT raw", () => {
+    expect(statusLabelParts("unknown", undefined)).toEqual({ key: "deck.settings.endpoint.status.unknown" });
+  });
+  it.each(["ok", "refused", "unknown-host", "timeout", "not-an-llm-api"] as const)(
+    "never carries a suffix for kind %s, even when raw is set", (kind) => {
+      expect(statusLabelParts(kind, "should be ignored")).toEqual({ key: statusKindKey(kind) });
+    },
+  );
 });

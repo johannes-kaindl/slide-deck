@@ -6,7 +6,7 @@ import { resolveActiveEndpoint } from "./vendor/kit/endpoint";
 import { frontmatterRange } from "./core/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./core/llm/deck-prompt";
 import { estimateTokens, contextOverflow } from "./core/llm/model-info";
-import { modelFieldMode, statusKindKey, initialModelSelection } from "./core/llm/ai-settings-model";
+import { modelFieldMode, statusLabelParts, initialModelSelection } from "./core/llm/ai-settings-model";
 import { paintStatus } from "./ai-settings-ui";
 import type { GenState, GenerationHandle } from "./generate-deck";
 import { t } from "./i18n";
@@ -137,9 +137,8 @@ export class GenerateDeckView extends ItemView {
       this.warnEl.setText(t("deck.modal.noEndpoint"));
     } else {
       const st = await makeDeckLlmClient(this.endpoint, "").probe();
-      const label = st.kind === "unknown" && st.raw
-        ? `${t(statusKindKey("unknown"))} — ${st.raw}`
-        : t(statusKindKey(st.kind));
+      const parts = statusLabelParts(st.kind, st.raw);
+      const label = parts.suffix ? `${t(parts.key)} — ${parts.suffix}` : t(parts.key);
       paintStatus(pingEl, st.kind, label);
       pingLabelEl.setText(`${this.endpoint} — ${label}`);
       const models = await makeDeckLlmClient(this.endpoint, "").listModels();

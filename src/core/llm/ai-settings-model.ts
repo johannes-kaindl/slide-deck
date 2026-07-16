@@ -48,14 +48,19 @@ export function initialModelSelection(models: string[], saved: string): ModelSel
 
 export interface ThinkToggleView {
   labelKey: "deck.settings.thinking.on" | "deck.settings.thinking.off" | "deck.settings.thinking.always";
-  cls: "" | "is-off" | "is-disabled";
+  cls: "" | "is-disabled";
   disabled: boolean;
 }
 
-/** gpt-oss/harmony cannot be switched off → disabled + "always on". Otherwise on/off per flag. */
+/** gpt-oss/harmony cannot be switched off → disabled + "always on". Otherwise on/off per flag.
+ *  On/off carries no `cls` of its own: the native Obsidian toggle control already shows the
+ *  state visually (switch position) plus the row's `labelKey` text — a same-styled "is-off"
+ *  row class would be a second, invisible channel for information the control already renders.
+ *  `is-disabled` stays because it drives a real style (`.setting-item.is-disabled` dims the
+ *  name) that the toggle's own disabled look does not cover for the row as a whole. */
 export function thinkToggleView(model: string, suppress: boolean): ThinkToggleView {
   if (isAlwaysOnThinker(model)) return { labelKey: "deck.settings.thinking.always", cls: "is-disabled", disabled: true };
-  if (suppress) return { labelKey: "deck.settings.thinking.off", cls: "is-off", disabled: false };
+  if (suppress) return { labelKey: "deck.settings.thinking.off", cls: "", disabled: false };
   return { labelKey: "deck.settings.thinking.on", cls: "", disabled: false };
 }
 
@@ -70,6 +75,18 @@ export function effectiveSuppress(model: string, suppress: boolean): boolean {
  *  Kit's own `klartext` is hardcoded German — never surface it; map via `kind`. */
 export function statusKindKey(kind: EndpointStatusKind): string {
   return `deck.settings.endpoint.status.${kind}`;
+}
+
+export interface StatusLabelParts { key: string; suffix?: string }
+
+/** Decomposes a probed status into the i18n key + optional raw-detail suffix, so both the
+ *  settings endpoint editor and the generate-deck modal render the identical rule instead of
+ *  duplicating it. `raw` (the kit's untranslated detail message) is only ever appended for
+ *  `kind === "unknown"` — every other kind has a stable, fully translated message and must
+ *  never leak kit-internal text, even if a caller happened to pass a `raw` along with it. */
+export function statusLabelParts(kind: EndpointStatusKind, raw?: string): StatusLabelParts {
+  const key = statusKindKey(kind);
+  return kind === "unknown" && raw ? { key, suffix: raw } : { key };
 }
 
 /** i18n key for an input warning rule (the render layer calls `t(key)`). */

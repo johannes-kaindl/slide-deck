@@ -127,7 +127,6 @@ export class SlideDeckSettingTab extends PluginSettingTab {
         const ep = await this.activeEndpoint();
         return ep ? makeDeckLlmClient(ep, m).modelContext(m) : null;
       },
-      rerender: () => this.refreshUi(),
     });
   }
 
