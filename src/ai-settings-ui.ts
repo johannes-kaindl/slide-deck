@@ -148,33 +148,56 @@ export function renderModelField(containerEl: HTMLElement, deps: ModelFieldDeps)
     holder.empty();
     const input = holder.createEl("input", { type: "text", cls: "sd-model-input" });
     input.value = deps.getModel();
-    input.placeholder = "Qwen3";
-    input.addEventListener("blur", () => void deps.setModel(input.value.trim()).then(showContext));
+    // "qwen3" is a model id (LM Studio/Ollama ids are lowercase), not UI prose — the
+    // sentence-case rule targets labels/buttons and false-positives here.
+    // eslint-disable-next-line obsidianmd/ui/sentence-case -- model id, not UI text
+    input.placeholder = "qwen3";
+    input.addEventListener("blur", () => void deps.setModel(input.value.trim()).then(() => showContext()));
   }
 
-  function drawDropdown(models: string[]): void {
-    holder.empty();
+  /** Compute the option list and the value the dropdown should show, without persisting
+   *  anything: a `<select>` must display a value, but that display choice is not a user
+   *  decision yet (see drawDropdown). */
+  function computeSelection(models: string[]): { options: string[]; initial: string } {
     const saved = deps.getModel();
     // Keep a saved-but-absent model selectable instead of losing it (UI-STANDARD §8).
     const options = saved && !models.includes(saved) ? [saved, ...models] : models;
+    const initial = saved && options.includes(saved) ? saved : options[0];
+    return { options, initial };
+  }
+
+  /** Draws the dropdown and returns the model it shows as selected. Never writes to settings
+   *  on its own: preselecting models[0] when llmModel is "" (never set) must not materialize
+   *  that guess as a saved value — only a real `change` event may persist (see the cross-project
+   *  read-modify-write-over-absence lesson). The caller uses the return value to drive
+   *  showContext() for what's on screen without writing anything either. */
+  function drawDropdown(models: string[]): string {
+    holder.empty();
+    const { options, initial } = computeSelection(models);
     const select = holder.createEl("select", { cls: "dropdown" });
     for (const m of options) select.createEl("option", { value: m, text: m });
-    select.value = saved && options.includes(saved) ? saved : options[0];
-    if (select.value !== saved) void deps.setModel(select.value);
-    select.addEventListener("change", () => void deps.setModel(select.value).then(showContext));
+    select.value = initial;
+    select.addEventListener("change", () => void deps.setModel(select.value).then(() => showContext()));
+    return initial;
   }
 
   async function load(): Promise<void> {
     const models = await deps.listModels();
-    if (modelFieldMode(models) === "dropdown") drawDropdown(models);
-    else { drawFreetext(); info.setText(t("deck.settings.model.none")); }
-    await showContext();
+    if (modelFieldMode(models) === "dropdown") {
+      const shown = drawDropdown(models);
+      await showContext(shown);
+    } else {
+      drawFreetext();
+      info.setText(t("deck.settings.model.none"));
+    }
   }
 
   /** Context length is best-effort: when the server does not report it, stay silent
-   *  rather than guess. */
-  async function showContext(): Promise<void> {
-    const model = deps.getModel();
+   *  rather than guess. `shown` lets callers pass the model currently displayed by the
+   *  dropdown (which may differ from the persisted llmModel when nothing was saved yet)
+   *  without that display choice being written to settings. */
+  async function showContext(shown?: string): Promise<void> {
+    const model = shown ?? deps.getModel();
     if (!model) { info.setText(""); return; }
     const ctx = await deps.modelContext(model);
     if (!ctx?.maxContextLength) { info.setText(""); return; }
@@ -191,9 +214,9 @@ export function renderModelField(containerEl: HTMLElement, deps: ModelFieldDeps)
       const models = await deps.listModels();
       b.setButtonText(t("deck.settings.model.load")).setDisabled(false);
       if (modelFieldMode(models) === "dropdown") {
-        drawDropdown(models);
+        const shown = drawDropdown(models);
         new Notice(t("deck.settings.model.loaded", String(models.length))); // make the click visible
-        await showContext();
+        await showContext(shown);
       } else {
         new Notice(t("deck.settings.model.none"));
       }
