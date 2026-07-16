@@ -160,3 +160,9 @@
 .sd-endpoint-status.is-active { outline: 1px solid var(--text-success); border-radius: var(--radius-s); }
 .sd-endpoint-warn { color: var(--text-warning); }
 .sd-endpoint-actions .setting-item-control { justify-content: flex-start; }
+
+/* --- AI settings: model field + thinking row --- */
+.sd-model-holder { display: flex; gap: var(--size-4-2); align-items: center; }
+.sd-model-input { width: 100%; }
+.sd-model-info { color: var(--text-muted); font-size: var(--font-ui-smaller); padding: 0 0 var(--size-4-2) 0; }
+.setting-item.is-disabled .setting-item-name { color: var(--text-muted); }

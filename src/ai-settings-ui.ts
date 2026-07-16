@@ -1,11 +1,13 @@
 // Render layer for the AI settings blocks (UI-STANDARD §8). All decisions live in
 // core/llm/ai-settings-model.ts — this file only draws. Shared by the settings tab and the
 // generate-deck view so both speak the same icon vocabulary.
-import { Setting, setIcon } from "obsidian";
+import { Notice, Setting, setIcon } from "obsidian";
 import { t } from "./i18n";
 import {
   applyEndpointEdit, activeIndexFromStatuses, statusKindKey, warnRuleKey,
+  modelFieldMode, thinkToggleView,
 } from "./core/llm/ai-settings-model";
+import type { ModelContext } from "./core/llm/model-info";
 import {
   validateEndpointInput, ENDPOINT_PRESETS, type EndpointStatus, type EndpointStatusKind,
 } from "./vendor/kit/endpoint_diagnostics";
@@ -120,4 +122,121 @@ export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEdi
   }
 
   void probeAll(); // auto-probe on open
+}
+
+export interface ModelFieldDeps {
+  getModel: () => string;
+  setModel: (m: string) => Promise<void>;
+  listModels: () => Promise<string[]>;
+  modelContext: (m: string) => Promise<ModelContext | null>;
+  rerender: () => void;
+}
+
+/** Model field: dropdown from the server probe, freetext fallback when offline.
+ *  A saved model missing from the list is kept as an extra option — never silently dropped. */
+export function renderModelField(containerEl: HTMLElement, deps: ModelFieldDeps): void {
+  const setting = new Setting(containerEl)
+    .setName(t("deck.settings.model.name"))
+    .setDesc(t("deck.settings.model.desc"));
+  const holder = setting.controlEl.createDiv({ cls: "sd-model-holder" });
+  const info = containerEl.createDiv({ cls: "sd-model-info" });
+
+  drawFreetext(); // until the probe returns
+  void load();
+
+  function drawFreetext(): void {
+    holder.empty();
+    const input = holder.createEl("input", { type: "text", cls: "sd-model-input" });
+    input.value = deps.getModel();
+    input.placeholder = "Qwen3";
+    input.addEventListener("blur", () => void deps.setModel(input.value.trim()).then(showContext));
+  }
+
+  function drawDropdown(models: string[]): void {
+    holder.empty();
+    const saved = deps.getModel();
+    // Keep a saved-but-absent model selectable instead of losing it (UI-STANDARD §8).
+    const options = saved && !models.includes(saved) ? [saved, ...models] : models;
+    const select = holder.createEl("select", { cls: "dropdown" });
+    for (const m of options) select.createEl("option", { value: m, text: m });
+    select.value = saved && options.includes(saved) ? saved : options[0];
+    if (select.value !== saved) void deps.setModel(select.value);
+    select.addEventListener("change", () => void deps.setModel(select.value).then(showContext));
+  }
+
+  async function load(): Promise<void> {
+    const models = await deps.listModels();
+    if (modelFieldMode(models) === "dropdown") drawDropdown(models);
+    else { drawFreetext(); info.setText(t("deck.settings.model.none")); }
+    await showContext();
+  }
+
+  /** Context length is best-effort: when the server does not report it, stay silent
+   *  rather than guess. */
+  async function showContext(): Promise<void> {
+    const model = deps.getModel();
+    if (!model) { info.setText(""); return; }
+    const ctx = await deps.modelContext(model);
+    if (!ctx?.maxContextLength) { info.setText(""); return; }
+    const max = ctx.maxContextLength.toLocaleString();
+    info.setText(ctx.loadedContextLength
+      ? t("deck.settings.model.contextLoaded", max, ctx.loadedContextLength.toLocaleString())
+      : t("deck.settings.model.context", max));
+  }
+
+  setting.addButton((b) => b
+    .setButtonText(t("deck.settings.model.load"))
+    .onClick(async () => {
+      b.setButtonText(t("deck.settings.model.loading")).setDisabled(true);
+      const models = await deps.listModels();
+      b.setButtonText(t("deck.settings.model.load")).setDisabled(false);
+      if (modelFieldMode(models) === "dropdown") {
+        drawDropdown(models);
+        new Notice(t("deck.settings.model.loaded", String(models.length))); // make the click visible
+        await showContext();
+      } else {
+        new Notice(t("deck.settings.model.none"));
+      }
+    }));
+}
+
+export interface ThinkingDeps {
+  getModel: () => string;
+  getSuppress: () => boolean;
+  setSuppress: (v: boolean) => Promise<void>;
+  testSuppress: (model: string) => Promise<{ thought: boolean }>;
+  rerender: () => void;
+}
+
+/** Thinking toggle + live verification. isAlwaysOnThinker only knows gpt-oss/harmony — the test
+ *  button is what turns a guess into a fact. Never runs on its own: it costs a real LLM call. */
+export function renderThinkingRow(containerEl: HTMLElement, deps: ThinkingDeps): void {
+  const view = thinkToggleView(deps.getModel(), deps.getSuppress());
+  const setting = new Setting(containerEl)
+    .setName(t("deck.settings.suppressThinking.name"))
+    .setDesc(t(view.labelKey));
+  if (view.cls) setting.settingEl.addClass(view.cls);
+
+  setting.addToggle((tg) => {
+    tg.setValue(deps.getSuppress());
+    tg.setDisabled(view.disabled);
+    tg.onChange((v) => void deps.setSuppress(v).then(() => deps.rerender()));
+  });
+
+  setting.addButton((b) => b
+    .setButtonText(t("deck.settings.thinking.test"))
+    .setDisabled(view.disabled)
+    .onClick(async () => {
+      const model = deps.getModel();
+      if (!model) { new Notice(t("deck.settings.thinking.testNoModel")); return; }
+      b.setButtonText(t("deck.settings.thinking.testing")).setDisabled(true);
+      try {
+        const { thought } = await deps.testSuppress(model);
+        new Notice(thought ? t("deck.settings.thinking.testFail") : t("deck.settings.thinking.testOk"));
+      } catch (e) {
+        new Notice(t("deck.settings.thinking.testError", (e as Error)?.message ?? String(e)));
+      } finally {
+        b.setButtonText(t("deck.settings.thinking.test")).setDisabled(false);
+      }
+    }));
 }
