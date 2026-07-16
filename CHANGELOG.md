@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-07-16
+
 ### Added
 - AI settings: endpoint row editor with a live connection check, one-click provider presets
   (LM Studio / Ollama), a plain-text diagnosis per endpoint, and non-blocking input warnings.
