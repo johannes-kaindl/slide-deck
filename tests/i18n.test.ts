@@ -52,7 +52,13 @@ describe("EN/DE parity", () => {
 });
 
 describe("AI settings i18n coverage", () => {
-  const KINDS: EndpointStatusKind[] = ["ok", "refused", "unknown-host", "timeout", "not-an-llm-api", "unknown"];
+  // Total map over the union: adding a kind in a future kit bump fails tsc here until it is
+  // listed — an array typed as EndpointStatusKind[] would silently stay incomplete.
+  const KIND_SET: Record<EndpointStatusKind, true> = {
+    "ok": true, "refused": true, "unknown-host": true, "timeout": true,
+    "not-an-llm-api": true, "unknown": true,
+  };
+  const KINDS = Object.keys(KIND_SET) as EndpointStatusKind[];
   const RULES = ["scheme", "malformed", "port", "placeholder-ip"];
 
   it.each(KINDS)("has EN+DE for status kind %s", (kind) => {
