@@ -1,0 +1,16 @@
+{
+  "source": "https://codeberg.org/jkaindl/obsidian-kit",
+  "version": "0.14.0",
+  "sha": "644603c",
+  "vendored": "2026-07-16",
+  "modules": [
+    "endpoint.ts",
+    "endpoint_diagnostics.ts",
+    "model-context.ts",
+    "reasoning.ts",
+    "settings.ts",
+    "sse.ts",
+    "think.ts"
+  ],
+  "note": "Verbatim copies of obsidian-kit/src/pure/*. Never edit here — re-vendor from the pinned sha. think.ts is kit's think-splitter.ts."
+}

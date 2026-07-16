@@ -1,4 +1,4 @@
-// vendored from obsidian-kit#0.3.0, src/pure/endpoint.ts
+// vendored from obsidian-kit@0.14.0 (644603c) — src/pure/endpoint.ts — verbatim, do not edit here.
 /** Normalisiert eine Endpoint-Eingabe: trailing Slashes + ein trailing `/v1` strippen.
  *  Die Clients hängen `/v1/...` selbst an — enthielte der konfigurierte Endpoint bereits
  *  ein `/v1`, entstünde `…/v1/v1/...` (manche Server, z.B. LM Studio, antworten darauf mit
