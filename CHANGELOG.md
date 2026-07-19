@@ -6,6 +6,20 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-07-19
+
+### Fixed
+- Community store review flagged two `eslint-disable` comments as not permitted. Both are
+  resolved without disabling anything:
+  - The explorer-hide stylesheet now resolves the main window's document explicitly through
+    `workspace.rootSplit.doc` instead of the bare `document` global. Same target as before —
+    the file explorer's window, deliberately not `activeDocument`, which is what caused the
+    0.4.0 `NotAllowedError`.
+  - The model field's placeholder reads "Model ID such as qwen3", keeping the model id in its
+    real lowercase form while satisfying the sentence-case rule. It is now translatable.
+- The explorer-hide is applied on layout-ready rather than during `onload`, where the
+  workspace root is not guaranteed to exist yet.
+
 ## [0.6.0] — 2026-07-16
 
 ### Added

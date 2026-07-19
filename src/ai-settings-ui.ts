@@ -157,10 +157,11 @@ export function renderModelField(containerEl: HTMLElement, deps: ModelFieldDeps)
     holder.empty();
     const input = holder.createEl("input", { type: "text", cls: "sd-model-input" });
     input.value = deps.getModel();
-    // "qwen3" is a model id (LM Studio/Ollama ids are lowercase), not UI prose — the
-    // sentence-case rule targets labels/buttons and false-positives here.
-    // eslint-disable-next-line obsidianmd/ui/sentence-case -- model id, not UI text
-    input.placeholder = "qwen3";
+    // Model ids are lowercase (LM Studio/Ollama), so a bare "qwen3" trips the sentence-case
+    // rule — which store review does not allow us to disable. Phrasing it as a sentence keeps
+    // the id verbatim; "such as" rather than "e.g." because the rule reads the trailing dot as
+    // a sentence break and then demands "Qwen3".
+    input.placeholder = t("deck.settings.model.placeholder");
     input.addEventListener("blur", () => void deps.setModel(input.value.trim()).then(() => showContext()));
   }
 

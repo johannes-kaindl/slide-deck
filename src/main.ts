@@ -30,7 +30,9 @@ export default class SlideDeckPlugin extends Plugin {
 
     this.themeStore = new ThemeStore(this.app, () => this.settings.themesFolder);
     await this.themeStore.refresh();
-    this.applyFolderHide();
+    // After layout-ready, not here: the hide targets the file explorer and adopts into
+    // `rootSplit.doc`, neither of which is guaranteed to exist this early in onload.
+    this.app.workspace.onLayoutReady(() => this.applyFolderHide());
 
     this.addSettingTab(new SlideDeckSettingTab(this.app, this));
     this.registerView(VIEW_TYPE, (leaf) => new SlideDeckView(leaf, this));
@@ -66,21 +68,25 @@ export default class SlideDeckPlugin extends Plugin {
     }
   }
 
+  /** The main window's document — where the file explorer lives. Deliberately NOT
+   *  `activeDocument`: at load time that can point at a restored popout window, and adopting
+   *  a constructed sheet into a document from another realm throws NotAllowedError ("Sharing
+   *  constructed stylesheets in multiple documents") — that killed onload (0.4.0, Windows +
+   *  popout), and the 0.5.0 activeDocument-realm fix still parked the CSS in the popout, away
+   *  from the explorer. `rootSplit.doc` is the bundle's own realm, so constructor-document ==
+   *  adopt target always. */
+  private get mainDoc(): Document {
+    return this.app.workspace.rootSplit.doc;
+  }
+
   /** Apply (or clear) the explorer-hide stylesheet for the themes folder.
-   *  Build AND adopt in the bundle realm's `document` (main window) — deliberately NOT
-   *  `activeDocument`: the file explorer this CSS targets lives in the main window's sidebar,
-   *  and at load time `activeDocument` can point at a restored popout window. Adopting a
-   *  sheet into a document from another realm throws NotAllowedError ("Sharing constructed
-   *  stylesheets in multiple documents") — that killed onload (0.4.0, Windows + popout) and
-   *  the 0.5.0 activeDocument-realm fix still parked the CSS in the popout, away from the
-   *  explorer. Bundle realm == main window keeps constructor-document == adopt target always.
    *  try/catch as last resort: the hide is cosmetic and must never break plugin load. */
   applyFolderHide(): void {
     try {
+      const doc = this.mainDoc;
       if (!this.hideSheet) {
         this.hideSheet = new CSSStyleSheet();
-        // eslint-disable-next-line obsidianmd/prefer-active-doc -- deliberate: explorer lives in the main window; activeDocument (popout) was the NotAllowedError bug
-        document.adoptedStyleSheets = [...document.adoptedStyleSheets, this.hideSheet];
+        doc.adoptedStyleSheets = [...doc.adoptedStyleSheets, this.hideSheet];
       }
       this.hideSheet.replaceSync(buildHideCss(this.settings.themesFolder, this.settings.hideThemesFolder));
     } catch (err) {
@@ -89,8 +95,9 @@ export default class SlideDeckPlugin extends Plugin {
   }
 
   onunload(): void {
-    // eslint-disable-next-line obsidianmd/prefer-active-doc -- deliberate: sheet was adopted into the main window document (see applyFolderHide)
-    if (this.hideSheet) document.adoptedStyleSheets = document.adoptedStyleSheets.filter((s) => s !== this.hideSheet);
+    if (!this.hideSheet) return;
+    const doc = this.mainDoc;
+    doc.adoptedStyleSheets = doc.adoptedStyleSheets.filter((s) => s !== this.hideSheet);
   }
 
   async activatePreview(): Promise<void> {
