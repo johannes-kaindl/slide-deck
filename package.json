@@ -10,7 +10,7 @@
     "test": "node scripts/check-core-purity.mjs && node scripts/check-render-realm.mjs && node scripts/bundle-smoke.mjs && vitest run",
     "smoke:bundle": "node scripts/bundle-smoke.mjs",
     "visual-smoke": "node scripts/visual-smoke.mjs",
-    "lint": "eslint src",
+    "lint": "node scripts/check-no-inline-disables.mjs && eslint src",
     "lint:obsidian": "eslint src",
     "lint:portal": "eslint src --config eslint.portal.config.mjs",
     "deploy": "npm run build && cp main.js manifest.json styles.css \"${OBSIDIAN_PLUGIN_DIR:?set OBSIDIAN_PLUGIN_DIR}\"/",

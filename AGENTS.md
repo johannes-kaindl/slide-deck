@@ -155,7 +155,7 @@ npm install                       # Deps installieren
 npm run dev                       # esbuild watch (Entwicklung)
 npm run build                     # tsc --noEmit + esbuild prod → main.js
 npm run deploy                    # build + nach $OBSIDIAN_PLUGIN_DIR kopieren
-npm run lint                      # eslint src (reproduziert Obsidian-Community-Review-Checks)
+npm run lint                      # inline-disable-Gate + eslint src (reproduziert Community-Review-Checks)
 npm test                          # Core-Purity-Check + vitest run + bundle-smoke (every-theme deckCss)
 npm run typecheck                 # tsc --noEmit (separat von vitest)
 npm run version                   # Version bumpen (package.json/manifest.json/versions.json synct)
@@ -179,6 +179,12 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
   (vitest ≠ tsc).
 - **Core-Purity:** `scripts/check-core-purity.mjs` läuft als erster Schritt von `npm test` —
   schlägt fehl, wenn `src/core/**` einen `obsidian`-Import enthält.
+- **Keine Inline-`eslint-disable` in `src/`:** `scripts/check-no-inline-disables.mjs` läuft als
+  erster Schritt von `npm run lint`. Der Community-Store wertet ein Inline-disable einer
+  `obsidianmd/*`-Regel als **Error** — egal wie gut begründet (0.3.1 und 0.6.1 waren beide reine
+  Wartungs-Releases genau dafür). Wer eine Regel nicht erfüllen kann: entweder den Code auflösen,
+  oder einen **file-scoped Override mit Begründung** in `eslint.config.mjs` eintragen — dort ist
+  die Ausnahme sichtbar und reviewbar. Beides ist store-tauglich, das Inline-disable nicht.
 - **Realm-Safety:** `scripts/check-render-realm.mjs` läuft als zweiter Schritt von `npm test` —
   schlägt fehl, wenn `src/render-dom.ts` eine Obsidian-DOM-Augmentierung
   (`createDiv`/`addClass`/etc.) verwendet. Render-DOM muss gegen jedes Realm (inkl. iframe-

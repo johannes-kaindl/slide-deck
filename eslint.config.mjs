@@ -2,6 +2,10 @@
 // KEIN Inline-`// eslint-disable` — genuin unvermeidbare Ausnahmen NUR als file-scoped
 // Override unten, mit Begruendung (Review verbietet Inline-disables).
 //
+// Diese Regel ist seit 0.6.1 ERZWUNGEN: `scripts/check-no-inline-disables.mjs` laeuft als
+// erster Schritt von `npm run lint`. Vorher war sie nur dieser Kommentar — und wurde in 0.6.0
+// zweimal verletzt, was den Store-Review scheitern liess (0.3.1 war bereits derselbe Fall).
+//
 // Stand 0.3.1: die fruheren Overrides fuer export.ts / render-dom.ts / iframe-host.ts /
 // preview-view.ts / frontmatter-writer.ts wurden ENTFERNT, weil der Code jetzt die von den
 // Regeln empfohlene Form nutzt: `el.style.setProperty(...)` statt `el.style.x = …`
