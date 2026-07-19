@@ -8,8 +8,6 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [0.6.1] — 2026-07-19
 
-## [0.6.1] — 2026-07-19
-
 ### Fixed
 - Community store review flagged two `eslint-disable` comments as not permitted. Both are
   resolved without disabling anything:
