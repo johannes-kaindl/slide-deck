@@ -20,7 +20,7 @@
 - **UI-STANDARD §8:** Status = Form UND Farbe UND `is-ok`/`is-error`/`is-checking`-Klasse UND `aria-label` (WCAG 1.4.1 — Farbe nie allein). Icon-Vokabel: `loader` / `circle-check` / `circle-x` / `alert-triangle`.
 - **Listen-Mutation nur bei `blur`, nie `onChange`** — sonst persistiert jeder Tastendruck-Zwischenstand (im Adder entstünden `h`, `ht`, `htt`, …).
 - **Commits:** Conventional Commits, deutsche Beschreibung. **Nur berührte Dateien stagen.** Trailer: `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`
-- **Kit-Pin:** obsidian-kit **0.14.0**, sha **644603c** (`/Users/Shared/code/obsidian-plugins/obsidian-kit`).
+- **Kit-Pin:** obsidian-kit **0.14.0**, sha **644603c** (Schwester-Repo `../obsidian-kit`).
 - Nach jeder Task: `npm test` grün + `npx tsc --noEmit` clean (vitest ≠ tsc, beide laufen).
 
 ---
@@ -42,7 +42,7 @@ Heute liegen fünf Vendor-Module auf **vier verschiedenen Kit-Versionen** (think
 - [ ] **Step 1: Kit-Stand verifizieren (Pin muss stimmen)**
 
 ```bash
-cd /Users/Shared/code/obsidian-plugins/obsidian-kit && git status --short && git rev-parse --short HEAD && node -p "require('./package.json').version"
+cd ../obsidian-kit && git status --short && git rev-parse --short HEAD && node -p "require('./package.json').version"
 ```
 
 Erwartet: sauberer Tree (keine Ausgabe von `git status --short`), `644603c`, `0.14.0`.
@@ -57,8 +57,8 @@ Jede Datei bekommt als **Zeile 1** einen Header nach bestehendem Muster (`src/ve
 ```
 
 ```bash
-cd /Users/Shared/code/obsidian-plugins/markdown-presentation
-KIT=/Users/Shared/code/obsidian-plugins/obsidian-kit/src/pure
+# vom Repo-Root aus:
+KIT=../obsidian-kit/src/pure
 for pair in "endpoint.ts:endpoint.ts" "sse.ts:sse.ts" "think-splitter.ts:think.ts" "settings.ts:settings.ts" "reasoning.ts:reasoning.ts" "endpoint_diagnostics.ts:endpoint_diagnostics.ts" "model-context.ts:model-context.ts"; do
   src="${pair%%:*}"; dst="${pair##*:}"
   printf '// vendored from obsidian-kit@0.14.0 (644603c) — src/pure/%s — verbatim, do not edit here.\n' "$src" > "src/vendor/kit/$dst"

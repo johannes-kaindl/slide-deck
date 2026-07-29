@@ -18,7 +18,7 @@
 - **Vitest läuft mit `environment: "node"`** — kein DOM. CSS wird als String getestet (`toContain`).
 - **Commits:** Conventional Commits, deutsche Beschreibung ok, nur berührte Dateien stagen, Trailer `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
 - **Nach jedem Task:** `npm test && npm run typecheck` grün (263+ Tests; Task 4 ist der Breaking-Switch — dort werden bestehende Tests aktualisiert).
-- **Quell-Themes (Port-Vorlagen, read-only!):** `/Users/Shared/10_ObsidianVaults/10_Pallas/Slide-Deck-Themes/{shiro,kuro,sumi,kairo,kurenai}.css`
+- **Quell-Themes (Port-Vorlagen, read-only!):** `$VAULT/Slide-Deck-Themes/{shiro,kuro,sumi,kairo,kurenai}.css`
 
 ---
 
@@ -329,7 +329,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - Consumes: `Preset`-Typ aus `./index`.
 - Produces: `shiroPreset`, `kuroPreset`, `sumiPreset`, `kairoPreset`, `kurenaiPreset` (je `Preset`), konsumiert von Task 4.
 
-**Port-Rezept** (gilt für alle fünf; Quelle: die Vault-.css-Dateien unter `/Users/Shared/10_ObsidianVaults/10_Pallas/Slide-Deck-Themes/`):
+**Port-Rezept** (gilt für alle fünf; Quelle: die Vault-.css-Dateien unter `$VAULT/Slide-Deck-Themes/`):
 - §1-Token-Werte → `tokens` (unten vollständig angegeben).
 - **Entfällt ersatzlos** (übernimmt das neue Struktur-/Layout-CSS bzw. Treatment-Tokens): alle `h1`/`h2`-Regeln, `h2::before` (◉), `blockquote`, `hr`, `li::marker`, `:not(pre) > code`, `a`-Regeln, sämtliche `.hljs-*`-Token-Remaps (dunkle Presets nutzen echtes `github-dark`), `.sd-callout { background/color/border-radius }`-Repaints (Tokens `--sd-surface`/`--sd-callout-fg`).
 - **In `extraCss`** (Character, token-inexpressibel): Atmosphäre-Block (der zweite `.sd-slide { position:relative; background-image: … }`-Block inkl. `box-shadow`), `h1 { text-shadow: … }` als eigene Regel NUR mit der text-shadow-Deklaration, `pre.hljs`-Border-Regeln, per-Typ-Callout-Hues (`.sd-callout-note { border-left-color/background }` + Title-Farben).
@@ -969,7 +969,7 @@ try {
 
 Run: `npm run visual-smoke`
 Expected: 5 PNGs in `_visual/`. Die PNGs mit dem Read-Tool SICHTEN und gegen die Axiome prüfen: keine schwebenden Bullets, Eyebrow klein/gesperrt, ruhige Skala, gleichmäßiger Rhythmus. Zusätzlich das reale Referenz-Deck rendern:
-`npm run visual-smoke -- "/Users/Shared/10_ObsidianVaults/10_Pallas/00_Inbox/CrewAI Quickstart — Deck.md" sumi`
+`npm run visual-smoke -- "$VAULT/00_Inbox/CrewAI Quickstart — Deck.md" sumi`
 und mit den Vorher-PNGs (`10_Pallas/Slide-Deck-Export/CrewAI Quickstart — Deck/`) vergleichen. Gefundene CSS-Fehler jetzt fixen (in structure/layouts), Tests nachziehen.
 
 - [ ] **Step 5: Commit**
@@ -1000,7 +1000,7 @@ Run: `npm run deploy` (braucht `$OBSIDIAN_PLUGIN_DIR`).
 - [ ] **Step 3: Vault-Theme-Migration** — die fünf Nordstern-.css würden die Built-ins überschatten:
 
 ```bash
-cd "/Users/Shared/10_ObsidianVaults/10_Pallas/Slide-Deck-Themes"
+cd "$VAULT/Slide-Deck-Themes"
 mkdir -p _backup && mv shiro.css kuro.css sumi.css kairo.css kurenai.css _backup/
 ```
 

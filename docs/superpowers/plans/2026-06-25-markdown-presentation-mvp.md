@@ -55,7 +55,7 @@ export interface FitResult { scale: number; overflow: boolean; }
 ### Task 1: Scaffold aus Template + Dependencies + grüne Toolchain
 
 **Files:**
-- Create (kopiert aus `/Users/Shared/code/_docs/templates/obsidian-plugin/`): `package.json`, `manifest.json`, `versions.json`, `esbuild.config.mjs`, `tsconfig.json`, `tsconfig.test.json`, `vitest.config.ts`, `eslint.config.mjs`, `eslint.portal.config.mjs`, `.gitignore`, `tests/__mocks__/obsidian.ts`, `scripts/version-bump.mjs`, `.github/workflows/release.yml`
+- Create (kopiert aus `../../_docs/templates/obsidian-plugin/` — Schwester-Repo `_docs`, relativ zum Repo-Root): `package.json`, `manifest.json`, `versions.json`, `esbuild.config.mjs`, `tsconfig.json`, `tsconfig.test.json`, `vitest.config.ts`, `eslint.config.mjs`, `eslint.portal.config.mjs`, `.gitignore`, `tests/__mocks__/obsidian.ts`, `scripts/version-bump.mjs`, `.github/workflows/release.yml`
 - Create: `src/main.ts` (Minimal-Plugin), `styles.css` (leer), `src/core/.gitkeep`
 - Create: `LICENSE` (AGPL-3.0-or-later Volltext), `LICENSE-DOCS` (CC BY-SA 4.0 Volltext)
 
@@ -65,7 +65,8 @@ export interface FitResult { scale: number; overflow: boolean; }
 - [ ] **Step 1: Template kopieren**
 
 ```bash
-cp -R /Users/Shared/code/_docs/templates/obsidian-plugin/. /Users/Shared/code/obsidian-plugins/markdown-presentation/
+# vom Repo-Root aus (Schwester-Repo _docs liegt zwei Ebenen höher):
+cp -R ../../_docs/templates/obsidian-plugin/. .
 # Vorhandenen Spec/Plan-Ordner nicht überschreiben (cp -R . merged additiv).
 ```
 
@@ -90,7 +91,7 @@ cp -R /Users/Shared/code/_docs/templates/obsidian-plugin/. /Users/Shared/code/ob
 - [ ] **Step 3: Dependencies installieren**
 
 ```bash
-cd /Users/Shared/code/obsidian-plugins/markdown-presentation
+# vom Repo-Root aus:
 npm install
 npm install markdown-it @vscode/markdown-it-katex katex highlight.js mermaid html2canvas
 npm install -D @types/markdown-it
