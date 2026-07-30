@@ -2,22 +2,22 @@
 
 Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilderserie exportieren — mit Live-Lesbarkeitsprüfung.
 
-[![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/LICENSE)
-[![Release](https://img.shields.io/badge/Release-0.3.1-green.svg)](https://codeberg.org/jkaindl/slide-deck/releases)
-[![Plattform: Desktop + Mobile](https://img.shields.io/badge/Plattform-Desktop%20%2B%20Mobile-blue.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/manifest.json)
+[![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE)
+[![Release](https://img.shields.io/badge/Release-0.3.1-green.svg)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
+[![Plattform: Desktop + Mobile](https://img.shields.io/badge/Plattform-Desktop%20%2B%20Mobile-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/manifest.json)
 
-![Slide Deck — eine Zwei-Spalten-Folie mit Aufzählung, Inline-Mathe und Bild](https://codeberg.org/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png)
+![Slide Deck — eine Zwei-Spalten-Folie mit Aufzählung, Inline-Mathe und Bild](https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png)
 
-[English](https://codeberg.org/jkaindl/slide-deck/src/branch/main/README.md)
+[English](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/README.md)
 
 ## Funktionen
 
 - **Theme-Isolation** — Folien werden in einem sandboxed iframe gerendert, sodass das aktive Obsidian-Theme niemals in die Vorschau oder die Exporte durchsickert. Ein Deck sieht unabhängig vom Vault-Theme identisch aus.
 - **Fünf eingebaute Themes** — das Nordstern-Set: `shiro` 白 (hell, Standard), `kuro` 黒 (dunkel), `sumi` 墨 (echtes Schwarz, high-contrast), `kairo` 回路 (dunkel, cyan), `kurenai` 紅 (dunkel, rot) — über den `theme:`-Frontmatter-Schlüssel je Deck gewählt; jedes Theme bringt ein passendes Code-Highlighting- und Mermaid-Theme mit. Alte 0.4.x-Schlüssel (`default`, `dark`, `serif`, `high-contrast`) funktionieren weiterhin — sie lösen sich still zu ihrem Nordstern-Nachfolger auf.
 - **Live-Theme-Wechsler** — die Vorschau-Toolbar enthält ein Theme-Dropdown zum ephemeren Ausprobieren, eine Quell-Anzeige (`aus Frontmatter` / `aus Standard` / `● nicht gespeichert`), die zeigt, woher das aktive Theme stammt, und eine Schaltfläche **Setzen**, die `theme:` direkt in die Frontmatter der Notiz schreibt. Die Frontmatter ist die maßgebliche Quelle; der Einstellungs-Standard gilt nur für Notizen ohne `theme:`-Schlüssel.
-- **Eigene Themes** — `.css`-Dateien in einen konfigurierbaren Themes-Ordner (Standard `Slide-Deck-Themes/`) ablegen; der `theme:`-Frontmatter-Wert entspricht dem Dateinamen ohne `.css`-Erweiterung. Jede Datei enthält einen `--sd-*`-Token-Block mit optionalem zusätzlichem CSS obendrauf auf das Design-System des Plugins (Type-Scale, Abstände, Rhythmus) — ein 7-Token-Theme sieht schon fertig aus; eigene Themes erben das Code-Highlighting- und Mermaid-Theme des `shiro`-Themes, sofern nicht überschrieben. Siehe den [Theming-Guide](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/themes/THEMING-GUIDE.md). Der Einstellungs-Tab zeigt alle gültigen Theme-Schlüssel live an.
+- **Eigene Themes** — `.css`-Dateien in einen konfigurierbaren Themes-Ordner (Standard `Slide-Deck-Themes/`) ablegen; der `theme:`-Frontmatter-Wert entspricht dem Dateinamen ohne `.css`-Erweiterung. Jede Datei enthält einen `--sd-*`-Token-Block mit optionalem zusätzlichem CSS obendrauf auf das Design-System des Plugins (Type-Scale, Abstände, Rhythmus) — ein 7-Token-Theme sieht schon fertig aus; eigene Themes erben das Code-Highlighting- und Mermaid-Theme des `shiro`-Themes, sofern nicht überschrieben. Siehe den [Theming-Guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/themes/THEMING-GUIDE.md). Der Einstellungs-Tab zeigt alle gültigen Theme-Schlüssel live an.
 - **Theme-Import/Export** — die Schaltfläche **Im Finder öffnen** zeigt den Themes-Ordner, sodass Dateien hineingezogen werden können; **Theme als .css exportieren** schreibt jedes Theme als editierbare `.css`-Ausgangsdatei; ein Schalter blendet den Themes-Ordner im Obsidian-Datei-Explorer aus.
-- **Neun Folien-Templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image` — je Folie per Layout-Direktive (ein HTML-Kommentar) gesetzt; Spalten werden per Spalten-Direktive getrennt, und in Mehrspalten-Templates spannt die führende Überschrift über alle Spalten. Siehe den [Layout-Leitfaden](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/layouts.de.md).
+- **Neun Folien-Templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image` — je Folie per Layout-Direktive (ein HTML-Kommentar) gesetzt; Spalten werden per Spalten-Direktive getrennt, und in Mehrspalten-Templates spannt die führende Überschrift über alle Spalten. Siehe den [Layout-Leitfaden](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.de.md).
 - **Kombinierbare Dichte-Modifier** — `compact` (engere Typografie) oder `code-heavy` (kleinerer Code) lassen sich in derselben Layout-Direktive an jedes Template anhängen.
 - **Automatische Layout-Erkennung** — ohne explizite Direktive wird das Layout aus der Inhaltsform abgeleitet: eine einzelne Überschrift wird zu `section`, ein einzelnes Blockzitat zu `quote`, ein einzelnes Bild oder Diagramm zu `image-focus`, und Spalten-Trennungen ergeben `two-column` / `columns-3`. Eine explizite Layout-Direktive hat immer Vorrang.
 - **Deck-Slots** — die Frontmatter-Schlüssel `header:`, `footer:` und `paginate:` rendern als schwebende Eck-Slots auf jeder Folie (Paginierung zeigt `n / N`).
@@ -38,7 +38,7 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 
 ## Screenshots
 
-![Barrierefreie Callouts mit Symbol, Form und Label gerendert](https://codeberg.org/jkaindl/slide-deck/raw/branch/main/docs/images/callouts.png)
+![Barrierefreie Callouts mit Symbol, Form und Label gerendert](https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/callouts.png)
 
 ## Voraussetzungen
 
@@ -56,7 +56,7 @@ Geplant: Sobald das Plugin in die Obsidian Community Plugin Registry aufgenommen
 
 ### Manuelle Installation
 
-1. `main.js`, `manifest.json` und `styles.css` aus dem [neuesten Release](https://codeberg.org/jkaindl/slide-deck/releases) herunterladen.
+1. `main.js`, `manifest.json` und `styles.css` aus dem [neuesten Release](https://git.jkaindl.de/jkaindl/slide-deck/releases) herunterladen.
 2. Ordner `.obsidian/plugins/slide-deck/` im Vault anlegen.
 3. Die drei Dateien in diesen Ordner kopieren.
 4. In Obsidian: **Einstellungen → Community-Plugins → Installierte Plugins** — **Slide Deck** aktivieren.
@@ -64,13 +64,13 @@ Geplant: Sobald das Plugin in die Obsidian Community Plugin Registry aufgenommen
 ### BRAT (Beta Reviewers Auto-update Tool)
 
 1. Das [BRAT-Plugin](https://obsidian.md/plugins?id=obsidian42-brat) installieren.
-2. In den BRAT-Einstellungen `https://codeberg.org/jkaindl/slide-deck` (oder den GitHub-Mirror `https://github.com/johannes-kaindl/slide-deck`) hinzufügen.
+2. In den BRAT-Einstellungen `https://git.jkaindl.de/jkaindl/slide-deck` (oder den GitHub-Mirror `https://github.com/johannes-kaindl/slide-deck`) hinzufügen.
 3. Obsidian neu laden.
 
 ### Aus dem Quellcode bauen
 
 ```bash
-git clone https://codeberg.org/jkaindl/slide-deck.git
+git clone https://git.jkaindl.de/jkaindl/slide-deck.git
 cd slide-deck
 npm install
 npm run build          # erzeugt main.js
@@ -117,7 +117,7 @@ paginate: true
 
 ### Folien-Layout & Syntax
 
-Neun Folien-Templates (`default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`), kombinierbare Dichte-Modifier (`compact`, `code-heavy`), die Layout- und Spalten-Direktiven sowie die automatische Layout-Erkennung sind im **[Folien-Layouts- & Syntax-Leitfaden](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/layouts.de.md)** dokumentiert.
+Neun Folien-Templates (`default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`), kombinierbare Dichte-Modifier (`compact`, `code-heavy`), die Layout- und Spalten-Direktiven sowie die automatische Layout-Erkennung sind im **[Folien-Layouts- & Syntax-Leitfaden](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.de.md)** dokumentiert.
 
 ### Folien-Trenner
 
@@ -172,6 +172,6 @@ Live-Token-Ansicht entfällt, das Deck entsteht trotzdem).
 
 ## Lizenz
 
-Code: [AGPL-3.0-or-later](https://codeberg.org/jkaindl/slide-deck/src/branch/main/LICENSE).
-Dokumentation: [CC BY-SA 4.0](https://codeberg.org/jkaindl/slide-deck/src/branch/main/LICENSE-DOCS).
+Code: [AGPL-3.0-or-later](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE).
+Dokumentation: [CC BY-SA 4.0](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE-DOCS).
 Autor: Johannes Kaindl — <https://jkaindl.de>

@@ -46,7 +46,7 @@ Das `default`-Layout: Titel auf fester Baseline, Content läuft nach unten aus.
 - Bullets an der linken Kante, Marker in Akzentfarbe
 - Inline-Chips wie `parseDeck()` brechen nie intern
 - Chip-Ketten: `prepare` $\rightarrow$ `research` $\rightarrow$ `summarize` binden am Pfeil
-- Ein [Link](https://codeberg.org/jkaindl/slide-deck) in Gold, unterstrichen
+- Ein [Link](https://git.jkaindl.de/jkaindl/slide-deck) in Gold, unterstrichen
 
 ---
 

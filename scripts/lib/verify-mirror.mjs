@@ -3,7 +3,7 @@
 // trägt. Der Obsidian-Community-Store liest die Plugin-Version aus der manifest.json des
 // Default-Branch — ein still fehlgeschlagener Branch-Push friert den Store auf der alten
 // Version ein (0.5.0-Störfall: Tag kam an, Branch blieb auf 0.4.0). Die ls-remote-Ausgabe
-// wird hereingereicht → ohne Netz testbar (Muster wie codeberg-release.mjs).
+// wird hereingereicht → ohne Netz testbar (Muster wie forge-release.mjs).
 //
 //   verifyMirrorRefs({ lsRemoteOutput, expectedSha, tag, branch, isAncestor })
 //     → { ok, problems: string[] }

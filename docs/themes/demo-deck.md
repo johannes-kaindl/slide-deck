@@ -21,7 +21,7 @@ Präsentationen direkt aus dem Vault — Live-Theme-Switch, Fit-or-warn, PDF/PNG
 
 ## Die Lese-Ebene
 
-Fließtext in **Inter**, Display in **EB Garamond**, Signale in **JetBrains Mono**. Der Akzent trägt Links wie [slide-deck](https://codeberg.org/jkaindl/slide-deck) und Listen-Marker.
+Fließtext in **Inter**, Display in **EB Garamond**, Signale in **JetBrains Mono**. Der Akzent trägt Links wie [slide-deck](https://git.jkaindl.de/jkaindl/slide-deck) und Listen-Marker.
 
 - Token-basiert — ein Theme setzt nur `--sd-*`
 - Die Struktur kommt vom Plugin

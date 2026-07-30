@@ -75,7 +75,7 @@ Datei `src/vendor/VENDOR.json` (KIT-MATRIX-Konvention, Vorbild `vim-dojo`):
 
 ```json
 {
-  "source": "https://codeberg.org/jkaindl/obsidian-kit",
+  "source": "https://git.jkaindl.de/jkaindl/obsidian-kit",
   "version": "0.14.0",
   "sha": "644603c",
   "vendored": "2026-07-16",

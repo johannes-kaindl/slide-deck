@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-// @ts-expect-error — reines .mjs-Skript-Modul ohne Typdeklaration (wie scripts/lib/codeberg-release.mjs)
+// @ts-expect-error — reines .mjs-Skript-Modul ohne Typdeklaration (wie scripts/lib/forge-release.mjs)
 import { verifyMirrorRefs } from "../scripts/lib/verify-mirror.mjs";
 
 const HEAD = "807c7f74b4eeba3280b31a9c8ef085d83d07ec13";

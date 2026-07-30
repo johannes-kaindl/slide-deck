@@ -239,8 +239,8 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
 - **Deploy:** `npm run deploy` setzt `$OBSIDIAN_PLUGIN_DIR` voraus (Pfad zum Plugin-Ordner
   im Vault). Ohne diese Variable schlägt das Kommando explizit fehl.
 - **Release-CI ist GitHub-only:** `.github/workflows/release.yml` läuft auf dem GitHub-Mirror
-  (Codeberg/Forgejo ignoriert `.github/`). SemVer-Tag pushen → Mirror trägt ihn zu GitHub →
-  Pipeline baut + attestiert + legt das GitHub-Release an. Das Codeberg-Release (kanonisch)
+  (Forgejo ignoriert `.github/`). SemVer-Tag pushen → Mirror trägt ihn zu GitHub →
+  Pipeline baut + attestiert + legt das GitHub-Release an. Das Forgejo-Release (kanonisch)
   bleibt manuell via Forgejo-API.
 - **Kit-Vendoring:** `src/vendor/kit/**` sind **verbatim** Kopien aus `obsidian-kit/src/pure/` —
   nie hier editieren, sondern vom gepinnten sha neu vendoren (`src/vendor/VENDOR.json` hält
@@ -282,7 +282,7 @@ Stand 2026-06-25 — **vor erstem Release 0.1.0**. Bewusste, begründete Abweich
 - **PROF-OBS-06** — SettingTab nutzt `display()` (deklarative `getSettingDefinitions`-API ist
   Obsidian 1.13+). *Grund:* Recommendation, kein Blocker; minAppVersion bleibt 1.8.7. Eigener
   Upgrade-Zyklus.
-- **Kein Codeberg-`origin` / GitHub-Mirror** — Remotes noch nicht eingerichtet (pre-release).
+- **Kein Forgejo-`origin` / GitHub-Mirror** — Remotes noch nicht eingerichtet (pre-release).
   Einzurichten vor dem ersten Tag.
 
 ## Dach-Kontext (obsidian-plugins)

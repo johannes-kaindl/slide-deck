@@ -3,7 +3,7 @@
 Referenz für die Folien-Layouts des **Slide Deck**-Plugins — die Templates, die Dichte-Modifier,
 die Layout-/Spalten-Direktiven und wie das Layout abgeleitet wird, wenn du keins setzt. Für
 Deck-weite Einstellungen (Theme, Seitenverhältnis, Header-/Footer-/Paginierungs-Slots, der
-Folien-Trenner) siehe die [README](https://codeberg.org/jkaindl/slide-deck/src/branch/main/README.de.md).
+Folien-Trenner) siehe die [README](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/README.de.md).
 
 > **`---` ist immer der Folien-Trenner** (Marp-Konvention) — es rendert nie als
 > Trennlinie innerhalb einer Folie. Für eine sichtbare Linie `***`, `___` oder ein

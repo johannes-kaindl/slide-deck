@@ -2,22 +2,22 @@
 
 Turn a Markdown note into a slide deck and export it to PDF or a PNG image series, with live readability checks.
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/LICENSE)
-[![Release](https://img.shields.io/badge/Release-0.3.1-green.svg)](https://codeberg.org/jkaindl/slide-deck/releases)
-[![Platform: Desktop + Mobile](https://img.shields.io/badge/Platform-Desktop%20%2B%20Mobile-blue.svg)](https://codeberg.org/jkaindl/slide-deck/src/branch/main/manifest.json)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE)
+[![Release](https://img.shields.io/badge/Release-0.3.1-green.svg)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
+[![Platform: Desktop + Mobile](https://img.shields.io/badge/Platform-Desktop%20%2B%20Mobile-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/manifest.json)
 
-![Slide Deck — a two-column slide with bullet list, inline math, and an image](https://codeberg.org/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png)
+![Slide Deck — a two-column slide with bullet list, inline math, and an image](https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png)
 
-[Deutsch](https://codeberg.org/jkaindl/slide-deck/src/branch/main/README.de.md)
+[Deutsch](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/README.de.md)
 
 ## Features
 
 - **Theme isolation** — slides render inside a sandboxed iframe, so the active Obsidian theme never leaks into the preview or the exports. A deck looks identical regardless of the vault theme.
 - **Five built-in themes** — the Nordstern set: `shiro` 白 (light, default), `kuro` 黒 (dark), `sumi` 墨 (true-black, high-contrast), `kairo` 回路 (dark, cyan), `kurenai` 紅 (dark, red) — selected per deck via the `theme:` frontmatter key; each carries a matching code-highlight and Mermaid theme. Legacy 0.4.x keys (`default`, `dark`, `serif`, `high-contrast`) still work — they resolve silently to their Nordstern successor.
 - **Live theme switcher** — the preview toolbar has a theme dropdown for ephemeral try-on, a source label (`from frontmatter` / `from default` / `● unsaved`) that shows where the active theme comes from, and a **Set** button that writes `theme:` directly into the note's frontmatter. Frontmatter is the source of truth; the Settings default applies only to notes without a `theme:` key.
-- **User themes** — drop `.css` files into a configurable themes folder (default `Slide-Deck-Themes/`); the frontmatter `theme:` value is the filename without the `.css` extension. Each file is a `--sd-*` token block with optional extra CSS on top of the plugin's design system (type scale, spacing, rhythm) — a 7-token theme already looks finished; user themes inherit the `shiro` theme's code-highlight and Mermaid styles unless overridden. See the [theming guide](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/themes/THEMING-GUIDE.md). The Settings tab shows all valid theme keys live.
+- **User themes** — drop `.css` files into a configurable themes folder (default `Slide-Deck-Themes/`); the frontmatter `theme:` value is the filename without the `.css` extension. Each file is a `--sd-*` token block with optional extra CSS on top of the plugin's design system (type scale, spacing, rhythm) — a 7-token theme already looks finished; user themes inherit the `shiro` theme's code-highlight and Mermaid styles unless overridden. See the [theming guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/themes/THEMING-GUIDE.md). The Settings tab shows all valid theme keys live.
 - **Theme import/export** — an **Open in Finder** button reveals the themes folder so you can drop files in; **Export theme as .css** writes any theme as an editable `.css` starting point; a toggle hides the themes folder in Obsidian's file explorer.
-- **Nine per-slide templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image` — set per slide with a layout directive (an HTML comment); columns are separated by a column directive, and in multi-column templates the leading heading spans all columns. See the [layout guide](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/layouts.md).
+- **Nine per-slide templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image` — set per slide with a layout directive (an HTML comment); columns are separated by a column directive, and in multi-column templates the leading heading spans all columns. See the [layout guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.md).
 - **Combinable density modifiers** — add `compact` (tighter type) or `code-heavy` (smaller code) to any template in the same layout directive.
 - **Smart layout inference** — with no explicit directive, the layout is inferred from content shape: a lone heading becomes `section`, a lone block quote becomes `quote`, a lone image or diagram becomes `image-focus`, and column splits pick `two-column` / `columns-3`. An explicit layout directive always wins.
 - **Deck slots** — `header:`, `footer:`, and `paginate:` frontmatter keys render as floating corner slots on every slide (pagination shows `n / N`).
@@ -38,7 +38,7 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 
 ## Screenshots
 
-![Accessible callouts rendered with icon, shape, and label](https://codeberg.org/jkaindl/slide-deck/raw/branch/main/docs/images/callouts.png)
+![Accessible callouts rendered with icon, shape, and label](https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/callouts.png)
 
 ## Requirements
 
@@ -56,7 +56,7 @@ Planned: once accepted into the Obsidian community plugin registry it will be in
 
 ### Manual install
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://codeberg.org/jkaindl/slide-deck/releases).
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://git.jkaindl.de/jkaindl/slide-deck/releases).
 2. Create the folder `.obsidian/plugins/slide-deck/` inside your vault.
 3. Copy the three files into that folder.
 4. In Obsidian: **Settings → Community plugins → Installed plugins** — enable **Slide Deck**.
@@ -64,13 +64,13 @@ Planned: once accepted into the Obsidian community plugin registry it will be in
 ### BRAT (Beta Reviewers Auto-update Tool)
 
 1. Install the [BRAT plugin](https://obsidian.md/plugins?id=obsidian42-brat).
-2. In BRAT settings, add `https://codeberg.org/jkaindl/slide-deck` (or its GitHub mirror `https://github.com/johannes-kaindl/slide-deck`).
+2. In BRAT settings, add `https://git.jkaindl.de/jkaindl/slide-deck` (or its GitHub mirror `https://github.com/johannes-kaindl/slide-deck`).
 3. Reload Obsidian.
 
 ### Build from source
 
 ```bash
-git clone https://codeberg.org/jkaindl/slide-deck.git
+git clone https://git.jkaindl.de/jkaindl/slide-deck.git
 cd slide-deck
 npm install
 npm run build          # produces main.js
@@ -117,7 +117,7 @@ paginate: true
 
 ### Slide layout & syntax
 
-Nine per-slide templates (`default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`), combinable density modifiers (`compact`, `code-heavy`), the layout and column directives, and smart layout inference are documented in the **[Slide layouts & syntax guide](https://codeberg.org/jkaindl/slide-deck/src/branch/main/docs/layouts.md)**.
+Nine per-slide templates (`default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`), combinable density modifiers (`compact`, `code-heavy`), the layout and column directives, and smart layout inference are documented in the **[Slide layouts & syntax guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.md)**.
 
 ### Slide separator
 
@@ -171,6 +171,6 @@ the live token view, but the deck still generates).
 
 ## License
 
-Code: [AGPL-3.0-or-later](https://codeberg.org/jkaindl/slide-deck/src/branch/main/LICENSE).
-Documentation: [CC BY-SA 4.0](https://codeberg.org/jkaindl/slide-deck/src/branch/main/LICENSE-DOCS).
+Code: [AGPL-3.0-or-later](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE).
+Documentation: [CC BY-SA 4.0](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE-DOCS).
 Author: Johannes Kaindl — <https://jkaindl.de>

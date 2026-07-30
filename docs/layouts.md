@@ -3,7 +3,7 @@
 Per-slide layout reference for the **Slide Deck** plugin — the templates, the density
 modifiers, the layout/column directives, and how layouts are inferred when you don't set one.
 For deck-level settings (theme, aspect ratio, header/footer/pagination slots, the slide
-separator) see the [README](https://codeberg.org/jkaindl/slide-deck/src/branch/main/README.md).
+separator) see the [README](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/README.md).
 
 > **`---` is always the slide separator** (Marp convention) — it never renders as a
 > horizontal rule inside a slide. For a visible rule use `***`, `___`, or a literal
