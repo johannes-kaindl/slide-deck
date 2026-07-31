@@ -161,7 +161,7 @@ npm run deploy                    # build + nach $OBSIDIAN_PLUGIN_DIR kopieren
 npm run lint                      # inline-disable-Gate + eslint src (reproduziert Community-Review-Checks)
 npm test                          # Core-Purity-Check + vitest run + bundle-smoke (every-theme deckCss)
 npm run typecheck                 # tsc --noEmit (separat von vitest)
-npm run version                   # Version bumpen (package.json/manifest.json/versions.json synct)
+npm run version-bump              # Version bumpen (package.json/manifest.json/versions.json synct)
 ```
 
 **Obsidian-Commands (registriert via `this.addCommand`):**
@@ -272,7 +272,8 @@ npm run version                   # Version bumpen (package.json/manifest.json/v
 
 ## Abweichungen von der Leitkonvention
 
-Stand 2026-06-25 — **vor erstem Release 0.1.0**. Bewusste, begründete Abweichungen
+Stand: siehe `CHANGELOG.md` / `manifest.json` (dort steht die maßgebliche Version — hier bewusst
+keine, damit dieser Block nicht durch Zeitablauf falsch wird). Bewusste, begründete Abweichungen
 (comply-or-explain):
 
 - **`isDesktopOnly: false`** — das Plugin läuft auf Mobile. Alle Desktop-only-APIs sind
@@ -282,8 +283,6 @@ Stand 2026-06-25 — **vor erstem Release 0.1.0**. Bewusste, begründete Abweich
 - **PROF-OBS-06** — SettingTab nutzt `display()` (deklarative `getSettingDefinitions`-API ist
   Obsidian 1.13+). *Grund:* Recommendation, kein Blocker; minAppVersion bleibt 1.8.7. Eigener
   Upgrade-Zyklus.
-- **Kein Forgejo-`origin` / GitHub-Mirror** — Remotes noch nicht eingerichtet (pre-release).
-  Einzurichten vor dem ersten Tag.
 
 ## Dach-Kontext (obsidian-plugins)
 
