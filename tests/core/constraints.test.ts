@@ -6,7 +6,7 @@ import { type ThemeEntry, type ThemeRegistry } from "../../src/core/presets";
 import { parseDeck } from "../../src/core/slide-model";
 
 const slide = (over: Partial<Slide>): Slide => ({
-  index: 2, markdown: "", startLine: 40, layout: "default", regions: [""], directiveWarnings: [], ...over,
+  index: 2, markdown: "", startLine: 40, layout: "default", modifiers: [], regions: [""], directiveWarnings: [], ...over,
 });
 
 function themeReg(...keys: string[]): ThemeRegistry {

@@ -383,7 +383,7 @@ exports[`testdeck fixture snapshots > renders each slide to stable HTML 1`] = `
 <li>Bullets an der linken Kante, Marker in Akzentfarbe</li>
 <li>Inline-Chips wie <code>parseDeck()</code> brechen nie intern</li>
 <li>Chip-Ketten: <code>prepare</code> <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>→</mo></mrow><annotation encoding="application/x-tex">\\rightarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span>&nbsp;<code>research</code> <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>→</mo></mrow><annotation encoding="application/x-tex">\\rightarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span>&nbsp;<code>summarize</code> binden am Pfeil</li>
-<li>Ein <a href="https://codeberg.org/jkaindl/slide-deck">Link</a> in Gold, unterstrichen</li>
+<li>Ein <a href="https://git.jkaindl.de/jkaindl/slide-deck">Link</a> in Gold, unterstrichen</li>
 </ul>
 ",
     "i": 3,
