@@ -151,6 +151,27 @@ Ein Gate-Skript (`scripts/check-render-realm.mjs`) erzwingt das als zweiter Schr
 CLI-Adapter in einem zukünftigen `md2pdf`-Tool wiederverwendet werden kann, ohne die
 Obsidian-Schicht zu benötigen.
 
+## Der Folienkern liegt nicht mehr hier
+
+`src/core/` gibt es seit 2026-08-03 nicht mehr. Modell, Renderer, Themes, Layout
+und der Deck-Prompt leben in [`deck-core`](https://git.jkaindl.de/jkaindl/deck-core)
+und liegen hier als gepinnte Kopie unter `src/vendor/deck-core/`.
+
+**Dort nicht bearbeiten.** Änderungen gehören nach `deck-core`, danach neu
+vendorieren und `VENDOR.json` (`version`, `sha`, `vendored`) nachziehen. `drift-audit`
+difft Kopie gegen Quelle.
+
+Was hier blieb, kennt Obsidian, das Kit oder den Endpunkt: `adapter`,
+`theme-registry`, `export`, `main`, die Ansichten, die Einstellungen, `llm-client`,
+`folder-hide`, `llm/ai-settings-model`, `llm/error-envelope`, `llm/model-info`.
+
+Dazu `vendor-css.ts`: die vier `import … from "*.css"`, die `deck-core` bewusst
+nicht selbst macht — ein CSS-Import ist eine Annahme über den Bundler.
+
+Der Grund für die Trennung ist die Lizenz, nicht die Größe: derselbe Kern soll ein
+AGPL-Plugin, eine AGPL-Pipeline und eine spätere Store-App bedienen, deren
+Bedingungen mit der AGPL unvereinbar sind.
+
 ## Commands
 
 ```bash
