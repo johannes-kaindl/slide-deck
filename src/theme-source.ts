@@ -1,6 +1,6 @@
 import { App, FileSystemAdapter, Notice, type DataAdapter } from "obsidian";
-import { keyFromFilename } from "./core/theme-key";
-import { normalizeFolder } from "./core/folder-hide";
+import { keyFromFilename } from "./vendor/deck-core/pure/theme-key";
+import { normalizeFolder } from "./folder-hide";
 
 /** List *.css in the themes folder; each becomes { key, css }. Unreadable files are skipped. */
 export async function scanThemeFiles(adapter: DataAdapter, folder: string): Promise<{ key: string; css: string }[]> {

@@ -6,8 +6,8 @@ import { t } from "./i18n";
 import {
   applyEndpointEdit, activeIndexFromStatuses, warnRuleKey,
   modelFieldMode, thinkToggleView, initialModelSelection, statusLabelParts,
-} from "./core/llm/ai-settings-model";
-import type { ModelContext } from "./core/llm/model-info";
+} from "./llm/ai-settings-model";
+import type { ModelContext } from "./llm/model-info";
 import {
   validateEndpointInput, ENDPOINT_PRESETS, type EndpointStatus, type EndpointStatusKind,
 } from "./vendor/kit/endpoint_diagnostics";

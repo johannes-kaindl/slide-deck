@@ -1,13 +1,13 @@
 import { Notice, Platform, type App, type TFile } from "obsidian";
 import { domToCanvas } from "modern-screenshot";
 import { loadDeck } from "./adapter";
-import { buildIsolatedDeck } from "./render-dom";
-import { createIsolatedDeckIframe, isolatedDeckHtml } from "./iframe-host";
-import { PRINT_CSS } from "./chrome-css";
-import { geometryFor } from "./core/geometry";
+import { buildIsolatedDeck } from "./vendor/deck-core/dom/render-dom";
+import { createIsolatedDeckIframe, isolatedDeckHtml } from "./vendor/deck-core/dom/iframe-host";
+import { PRINT_CSS } from "./vendor/deck-core/dom/chrome-css";
+import { geometryFor } from "./vendor/deck-core/pure/geometry";
 import { t } from "./i18n";
-import type { DeckDirectives, SlideDeck } from "./core/slide-model";
-import type { ThemeRegistry } from "./core/presets";
+import type { DeckDirectives, SlideDeck } from "./vendor/deck-core/pure/slide-model";
+import type { ThemeRegistry } from "./vendor/deck-core/pure/presets";
 
 /** Apply an explicit theme override (the toolbar's ephemeral try-on) onto a loaded deck. */
 function withTheme(deck: SlideDeck, themeOverride?: string): SlideDeck {

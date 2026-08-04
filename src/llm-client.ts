@@ -3,10 +3,10 @@ import { streamSSE, type StreamResult } from "./llm-stream";
 import { normalizeEndpoint } from "./vendor/kit/endpoint";
 import { suppressParams } from "./vendor/kit/reasoning";
 import { classifyEndpointStatus, type EndpointStatus, type ProbeInput } from "./vendor/kit/endpoint_diagnostics";
-import { effectiveSuppress } from "./core/llm/ai-settings-model";
-import { parseErrorEnvelope } from "./core/llm/error-envelope";
-import { parseLmStudioContext, parseOllamaContext, type ModelContext } from "./core/llm/model-info";
-import type { ChatMessage } from "./core/llm/deck-prompt";
+import { effectiveSuppress } from "./llm/ai-settings-model";
+import { parseErrorEnvelope } from "./llm/error-envelope";
+import { parseLmStudioContext, parseOllamaContext, type ModelContext } from "./llm/model-info";
+import type { ChatMessage } from "./vendor/deck-core/pure/llm/deck-prompt";
 
 export interface HttpJson { (param: { url: string; method?: string; headers?: Record<string, string>; body?: string }): Promise<{ status: number; json: unknown; text: string }> }
 export interface StreamOpts { model: string; temperature: number; maxTokens: number; suppressThinking: boolean }

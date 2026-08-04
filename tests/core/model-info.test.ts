@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseLmStudioContext, parseOllamaContext, estimateTokens, contextOverflow } from "../../src/core/llm/model-info";
+import { parseLmStudioContext, parseOllamaContext, estimateTokens, contextOverflow } from "../../src/llm/model-info";
 
 describe("parseLmStudioContext", () => {
   it("reads max + loaded context length for the matching model", () => {

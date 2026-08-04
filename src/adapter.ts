@@ -1,5 +1,5 @@
 import { type App, TFile } from "obsidian";
-import { parseDeck, type DeckDirectives, type SlideDeck } from "./core/slide-model";
+import { parseDeck, type DeckDirectives, type SlideDeck } from "./vendor/deck-core/pure/slide-model";
 
 const MIME: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml" };
 

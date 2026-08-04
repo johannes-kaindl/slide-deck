@@ -47,6 +47,8 @@ export interface ThemeEntry {
   source: "builtin" | "user";
   themeCss: string;
   hljs: string;
+  /** Raw KaTeX CSS, handed in by the host — deck-core does not import CSS files. */
+  katex: string;
   mermaid: MermaidTheme;
   /** Mermaid themeVariables derived from the preset tokens (mermaid inlines
    *  colors into its SVG, so CSS vars can't reach it). Absent for user themes

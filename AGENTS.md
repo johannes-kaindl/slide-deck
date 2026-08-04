@@ -37,16 +37,22 @@ Architektur ist von Anfang an auf die Pure-Core-Naht ausgelegt.
 
 ### Pure-Core ↔ Obsidian-Adapter-Naht
 
-Der Kern (`src/core/**`) ist **vollständig obsidian-frei** und Node-testbar ohne DOM-Mock.
-Nur die Adapter-Schicht importiert Obsidian-APIs oder DOM:
+Der Kern (`src/vendor/deck-core/pure/**`) ist **vollständig obsidian-frei** und
+Node-testbar ohne DOM-Mock — vendoriert aus `deck-core`, s. „Der Folienkern liegt
+nicht mehr hier" weiter unten für Grund und Grenze. Nur die Adapter-Schicht
+importiert Obsidian-APIs oder DOM:
 
 ```
-src/core/          Reiner Kern — kein obsidian-Import, kein DOM. Vollständig unit-testbar.
+src/vendor/deck-core/pure/   Vendorierter Kern — kein obsidian-Import, kein DOM. Vollständig
+                     unit-testbar.
   slide-model.ts     parseDeck() — Frontmatter + ---Trenner → SlideDeck. Typen: Slide,
                      SlideDeck, DeckDirectives, Aspect.
   geometry.ts        geometryFor(aspect) → SlideGeometry {width, height}.
+  infer-layout.ts    inferLayout(regions) → Layout-Key aus der Regionenzahl/-form einer Folie.
   layout/
     fit.ts           computeFit(measured, geo, minScale) → FitResult {scale, overflow}.
+    compose.ts       COMPOSE_CENTER_THRESHOLD + shouldCenterCompose(...) — wann eine
+                     Compose-Region zentriert statt oben ausgerichtet wird.
   render/
     md2html.ts       renderMarkdown(md, resolveEmbed) → html-String (markdown-it + KaTeX +
                      highlight.js + Callout-Präprozessor + Mermaid-Slot).
@@ -58,9 +64,12 @@ src/core/          Reiner Kern — kein obsidian-Import, kein DOM. Vollständig 
                     <!-- column -->) → { layout, regions, warnings }.
   theme-key.ts       keyFromFilename(filename) → Theme-Key (Dateiname ohne .css);
                      parseBaseFontPx(css) → baseFontPx-Token aus CSS.
-  folder-hide.ts     normalizeFolder(raw) — kanonische Pfadform; buildHideCss(folder, hide) —
-                     CSS, das einen Vault-Ordner im Datei-Explorer ausblendet (vault-rag-Muster,
-                     data-path-Attribut, activeDocument.adoptedStyleSheets in main.applyFolderHide()).
+  deck-css.ts        Die API-Naht zum Fremd-CSS (VendorCss: katex, hljs je Schema) — der Host
+                     reicht es herein, deck-core importiert keine .css-Datei selbst.
+                     builtinThemeEntries(vendor) → ThemeEntry[] der fünf eingebauten Themes;
+                     userThemeEntry(key, fileCss, vendor) → ThemeEntry aus einer Nutzer-.css;
+                     deckCss(entry, customCss?) → vollständiges Deck-CSS (Mathe, Code, Struktur,
+                     Layout, Theme, eigenes — in dieser Reihenfolge).
   llm/
     deck-prompt.ts        buildDeckPrompt(sourceBody, opts, contract) → ChatMessage[] — System+User-
                           Prompt, der eine Notiz in Deck-Markdown verwandelt (contractToPrompt ohne
@@ -70,27 +79,15 @@ src/core/          Reiner Kern — kein obsidian-Import, kein DOM. Vollständig 
                           bare `<think>`-Reste kappen, …).
     deck-validate.ts      validateDeckOutput(md) → DeckValidation — parseDeck() + Warnings; fatal
                           nur bei leerer Ausgabe oder 0 Folien (fit-or-warn, sonst nie blockierend).
-    error-envelope.ts     parseErrorEnvelope(text) — erkennt OpenAI-kompatible Fehler-Envelopes in
-                          HTTP-200-Bodies (LM Studio antwortet Fehlern oft ohne Fehlerstatus).
-    model-info.ts         Re-Export von Kits parseLmStudioContext/parseOllamaContext/ModelContext
-                          (model-context.ts) + eigene estimateTokens(chars), contextOverflow(...).
-    ai-settings-model.ts  Pure Zustandslogik der KI-Settings: applyEndpointEdit,
-                          activeIndexFromStatuses, modelFieldMode, initialModelSelection (+ Typ
-                          ModelSelection — hält einen serverseitig nicht mehr gelisteten,
-                          gespeicherten Modellwert als Extra-Option statt ihn stumm zu verlieren),
-                          thinkToggleView, effectiveSuppress, statusKindKey/warnRuleKey.
   presets/
     index.ts        Preset-Typ + PRESETS-Registry; presetFor() (total); presetTokensCss();
                     assembleDeckCss().
-    default.ts · dark.ts · serif.ts · high-contrast.ts   je ein Preset (Token-Block + hljs/mermaid).
+    kairo.ts · kurenai.ts · kuro.ts · shiro.ts · sumi.ts   je ein Preset (Token-Block + hljs/mermaid).
     structure.css.ts  geteiltes, theme-unabhängiges Struktur-CSS (var(--sd-*); kein --sd-base).
     layouts.css.ts    LAYOUTS/layoutFor() + geteiltes Layout-CSS (.sd-layout-*, .sd-region).
 
-src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
-  main.ts            Plugin-Entry: Commands (open-preview, export-pdf, export-images),
-                     SettingTab, View-Registration, Sprach-Detektion.
-  adapter.ts         loadActiveDeck(app, defaults) — liest die aktive Notiz, löst Embeds
-                     zu data-URLs auf (resolveEmbed-Closure), gibt SlideDeck zurück.
+src/vendor/deck-core/dom/    Ebenfalls vendoriert aus `deck-core` — importiert DOM, aber kein
+                     Obsidian (eigenes Realm-Invariant, s. u.).
   iframe-host.ts     Isoliertes Deck-iframe: isolatedDeckHtml({css,bodyHtml,extraCss?})
                      (reiner HTML-String-Assembler) + createIsolatedDeckIframe(ownerDoc, opts)
                      (async Lifecycle: erzeugt sandbox="allow-same-origin"-iframe, injiziert via
@@ -105,6 +102,25 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
                      (ausschließlich native DOM: doc.createElement/classList/replaceChildren, keine
                      Obsidian-Augmentierungen) und zweiphasig (alle Folien bauen → fonts.ready →
                      alle messen). renderMermaidSlots() — Mermaid SVG-Rendering (async, DOM-abhängig).
+
+src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
+  main.ts            Plugin-Entry: Commands (open-preview, export-pdf, export-images),
+                     SettingTab, View-Registration, Sprach-Detektion.
+  adapter.ts         loadActiveDeck(app, defaults) — liest die aktive Notiz, löst Embeds
+                     zu data-URLs auf (resolveEmbed-Closure), gibt SlideDeck zurück.
+  folder-hide.ts     normalizeFolder(raw) — kanonische Pfadform; buildHideCss(folder, hide) —
+                     CSS, das einen Vault-Ordner im Datei-Explorer ausblendet (vault-rag-Muster,
+                     data-path-Attribut, activeDocument.adoptedStyleSheets in main.applyFolderHide()).
+  llm/
+    error-envelope.ts     parseErrorEnvelope(text) — erkennt OpenAI-kompatible Fehler-Envelopes in
+                          HTTP-200-Bodies (LM Studio antwortet Fehlern oft ohne Fehlerstatus).
+    model-info.ts         Re-Export von Kits parseLmStudioContext/parseOllamaContext/ModelContext
+                          (model-context.ts) + eigene estimateTokens(chars), contextOverflow(...).
+    ai-settings-model.ts  Pure Zustandslogik der KI-Settings: applyEndpointEdit,
+                          activeIndexFromStatuses, modelFieldMode, initialModelSelection (+ Typ
+                          ModelSelection — hält einen serverseitig nicht mehr gelisteten,
+                          gespeicherten Modellwert als Extra-Option statt ihn stumm zu verlieren),
+                          thinkToggleView, effectiveSuppress, statusKindKey/warnRuleKey.
   preview-view.ts    SlideDeckView (ItemView, rechte Seitenleiste) — Live-Vorschau mit
                      Warn-Badges und Source-Jump-Link. Deck wird in einem persistenten
                      isolierten iframe dargestellt; Preview-Zoom wirkt auf das <iframe>-Element;
@@ -139,17 +155,42 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
                          Notiz (via processFrontMatter), legt den YAML-Block an falls nötig.
 ```
 
-**Invariante:** `src/core/**` darf niemals `obsidian` importieren. Ein purity-Check-Skript
-(`scripts/check-core-purity.mjs`) erzwingt das als Teil von `npm test`.
+**Invariante:** `src/vendor/deck-core/pure/**` darf niemals `obsidian` importieren.
+Ein purity-Check-Skript (`scripts/check-core-purity.mjs`) erzwingt das als Teil von
+`npm test` — es walkt `src/vendor/deck-core/pure` **und** `src/vendor/kit`.
 
-**Realm-Invariante:** `src/render-dom.ts` darf keine Obsidian-DOM-Augmentierungen verwenden
-(`createDiv`/`createEl`/`createSpan`/`empty`/`addClass`/`removeClass`/`setText`/`setAttr`).
-Ein Gate-Skript (`scripts/check-render-realm.mjs`) erzwingt das als zweiter Schritt von
-`npm test` (nach check-core-purity.mjs).
+**Realm-Invariante:** `src/vendor/deck-core/dom/render-dom.ts` darf keine
+Obsidian-DOM-Augmentierungen verwenden (`createDiv`/`createEl`/`createSpan`/`empty`/
+`addClass`/`removeClass`/`setText`/`setAttr`). Das Gate dafür lebt seit Task 9 in
+`deck-core` selbst, nicht mehr hier — `scripts/check-render-realm.mjs` gibt es in
+diesem Repo nicht mehr, und `npm test` ruft es nicht auf.
 
-**md2pdf-Seed:** Die Architektur ist bewusst so aufgebaut, dass `src/core/**` + ein
-CLI-Adapter in einem zukünftigen `md2pdf`-Tool wiederverwendet werden kann, ohne die
+**md2pdf-Seed:** Die Architektur ist bewusst so aufgebaut, dass `src/vendor/deck-core/pure/**`
++ ein CLI-Adapter in einem zukünftigen `md2pdf`-Tool wiederverwendet werden kann, ohne die
 Obsidian-Schicht zu benötigen.
+
+## Der Folienkern liegt nicht mehr hier
+
+`src/core/` gibt es seit 2026-08-03 nicht mehr. Modell, Renderer, Themes, Layout
+und der Deck-Prompt leben in [`deck-core`](https://git.jkaindl.de/jkaindl/deck-core)
+und liegen hier als gepinnte Kopie unter `src/vendor/deck-core/`.
+
+**Dort nicht bearbeiten.** Änderungen gehören nach `deck-core`, danach neu
+vendorieren und `VENDOR.json` (`version`, `sha`, `vendored`) nachziehen. Der Abgleich
+Kopie-gegen-Quelle ist bislang **Handarbeit** — `drift-audit` deckt nur
+Kit-Doppelungen zwischen den Plugin-Repos ab; `deck-core` liegt außerhalb seines
+Wirkungskreises.
+
+Was hier blieb, kennt Obsidian, das Kit oder den Endpunkt: `adapter`,
+`theme-registry`, `export`, `main`, die Ansichten, die Einstellungen, `llm-client`,
+`folder-hide`, `llm/ai-settings-model`, `llm/error-envelope`, `llm/model-info`.
+
+Dazu `vendor-css.ts`: die vier `import … from "*.css"`, die `deck-core` bewusst
+nicht selbst macht — ein CSS-Import ist eine Annahme über den Bundler.
+
+Der Grund für die Trennung ist die Lizenz, nicht die Größe: derselbe Kern soll ein
+AGPL-Plugin, eine AGPL-Pipeline und eine spätere Store-App bedienen, deren
+Bedingungen mit der AGPL unvereinbar sind.
 
 ## Commands
 
@@ -159,7 +200,7 @@ npm run dev                       # esbuild watch (Entwicklung)
 npm run build                     # tsc --noEmit + esbuild prod → main.js
 npm run deploy                    # build + nach $OBSIDIAN_PLUGIN_DIR kopieren
 npm run lint                      # inline-disable-Gate + eslint src (reproduziert Community-Review-Checks)
-npm test                          # Core-Purity-Check + vitest run + bundle-smoke (every-theme deckCss)
+npm test                          # check-no-abs-paths + Core-Purity-Check + bundle-smoke (every-theme deckCss) + vitest run
 npm run typecheck                 # tsc --noEmit (separat von vitest)
 npm run version-bump              # Version bumpen (package.json/manifest.json/versions.json synct)
 ```
@@ -181,17 +222,19 @@ npm run version-bump              # Version bumpen (package.json/manifest.json/v
   Nach jeder Änderung müssen alle vitest-Tests grün bleiben. `npx tsc --noEmit` separat laufen
   (vitest ≠ tsc).
 - **Core-Purity:** `scripts/check-core-purity.mjs` läuft als erster Schritt von `npm test` —
-  schlägt fehl, wenn `src/core/**` einen `obsidian`-Import enthält.
+  schlägt fehl, wenn `src/vendor/deck-core/pure/**` oder `src/vendor/kit/**` einen
+  `obsidian`-Import enthält.
 - **Keine Inline-`eslint-disable` in `src/`:** `scripts/check-no-inline-disables.mjs` läuft als
   erster Schritt von `npm run lint`. Der Community-Store wertet ein Inline-disable einer
   `obsidianmd/*`-Regel als **Error** — egal wie gut begründet (0.3.1 und 0.6.1 waren beide reine
   Wartungs-Releases genau dafür). Wer eine Regel nicht erfüllen kann: entweder den Code auflösen,
   oder einen **file-scoped Override mit Begründung** in `eslint.config.mjs` eintragen — dort ist
   die Ausnahme sichtbar und reviewbar. Beides ist store-tauglich, das Inline-disable nicht.
-- **Realm-Safety:** `scripts/check-render-realm.mjs` läuft als zweiter Schritt von `npm test` —
-  schlägt fehl, wenn `src/render-dom.ts` eine Obsidian-DOM-Augmentierung
-  (`createDiv`/`addClass`/etc.) verwendet. Render-DOM muss gegen jedes Realm (inkl. iframe-
-  contentDocument) lauffähig sein.
+- **Realm-Safety:** `src/vendor/deck-core/dom/render-dom.ts` darf keine Obsidian-DOM-
+  Augmentierung (`createDiv`/`addClass`/etc.) verwenden — muss gegen jedes Realm (inkl.
+  iframe-contentDocument) lauffähig sein. Das Gate dafür läuft seit Task 9 in `deck-core`
+  selbst; hier gibt es kein `scripts/check-render-realm.mjs` mehr, und `npm test` prüft es
+  nicht.
 - **Commits:** Conventional Commits, deutsche Beschreibung erlaubt. **Nur berührte Dateien
   stagen.** Trailer bei substanziellem AI-Beitrag:
   `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`.
@@ -203,7 +246,9 @@ npm run version-bump              # Version bumpen (package.json/manifest.json/v
 ## Gotchas
 
 - **Themes/Tokens-Invariante:** Themes setzen nur Tokens; Struktur/Layout-CSS ist theme-unantastbar (fit-kritisch). `--sd-base` lebt einzig in `presetTokensCss`.
-- **Theme-Registry:** Themes sind `ThemeEntry { key, source, themeCss, hljs, mermaid, baseFontPx }`.
+- **Theme-Registry:** Themes sind `ThemeEntry { key, label?, source, themeCss, hljs, katex, mermaid, mermaidVars?, baseFontPx, overridesBuiltin? }`.
+  `katex` ist Pflicht (vom Host hereingereichtes Fremd-CSS, s. `deck-css.ts` oben); `label`,
+  `mermaidVars` und `overridesBuiltin` sind optional.
   `ThemeStore` (`theme-registry.ts`) merged Built-ins (`builtinThemeEntries`) mit User-`.css` aus
   `settings.themesFolder` (`scanThemeFiles`). Frontmatter `theme:` = SoT der Notiz (Settings-`defaultTheme`
   nur für Notizen ohne `theme:`). Das Preview-Dropdown schaltet ephemer; „Setzen" schreibt via
@@ -231,9 +276,9 @@ npm run version-bump              # Version bumpen (package.json/manifest.json/v
   Foliengröße.
 - **Fit-or-warn — Overflow ist beabsichtigt:** Folien werden bei `minFontPx` gewarnt, nicht
   beschnitten. Das ist kein Bug — der Nutzer soll den Inhalt verdichten.
-- **Mermaid-IDs müssen eindeutig sein:** `render-dom.ts` vergibt eindeutige IDs per Folie
-  (`sd-mermaid-{slideIndex}-{blockIndex}`). Mermaid initialisiert sich global; doppelte IDs
-  führen zu stummen Render-Fehlern.
+- **Mermaid-IDs müssen eindeutig sein:** `src/vendor/deck-core/dom/render-dom.ts` vergibt
+  eindeutige IDs per Folie (`sd-mermaid-{slideIndex}-{blockIndex}`). Mermaid initialisiert
+  sich global; doppelte IDs führen zu stummen Render-Fehlern.
 - **`data.json`** — von Obsidian persistierte Plugin-Config — git-ignored, nie committen.
 - **`main.js`** — Build-Artefakt — git-ignored, nie manuell editieren.
 - **Deploy:** `npm run deploy` setzt `$OBSIDIAN_PLUGIN_DIR` voraus (Pfad zum Plugin-Ordner
@@ -244,8 +289,9 @@ npm run version-bump              # Version bumpen (package.json/manifest.json/v
   bleibt manuell via Forgejo-API.
 - **Kit-Vendoring:** `src/vendor/kit/**` sind **verbatim** Kopien aus `obsidian-kit/src/pure/` —
   nie hier editieren, sondern vom gepinnten sha neu vendoren (`src/vendor/VENDOR.json` hält
-  `version` + `sha`). Das Purity-Gate walkt `src/core` **und** `src/vendor/kit`; deshalb darf
-  Core aus vendor importieren, ohne dass ein unpure gewordenes Kit-Modul still durchschlägt.
+  `version` + `sha`). Das Purity-Gate walkt `src/vendor/deck-core/pure` **und**
+  `src/vendor/kit`; deshalb darf Core aus vendor importieren, ohne dass ein unpure
+  gewordenes Kit-Modul still durchschlägt.
 - **Kit-Klartexte sind deutsch:** `EndpointStatus.klartext` ist im Kit hartkodiert deutsch.
   Dieses Plugin ist EN-kanonisch → nie `klartext` rendern, immer über `kind` →
   `statusKindKey(kind)` → `t(key)`. Einzige Ausnahme: `kind === "unknown"` (dort trägt `raw`

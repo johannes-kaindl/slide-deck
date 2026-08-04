@@ -6,6 +6,11 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Der Folienkern (Modell, Renderer, Themes, Layout, Deck-Prompt) liegt jetzt in
+  `deck-core` und wird als gepinnte Kopie vendoriert. Kein Verhalten geändert:
+  Folien-HTML und Deck-CSS sind über alle Themes byte-gleich zum Stand davor.
+
 ## [0.6.1] — 2026-07-19
 
 ### Fixed

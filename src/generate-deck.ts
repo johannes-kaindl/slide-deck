@@ -1,6 +1,6 @@
-import { extractDeckMarkdown, setDeckTheme, setDeckSource, setDeckModel, hoistDeckSlots } from "./core/llm/deck-sanitize";
-import { validateDeckOutput } from "./core/llm/deck-validate";
-import { buildRetryFeedback, type ChatMessage } from "./core/llm/deck-prompt";
+import { extractDeckMarkdown, setDeckTheme, setDeckSource, setDeckModel, hoistDeckSlots } from "./vendor/deck-core/pure/llm/deck-sanitize";
+import { validateDeckOutput } from "./vendor/deck-core/pure/llm/deck-validate";
+import { buildRetryFeedback, type ChatMessage } from "./vendor/deck-core/pure/llm/deck-prompt";
 import type { DeckLlmClient, StreamOpts } from "./llm-client";
 
 export type GenPhase = "running" | "retrying" | "done" | "error" | "aborted";

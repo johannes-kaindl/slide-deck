@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeFolder, buildHideCss } from "../../src/core/folder-hide";
+import { normalizeFolder, buildHideCss } from "../../src/folder-hide";
 
 describe("normalizeFolder", () => {
   it("trims and removes trailing slashes", () => {

@@ -1,12 +1,12 @@
 import mermaid from "mermaid";
-import { renderMarkdown } from "./core/render/md2html";
-import { computeFit } from "./core/layout/fit";
-import { shouldCenterCompose } from "./core/layout/compose";
-import { collectWarnings, collectDeckWarnings, type Warning, type SlideWarning } from "./core/constraints/engine";
-import { deckCss } from "./deck-css";
-import { geometryFor } from "./core/geometry";
-import { resolveTheme, type ThemeRegistry } from "./core/presets";
-import type { SlideDeck } from "./core/slide-model";
+import { renderMarkdown } from "../pure/render/md2html";
+import { computeFit } from "../pure/layout/fit";
+import { shouldCenterCompose } from "../pure/layout/compose";
+import { collectWarnings, collectDeckWarnings, type Warning, type SlideWarning } from "../pure/constraints/engine";
+import { deckCss } from "../pure/deck-css";
+import { geometryFor } from "../pure/geometry";
+import { resolveTheme, type ThemeRegistry } from "../pure/presets";
+import type { SlideDeck } from "../pure/slide-model";
 import { createIsolatedDeckIframe } from "./iframe-host";
 
 let mermaidSeq = 0;

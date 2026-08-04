@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { pickLang, setLang, t, STRINGS_EN, STRINGS_DE } from "../src/i18n";
-import { statusKindKey, warnRuleKey } from "../src/core/llm/ai-settings-model";
+import { statusKindKey, warnRuleKey } from "../src/llm/ai-settings-model";
 import type { EndpointStatusKind } from "../src/vendor/kit/endpoint_diagnostics";
 
 describe("i18n", () => {
