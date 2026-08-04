@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   applyEndpointEdit, activeIndexFromStatuses, modelFieldMode, initialModelSelection,
   thinkToggleView, effectiveSuppress, statusKindKey, warnRuleKey, statusLabelParts,
-} from "../../src/core/llm/ai-settings-model";
+} from "../../src/llm/ai-settings-model";
 
 describe("applyEndpointEdit", () => {
   it("appends a non-empty value from the adder row", () => {

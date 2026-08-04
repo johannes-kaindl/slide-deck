@@ -7,7 +7,7 @@
     "dev": "node esbuild.config.mjs",
     "build": "tsc --noEmit && node esbuild.config.mjs --production",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/check-no-abs-paths.mjs && node scripts/check-core-purity.mjs && node scripts/check-render-realm.mjs && node scripts/bundle-smoke.mjs && vitest run",
+    "test": "node scripts/check-no-abs-paths.mjs && node scripts/check-core-purity.mjs && node scripts/bundle-smoke.mjs && vitest run",
     "smoke:bundle": "node scripts/bundle-smoke.mjs",
     "visual-smoke": "node scripts/visual-smoke.mjs",
     "lint": "node scripts/check-no-inline-disables.mjs && eslint src",

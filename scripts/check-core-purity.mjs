@@ -11,6 +11,6 @@ function walk(dir) {
     }
   }
 }
-walk("src/core");
+walk("src/vendor/deck-core/pure");
 walk("src/vendor/kit");   // vendored kit modules are pure by kit design — pin that, so core may import them
 console.log("core purity OK");

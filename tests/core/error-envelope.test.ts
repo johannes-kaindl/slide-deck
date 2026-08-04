@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseErrorEnvelope } from "../../src/core/llm/error-envelope";
+import { parseErrorEnvelope } from "../../src/llm/error-envelope";
 
 describe("parseErrorEnvelope", () => {
   it("{error:{message}} → message", () => {
