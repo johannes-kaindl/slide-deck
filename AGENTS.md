@@ -48,8 +48,11 @@ src/vendor/deck-core/pure/   Vendorierter Kern — kein obsidian-Import, kein DO
   slide-model.ts     parseDeck() — Frontmatter + ---Trenner → SlideDeck. Typen: Slide,
                      SlideDeck, DeckDirectives, Aspect.
   geometry.ts        geometryFor(aspect) → SlideGeometry {width, height}.
+  infer-layout.ts    inferLayout(regions) → Layout-Key aus der Regionenzahl/-form einer Folie.
   layout/
     fit.ts           computeFit(measured, geo, minScale) → FitResult {scale, overflow}.
+    compose.ts       COMPOSE_CENTER_THRESHOLD + shouldCenterCompose(...) — wann eine
+                     Compose-Region zentriert statt oben ausgerichtet wird.
   render/
     md2html.ts       renderMarkdown(md, resolveEmbed) → html-String (markdown-it + KaTeX +
                      highlight.js + Callout-Präprozessor + Mermaid-Slot).
@@ -61,6 +64,12 @@ src/vendor/deck-core/pure/   Vendorierter Kern — kein obsidian-Import, kein DO
                     <!-- column -->) → { layout, regions, warnings }.
   theme-key.ts       keyFromFilename(filename) → Theme-Key (Dateiname ohne .css);
                      parseBaseFontPx(css) → baseFontPx-Token aus CSS.
+  deck-css.ts        Die API-Naht zum Fremd-CSS (VendorCss: katex, hljs je Schema) — der Host
+                     reicht es herein, deck-core importiert keine .css-Datei selbst.
+                     builtinThemeEntries(vendor) → ThemeEntry[] der fünf eingebauten Themes;
+                     userThemeEntry(key, fileCss, vendor) → ThemeEntry aus einer Nutzer-.css;
+                     deckCss(entry, customCss?) → vollständiges Deck-CSS (Mathe, Code, Struktur,
+                     Layout, Theme, eigenes — in dieser Reihenfolge).
   llm/
     deck-prompt.ts        buildDeckPrompt(sourceBody, opts, contract) → ChatMessage[] — System+User-
                           Prompt, der eine Notiz in Deck-Markdown verwandelt (contractToPrompt ohne
@@ -73,7 +82,7 @@ src/vendor/deck-core/pure/   Vendorierter Kern — kein obsidian-Import, kein DO
   presets/
     index.ts        Preset-Typ + PRESETS-Registry; presetFor() (total); presetTokensCss();
                     assembleDeckCss().
-    default.ts · dark.ts · serif.ts · high-contrast.ts   je ein Preset (Token-Block + hljs/mermaid).
+    kairo.ts · kurenai.ts · kuro.ts · shiro.ts · sumi.ts   je ein Preset (Token-Block + hljs/mermaid).
     structure.css.ts  geteiltes, theme-unabhängiges Struktur-CSS (var(--sd-*); kein --sd-base).
     layouts.css.ts    LAYOUTS/layoutFor() + geteiltes Layout-CSS (.sd-layout-*, .sd-region).
 
@@ -191,7 +200,7 @@ npm run dev                       # esbuild watch (Entwicklung)
 npm run build                     # tsc --noEmit + esbuild prod → main.js
 npm run deploy                    # build + nach $OBSIDIAN_PLUGIN_DIR kopieren
 npm run lint                      # inline-disable-Gate + eslint src (reproduziert Community-Review-Checks)
-npm test                          # Core-Purity-Check + vitest run + bundle-smoke (every-theme deckCss)
+npm test                          # check-no-abs-paths + Core-Purity-Check + bundle-smoke (every-theme deckCss) + vitest run
 npm run typecheck                 # tsc --noEmit (separat von vitest)
 npm run version-bump              # Version bumpen (package.json/manifest.json/versions.json synct)
 ```
@@ -237,7 +246,9 @@ npm run version-bump              # Version bumpen (package.json/manifest.json/v
 ## Gotchas
 
 - **Themes/Tokens-Invariante:** Themes setzen nur Tokens; Struktur/Layout-CSS ist theme-unantastbar (fit-kritisch). `--sd-base` lebt einzig in `presetTokensCss`.
-- **Theme-Registry:** Themes sind `ThemeEntry { key, source, themeCss, hljs, mermaid, baseFontPx }`.
+- **Theme-Registry:** Themes sind `ThemeEntry { key, label?, source, themeCss, hljs, katex, mermaid, mermaidVars?, baseFontPx, overridesBuiltin? }`.
+  `katex` ist Pflicht (vom Host hereingereichtes Fremd-CSS, s. `deck-css.ts` oben); `label`,
+  `mermaidVars` und `overridesBuiltin` sind optional.
   `ThemeStore` (`theme-registry.ts`) merged Built-ins (`builtinThemeEntries`) mit User-`.css` aus
   `settings.themesFolder` (`scanThemeFiles`). Frontmatter `theme:` = SoT der Notiz (Settings-`defaultTheme`
   nur für Notizen ohne `theme:`). Das Preview-Dropdown schaltet ephemer; „Setzen" schreibt via

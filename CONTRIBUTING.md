@@ -33,7 +33,7 @@ Contributions of all sizes are welcome: bug reports, fixes, docs, and features. 
 
 Run these locally before you commit, and make sure they are green:
 
-- **Tests:** `npm test` — runs the core purity check + 22 Vitest tests.
+- **Tests:** `npm test` — runs the absolute-path guard, the core purity check, the bundle smoke test, and the Vitest suite.
 - **Typecheck:** `npx tsc --noEmit` — must be clean.
 - **Lint:** `npm run lint` — reproduces the Obsidian community review ESLint checks.
 - **Pre-commit hooks:** let them run; don't skip them with `--no-verify`.
@@ -42,7 +42,7 @@ The project is test-driven, so new behavior should arrive with tests.
 
 ## Architecture constraint — pure core
 
-`src/core/**` must remain **Obsidian-free** (no `import … from "obsidian"`). A purity check script (`scripts/check-core-purity.mjs`) enforces this as part of `npm test`. See [`AGENTS.md`](AGENTS.md) for the full module layout and the pure-core ↔ adapter seam.
+`src/vendor/deck-core/**` (the vendored core, pinned from the [`deck-core`](https://git.jkaindl.de/jkaindl/deck-core) repo) must remain **Obsidian-free** — `pure/` additionally free of any DOM/window access, `dom/` may touch a document but not Obsidian. A purity check script (`scripts/check-core-purity.mjs`) enforces both tiers, plus the vendored `src/vendor/kit/`, as part of `npm test`. See [`AGENTS.md`](AGENTS.md) for the full module layout and the pure-core ↔ adapter seam.
 
 All user-facing strings (UI labels, commands, notices) go through the i18n module (`src/i18n.ts`) with English canonical + German translation; never hard-code UI text — see [`AGENTS.md`](AGENTS.md) § Conventions.
 
