@@ -1,5 +1,5 @@
 // Kit owns the context parsers (vendored, pinned). Only the two estimator helpers below are ours.
-export { parseLmStudioContext, parseOllamaContext, type ModelContext } from "../../vendor/kit/model-context";
+export { parseLmStudioContext, parseOllamaContext, type ModelContext } from "../vendor/kit/model-context";
 
 /** Rough token estimate: ~3.5 characters per token (English/German prose average). */
 export function estimateTokens(chars: number): number { return Math.ceil(chars / 3.5); }

@@ -4,12 +4,12 @@ import { SlideDeckView, VIEW_TYPE } from "./preview-view";
 import { t, pickLang, setLang } from "./i18n";
 import { DEFAULT_SETTINGS, SlideDeckSettings, SlideDeckSettingTab, migrateLegacyThemeKeys } from "./settings";
 import { ThemeStore } from "./theme-registry";
-import { buildHideCss, normalizeFolder } from "./core/folder-hide";
+import { buildHideCss, normalizeFolder } from "./folder-hide";
 import { GenerateDeckView, VIEW_TYPE_GENERATE } from "./generate-deck-view";
 import { runGenerateDeck, type GenState, type GenerateResult, type GenerationHandle } from "./generate-deck";
 import { makeDeckLlmClient } from "./llm-client";
-import { buildDeckPrompt } from "./core/llm/deck-prompt";
-import { getAuthoringContract } from "./core/constraints/contract";
+import { buildDeckPrompt } from "./vendor/deck-core/pure/llm/deck-prompt";
+import { getAuthoringContract } from "./vendor/deck-core/pure/constraints/contract";
 import { mergeSettings } from "./vendor/kit/settings";
 
 export interface DeckGenInput {

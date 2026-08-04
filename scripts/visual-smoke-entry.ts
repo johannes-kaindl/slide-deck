@@ -1,17 +1,18 @@
 // Browser-IIFE: von scripts/visual-smoke.mjs gebündelt und in eine Headless-Chrome-Seite
 // injiziert. Rendert ein Deck durch die ECHTE Pipeline (parseDeck → renderDeckToContainer
 // inkl. Fit-Messung, compose-center, Titel-Hoist) mit dem echten deckCss.
-import { parseDeck } from "../src/core/slide-model";
-import { mergeThemes, resolveTheme } from "../src/core/presets";
-import { builtinThemeEntries, deckCss } from "../src/deck-css";
-import { renderDeckToContainer } from "../src/render-dom";
+import { parseDeck } from "../src/vendor/deck-core/pure/slide-model";
+import { mergeThemes, resolveTheme } from "../src/vendor/deck-core/pure/presets";
+import { builtinThemeEntries, deckCss } from "../src/vendor/deck-core/pure/deck-css";
+import { renderDeckToContainer } from "../src/vendor/deck-core/dom/render-dom";
+import { VENDOR_CSS } from "../src/vendor-css";
 
 declare global { interface Window { __DECK_MD__: string; __THEME__: string; __EXTRA_CSS__?: string; __DONE__?: boolean } }
 
 (async () => {
   const deck = parseDeck(window.__DECK_MD__);
   deck.directives.theme = window.__THEME__;
-  const { map } = mergeThemes(builtinThemeEntries(), []);
+  const { map } = mergeThemes(builtinThemeEntries(VENDOR_CSS), []);
   const entry = resolveTheme(map, deck.directives.theme);
   const style = document.createElement("style");
   // __EXTRA_CSS__ (optional): appended last so it can override token/theme rules —

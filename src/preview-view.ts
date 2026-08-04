@@ -1,14 +1,14 @@
 import { ItemView, WorkspaceLeaf, MarkdownView, Notice, Platform, setIcon, type TFile } from "obsidian";
 import { loadDeck } from "./adapter";
-import { buildIsolatedDeck } from "./render-dom";
-import { createIsolatedDeckIframe, type IsolatedIframe } from "./iframe-host";
-import { PREVIEW_CHROME_CSS } from "./chrome-css";
+import { buildIsolatedDeck } from "./vendor/deck-core/dom/render-dom";
+import { createIsolatedDeckIframe, type IsolatedIframe } from "./vendor/deck-core/dom/iframe-host";
+import { PREVIEW_CHROME_CSS } from "./vendor/deck-core/dom/chrome-css";
 import { exportPdf, exportImages } from "./export";
 import { setNoteTheme } from "./frontmatter-writer";
 import { activeDoc, activeWin } from "./dom-safe";
-import { geometryFor } from "./core/geometry";
+import { geometryFor } from "./vendor/deck-core/pure/geometry";
 import { t } from "./i18n";
-import type { SlideDeck } from "./core/slide-model";
+import type { SlideDeck } from "./vendor/deck-core/pure/slide-model";
 import type SlideDeckPlugin from "./main";
 
 export const VIEW_TYPE = "slide-deck-preview";

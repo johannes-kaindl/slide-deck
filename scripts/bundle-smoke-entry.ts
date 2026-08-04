@@ -4,7 +4,7 @@
 // `{ default: fn }` in the real bundle, which made `md.use(...)` throw at runtime while
 // unit tests stayed green (LESSONS 2026-06-23 — a real bundle smoke catches what unit
 // tests cannot). Lives outside src/ and tests/ so it touches no other gate.
-import { renderMarkdown } from "../src/core/render/md2html";
+import { renderMarkdown } from "../src/vendor/deck-core/pure/render/md2html";
 
 const md = [
   "$E=mc^2$",
@@ -33,10 +33,11 @@ if (missing.length > 0) {
 }
 console.log("bundle-smoke OK — render path works in the real esbuild bundle");
 
-import { parseDeck } from "../src/core/slide-model";
-import { deckCss, builtinThemeEntries, userThemeEntry } from "../src/deck-css";
-import { presetFor } from "../src/core/presets";
-import { layoutFor } from "../src/core/presets/layouts.css";
+import { parseDeck } from "../src/vendor/deck-core/pure/slide-model";
+import { deckCss, builtinThemeEntries, userThemeEntry } from "../src/vendor/deck-core/pure/deck-css";
+import { presetFor } from "../src/vendor/deck-core/pure/presets";
+import { layoutFor } from "../src/vendor/deck-core/pure/presets/layouts.css";
+import { VENDOR_CSS } from "../src/vendor-css";
 
 // 1) Directive parsing through the real bundle
 const deck = parseDeck("<!-- layout: two-column -->\n## L\n\n<!-- column -->\n\n## R\n");
@@ -46,7 +47,7 @@ if (deck.slides[0].layout !== "two-column" || deck.slides[0].regions.length !== 
 }
 
 // 2) deckCss assembles for every builtin theme (+ custom CSS appended last), through the real .css text-loader
-for (const entry of builtinThemeEntries()) {
+for (const entry of builtinThemeEntries(VENDOR_CSS)) {
   const css = deckCss(entry, ".sd-slide{ --sd-accent:#e63946 }");
   for (const needle of [".katex", ".hljs", ".sd-content", ".sd-layout-two-column", "--sd-base:", "#e63946"]) {
     if (!css.includes(needle)) {
@@ -57,7 +58,7 @@ for (const entry of builtinThemeEntries()) {
 }
 
 // 2b) a user .css theme injects its raw tokens
-const userCss = deckCss(userThemeEntry("ocean", ".sd-slide{ --sd-bg:#012738 }"));
+const userCss = deckCss(userThemeEntry("ocean", ".sd-slide{ --sd-bg:#012738 }", VENDOR_CSS));
 if (!userCss.includes("--sd-bg:#012738") || !userCss.includes(".katex")) {
   console.error("bundle-smoke FAILED — user theme CSS not assembled");
   process.exit(4);

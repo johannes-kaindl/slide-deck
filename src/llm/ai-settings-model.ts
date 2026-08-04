@@ -1,7 +1,7 @@
 // Pure state logic of the AI settings UI: obsidian-free, DOM-free, node-testable and pinned by
 // check-core-purity. The render layer (ai-settings-ui.ts) calls these and stays thin.
-import type { EndpointStatusKind } from "../../vendor/kit/endpoint_diagnostics";
-import { isAlwaysOnThinker } from "../../vendor/kit/reasoning";
+import type { EndpointStatusKind } from "../vendor/kit/endpoint_diagnostics";
+import { isAlwaysOnThinker } from "../vendor/kit/reasoning";
 
 /** Applies one row-editor edit to the endpoint list.
  *  - trims the value;

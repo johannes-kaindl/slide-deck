@@ -2,7 +2,7 @@ import { App, Notice, PluginSettingTab, Setting, type SettingDefinitionItem } fr
 import type SlideDeckPlugin from "./main";
 import { t } from "./i18n";
 import { revealFolder, writeThemeCss } from "./theme-source";
-import { THEME_ALIASES } from "./core/presets";
+import { THEME_ALIASES } from "./vendor/deck-core/pure/presets";
 import { renderEndpointEditor, renderModelField, renderThinkingRow } from "./ai-settings-ui";
 import { makeDeckLlmClient } from "./llm-client";
 import { resolveActiveEndpoint } from "./vendor/kit/endpoint";
