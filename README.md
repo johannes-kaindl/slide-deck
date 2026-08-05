@@ -154,7 +154,9 @@ Note: the `---` in the YAML frontmatter block is the standard YAML delimiter and
 
 The **Generate presentation from note** command sends note content to an **OpenAI-compatible
 LLM endpoint that you configure** (default `http://localhost:1234`, i.e. a local LM Studio).
-No cloud service is involved unless you point the endpoint at one.
+No cloud service is involved unless you point the endpoint at one — the settings tab holds an
+**ordered list of endpoints**, tried in order, and each row can carry its own optional API key,
+so a local server and a hosted provider (e.g. OpenRouter) can sit side by side in the same list.
 
 - **Reachability pings and model lists** are requested when you open the generation dialog or
   the settings tab. These are automatic requests to the configured endpoint(s).
