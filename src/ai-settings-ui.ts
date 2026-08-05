@@ -4,13 +4,14 @@
 import { Notice, Setting, setIcon } from "obsidian";
 import { t } from "./i18n";
 import {
-  applyEndpointEdit, activeIndexFromStatuses, warnRuleKey,
+  activeIndexFromStatuses, warnRuleKey,
   modelFieldMode, thinkToggleView, initialModelSelection, statusLabelParts,
 } from "./llm/ai-settings-model";
 import type { ModelContext } from "./llm/model-info";
 import {
   validateEndpointInput, ENDPOINT_PRESETS, type EndpointStatus, type EndpointStatusKind,
 } from "./vendor/kit/endpoint_diagnostics";
+import { applyEndpointEdit, type EndpointConfig } from "./vendor/kit/endpoint_config";
 
 /** Status icon per UI-STANDARD §8: shape AND colour AND state class AND aria-label — colour is
  *  never the only carrier (WCAG 1.4.1). `null` kind = not probed yet. */
@@ -25,17 +26,20 @@ export function paintStatus(el: HTMLElement, kind: EndpointStatusKind | null, la
 }
 
 export interface EndpointEditorDeps {
-  getList: () => string[];
-  setList: (next: string[]) => Promise<void>;
-  probe: (endpoint: string) => Promise<EndpointStatus>;
+  getList: () => EndpointConfig[];
+  setList: (next: EndpointConfig[]) => Promise<void>;
+  probe: (cfg: EndpointConfig) => Promise<EndpointStatus>;
   rerender: () => void;
 }
 
 /** Row editor for the endpoint list: one Setting row per endpoint + a trailing adder row.
- *  Name/desc only on row 0. Live probe icon per row, active marker on the first reachable one. */
+ *  Name/desc only on row 0. Live probe icon per row, active marker on the first reachable one.
+ *  Only the URL field is drawn here — per-row apiKey/model editing is a later addition
+ *  (Task 9); `applyEndpointEdit` is called with field "url" so an existing row's key/model
+ *  survive an in-place URL edit untouched. */
 export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEditorDeps): void {
   const list = deps.getList();
-  const rows = [...list, ""]; // trailing adder
+  const rows = [...list.map((e) => e.url), ""]; // trailing adder
   const statuses: (EndpointStatusKind | null)[] = list.map(() => null);
   const icons: HTMLElement[] = [];
   // Generation counter: guards probeAll() against overlapping runs (see below).
@@ -55,7 +59,7 @@ export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEdi
       // Mutate on blur, never onChange: onChange would persist every keystroke — the adder
       // would grow entries "h", "ht", "htt", … (UI-STANDARD §8).
       txt.inputEl.addEventListener("blur", () => {
-        const next = applyEndpointEdit(deps.getList(), index, txt.getValue(), isAdder);
+        const next = applyEndpointEdit(deps.getList(), index, "url", txt.getValue(), isAdder);
         if (JSON.stringify(next) === JSON.stringify(deps.getList())) return; // nothing changed
         void deps.setList(next).then(() => deps.rerender());
       });
@@ -78,7 +82,7 @@ export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEdi
         .setIcon("trash-2")
         .setTooltip(t("deck.settings.endpoint.remove"))
         .onClick(() => {
-          const next = applyEndpointEdit(deps.getList(), index, "", false);
+          const next = applyEndpointEdit(deps.getList(), index, "url", "", false);
           void deps.setList(next).then(() => deps.rerender());
         }));
     }
@@ -91,7 +95,7 @@ export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEdi
     actions.addButton((b) => b
       .setButtonText(t("deck.settings.endpoint.addPreset", preset.label))
       .onClick(() => {
-        const next = applyEndpointEdit(deps.getList(), deps.getList().length, preset.url, true);
+        const next = applyEndpointEdit(deps.getList(), deps.getList().length, "url", preset.url, true);
         void deps.setList(next).then(() => deps.rerender());
       }));
   }

@@ -2,7 +2,7 @@ import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import type SlideDeckPlugin from "./main";
 import type { DeckGenInput } from "./main";
 import { makeDeckLlmClient } from "./llm-client";
-import { resolveActiveEndpoint } from "./vendor/kit/endpoint";
+import { resolveActiveEndpointConfig, type EndpointConfig } from "./vendor/kit/endpoint_config";
 import { frontmatterRange } from "./vendor/deck-core/pure/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./vendor/deck-core/pure/llm/deck-prompt";
 import { estimateTokens, contextOverflow } from "./llm/model-info";
@@ -27,7 +27,7 @@ function looksLikeDeck(md: string): boolean {
  *  Persistent: the source is whatever note is active when you press Generate. Attaches to the
  *  plugin's generation handle, so progress survives switching away and back. */
 export class GenerateDeckView extends ItemView {
-  private endpoint: string | null = null;
+  private endpoint: EndpointConfig | null = null;
   private model = "";
   private currentSource: TFile | null = null;
   private unsubscribe: (() => void) | null = null;
@@ -127,7 +127,7 @@ export class GenerateDeckView extends ItemView {
     this.refreshSourceBits();
 
     // Resolve endpoint + ping + models (once per open).
-    this.endpoint = await resolveActiveEndpoint(this.plugin.settings.llmEndpoints, (ep) => makeDeckLlmClient(ep, "").ping());
+    this.endpoint = await resolveActiveEndpointConfig(this.plugin.settings.llmEndpoints, (ep) => makeDeckLlmClient(ep, "").ping());
     if (!this.endpoint) {
       // No resolved endpoint → nothing left to probe() for a kind; "unknown" carries the
       // shared error visual (circle-x/is-error) while the label stays the specific,
@@ -140,7 +140,7 @@ export class GenerateDeckView extends ItemView {
       const parts = statusLabelParts(st.kind, st.raw);
       const label = parts.suffix ? `${t(parts.key)} — ${parts.suffix}` : t(parts.key);
       paintStatus(pingEl, st.kind, label);
-      pingLabelEl.setText(`${this.endpoint} — ${label}`);
+      pingLabelEl.setText(`${this.endpoint.url} — ${label}`);
       const models = await makeDeckLlmClient(this.endpoint, "").listModels();
       if (modelFieldMode(models) === "dropdown") {
         // Keep a saved-but-absent model selectable instead of losing it (UI-STANDARD §8,

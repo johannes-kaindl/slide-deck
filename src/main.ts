@@ -8,12 +8,13 @@ import { buildHideCss, normalizeFolder } from "./folder-hide";
 import { GenerateDeckView, VIEW_TYPE_GENERATE } from "./generate-deck-view";
 import { runGenerateDeck, type GenState, type GenerateResult, type GenerationHandle } from "./generate-deck";
 import { makeDeckLlmClient } from "./llm-client";
+import type { EndpointConfig } from "./vendor/kit/endpoint_config";
 import { buildDeckPrompt } from "./vendor/deck-core/pure/llm/deck-prompt";
 import { getAuthoringContract } from "./vendor/deck-core/pure/constraints/contract";
 
 export interface DeckGenInput {
   sourceBody: string; slideTarget: number | "auto"; hint: string;
-  themeKey: string; model: string; endpoint: string; targetPath: string; replace: boolean;
+  themeKey: string; model: string; endpoint: EndpointConfig; targetPath: string; replace: boolean;
   sourceLink: string; // "[[Note]]" backlink to the origin note
 }
 

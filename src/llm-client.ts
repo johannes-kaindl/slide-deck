@@ -1,6 +1,7 @@
 import { requestUrl } from "obsidian";
 import { streamSSE, type StreamResult } from "./llm-stream";
 import { normalizeEndpoint } from "./vendor/kit/endpoint";
+import { authHeaders, effectiveModel, type EndpointConfig } from "./vendor/kit/endpoint_config";
 import { suppressParams } from "./vendor/kit/reasoning";
 import { classifyEndpointStatus, type EndpointStatus, type ProbeInput } from "./vendor/kit/endpoint_diagnostics";
 import { effectiveSuppress } from "./llm/ai-settings-model";
@@ -23,9 +24,12 @@ export const requestUrlHttpJson: HttpJson = async (param) => {
 
 export class DeckLlmClient {
   private endpoint: string;
+  /** Auth headers for this endpoint, computed once. Empty for local servers. */
+  private auth: Record<string, string>;
   private streamRefused = false; // once a stream is CORS-refused, skip streaming on later calls
-  constructor(endpoint: string, private model: string, private http: HttpJson, private stream_: typeof streamSSE) {
-    this.endpoint = normalizeEndpoint(endpoint);
+  constructor(cfg: EndpointConfig, private model: string, private http: HttpJson, private stream_: typeof streamSSE) {
+    this.endpoint = normalizeEndpoint(cfg.url);
+    this.auth = authHeaders(cfg.apiKey);
   }
 
   /** Reachability with a named diagnosis. GET /v1/models, 5s cap — requestUrl knows no
@@ -38,7 +42,7 @@ export class DeckLlmClient {
     });
     const call: Promise<ProbeInput> = (async () => {
       try {
-        const r = await this.http({ url: `${this.endpoint}/v1/models` });
+        const r = await this.http({ url: `${this.endpoint}/v1/models`, headers: { ...this.auth } });
         return { kind: "response", status: r.status, body: r.json };
       } catch (e: unknown) {
         return { kind: "error", message: (e as Error)?.message ?? String(e) };
@@ -61,7 +65,7 @@ export class DeckLlmClient {
 
   async listModels(): Promise<string[]> {
     try {
-      const { status, json } = await this.http({ url: `${this.endpoint}/v1/models` });
+      const { status, json } = await this.http({ url: `${this.endpoint}/v1/models`, headers: { ...this.auth } });
       if (status !== 200) return [];
       const j = json as { data?: { id?: string }[] };
       return (j.data ?? []).map((m) => m.id).filter((x): x is string => typeof x === "string").sort();
@@ -71,11 +75,11 @@ export class DeckLlmClient {
   /** Best-effort context length (LM Studio /api/v0/models, then Ollama /api/show). null if unknown. */
   async modelContext(model: string): Promise<ModelContext | null> {
     try {
-      const lm = await this.http({ url: `${this.endpoint}/api/v0/models` });
+      const lm = await this.http({ url: `${this.endpoint}/api/v0/models`, headers: { ...this.auth } });
       if (lm.status === 200) { const c = parseLmStudioContext(lm.json, model); if (c) return c; }
     } catch { /* try next */ }
     try {
-      const oll = await this.http({ url: `${this.endpoint}/api/show`, method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model }) });
+      const oll = await this.http({ url: `${this.endpoint}/api/show`, method: "POST", headers: { "Content-Type": "application/json", ...this.auth }, body: JSON.stringify({ model }) });
       if (oll.status === 200) { const c = parseOllamaContext(oll.json); if (c) return c; }
     } catch { /* give up */ }
     return null;
@@ -97,7 +101,7 @@ export class DeckLlmClient {
   async generate(messages: ChatMessage[], opts: StreamOpts, onContent: (t: string) => void, onReasoning: (t: string) => void, signal?: AbortSignal): Promise<DeckStreamResult> {
     if (this.streamRefused) return this.generateNonStreaming(messages, opts, signal);
     try {
-      const r = await this.stream_(`${this.endpoint}/v1/chat/completions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: this.buildBody(messages, opts, true) }, onContent, onReasoning, signal);
+      const r = await this.stream_(`${this.endpoint}/v1/chat/completions`, { method: "POST", headers: { "Content-Type": "application/json", ...this.auth }, body: this.buildBody(messages, opts, true) }, onContent, onReasoning, signal);
       this.throwIfEnvelope(r);
       return { content: r.content, reasoning: r.reasoning, finishReason: r.finishReason, usedFallback: false };
     } catch (e) {
@@ -111,7 +115,7 @@ export class DeckLlmClient {
 
   private async generateNonStreaming(messages: ChatMessage[], opts: StreamOpts, signal?: AbortSignal): Promise<DeckStreamResult> {
     if (signal?.aborted) { const e = new Error("Aborted"); e.name = "AbortError"; throw e; }
-    const res = await this.http({ url: `${this.endpoint}/v1/chat/completions`, method: "POST", headers: { "Content-Type": "application/json" }, body: this.buildBody(messages, opts, false) });
+    const res = await this.http({ url: `${this.endpoint}/v1/chat/completions`, method: "POST", headers: { "Content-Type": "application/json", ...this.auth }, body: this.buildBody(messages, opts, false) });
     if (signal?.aborted) { const e = new Error("Aborted"); e.name = "AbortError"; throw e; } // Stop during the fallback → no write
     const envelope = parseErrorEnvelope(res.text);
     if (envelope) throw new Error(envelope);
@@ -129,7 +133,9 @@ export class DeckLlmClient {
   }
 }
 
-/** Production factory: wires the requestUrl httpJson + the XHR streamSSE. */
-export function makeDeckLlmClient(endpoint: string, model: string): DeckLlmClient {
-  return new DeckLlmClient(endpoint, model, requestUrlHttpJson, streamSSE);
+/** Production factory: wires the requestUrl httpJson + the XHR streamSSE.
+ *  Takes the whole endpoint entry so the API key reaches every request — including probe(),
+ *  where a missing key would make a hosted provider look unreachable with no error shown. */
+export function makeDeckLlmClient(cfg: EndpointConfig, model: string): DeckLlmClient {
+  return new DeckLlmClient(cfg, effectiveModel(cfg, model), requestUrlHttpJson, streamSSE);
 }

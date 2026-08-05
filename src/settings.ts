@@ -5,10 +5,9 @@ import { revealFolder, writeThemeCss } from "./theme-source";
 import { THEME_ALIASES } from "./vendor/deck-core/pure/presets";
 import { renderEndpointEditor, renderModelField, renderThinkingRow } from "./ai-settings-ui";
 import { makeDeckLlmClient } from "./llm-client";
-import { resolveActiveEndpoint } from "./vendor/kit/endpoint";
 import { reasoningHappened } from "./vendor/kit/reasoning";
 import { mergeSettings } from "./vendor/kit/settings";
-import { migrateEndpointList, type EndpointConfig } from "./vendor/kit/endpoint_config";
+import { migrateEndpointList, resolveActiveEndpointConfig, type EndpointConfig } from "./vendor/kit/endpoint_config";
 
 export interface SlideDeckSettings {
   defaultTheme: string;
@@ -155,8 +154,8 @@ export class SlideDeckSettingTab extends PluginSettingTab {
     });
   }
 
-  private async activeEndpoint(): Promise<string | null> {
-    return resolveActiveEndpoint(this.plugin.settings.llmEndpoints, (ep) => makeDeckLlmClient(ep, "").ping());
+  private async activeEndpoint(): Promise<EndpointConfig | null> {
+    return resolveActiveEndpointConfig(this.plugin.settings.llmEndpoints, (ep) => makeDeckLlmClient(ep, "").ping());
   }
 
   /** One real, minimal call with suppression on: did the model think anyway?
