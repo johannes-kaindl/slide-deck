@@ -1,24 +1,13 @@
 // Pure state logic of the AI settings UI: obsidian-free, DOM-free, node-testable and pinned by
 // check-core-purity. The render layer (ai-settings-ui.ts) calls these and stays thin.
 import type { EndpointStatusKind } from "../vendor/kit/endpoint_diagnostics";
+import type { EndpointRole } from "../vendor/kit/endpoint_config";
 import { isAlwaysOnThinker } from "../vendor/kit/reasoning";
 
-/** Applies one row-editor edit to the endpoint list.
- *  - trims the value;
- *  - `isAdder` (the trailing blank row) appends a non-empty value; an empty one is a no-op;
- *  - an existing row cleared to empty is removed, otherwise replaced in place;
- *  - blank entries are always filtered out — never persist an empty line. */
-export function applyEndpointEdit(list: string[], index: number, value: string, isAdder: boolean): string[] {
-  const v = value.trim();
-  let next: string[];
-  if (isAdder) {
-    next = v ? [...list, v] : [...list];
-  } else {
-    next = [...list];
-    if (v) next[index] = v;
-    else next.splice(index, 1);
-  }
-  return next.filter((e) => e.trim().length > 0);
+/** i18n key for an endpoint role. The kit derives the role but stays language-free —
+ *  this plugin is EN-canonical and renders it through t(). */
+export function roleKindKey(role: EndpointRole): string {
+  return `deck.settings.endpoint.role.${role.kind}`;
 }
 
 /** Index of the first `ok` row (= the active endpoint, exactly resolveActiveEndpoint semantics),

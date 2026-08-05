@@ -1,27 +1,15 @@
 import { describe, it, expect } from "vitest";
 import {
-  applyEndpointEdit, activeIndexFromStatuses, modelFieldMode, initialModelSelection,
+  roleKindKey, activeIndexFromStatuses, modelFieldMode, initialModelSelection,
   thinkToggleView, effectiveSuppress, statusKindKey, warnRuleKey, statusLabelParts,
 } from "../../src/llm/ai-settings-model";
 
-describe("applyEndpointEdit", () => {
-  it("appends a non-empty value from the adder row", () => {
-    expect(applyEndpointEdit(["http://a:1"], 1, "http://b:2", true)).toEqual(["http://a:1", "http://b:2"]);
-  });
-  it("is a no-op when the adder row is left empty", () => {
-    expect(applyEndpointEdit(["http://a:1"], 1, "   ", true)).toEqual(["http://a:1"]);
-  });
-  it("replaces an existing row in place", () => {
-    expect(applyEndpointEdit(["http://a:1", "http://b:2"], 0, "http://z:9", false)).toEqual(["http://z:9", "http://b:2"]);
-  });
-  it("removes an existing row that was cleared", () => {
-    expect(applyEndpointEdit(["http://a:1", "http://b:2"], 0, "", false)).toEqual(["http://b:2"]);
-  });
-  it("trims the value", () => {
-    expect(applyEndpointEdit([], 0, "  http://a:1  ", true)).toEqual(["http://a:1"]);
-  });
-  it("never persists blank entries", () => {
-    expect(applyEndpointEdit(["http://a:1", "  "], 0, "http://z:9", false)).toEqual(["http://z:9"]);
+describe("roleKindKey", () => {
+  it("maps every role to an i18n key", () => {
+    expect(roleKindKey({ kind: "active" })).toBe("deck.settings.endpoint.role.active");
+    expect(roleKindKey({ kind: "standby", position: 3 })).toBe("deck.settings.endpoint.role.standby");
+    expect(roleKindKey({ kind: "unreachable" })).toBe("deck.settings.endpoint.role.unreachable");
+    expect(roleKindKey({ kind: "skipped-model" })).toBe("deck.settings.endpoint.role.skipped-model");
   });
 });
 

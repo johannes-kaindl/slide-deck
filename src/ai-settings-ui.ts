@@ -4,14 +4,16 @@
 import { Notice, Setting, setIcon } from "obsidian";
 import { t } from "./i18n";
 import {
-  activeIndexFromStatuses, warnRuleKey,
+  activeIndexFromStatuses, warnRuleKey, roleKindKey,
   modelFieldMode, thinkToggleView, initialModelSelection, statusLabelParts,
 } from "./llm/ai-settings-model";
 import type { ModelContext } from "./llm/model-info";
 import {
   validateEndpointInput, ENDPOINT_PRESETS, type EndpointStatus, type EndpointStatusKind,
 } from "./vendor/kit/endpoint_diagnostics";
-import { applyEndpointEdit, type EndpointConfig } from "./vendor/kit/endpoint_config";
+import {
+  applyEndpointEdit, moveEndpointToFront, endpointRole, carriesApiKey, type EndpointConfig,
+} from "./vendor/kit/endpoint_config";
 
 /** Status icon per UI-STANDARD §8: shape AND colour AND state class AND aria-label — colour is
  *  never the only carrier (WCAG 1.4.1). `null` kind = not probed yet. */
@@ -34,18 +36,21 @@ export interface EndpointEditorDeps {
 
 /** Row editor for the endpoint list: one Setting row per endpoint + a trailing adder row.
  *  Name/desc only on row 0. Live probe icon per row, active marker on the first reachable one.
- *  Only the URL field is drawn here — per-row apiKey/model editing is a later addition
- *  (Task 9); `applyEndpointEdit` is called with field "url" so an existing row's key/model
- *  survive an in-place URL edit untouched. */
+ *  Rows are resolved by RENDER INDEX (not by URL/findIndex): a blur-commit mutates the list
+ *  synchronously before a later click runs, but this editor's callbacks all capture their own
+ *  `index` at render time and re-diff against `deps.getList()` via JSON.stringify, so a stale
+ *  index never applies — unlike a value-keyed lookup it also has no trouble with duplicate or
+ *  edited-away URLs. */
 export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEditorDeps): void {
   const list = deps.getList();
-  const rows = [...list.map((e) => e.url), ""]; // trailing adder
+  const rows: EndpointConfig[] = [...list, { url: "" }]; // trailing adder
   const statuses: (EndpointStatusKind | null)[] = list.map(() => null);
   const icons: HTMLElement[] = [];
+  const roleEls: HTMLElement[] = [];
   // Generation counter: guards probeAll() against overlapping runs (see below).
   let probeGen = 0;
 
-  rows.forEach((value, index) => {
+  rows.forEach((cfg, index) => {
     const isAdder = index === list.length;
     const setting = new Setting(containerEl);
     if (index === 0) {
@@ -54,7 +59,7 @@ export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEdi
     setting.settingEl.addClass("sd-endpoint-row");
 
     setting.addText((txt) => {
-      txt.setValue(value);
+      txt.setValue(cfg.url);
       txt.setPlaceholder(ENDPOINT_PRESETS[0].url);
       // Mutate on blur, never onChange: onChange would persist every keystroke — the adder
       // would grow entries "h", "ht", "htt", … (UI-STANDARD §8).
@@ -66,17 +71,53 @@ export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEdi
     });
 
     if (!isAdder) {
+      setting.addText((txt) => {
+        txt.setValue(cfg.apiKey ?? "");
+        txt.setPlaceholder(t("deck.settings.endpoint.keyPlaceholder"));
+        txt.inputEl.type = "password";        // masked — the key never shows in plain text
+        txt.inputEl.setAttribute("aria-label", t("deck.settings.endpoint.key"));
+        txt.inputEl.addEventListener("blur", () => {
+          const next = applyEndpointEdit(deps.getList(), index, "apiKey", txt.getValue(), false);
+          if (JSON.stringify(next) === JSON.stringify(deps.getList())) return;
+          void deps.setList(next).then(() => deps.rerender());
+        });
+      });
+
+      if (carriesApiKey(cfg)) {
+        // Shape + tooltip, never colour alone (WCAG 1.4.1). The key itself never appears.
+        const mark = setting.controlEl.createSpan({ cls: "sd-endpoint-thirdparty" });
+        setIcon(mark, "alert-triangle");
+        const label = t("deck.settings.endpoint.thirdParty");
+        mark.setAttribute("aria-label", label);
+        mark.setAttribute("title", label);
+      }
+
       const icon = setting.controlEl.createSpan({ cls: "sd-endpoint-status" });
       paintStatus(icon, null, t("deck.settings.endpoint.probing"));
       icons.push(icon);
 
-      for (const w of validateEndpointInput(value)) {
+      for (const w of validateEndpointInput(cfg.url)) {
         const warn = setting.controlEl.createSpan({ cls: "sd-endpoint-warn" });
         setIcon(warn, "alert-triangle");
         const text = t(warnRuleKey(w.rule));
         warn.setAttribute("aria-label", text);
         warn.setAttribute("title", text);
       }
+
+      // From row 2 on, and NOT drawn at position 1 rather than disabled there: a
+      // setDisabled tooltip stays invisible in Electron — the user would see a dead
+      // button with no explanation (measured in vault-rag 0.20.0).
+      if (index > 0) {
+        setting.addExtraButton((b) => b
+          .setIcon("chevrons-up")
+          .setTooltip(t("deck.settings.endpoint.moveToFront"))
+          .onClick(() => {
+            void deps.setList(moveEndpointToFront(deps.getList(), index)).then(() => deps.rerender());
+          }));
+      }
+
+      const roleEl = setting.controlEl.createSpan({ cls: "sd-endpoint-role" });
+      roleEls.push(roleEl);
 
       setting.addExtraButton((b) => b
         .setIcon("trash-2")
@@ -123,6 +164,19 @@ export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEdi
     }));
     if (gen !== probeGen) return; // superseded — do not place the active marker
     const active = activeIndexFromStatuses(statuses);
+
+    // Recompute the role text for every row, not just the one that just answered: the
+    // active endpoint can change as soon as an earlier row responds, which shifts every
+    // later row's standby position too. Updating only the responding row would leave the
+    // others asserting a stale state.
+    roleEls.forEach((roleEl, i) => {
+      const role = endpointRole({
+        isActive: i === active, reachable: statuses[i] === "ok", modelFits: true, position: i + 1,
+      });
+      roleEl.setText(t(roleKindKey(role), String(i + 1)));
+      roleEl.toggleClass("is-active", role.kind === "active");
+    });
+
     if (active < 0) return;
     const icon = icons[active];
     if (!icon) return;
