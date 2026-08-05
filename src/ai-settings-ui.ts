@@ -36,11 +36,16 @@ export interface EndpointEditorDeps {
 
 /** Row editor for the endpoint list: one Setting row per endpoint + a trailing adder row.
  *  Name/desc only on row 0. Live probe icon per row, active marker on the first reachable one.
- *  Rows are resolved by RENDER INDEX (not by URL/findIndex): a blur-commit mutates the list
- *  synchronously before a later click runs, but this editor's callbacks all capture their own
- *  `index` at render time and re-diff against `deps.getList()` via JSON.stringify, so a stale
- *  index never applies — unlike a value-keyed lookup it also has no trouble with duplicate or
- *  edited-away URLs. */
+ *  Rows are resolved by RENDER INDEX, not by URL/findIndex — that keeps this safe against
+ *  duplicate or edited-away URLs, which a value-keyed lookup would trip over. It does NOT by
+ *  itself protect against a stale index: `setList()` mutates the settings list synchronously,
+ *  before `rerender()` runs in the following `.then()`, so a second click that lands in that
+ *  window still resolves its captured `index` against the now-shifted list. The blur handlers
+ *  (url/key fields) re-diff their own edit against `deps.getList()` before applying, which
+ *  catches "nothing changed since render" but not "the list changed under me" in general.
+ *  The trash and move-to-front handlers below guard explicitly: they re-check that
+ *  `deps.getList()[index]` still equals the `cfg` captured at render time, and bail out to a
+ *  rerender otherwise, rather than acting on the wrong row. */
 export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEditorDeps): void {
   const list = deps.getList();
   const rows: EndpointConfig[] = [...list, { url: "" }]; // trailing adder
@@ -112,7 +117,12 @@ export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEdi
           .setIcon("chevrons-up")
           .setTooltip(t("deck.settings.endpoint.moveToFront"))
           .onClick(() => {
-            void deps.setList(moveEndpointToFront(deps.getList(), index)).then(() => deps.rerender());
+            // Guard against a stale index: if the list changed since this row was rendered
+            // (e.g. an earlier row's blur-commit already ran), the entry at `index` is no
+            // longer the row the user clicked — resync instead of moving the wrong one.
+            const cur = deps.getList();
+            if (JSON.stringify(cur[index]) !== JSON.stringify(cfg)) { deps.rerender(); return; }
+            void deps.setList(moveEndpointToFront(cur, index)).then(() => deps.rerender());
           }));
       }
 
@@ -123,7 +133,12 @@ export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEdi
         .setIcon("trash-2")
         .setTooltip(t("deck.settings.endpoint.remove"))
         .onClick(() => {
-          const next = applyEndpointEdit(deps.getList(), index, "url", "", false);
+          // Same stale-index guard as move-to-front: without it, a trash click that lands
+          // after another row's list mutation (but before this row's rerender) would delete
+          // whatever now sits at `index` — not the row the user actually clicked.
+          const cur = deps.getList();
+          if (JSON.stringify(cur[index]) !== JSON.stringify(cfg)) { deps.rerender(); return; }
+          const next = applyEndpointEdit(cur, index, "url", "", false);
           void deps.setList(next).then(() => deps.rerender());
         }));
     }

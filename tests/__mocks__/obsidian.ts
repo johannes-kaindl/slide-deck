@@ -96,6 +96,8 @@ export function makeFakeEl(): any {
     removeClass: (...cls: string[]) => {
       el.className = el.className.split(" ").filter((x: string) => x && !cls.includes(x)).join(" ");
     },
+    // Array-arg sibling of removeClass (real Obsidian exposes both spellings).
+    removeClasses: (cls: string[]) => el.removeClass(...cls),
     toggleClass: (cls: string, on?: boolean) => {
       const parts = el.className.split(" ").filter(Boolean).filter((p: string) => p !== cls);
       const shouldAdd = on === undefined ? !el.className.split(" ").includes(cls) : on;
