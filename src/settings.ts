@@ -7,6 +7,8 @@ import { renderEndpointEditor, renderModelField, renderThinkingRow } from "./ai-
 import { makeDeckLlmClient } from "./llm-client";
 import { resolveActiveEndpoint } from "./vendor/kit/endpoint";
 import { reasoningHappened } from "./vendor/kit/reasoning";
+import { mergeSettings } from "./vendor/kit/settings";
+import { migrateEndpointList, type EndpointConfig } from "./vendor/kit/endpoint_config";
 
 export interface SlideDeckSettings {
   defaultTheme: string;
@@ -16,7 +18,9 @@ export interface SlideDeckSettings {
   exportFolder: string;
   themesFolder: string;
   hideThemesFolder: boolean;
-  llmEndpoints: string[];
+  /** Ordered fallback chain; the first reachable one wins. Each row carries its own API key
+   *  so local and hosted providers can live in ONE list. */
+  llmEndpoints: EndpointConfig[];
   llmModel: string;
   llmMaxTokens: number;
   llmTemperature: number;
@@ -25,8 +29,19 @@ export interface SlideDeckSettings {
 export const DEFAULT_SETTINGS: SlideDeckSettings = {
   defaultTheme: "shiro", minFontPx: 24, imageScale: 2, customCss: "",
   exportFolder: "Slide-Deck-Export", themesFolder: "Slide-Deck-Themes", hideThemesFolder: true,
-  llmEndpoints: ["http://localhost:1234"], llmModel: "", llmMaxTokens: 8192, llmTemperature: 0.3, llmSuppressThinking: true,
+  llmEndpoints: [{ url: "http://localhost:1234" }], llmModel: "", llmMaxTokens: 8192, llmTemperature: 0.3, llmSuppressThinking: true,
 };
+
+/** Merge persisted data over defaults, then migrate `llmEndpoints`: pre-0.7 data.json files
+ *  carry a bare `string[]`, current ones an `EndpointConfig[]` — mergeSettings is a shallow,
+ *  type-blind merge, so the migration has to run as a second pass right after it. Single
+ *  extracted entry point so main.ts and tests share the exact same load path. */
+export function loadSettings(raw: unknown): SlideDeckSettings {
+  const merged = mergeSettings(DEFAULT_SETTINGS, raw);
+  // Shallow, type-blind merge: llmEndpoints may still be string[] from an old data.json.
+  const rawList = merged.llmEndpoints as unknown as (string | EndpointConfig)[] | undefined;
+  return { ...merged, llmEndpoints: migrateEndpointList(undefined, rawList) };
+}
 
 /** Migrate a persisted 0.4.x `defaultTheme` (e.g. "default"/"dark") to its Nordstern successor
  *  via THEME_ALIASES. Pure — call once right after settings are loaded, before anything reads

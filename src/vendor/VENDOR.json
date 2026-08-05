@@ -1,16 +1,14 @@
 {
   "source": "https://git.jkaindl.de/jkaindl/obsidian-kit",
-  "version": "0.14.0",
-  "sha": "644603c",
-  "vendored": "2026-07-16",
+  "note": "Verbatim copies of obsidian-kit/src/pure/*. Never edit here — re-vendor from the pinned sha. think.ts is kit's think-splitter.ts. Per-module version/sha (array schema, precedent: obsidian-transmute) because modules were vendored at different kit releases.",
   "modules": [
-    "endpoint.ts",
-    "endpoint_diagnostics.ts",
-    "model-context.ts",
-    "reasoning.ts",
-    "settings.ts",
-    "sse.ts",
-    "think.ts"
-  ],
-  "note": "Verbatim copies of obsidian-kit/src/pure/*. Never edit here — re-vendor from the pinned sha. think.ts is kit's think-splitter.ts."
+    { "file": "endpoint.ts", "version": "0.14.0", "sha": "644603c" },
+    { "file": "endpoint_diagnostics.ts", "version": "0.14.0", "sha": "644603c" },
+    { "file": "model-context.ts", "version": "0.14.0", "sha": "644603c" },
+    { "file": "reasoning.ts", "version": "0.14.0", "sha": "644603c" },
+    { "file": "settings.ts", "version": "0.14.0", "sha": "644603c" },
+    { "file": "sse.ts", "version": "0.14.0", "sha": "644603c" },
+    { "file": "think.ts", "version": "0.14.0", "sha": "644603c" },
+    { "file": "endpoint_config.ts", "version": "0.23.0", "sha": "d11339a" }
+  ]
 }

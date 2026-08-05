@@ -2,7 +2,7 @@ import { Plugin, getLanguage, TFile, TAbstractFile, Notice, normalizePath } from
 import { exportPdf, exportImages } from "./export";
 import { SlideDeckView, VIEW_TYPE } from "./preview-view";
 import { t, pickLang, setLang } from "./i18n";
-import { DEFAULT_SETTINGS, SlideDeckSettings, SlideDeckSettingTab, migrateLegacyThemeKeys } from "./settings";
+import { SlideDeckSettings, SlideDeckSettingTab, migrateLegacyThemeKeys, loadSettings } from "./settings";
 import { ThemeStore } from "./theme-registry";
 import { buildHideCss, normalizeFolder } from "./folder-hide";
 import { GenerateDeckView, VIEW_TYPE_GENERATE } from "./generate-deck-view";
@@ -10,7 +10,6 @@ import { runGenerateDeck, type GenState, type GenerateResult, type GenerationHan
 import { makeDeckLlmClient } from "./llm-client";
 import { buildDeckPrompt } from "./vendor/deck-core/pure/llm/deck-prompt";
 import { getAuthoringContract } from "./vendor/deck-core/pure/constraints/contract";
-import { mergeSettings } from "./vendor/kit/settings";
 
 export interface DeckGenInput {
   sourceBody: string; slideTarget: number | "auto"; hint: string;
@@ -26,7 +25,7 @@ export default class SlideDeckPlugin extends Plugin {
 
   async onload(): Promise<void> {
     setLang(pickLang(getLanguage()));
-    this.settings = migrateLegacyThemeKeys(mergeSettings(DEFAULT_SETTINGS, await this.loadData()));
+    this.settings = migrateLegacyThemeKeys(loadSettings(await this.loadData()));
 
     this.themeStore = new ThemeStore(this.app, () => this.settings.themesFolder);
     await this.themeStore.refresh();
