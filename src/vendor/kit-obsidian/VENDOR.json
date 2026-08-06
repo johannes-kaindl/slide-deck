@@ -1,0 +1,16 @@
+{
+  "source": "https://git.jkaindl.de/jkaindl/obsidian-kit",
+  "note": "Verbatim copies of obsidian-kit/src/obsidian/*. Never edit here — re-vendor from the pinned sha. Distinct from ../VENDOR.json (src/vendor/kit/*, obsidian-free modules) — these import obsidian and would fail check-core-purity.mjs's OBSIDIAN_AND_WINDOW rule if placed under src/vendor/kit/.",
+  "modules": [
+    {
+      "file": "settings_walker.ts",
+      "version": "0.25.0",
+      "sha": "1ca3861"
+    },
+    {
+      "file": "folder-suggest.ts",
+      "version": "0.25.0",
+      "sha": "1ca3861"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import { makeDeckLlmClient } from "./llm-client";
 import { reasoningHappened } from "./vendor/kit/reasoning";
 import { mergeSettings } from "./vendor/kit/settings";
 import { migrateEndpointList, resolveActiveEndpointConfig, type EndpointConfig } from "./vendor/kit/endpoint_config";
+import { renderSettingDefinitions, settingBodyHost, refreshSettingsTab } from "./vendor/kit-obsidian/settings_walker";
 
 export interface SlideDeckSettings {
   defaultTheme: string;
@@ -108,16 +109,18 @@ export class SlideDeckSettingTab extends PluginSettingTab {
     ];
   }
 
-  /** The §8 blocks draw several Setting rows, but the walker hands us exactly one. settingEl
-   *  keeps Obsidian's own "setting-item" class, which core CSS styles as a flex row with
-   *  exactly two children (info + control) — nested `.setting-item` rows drawn inside it would
-   *  become flex children of that row instead of stacking. Strip the class so the host is a
-   *  neutral block container; the rows drawn into it lay out normally, top to bottom. */
+  /** Thin wrapper around the kit walker's settingBodyHost(): the §8 blocks draw several
+   *  Setting rows, but the walker hands us exactly one — settingBodyHost() strips Obsidian's
+   *  "setting-item" flex-row class so nested rows stack instead of becoming flex children.
+   *  `sd-settings-host` (styles.css) is this repo's own addition on top: it carries the
+   *  vertical rhythm (border-top + padding) a top-level setting-item row would otherwise have
+   *  contributed, so spacing to neighboring settings in the tab is preserved. Kept local
+   *  rather than folded into the kit call sites because the class is repo-specific CSS, not
+   *  part of the shared walker contract. */
   private hostFor(setting: Setting): HTMLElement {
-    setting.settingEl.empty();
-    setting.settingEl.removeClass("setting-item");
-    setting.settingEl.addClass("sd-settings-host");
-    return setting.settingEl;
+    const host = settingBodyHost(setting);
+    host.addClass("sd-settings-host");
+    return host;
   }
 
   private renderEndpoints(setting: Setting): void {
@@ -177,44 +180,18 @@ export class SlideDeckSettingTab extends PluginSettingTab {
    *  delegates to the walker so there is a single source of truth. */
   display(): void { this.renderImperative(); }
 
-  /** Walk the SAME declarative definitions and render them with the classic Setting API. */
+  private cleanupPrevious: () => void = () => {};
+
   private renderImperative(): void {
+    this.cleanupPrevious();
     const { containerEl } = this;
     containerEl.empty();
-    for (const def of this.getSettingDefinitions()) {
-      const group = def as { type?: string; heading?: string; items?: unknown[] };
-      if (group.type !== "group" && group.type !== "list") continue;
-      if (group.heading) new Setting(containerEl).setName(group.heading).setHeading();
-      for (const raw of group.items ?? []) {
-        const item = raw as { name?: string; desc?: string; render?: (s: Setting) => void; control?: { type: string; key: string; options?: Record<string, string>; placeholder?: string } };
-        const setting = new Setting(containerEl);
-        if (item.name) setting.setName(item.name);
-        if (item.desc) setting.setDesc(item.desc);
-        if (item.render) { item.render(setting); continue; }
-        const c = item.control;
-        if (!c) continue;
-        const cur = this.getControlValue(c.key) as string | number | boolean | undefined;
-        switch (c.type) {
-          case "dropdown":
-            setting.addDropdown((d) => {
-              for (const [k, v] of Object.entries(c.options ?? {})) d.addOption(k, v);
-              d.setValue(String(cur ?? "")).onChange((v) => void this.setControlValue(c.key, v));
-            });
-            break;
-          case "toggle":
-            setting.addToggle((t2) => t2.setValue(Boolean(cur)).onChange((v) => void this.setControlValue(c.key, v)));
-            break;
-          case "textarea":
-            setting.addTextArea((t2) => { t2.setValue(String(cur ?? "")); if (c.placeholder) t2.setPlaceholder(c.placeholder); t2.onChange((v) => void this.setControlValue(c.key, v)); });
-            break;
-          case "number":
-            setting.addText((t2) => { t2.inputEl.type = "number"; t2.setValue(String(cur ?? "")); if (c.placeholder) t2.setPlaceholder(c.placeholder); t2.onChange((v) => void this.setControlValue(c.key, v)); });
-            break;
-          default: // "text"
-            setting.addText((t2) => { t2.setValue(String(cur ?? "")); if (c.placeholder) t2.setPlaceholder(c.placeholder); t2.onChange((v) => void this.setControlValue(c.key, v)); });
-        }
-      }
-    }
+    this.cleanupPrevious = renderSettingDefinitions(
+      containerEl,
+      this.getSettingDefinitions(),
+      this,
+      this.app,
+    );
   }
 
   /** Read the current value for a bound control key. Called on every render. */
@@ -299,8 +276,6 @@ export class SlideDeckSettingTab extends PluginSettingTab {
   /** Re-render the tab. On ≥ 1.13 the declarative framework exposes update(); on the < 1.13
    *  fallback that method does not exist, so re-run our imperative display() instead. */
   private refreshUi(): void {
-    const self = this as unknown as { update?: () => void };
-    if (typeof self.update === "function") self.update();
-    else this.renderImperative();
+    refreshSettingsTab(this, () => this.renderImperative());
   }
 }
