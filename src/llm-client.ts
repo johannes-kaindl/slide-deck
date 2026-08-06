@@ -3,7 +3,8 @@ import { streamSSE, type StreamResult } from "./llm-stream";
 import { normalizeEndpoint } from "./vendor/kit/endpoint";
 import { authHeaders, effectiveModel, type EndpointConfig } from "./vendor/kit/endpoint_config";
 import { suppressParams } from "./vendor/kit/reasoning";
-import { classifyEndpointStatus, type EndpointStatus, type ProbeInput } from "./vendor/kit/endpoint_diagnostics";
+import { classifyEndpointStatus, extractModelIds, type EndpointStatus, type ProbeInput } from "./vendor/kit/endpoint_diagnostics";
+import { withTimeout } from "./vendor/kit/timeout";
 import { effectiveSuppress } from "./llm/ai-settings-model";
 import { parseErrorEnvelope } from "./llm/error-envelope";
 import { parseLmStudioContext, parseOllamaContext, type ModelContext } from "./llm/model-info";
@@ -36,10 +37,6 @@ export class DeckLlmClient {
    *  timeout/abort, so the race is the only way to bound a dead endpoint. Never throws:
    *  a failure degrades to a classified status (settings must never die on a probe). */
   async probe(timeoutMs = 5000): Promise<EndpointStatus> {
-    let timer: number | undefined;
-    const timeout = new Promise<ProbeInput>((r) => {
-      timer = window.setTimeout(() => r({ kind: "timeout" }), timeoutMs);
-    });
     const call: Promise<ProbeInput> = (async () => {
       try {
         const r = await this.http({ url: `${this.endpoint}/v1/models`, headers: { ...this.auth } });
@@ -48,13 +45,12 @@ export class DeckLlmClient {
         return { kind: "error", message: (e as Error)?.message ?? String(e) };
       }
     })();
-    try {
-      return classifyEndpointStatus(await Promise.race([call, timeout]));
-    } finally {
-      // A fast success/error must not leave the losing timer armed for up to `timeoutMs` —
-      // Promise.race never cancels the loser on its own (Finding 6).
-      window.clearTimeout(timer);
-    }
+    // The kit's withTimeout clears the losing timer in `finally` — a fast success/error must
+    // not leave it armed for up to `timeoutMs`, and Promise.race never cancels the loser on
+    // its own (Finding 6). `window` is the injected timer port; the binding belongs in this
+    // obsidian-facing layer, not in the vendored pure module.
+    const raced = await withTimeout(call, timeoutMs, window);
+    return classifyEndpointStatus(raced.timedOut ? { kind: "timeout" } : raced.value);
   }
 
   /** Boolean reachability for resolveActiveEndpoint's injected ping. Delegates to probe() so
@@ -67,8 +63,7 @@ export class DeckLlmClient {
     try {
       const { status, json } = await this.http({ url: `${this.endpoint}/v1/models`, headers: { ...this.auth } });
       if (status !== 200) return [];
-      const j = json as { data?: { id?: string }[] };
-      return (j.data ?? []).map((m) => m.id).filter((x): x is string => typeof x === "string").sort();
+      return extractModelIds(json).sort();
     } catch { return []; }
   }
 

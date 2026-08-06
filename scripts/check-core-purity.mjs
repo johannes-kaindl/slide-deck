@@ -37,6 +37,23 @@ const RULES = [
   { dir: "src/vendor/kit", bad: OBSIDIAN_AND_WINDOW },
 ];
 
+/** Kommentare vor der Prüfung entfernen. Ein vendortes Kit-Modul darf in seiner Doku
+ *  erklären, warum es `window.setTimeout` NICHT ruft (timeout.ts tut genau das) — ein
+ *  Checker, der Prosa als Code liest, meldet dann das Gegenteil dessen, was dasteht.
+ *
+ *  Bewusst konservativ: entfernt werden Block-Kommentare und Zeilen, die nach Whitespace
+ *  mit `//` oder `*` beginnen. Ein nachgestelltes `// ...` hinter Code bleibt stehen. Das
+ *  kann höchstens ein Falsch-POSITIV erzeugen (laut und behebbar) — die Umkehrung, ein
+ *  `//` in einem String-Literal als Kommentarstart zu lesen, würde echten Code hinter
+ *  einer URL verschlucken und einen Verstoß still durchlassen. */
+function stripComments(src) {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .filter((line) => !/^\s*(\/\/|\*)/.test(line))
+    .join("\n");
+}
+
 let failed = false;
 
 function walk(dir, bad) {
@@ -44,7 +61,7 @@ function walk(dir, bad) {
     const p = join(dir, e);
     if (statSync(p).isDirectory()) walk(p, bad);
     else if (p.endsWith(".ts")) {
-      const src = readFileSync(p, "utf8");
+      const src = stripComments(readFileSync(p, "utf8"));
       for (const re of bad) {
         if (re.test(src)) {
           console.error(`Core purity violation in ${p}: ${re}`);
