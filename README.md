@@ -21,7 +21,7 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 - **Combinable density modifiers** — add `compact` (tighter type) or `code-heavy` (smaller code) to any template in the same layout directive.
 - **Smart layout inference** — with no explicit directive, the layout is inferred from content shape: a lone heading becomes `section`, a lone block quote becomes `quote`, a lone image or diagram becomes `image-focus`, and column splits pick `two-column` / `columns-3`. An explicit layout directive always wins.
 - **Deck slots** — `header:`, `footer:`, and `paginate:` frontmatter keys render as floating corner slots on every slide (pagination shows `n / N`).
-- **Media that fills and centers** — block images and Mermaid diagrams occupy the available space, horizontally and vertically centered and scaled to fit (`object-fit: contain`), for both Obsidian `![[embeds]]` and standard `![](…)` images.
+- **Media that fills and centers** — block images and Mermaid diagrams occupy the available space, horizontally and vertically centered and scaled to fit (`object-fit: contain`), for both Obsidian embeds (`![[…]]`) and standard Markdown images.
 - **Sparse slides compose vertically** — slides with little content are vertically centered instead of clinging to the top.
 - **Markdown notes → slides** — separate slides with a line containing only `---`; YAML frontmatter controls theme, aspect ratio, and font floor per note.
 - **Live preview pane** — renders the current note as a slide deck in a side panel, scaled to pane width, with a click-to-source link on overflow warnings.
@@ -76,6 +76,50 @@ npm install
 npm run build          # produces main.js
 cp main.js manifest.json styles.css /path/to/vault/.obsidian/plugins/slide-deck/
 ```
+
+## Usage
+
+1. Open a Markdown note and separate slides with a line containing only `---`.
+2. Run **Open presentation preview** (command palette) — the deck renders in a side panel and
+   updates as you edit. Slides that overflow are flagged there rather than silently clipped.
+3. Set theme, aspect ratio and font floor per note in the YAML frontmatter:
+
+```yaml
+---
+theme: shiro
+aspect: "16:9"
+minFontPx: 24
+header: My talk
+paginate: true
+---
+
+# First slide
+
+---
+
+# Second slide
+```
+
+4. Export with **Export presentation to PDF** or **Export presentation to image series**.
+   PDF prints the isolated deck directly on desktop; on mobile a self-contained HTML file is
+   written to your export folder and handed to the OS, where you print or share it as PDF.
+
+Per-slide layout is chosen with a layout directive — an HTML comment on its own line:
+
+```markdown
+<!-- layout: two-column compact -->
+
+# Heading spanning both columns
+
+Left column content.
+
+<!-- column -->
+
+Right column content.
+```
+
+Omit the directive and the layout is inferred from the slide's shape. The full template and
+modifier reference is in the [layout guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.md).
 
 ## Configuration
 
