@@ -6,6 +6,21 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **`main.js` shrank from 5.25 MB to 4.32 MB**, back under the size the Community
+  review flags. The cause was `highlight.js`: importing it whole pulls in all ~190
+  grammars (1,055 KB bundled), and no bundler can shake them out — they register by
+  side effect. `deck-core` 0.2.0 registers twenty instead (105 KB).
+- **Code fences in a language outside that set still render**, as escaped plain text
+  without colouring — the renderer checks `getLanguage` and degrades rather than
+  failing. Highlighted: bash, cpp, csharp, css, diff, go, java, javascript, json,
+  kotlin, markdown, php, python, ruby, rust, sql, swift, typescript, xml/html, yaml.
+
+### Fixed
+- Dependency advisories closed via `npm audit fix` (linkify-it, dompurify, mermaid);
+  `npm audit --omit=dev` reports none. The remaining advisories are build-time only
+  (esbuild/vite/vitest) and never reach the shipped bundle.
+
 ## [0.7.0] — 2026-08-10
 
 ### Added

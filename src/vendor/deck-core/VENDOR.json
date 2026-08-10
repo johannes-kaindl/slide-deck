@@ -1,8 +1,11 @@
 {
   "source": "https://git.jkaindl.de/jkaindl/deck-core",
-  "version": "0.1.1",
-  "sha": "bc6ab4b",
-  "vendored": "2026-08-03",
-  "modules": ["pure/", "dom/"],
+  "version": "0.2.0",
+  "sha": "bbcbf7b",
+  "vendored": "2026-08-10",
+  "modules": [
+    "pure/",
+    "dom/"
+  ],
   "note": "Verbatim copy of deck-core/src. Never edit here — re-vendor from the pinned sha. Third-party CSS (KaTeX, highlight.js) is handed in via VendorCss; see src/vendor-css.ts."
 }

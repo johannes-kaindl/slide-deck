@@ -1,7 +1,7 @@
 import MarkdownIt from "markdown-it";
 import type { RenderRule } from "markdown-it/lib/renderer.mjs";
 import katexImport from "@vscode/markdown-it-katex";
-import hljs from "highlight.js";
+import hljs from "./hljs";
 import type { Warning } from "../constraints/engine";
 import { calloutPlugin } from "./callouts";
 
