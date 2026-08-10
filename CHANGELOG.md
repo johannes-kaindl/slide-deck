@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-08-10
+
 ### Added
 - **API key per endpoint row.** Each entry in the fallback list carries its own key, so a local
   server and a hosted provider can live in one ordered list. The key reaches every network path
