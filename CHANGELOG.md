@@ -7,19 +7,38 @@ versioning follows [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- Jede Endpunkt-Zeile kann ein eigenes Modell tragen. Bleibt das Feld auf „globales Modell",
-  gilt weiter die Modell-Einstellung darunter. Der Anfrage-Pfad respektierte solche Overrides
-  bereits — es fehlte nur die Oberfläche dazu.
+- **API key per endpoint row.** Each entry in the fallback list carries its own key, so a local
+  server and a hosted provider can live in one ordered list. The key reaches every network path
+  — chat completion, model list, both context probes and the stream — not just the chat request.
+- **Model override per endpoint row.** Leave the field on "global model" and the model setting
+  below still applies. The request path already honoured such overrides; only the input was
+  missing.
+- Endpoint rows can be reordered ("use first") and state their role in words — "in use",
+  "reachable, position 2", "not reachable" — instead of encoding it in colour alone.
+- A third-party notice appears on any row that carries a key: requests from that row leave your
+  machine. The key itself is never shown, in the field or in the tooltip.
 
 ### Changed
-- Der Endpunkt-Zeilen-Editor kommt jetzt aus `obsidian-kit` (`buildEndpointList`, 0.26.0) statt
-  aus einer lokalen Fassung. Dadurch zusätzlich: Beschriftung und Erklärung stehen über der
-  Liste statt in die erste Zeile gequetscht, die Zeilen sind während des Speicherns gesperrt
-  (statt nur gegen vertauschte Indizes abgesichert), und eine fehlgeschlagene Speicherkette
-  hinterlässt keine blockierte Oberfläche mehr.
-- Der Folienkern (Modell, Renderer, Themes, Layout, Deck-Prompt) liegt jetzt in
-  `deck-core` und wird als gepinnte Kopie vendoriert. Kein Verhalten geändert:
-  Folien-HTML und Deck-CSS sind über alle Themes byte-gleich zum Stand davor.
+- The endpoint row editor now comes from `obsidian-kit` (`buildEndpointList`) instead of a local
+  copy. Alongside that: label and description sit above the list rather than squeezed into the
+  first row, rows are locked while a change is being saved, and a failed save no longer leaves
+  the list stuck behind a blocked interface.
+- The model field no longer preselects the first server model when nothing is saved. It shows an
+  explicit "not set" option instead, so what you see is what is stored.
+- The slide core (model, renderer, themes, layout, deck prompt) now lives in `deck-core` and is
+  vendored here as a pinned copy. No behaviour changed: slide HTML and deck CSS are byte-identical
+  to the previous release across every theme.
+- Shared logic that had drifted into local copies — SSE parsing, endpoint diagnostics, the model
+  list, the settings walker — is taken from `obsidian-kit` again.
+- The canonical repository moved from Codeberg to a self-hosted Forgejo instance. GitHub remains
+  the mirror the community store reads.
+
+### Fixed
+- Clicking the trash or "use first" button no longer acts on the wrong row when another row's
+  edit was committed in the same instant.
+- The obsidian lint plugin is pinned to a current version. It had been resolving to an outdated
+  release in which some store review rules did not exist, so `npm run lint` passed locally while
+  the review reported findings.
 
 ## [0.6.1] — 2026-07-19
 
