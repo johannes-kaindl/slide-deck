@@ -5,12 +5,12 @@ import { Notice, Setting, setIcon } from "obsidian";
 import { t } from "./i18n";
 import {
   warnRuleKey, roleKindKey,
-  modelFieldMode, thinkToggleView, initialModelSelection, statusLabelParts,
+  modelFieldMode, thinkToggleView, statusLabelParts,
 } from "./llm/ai-settings-model";
 import type { ModelContext } from "./llm/model-info";
 import type { EndpointStatusKind } from "./vendor/kit/endpoint_diagnostics";
 import type { EndpointListStrings } from "./vendor/kit-obsidian/endpoint-list";
-import type { ModelHintKey } from "./vendor/kit/model-choice";
+import { resolveModelChoice, type ModelHintKey } from "./vendor/kit/model-choice";
 
 /** Status icon per UI-STANDARD §8: shape AND colour AND state class AND aria-label — colour is
  *  never the only carrier (WCAG 1.4.1). `null` kind = not probed yet. */
@@ -94,26 +94,29 @@ export function renderModelField(containerEl: HTMLElement, deps: ModelFieldDeps)
     input.addEventListener("blur", () => void deps.setModel(input.value.trim()).then(() => showContext()));
   }
 
-  /** Compute the option list and the value the dropdown should show, without persisting
-   *  anything: a `<select>` must display a value, but that display choice is not a user
-   *  decision yet (see drawDropdown). */
-  function computeSelection(models: string[]): { options: string[]; initial: string } {
-    return initialModelSelection(models, deps.getModel());
-  }
-
-  /** Draws the dropdown and returns the model it shows as selected. Never writes to settings
-   *  on its own: preselecting models[0] when llmModel is "" (never set) must not materialize
-   *  that guess as a saved value — only a real `change` event may persist (see the cross-project
-   *  read-modify-write-over-absence lesson). The caller uses the return value to drive
-   *  showContext() for what's on screen without writing anything either. */
+  /** Draws the dropdown and returns the model it shows as selected. Never writes to settings on
+   *  its own — only a real `change` event may persist (cross-project read-modify-write-over-
+   *  absence lesson). That rule used to make the field LIE: with nothing saved it preselected
+   *  `models[0]`, so the tab showed a model while `llmModel` was still empty — and once the
+   *  endpoint rows started spelling the global model out ("Global model (not set)"), the two
+   *  halves of the same tab visibly contradicted each other. `resolveModelChoice` fixes it at
+   *  the root: with an empty saved value it puts an explicit empty option FIRST and selects it,
+   *  so "nothing chosen yet" is what the user actually sees. A saved model missing from the
+   *  server list still survives as its own option (never silently dropped). */
   function drawDropdown(models: string[]): string {
     holder.empty();
-    const { options, initial } = computeSelection(models);
+    // reachable: true — this path only runs once models came back, which proves reachability.
+    const choice = resolveModelChoice({ reachable: true, models, current: deps.getModel() });
     const select = holder.createEl("select", { cls: "dropdown" });
-    for (const m of options) select.createEl("option", { value: m, text: m });
-    select.value = initial;
+    for (const o of choice.options) {
+      const text = o.value === "" ? t("deck.settings.model.unset")
+        : o.suffix === "saved" ? `${o.label} ${t("deck.settings.model.saved")}`
+        : o.label;
+      select.createEl("option", { value: o.value, text });
+    }
+    select.value = choice.value;
     select.addEventListener("change", () => void deps.setModel(select.value).then(() => showContext()));
-    return initial;
+    return choice.value;
   }
 
   async function load(): Promise<void> {

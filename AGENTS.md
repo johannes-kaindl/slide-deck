@@ -226,6 +226,18 @@ npm run version-bump              # Version bumpen (package.json/manifest.json/v
 - **Core-Purity:** `scripts/check-core-purity.mjs` läuft als erster Schritt von `npm test` —
   schlägt fehl, wenn `src/vendor/deck-core/pure/**` oder `src/vendor/kit/**` einen
   `obsidian`-Import enthält.
+- **Der Store-Scanner ist `eslint-plugin-obsidianmd` — er muss aktuell gehalten werden.** Bis
+  2026-08-10 stand hier `"latest"`, installiert war aber 0.3.0, während der Store 0.4.1 fuhr:
+  `npm run lint` lief grün, während der Review `obsidianmd/prefer-create-el` meldete. Eine
+  Store-Prüfung, die lokal blind ist, ist keine Prüfung — dieselbe Lehre wie bei den
+  Inline-disables (0.3.1/0.6.1), nur eine Ebene tiefer. Jetzt auf `^0.4.1` gepinnt.
+  Erwarteter Reststand: **9 Warnungen** (`prefer-create-el`) in
+  `src/vendor/deck-core/dom/{render-dom,iframe-host}.ts`. Die sind **bewusst nicht behoben**:
+  der Vorschlag lautet `doc.win.createEl(…)`, und `.win` ist eine Obsidian-Augmentierung —
+  `deck-core` ist absichtlich obsidian-frei (Lizenz + CLI-Wiederverwendung), und der Code
+  rendert in fremde Realms, wo genau diese Augmentierungen werfen. Warnungen blockieren den
+  Review nicht (Errors tun es). Gehört die Zahl je verändert, gehört die Änderung nach
+  `deck-core`, nicht hierher.
 - **Keine Inline-`eslint-disable` in `src/`:** `scripts/check-no-inline-disables.mjs` läuft als
   erster Schritt von `npm run lint`. Der Community-Store wertet ein Inline-disable einer
   `obsidianmd/*`-Regel als **Error** — egal wie gut begründet (0.3.1 und 0.6.1 waren beide reine
