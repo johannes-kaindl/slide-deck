@@ -46,6 +46,16 @@
       "file": "timeout.ts",
       "version": "0.24.0",
       "sha": "e8c6b3e"
+    },
+    {
+      "file": "model-choice.ts",
+      "version": "0.26.0",
+      "sha": "2a7b5d7"
+    },
+    {
+      "file": "model-list-cache.ts",
+      "version": "0.26.0",
+      "sha": "2a7b5d7"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "source": "https://git.jkaindl.de/jkaindl/obsidian-kit",
-  "note": "Verbatim copies of obsidian-kit/src/obsidian/*. Never edit here — re-vendor from the pinned sha. Distinct from ../VENDOR.json (src/vendor/kit/*, obsidian-free modules) — these import obsidian and would fail check-core-purity.mjs's OBSIDIAN_AND_WINDOW rule if placed under src/vendor/kit/.",
+  "note": "Verbatim copies of obsidian-kit/src/obsidian/*. Never edit here — re-vendor from the pinned sha. Distinct from ../VENDOR.json (src/vendor/kit/*, obsidian-free modules) — these import obsidian and would fail check-core-purity.mjs's OBSIDIAN_AND_WINDOW rule if placed under src/vendor/kit/. endpoint-list.ts and model-picker.ts carry ONE mechanical deviation from verbatim: kit-internal imports of ../pure/* are rewritten to ../kit/* to match this repo's vendor layout. Reproduce that rewrite on every re-vendor; nothing else may differ.",
   "modules": [
     {
       "file": "settings_walker.ts",
@@ -11,6 +11,16 @@
       "file": "folder-suggest.ts",
       "version": "0.25.0",
       "sha": "1ca3861"
+    },
+    {
+      "file": "endpoint-list.ts",
+      "version": "0.26.0",
+      "sha": "2a7b5d7"
+    },
+    {
+      "file": "model-picker.ts",
+      "version": "0.26.0",
+      "sha": "2a7b5d7"
     }
   ]
 }

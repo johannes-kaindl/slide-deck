@@ -3,12 +3,15 @@ import type SlideDeckPlugin from "./main";
 import { t } from "./i18n";
 import { revealFolder, writeThemeCss } from "./theme-source";
 import { THEME_ALIASES } from "./vendor/deck-core/pure/presets";
-import { renderEndpointEditor, renderModelField, renderThinkingRow } from "./ai-settings-ui";
+import { endpointListStrings, renderModelField, renderThinkingRow } from "./ai-settings-ui";
 import { makeDeckLlmClient } from "./llm-client";
 import { reasoningHappened } from "./vendor/kit/reasoning";
 import { mergeSettings } from "./vendor/kit/settings";
 import { migrateEndpointList, resolveActiveEndpointConfig, type EndpointConfig } from "./vendor/kit/endpoint_config";
 import { renderSettingDefinitions, settingBodyHost, refreshSettingsTab } from "./vendor/kit-obsidian/settings_walker";
+import { buildEndpointList } from "./vendor/kit-obsidian/endpoint-list";
+import { createModelListCache } from "./vendor/kit/model-list-cache";
+import { ENDPOINT_PRESETS } from "./vendor/kit/endpoint_diagnostics";
 
 export interface SlideDeckSettings {
   defaultTheme: string;
@@ -123,13 +126,47 @@ export class SlideDeckSettingTab extends PluginSettingTab {
     return host;
   }
 
+  /** Model lists per endpoint, shared by every row of the kit's endpoint editor. Owned by the
+   *  TAB, not by a render pass: it deliberately outlives the rebuilds a row edit triggers, so
+   *  three rows do not each fire their own `/v1/models`. Cleared in `hide()` — see there. */
+  private readonly modelCache = createModelListCache();
+
+  /** URL of the endpoint the resolver currently picks, or `null` while unresolved. The kit asks
+   *  for this SYNCHRONOUSLY (per row, to label it "in use" vs "reachable, position N") while the
+   *  answer is a network question — so it is resolved once per render into this field and read
+   *  from here. */
+  private activeUrl: string | null = null;
+
   private renderEndpoints(setting: Setting): void {
-    renderEndpointEditor(this.hostFor(setting), {
-      getList: () => this.plugin.settings.llmEndpoints,
-      setList: async (next) => { this.plugin.settings.llmEndpoints = next; await this.plugin.saveSettings(); },
-      probe: (ep) => makeDeckLlmClient(ep, "").probe(),
+    buildEndpointList({
+      containerEl: this.hostFor(setting),
+      label: t("deck.settings.endpoints.name"),
+      desc: t("deck.settings.endpoints.desc"),
+      placeholder: ENDPOINT_PRESETS[0].url,
+      strings: endpointListStrings(),
+      cache: this.modelCache,
+      get: () => this.plugin.settings.llmEndpoints,
+      // Synchronous in-memory mutation; the kit calls save() right after and awaits both.
+      set: (eps) => { this.plugin.settings.llmEndpoints = eps; },
+      active: () => this.activeUrl,
+      // ONE client per row carries both the reachability probe and the model list, so the
+      // status icon and the model dropdown can never describe different endpoints.
+      clientFor: (cfg) => makeDeckLlmClient(cfg, ""),
+      globalModel: () => this.plugin.settings.llmModel,
+      save: () => this.plugin.saveSettings(),
+      reconnect: () => this.syncActiveUrl().then(() => undefined),
       rerender: () => this.refreshUi(),
     });
+    // First resolve of this render pass. Re-renders only when the answer actually changed,
+    // which terminates: the follow-up pass resolves the same value and stops there.
+    void this.syncActiveUrl().then((changed) => { if (changed) this.refreshUi(); });
+  }
+
+  /** Resolve who is in use and report whether that changed. */
+  private async syncActiveUrl(): Promise<boolean> {
+    const before = this.activeUrl;
+    this.activeUrl = (await this.activeEndpoint())?.url ?? null;
+    return this.activeUrl !== before;
   }
 
   private renderModel(setting: Setting): void {
@@ -179,6 +216,15 @@ export class SlideDeckSettingTab extends PluginSettingTab {
    *  On ≥ 1.13 the framework renders declaratively and this is never called; it just
    *  delegates to the walker so there is a single source of truth. */
   display(): void { this.renderImperative(); }
+
+  /** Obsidian calls this when the tab closes. Clearing the model cache is a REQUIREMENT, not
+   *  housekeeping: it holds promises and deliberately survives tab rebuilds, so without this a
+   *  server that was down when first probed stays "not reachable" for the rest of the session —
+   *  starting LM Studio and reopening the settings would change nothing. */
+  hide(): void {
+    this.modelCache.clear();
+    super.hide();
+  }
 
   private cleanupPrevious: () => void = () => {};
 

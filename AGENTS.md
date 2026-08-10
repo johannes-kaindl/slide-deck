@@ -137,7 +137,9 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
   i18n.ts            t(key, ...args) · pickLang · setLang/getLang. EN kanonisch, DE übersetzt.
   ai-settings-ui.ts  Render der KI-Settings-Bausteine (UI-STANDARD §8): paintStatus (gemeinsame
                      Status-Icon-Vokabel — Form + Farbe + State-Klasse + aria-label, WCAG 1.4.1),
-                     renderEndpointEditor (Zeilen-Editor, mutiert bei blur + Live-Probe + Presets),
+                     endpointListStrings (Übersetzungs-Adapter für den vendorierten Kit-Zeilen-
+                     Editor buildEndpointList — das Kit formuliert nicht, jeder Text kommt von
+                     hier durch t()),
                      renderModelField (Dropdown aus listModels()/modelContext() + Freitext-Fallback
                      + Kontextlängen-Anzeige), renderThinkingRow (Toggle + Live-Suppress-Test via
                      echtem Minimal-Call). Die render*-Funktionen sind settings.ts-exklusiv;
@@ -287,11 +289,27 @@ npm run version-bump              # Version bumpen (package.json/manifest.json/v
   (Forgejo ignoriert `.github/`). SemVer-Tag pushen → Mirror trägt ihn zu GitHub →
   Pipeline baut + attestiert + legt das GitHub-Release an. Das Forgejo-Release (kanonisch)
   bleibt manuell via Forgejo-API.
-- **Kit-Vendoring:** `src/vendor/kit/**` sind **verbatim** Kopien aus `obsidian-kit/src/pure/` —
-  nie hier editieren, sondern vom gepinnten sha neu vendoren (`src/vendor/VENDOR.json` hält
-  `version` + `sha`). Das Purity-Gate walkt `src/vendor/deck-core/pure` **und**
+- **Kit-Vendoring:** `src/vendor/kit/**` sind **verbatim** Kopien aus `obsidian-kit/src/pure/`,
+  `src/vendor/kit-obsidian/**` aus `obsidian-kit/src/obsidian/` (die importieren `obsidian` und
+  würden das Purity-Gate reißen, läge sie unter `kit/`). Einzige erlaubte Abweichung vom
+  Verbatim: in `kit-obsidian/` werden kit-interne `../pure/`-Importe auf `../kit/` umgeschrieben
+  — mechanisch, bei jedem Re-Vendoring identisch zu wiederholen (dokumentiert im dortigen
+  `VENDOR.json`). Sonst gilt: nie hier editieren, sondern vom gepinnten sha neu vendoren
+  (das `VENDOR.json` des jeweiligen Ordners hält `version` + `sha` je Modul).
+  Das Purity-Gate walkt `src/vendor/deck-core/pure` **und**
   `src/vendor/kit`; deshalb darf Core aus vendor importieren, ohne dass ein unpure
   gewordenes Kit-Modul still durchschlägt.
+- **Der Endpunkt-Zeilen-Editor gehört dem Kit:** die Liste (URL · Schlüssel · Modell-Override
+  je Zeile, Adder, Status-Icon, Rollenzeile, Presets) ist `buildEndpointList` aus
+  `src/vendor/kit-obsidian/endpoint-list.ts` — hier steht nur noch der Strings-Adapter
+  (`endpointListStrings` in `ai-settings-ui.ts`) und die Verdrahtung in `settings.ts`.
+  Zwei Pflichten liegen dabei beim Consumer, und keine davon meldet sich, wenn sie fehlt:
+  (1) **`hide()` muss `modelCache.clear()` rufen** — der Cache hält Promises und überlebt jeden
+  Tab-Neuaufbau bewusst; ohne den Aufruf bleibt ein einmal als „nicht erreichbar" gemessener
+  Endpunkt die ganze Sitzung lang so stehen. (2) `ENDPOINT_LIST_CSS` (Präfix `okit-`) lebt als
+  Kopie in `styles.css` und muss bei jedem Re-Vendoring mitgezogen werden — das Kit liefert
+  seine Regeln als exportierten String, nicht als `.css` (ein CSS-Import wäre eine Annahme
+  über den Bundler).
 - **Kit-Klartexte sind deutsch:** `EndpointStatus.klartext` ist im Kit hartkodiert deutsch.
   Dieses Plugin ist EN-kanonisch → nie `klartext` rendern, immer über `kind` →
   `statusKindKey(kind)` → `t(key)`. Einzige Ausnahme: `kind === "unknown"` (dort trägt `raw`

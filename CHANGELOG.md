@@ -6,7 +6,17 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Jede Endpunkt-Zeile kann ein eigenes Modell tragen. Bleibt das Feld auf „globales Modell",
+  gilt weiter die Modell-Einstellung darunter. Der Anfrage-Pfad respektierte solche Overrides
+  bereits — es fehlte nur die Oberfläche dazu.
+
 ### Changed
+- Der Endpunkt-Zeilen-Editor kommt jetzt aus `obsidian-kit` (`buildEndpointList`, 0.26.0) statt
+  aus einer lokalen Fassung. Dadurch zusätzlich: Beschriftung und Erklärung stehen über der
+  Liste statt in die erste Zeile gequetscht, die Zeilen sind während des Speicherns gesperrt
+  (statt nur gegen vertauschte Indizes abgesichert), und eine fehlgeschlagene Speicherkette
+  hinterlässt keine blockierte Oberfläche mehr.
 - Der Folienkern (Modell, Renderer, Themes, Layout, Deck-Prompt) liegt jetzt in
   `deck-core` und wird als gepinnte Kopie vendoriert. Kein Verhalten geändert:
   Folien-HTML und Deck-CSS sind über alle Themes byte-gleich zum Stand davor.

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  roleKindKey, activeIndexFromStatuses, modelFieldMode, initialModelSelection,
+  roleKindKey, modelFieldMode, initialModelSelection,
   thinkToggleView, effectiveSuppress, statusKindKey, warnRuleKey, statusLabelParts,
 } from "../../src/llm/ai-settings-model";
 
@@ -10,18 +10,6 @@ describe("roleKindKey", () => {
     expect(roleKindKey({ kind: "standby", position: 3 })).toBe("deck.settings.endpoint.role.standby");
     expect(roleKindKey({ kind: "unreachable" })).toBe("deck.settings.endpoint.role.unreachable");
     expect(roleKindKey({ kind: "skipped-model" })).toBe("deck.settings.endpoint.role.skipped-model");
-  });
-});
-
-describe("activeIndexFromStatuses", () => {
-  it("picks the first ok — resolveActiveEndpoint semantics", () => {
-    expect(activeIndexFromStatuses(["refused", "ok", "ok"])).toBe(1);
-  });
-  it("returns -1 when nothing is reachable", () => {
-    expect(activeIndexFromStatuses(["refused", "timeout"])).toBe(-1);
-  });
-  it("treats not-yet-probed (null) as not active, not as an error", () => {
-    expect(activeIndexFromStatuses([null, null])).toBe(-1);
   });
 });
 

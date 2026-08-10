@@ -10,12 +10,6 @@ export function roleKindKey(role: EndpointRole): string {
   return `deck.settings.endpoint.role.${role.kind}`;
 }
 
-/** Index of the first `ok` row (= the active endpoint, exactly resolveActiveEndpoint semantics),
- *  else -1. `null` means "not probed yet" — that is not an error, just not active. */
-export function activeIndexFromStatuses(statuses: (EndpointStatusKind | null)[]): number {
-  return statuses.findIndex((s) => s === "ok");
-}
-
 /** Mode of the model field: `dropdown` as soon as any models were loaded, else `freetext`
  *  (offline / not yet probed). A saved model missing from the list does NOT hide the dropdown —
  *  the render layer keeps it as an extra option (never lose it, but make it selectable). */

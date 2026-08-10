@@ -4,16 +4,13 @@
 import { Notice, Setting, setIcon } from "obsidian";
 import { t } from "./i18n";
 import {
-  activeIndexFromStatuses, warnRuleKey, roleKindKey,
+  warnRuleKey, roleKindKey,
   modelFieldMode, thinkToggleView, initialModelSelection, statusLabelParts,
 } from "./llm/ai-settings-model";
 import type { ModelContext } from "./llm/model-info";
-import {
-  validateEndpointInput, ENDPOINT_PRESETS, type EndpointStatus, type EndpointStatusKind,
-} from "./vendor/kit/endpoint_diagnostics";
-import {
-  applyEndpointEdit, moveEndpointToFront, endpointRole, carriesApiKey, type EndpointConfig,
-} from "./vendor/kit/endpoint_config";
+import type { EndpointStatusKind } from "./vendor/kit/endpoint_diagnostics";
+import type { EndpointListStrings } from "./vendor/kit-obsidian/endpoint-list";
+import type { ModelHintKey } from "./vendor/kit/model-choice";
 
 /** Status icon per UI-STANDARD §8: shape AND colour AND state class AND aria-label — colour is
  *  never the only carrier (WCAG 1.4.1). `null` kind = not probed yet. */
@@ -27,184 +24,43 @@ export function paintStatus(el: HTMLElement, kind: EndpointStatusKind | null, la
   el.setAttribute("title", label);
 }
 
-export interface EndpointEditorDeps {
-  getList: () => EndpointConfig[];
-  setList: (next: EndpointConfig[]) => Promise<void>;
-  probe: (cfg: EndpointConfig) => Promise<EndpointStatus>;
-  rerender: () => void;
-}
-
-/** Row editor for the endpoint list: one Setting row per endpoint + a trailing adder row.
- *  Name/desc only on row 0. Live probe icon per row, active marker on the first reachable one.
- *  Rows are resolved by RENDER INDEX, not by URL/findIndex — that keeps this safe against
- *  duplicate or edited-away URLs, which a value-keyed lookup would trip over. It does NOT by
- *  itself protect against a stale index: `setList()` mutates the settings list synchronously,
- *  before `rerender()` runs in the following `.then()`, so a second click that lands in that
- *  window still resolves its captured `index` against the now-shifted list. The blur handlers
- *  (url/key fields) re-diff their own edit against `deps.getList()` before applying, which
- *  catches "nothing changed since render" but not "the list changed under me" in general.
- *  The trash and move-to-front handlers below guard explicitly: they re-check that
- *  `deps.getList()[index]` still equals the `cfg` captured at render time, and bail out to a
- *  rerender otherwise, rather than acting on the wrong row. */
-export function renderEndpointEditor(containerEl: HTMLElement, deps: EndpointEditorDeps): void {
-  const list = deps.getList();
-  const rows: EndpointConfig[] = [...list, { url: "" }]; // trailing adder
-  const statuses: (EndpointStatusKind | null)[] = list.map(() => null);
-  const icons: HTMLElement[] = [];
-  const roleEls: HTMLElement[] = [];
-  // Generation counter: guards probeAll() against overlapping runs (see below).
-  let probeGen = 0;
-
-  rows.forEach((cfg, index) => {
-    const isAdder = index === list.length;
-    const setting = new Setting(containerEl);
-    if (index === 0) {
-      setting.setName(t("deck.settings.endpoints.name")).setDesc(t("deck.settings.endpoints.desc"));
-    }
-    setting.settingEl.addClass("sd-endpoint-row");
-
-    setting.addText((txt) => {
-      txt.setValue(cfg.url);
-      txt.setPlaceholder(ENDPOINT_PRESETS[0].url);
-      // Mutate on blur, never onChange: onChange would persist every keystroke — the adder
-      // would grow entries "h", "ht", "htt", … (UI-STANDARD §8).
-      txt.inputEl.addEventListener("blur", () => {
-        const next = applyEndpointEdit(deps.getList(), index, "url", txt.getValue(), isAdder);
-        if (JSON.stringify(next) === JSON.stringify(deps.getList())) return; // nothing changed
-        void deps.setList(next).then(() => deps.rerender());
-      });
-    });
-
-    if (!isAdder) {
-      setting.addText((txt) => {
-        txt.setValue(cfg.apiKey ?? "");
-        txt.setPlaceholder(t("deck.settings.endpoint.keyPlaceholder"));
-        txt.inputEl.type = "password";        // masked — the key never shows in plain text
-        txt.inputEl.setAttribute("aria-label", t("deck.settings.endpoint.key"));
-        txt.inputEl.addEventListener("blur", () => {
-          const next = applyEndpointEdit(deps.getList(), index, "apiKey", txt.getValue(), false);
-          if (JSON.stringify(next) === JSON.stringify(deps.getList())) return;
-          void deps.setList(next).then(() => deps.rerender());
-        });
-      });
-
-      if (carriesApiKey(cfg)) {
-        // Shape + tooltip, never colour alone (WCAG 1.4.1). The key itself never appears.
-        const mark = setting.controlEl.createSpan({ cls: "sd-endpoint-thirdparty" });
-        setIcon(mark, "alert-triangle");
-        const label = t("deck.settings.endpoint.thirdParty");
-        mark.setAttribute("aria-label", label);
-        mark.setAttribute("title", label);
-      }
-
-      const icon = setting.controlEl.createSpan({ cls: "sd-endpoint-status" });
-      paintStatus(icon, null, t("deck.settings.endpoint.probing"));
-      icons.push(icon);
-
-      for (const w of validateEndpointInput(cfg.url)) {
-        const warn = setting.controlEl.createSpan({ cls: "sd-endpoint-warn" });
-        setIcon(warn, "alert-triangle");
-        const text = t(warnRuleKey(w.rule));
-        warn.setAttribute("aria-label", text);
-        warn.setAttribute("title", text);
-      }
-
-      // From row 2 on, and NOT drawn at position 1 rather than disabled there: a
-      // setDisabled tooltip stays invisible in Electron — the user would see a dead
-      // button with no explanation (measured in vault-rag 0.20.0).
-      if (index > 0) {
-        setting.addExtraButton((b) => b
-          .setIcon("chevrons-up")
-          .setTooltip(t("deck.settings.endpoint.moveToFront"))
-          .onClick(() => {
-            // Guard against a stale index: if the list changed since this row was rendered
-            // (e.g. an earlier row's blur-commit already ran), the entry at `index` is no
-            // longer the row the user clicked — resync instead of moving the wrong one.
-            const cur = deps.getList();
-            if (JSON.stringify(cur[index]) !== JSON.stringify(cfg)) { deps.rerender(); return; }
-            void deps.setList(moveEndpointToFront(cur, index)).then(() => deps.rerender());
-          }));
-      }
-
-      const roleEl = setting.controlEl.createSpan({ cls: "sd-endpoint-role" });
-      roleEls.push(roleEl);
-
-      setting.addExtraButton((b) => b
-        .setIcon("trash-2")
-        .setTooltip(t("deck.settings.endpoint.remove"))
-        .onClick(() => {
-          // Same stale-index guard as move-to-front: without it, a trash click that lands
-          // after another row's list mutation (but before this row's rerender) would delete
-          // whatever now sits at `index` — not the row the user actually clicked.
-          const cur = deps.getList();
-          if (JSON.stringify(cur[index]) !== JSON.stringify(cfg)) { deps.rerender(); return; }
-          const next = applyEndpointEdit(cur, index, "url", "", false);
-          void deps.setList(next).then(() => deps.rerender());
-        }));
-    }
-  });
-
-  // Presets + re-check, one row below the list.
-  const actions = new Setting(containerEl);
-  actions.settingEl.addClass("sd-endpoint-actions");
-  for (const preset of ENDPOINT_PRESETS) {
-    actions.addButton((b) => b
-      .setButtonText(t("deck.settings.endpoint.addPreset", preset.label))
-      .onClick(() => {
-        const next = applyEndpointEdit(deps.getList(), deps.getList().length, "url", preset.url, true);
-        void deps.setList(next).then(() => deps.rerender());
-      }));
-  }
-  actions.addButton((b) => b
-    .setButtonText(t("deck.settings.endpoint.check"))
-    .onClick(() => void probeAll()));
-
-  /** Probe every row in parallel — one dead endpoint must not block the others. Never throws:
-   *  probe() already degrades a failure to a classified status.
-   *  `probeGen` guards against overlapping runs (auto-probe on open + manual "check"
-   *  button): a superseded run must not paint over a newer run's results, nor place the
-   *  active marker from a statuses[] mix of two runs. */
-  async function probeAll(): Promise<void> {
-    const gen = ++probeGen;
-    for (const icon of icons) paintStatus(icon, null, t("deck.settings.endpoint.probing"));
-    const labels: string[] = [];
-    await Promise.all(list.map(async (ep, i) => {
-      const st = await deps.probe(ep);
-      if (gen !== probeGen) return; // superseded — a newer run owns the icons now
-      statuses[i] = st.kind;
-      const parts = statusLabelParts(st.kind, st.raw);
-      const label = parts.suffix ? `${t(parts.key)} — ${parts.suffix}` : t(parts.key);
-      labels[i] = label;
-      paintStatus(icons[i], st.kind, label);
-    }));
-    if (gen !== probeGen) return; // superseded — do not place the active marker
-    const active = activeIndexFromStatuses(statuses);
-
-    // Recompute the role text for every row, not just the one that just answered: the
-    // active endpoint can change as soon as an earlier row responds, which shifts every
-    // later row's standby position too. Updating only the responding row would leave the
-    // others asserting a stale state.
-    roleEls.forEach((roleEl, i) => {
-      const role = endpointRole({
-        isActive: i === active, reachable: statuses[i] === "ok", modelFits: true, position: i + 1,
-      });
-      roleEl.setText(t(roleKindKey(role), String(i + 1)));
-      roleEl.toggleClass("is-active", role.kind === "active");
-    });
-
-    if (active < 0) return;
-    const icon = icons[active];
-    if (!icon) return;
-    icon.addClass("is-active");
-    // Colour/outline alone would fail WCAG 1.4.1 when two endpoints are reachable at once —
-    // a screen-reader user needs a text channel that says WHICH one is in use, not just that
-    // this one is reachable (Finding 3 / UI-STANDARD §8).
-    const activeLabel = `${labels[active]} · ${t("deck.settings.endpoint.active")}`;
-    icon.setAttribute("aria-label", activeLabel);
-    icon.setAttribute("title", activeLabel);
-  }
-
-  void probeAll(); // auto-probe on open
+/** Every user-visible string of the kit's endpoint row editor. The kit deliberately phrases
+ *  nothing itself (it is German-internal, this plugin is EN-canonical), so translation happens
+ *  here — the same `t()` vocabulary the rest of the tab uses. Kept beside `paintStatus` because
+ *  it is render-layer glue, not state logic. */
+export function endpointListStrings(): EndpointListStrings {
+  return {
+    addPlaceholder: t("deck.settings.endpoint.addPlaceholder"),
+    apiKeyPlaceholder: t("deck.settings.endpoint.keyPlaceholder"),
+    modelPlaceholder: t("deck.settings.model.placeholder"),
+    ariaUrl: t("deck.settings.endpoint.ariaUrl"),
+    ariaAdd: t("deck.settings.endpoint.ariaAdd"),
+    ariaApiKey: (url) => t("deck.settings.endpoint.ariaKeyFor", url),
+    ariaModel: (url) => t("deck.settings.endpoint.ariaModelFor", url),
+    // The kit hands the raw global model through, empty included — spelling out "not set"
+    // instead of rendering "Global model ()" is this layer's job, in this layer's language.
+    emptyModelLabel: (globalModel) => t("deck.settings.endpoint.modelGlobal",
+      globalModel || t("deck.settings.endpoint.modelGlobalUnset")),
+    modelHint: (key: ModelHintKey) => (key ? t(`deck.settings.model.hint.${key}`) : ""),
+    savedSuffix: t("deck.settings.model.saved"),
+    refreshModels: t("deck.settings.model.refresh"),
+    moveToFront: t("deck.settings.endpoint.moveToFront"),
+    remove: t("deck.settings.endpoint.remove"),
+    thirdParty: t("deck.settings.endpoint.thirdParty"),
+    probing: t("deck.settings.endpoint.probing"),
+    // `raw` only ever reaches the user for kind "unknown" — every other kind has a fully
+    // translated message, and the kit's own `klartext` is hardcoded German (never surface it).
+    statusTooltip: (status) => {
+      const parts = statusLabelParts(status.kind, status.raw);
+      return parts.suffix ? `${t(parts.key)} — ${parts.suffix}` : t(parts.key);
+    },
+    role: (role) => t(roleKindKey(role), String(role.kind === "standby" ? role.position : "")),
+    warnings: (warnings) => warnings.map((w) => t(warnRuleKey(w.rule))).join(" · "),
+    presetLabel: (preset) => t("deck.settings.endpoint.addPreset", preset.label),
+    presetTooltip: (preset) => t("deck.settings.endpoint.presetTooltip", preset.label, preset.url),
+    checkConnection: t("deck.settings.endpoint.check"),
+    saveFailed: t("deck.settings.endpoint.saveFailed"),
+  };
 }
 
 export interface ModelFieldDeps {
