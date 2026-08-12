@@ -2,6 +2,8 @@
 // runtime lifecycle helper (createIsolatedDeckIframe, added in Task 3). No .css/mermaid
 // imports at module scope, so the pure part stays vitest-importable.
 
+import type { HostDocument } from "./host-document";
+
 /** Assemble the full self-contained HTML for a deck iframe. `extraCss` (preview chrome or
  *  print CSS) is concatenated AFTER `css` so it can override deck tokens. */
 export function isolatedDeckHtml(opts: { css: string; bodyHtml: string; extraCss?: string }): string {
@@ -29,7 +31,7 @@ export interface IsolatedIframe {
  *  consumers (export/staging) just dispose; the live preview calls reveal() after sizing +
  *  zooming to clear the offscreen positioning and show the iframe in place. */
 export async function createIsolatedDeckIframe(
-  ownerDoc: Document,
+  ownerDoc: HostDocument,
   opts: { css: string; bodyHtml: string; extraCss?: string; mount?: HTMLElement; width?: number; fontsTimeoutMs?: number; sandbox?: string },
 ): Promise<IsolatedIframe> {
   const iframe = ownerDoc.createElement("iframe");
@@ -60,14 +62,7 @@ export async function createIsolatedDeckIframe(
   const win = ownerDoc.defaultView!;
   // Wait for fonts, but never hang on a stuck decode; clear the timer once the race settles
   // so no stray timeout lingers after fonts.ready wins. Use the document's own window so
-  // timers are correct when the leaf lives in a popout window.
-  //
-  // The timer id deliberately never gets a written type. `win` is `Window & typeof globalThis`,
-  // and wherever Node's globals are reachable that intersection carries two `setTimeout`
-  // declarations: writing the type (`ReturnType<typeof win.setTimeout>`) picks the last
-  // overload while the call picks the DOM one — the expression contradicts itself. Keeping
-  // the id inside the closure lets `clearTimeout` take back exactly what `setTimeout` handed
-  // out, in either environment.
+  // timers are correct when the leaf lives in a popout window (see HostWindow).
   let cancelFonts: (() => void) | undefined;
   const timeout = new Promise<void>((r) => {
     const id = win.setTimeout(r, opts.fontsTimeoutMs ?? 3000);

@@ -88,6 +88,10 @@ src/vendor/deck-core/pure/   Vendorierter Kern — kein obsidian-Import, kein DO
 
 src/vendor/deck-core/dom/    Ebenfalls vendoriert aus `deck-core` — importiert DOM, aber kein
                      Obsidian (eigenes Realm-Invariant, s. u.).
+  host-document.ts   HostDocument/HostWindow — der Port, den die DOM-Ebene vom Host verlangt
+                     (createElement, body, defaultView, fonts, querySelectorAll, importNode).
+                     Ein echtes Document erfüllt ihn strukturell; er hält den Kern host-agnostisch
+                     und hält zugleich obsidianmd/prefer-create-el von ihm fern.
   iframe-host.ts     Isoliertes Deck-iframe: isolatedDeckHtml({css,bodyHtml,extraCss?})
                      (reiner HTML-String-Assembler) + createIsolatedDeckIframe(ownerDoc, opts)
                      (async Lifecycle: erzeugt sandbox="allow-same-origin"-iframe, injiziert via
@@ -231,13 +235,16 @@ npm run version-bump              # Version bumpen (package.json/manifest.json/v
   `npm run lint` lief grün, während der Review `obsidianmd/prefer-create-el` meldete. Eine
   Store-Prüfung, die lokal blind ist, ist keine Prüfung — dieselbe Lehre wie bei den
   Inline-disables (0.3.1/0.6.1), nur eine Ebene tiefer. Jetzt auf `^0.4.1` gepinnt.
-  Erwarteter Reststand: **9 Warnungen** (`prefer-create-el`) in
-  `src/vendor/deck-core/dom/{render-dom,iframe-host}.ts`. Die sind **bewusst nicht behoben**:
-  der Vorschlag lautet `doc.win.createEl(…)`, und `.win` ist eine Obsidian-Augmentierung —
-  `deck-core` ist absichtlich obsidian-frei (Lizenz + CLI-Wiederverwendung), und der Code
-  rendert in fremde Realms, wo genau diese Augmentierungen werfen. Warnungen blockieren den
-  Review nicht (Errors tun es). Gehört die Zahl je verändert, gehört die Änderung nach
-  `deck-core`, nicht hierher.
+  **Sollzustand ist null — Warnungen zählen als Befund, nicht als Rauschen.** Bis 2026-08-12
+  standen hier neun `prefer-create-el`-Warnungen als „erwarteter Reststand", begründet damit,
+  dass Warnungen den Review nicht blockieren. Diese Schwelle ist zu niedrig: sie hat die
+  Meldung über Monate zum Grundrauschen gemacht. Aufgelöst hat sie ein Port-Typ in
+  `deck-core` 0.3.0 (`HostDocument` statt `Document`) — die Regel spricht jeden Empfänger
+  vom Typ `Document` an, und die DOM-Ebene braucht davon nur sechs Member. Kein
+  `eslint-disable`, keine Verhaltensänderung. Der Autofix des Scanners (`doc.win.createEl`)
+  war nie gangbar: `.win` ist eine Obsidian-Augmentierung, und der Code rendert in fremde
+  Realms. **Taucht eine neue Warnung auf, wird sie behoben, nicht dokumentiert** — und der
+  Fix gehört nach `deck-core`, wenn die Fundstelle unter `src/vendor/` liegt.
 - **Keine Inline-`eslint-disable` in `src/`:** `scripts/check-no-inline-disables.mjs` läuft als
   erster Schritt von `npm run lint`. Der Community-Store wertet ein Inline-disable einer
   `obsidianmd/*`-Regel als **Error** — egal wie gut begründet (0.3.1 und 0.6.1 waren beide reine

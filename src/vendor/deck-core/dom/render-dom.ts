@@ -1,4 +1,5 @@
 import mermaid from "mermaid";
+import type { HostDocument } from "./host-document";
 import { renderMarkdown } from "../pure/render/md2html";
 import { computeFit } from "../pure/layout/fit";
 import { shouldCenterCompose } from "../pure/layout/compose";
@@ -21,7 +22,7 @@ function setHtml(el: HTMLElement, html: string): void {
   el.replaceChildren(...Array.from(parsed.body.childNodes, (n) => ownerDoc.importNode(n, true)));
 }
 
-function appendSlots(doc: Document, box: HTMLElement, deck: SlideDeck, slideIndex: number): void {
+function appendSlots(doc: HostDocument, box: HTMLElement, deck: SlideDeck, slideIndex: number): void {
   const d = deck.directives;
   const make = (cls: string, text: string) => {
     const el = doc.createElement("div");
@@ -58,7 +59,7 @@ async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnin
 }
 
 export async function renderDeckToContainer(
-  doc: Document, container: HTMLElement, deck: SlideDeck, resolveEmbed: (r: string) => string | null,
+  doc: HostDocument, container: HTMLElement, deck: SlideDeck, resolveEmbed: (r: string) => string | null,
   registry: ThemeRegistry,
 ): Promise<Warning[]> {
   const geo = geometryFor(deck.directives.aspect);
@@ -194,7 +195,7 @@ export async function renderDeckToContainer(
 }
 
 export async function buildIsolatedDeck(
-  ownerDoc: Document, deck: SlideDeck, resolveEmbed: (r: string) => string | null,
+  ownerDoc: HostDocument, deck: SlideDeck, resolveEmbed: (r: string) => string | null,
   registry: ThemeRegistry, customCss = "",
 ): Promise<{ slidesHtml: string[]; css: string; warnings: Warning[] }> {
   const css = deckCss(resolveTheme(registry, deck.directives.theme), customCss);
