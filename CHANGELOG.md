@@ -6,6 +6,25 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.2] — 2026-08-12
+
+### Changed
+- **The lint run is clean: zero errors, zero warnings.** Nine `obsidianmd/prefer-create-el`
+  warnings in the vendored DOM layer are gone. They were long treated as an accepted
+  remainder because warnings don't block a store review — that bar was too low, and it had
+  quietly turned a known finding into background noise.
+- The fix is a narrower type, not a suppression. `deck-core` 0.3.0 asks for a `HostDocument`
+  port (six members) instead of a full `Document`; the rule targets any receiver typed as a
+  document. A real `Document` satisfies the port structurally, so no call site changed.
+  **No `eslint-disable` was used**, and the scanner's own autofix (`doc.win.createEl`) was
+  never viable here — `.win` is an Obsidian augmentation and this code renders into foreign
+  realms.
+
+### Note
+- **`main.js` is byte-identical to 0.7.1** (sha256 `3cc119bf…`, 4,530,422 bytes): the change
+  lives entirely in the type system and emits no different JavaScript. Nothing about the
+  running plugin differs from the previous release.
+
 ## [0.7.1] — 2026-08-12
 
 ## [0.7.1] — 2026-08-12
