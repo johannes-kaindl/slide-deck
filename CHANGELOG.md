@@ -8,6 +8,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [0.7.2] — 2026-08-12
 
+## [0.7.2] — 2026-08-12
+
 ### Changed
 - **The lint run is clean: zero errors, zero warnings.** Nine `obsidianmd/prefer-create-el`
   warnings in the vendored DOM layer are gone. They were long treated as an accepted
