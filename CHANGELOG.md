@@ -8,6 +8,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [0.7.3] — 2026-08-12
 
+## [0.7.3] — 2026-08-12
+
 ### Fixed
 - **`authorUrl` now points at GitHub instead of the author's own domain.** The store review
   repeatedly reported "Manifest URL field is not reachable" for `https://jkaindl.de`, while
