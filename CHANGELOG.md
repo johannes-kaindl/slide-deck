@@ -8,6 +8,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [0.7.1] — 2026-08-12
 
+## [0.7.1] — 2026-08-12
+
 ### Changed
 - **`main.js` shrank from 5.25 MB to 4.32 MB**, back under the size the Community
   review flags. The cause was `highlight.js`: importing it whole pulls in all ~190
