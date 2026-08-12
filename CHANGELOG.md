@@ -6,6 +6,21 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.3] — 2026-08-12
+
+### Fixed
+- **`authorUrl` now points at GitHub instead of the author's own domain.** The store review
+  repeatedly reported "Manifest URL field is not reachable" for `https://jkaindl.de`, while
+  every counter-check found it up (IPv4, IPv6, `HEAD`, `www`, from outside the author's
+  network, no rate limiting) — the finding was not reproducible and the cause stayed open.
+  It is also beside the point: `authorUrl` is an availability promise made to an outside
+  checker, and tying it to a self-hosted server re-risks it on every restart. The domain
+  remains in the repository, the imprint and the release page.
+
+### Note
+- **`main.js` is unchanged from 0.7.1 and 0.7.2** (sha256 `3cc119bf…`). This release carries
+  a manifest correction only; nothing about the running plugin differs.
+
 ## [0.7.2] — 2026-08-12
 
 ## [0.7.2] — 2026-08-12
