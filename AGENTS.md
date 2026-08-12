@@ -359,6 +359,16 @@ Stand: siehe `CHANGELOG.md` / `manifest.json` (dort steht die maßgebliche Versi
 keine, damit dieser Block nicht durch Zeitablauf falsch wird). Bewusste, begründete Abweichungen
 (comply-or-explain):
 
+- **`authorUrl` zeigt auf GitHub, nicht auf `jkaindl.de`** (seit 2026-08-12). Der Store-Review
+  prüft das Feld auf Erreichbarkeit und meldete wiederholt „Manifest URL field is not
+  reachable" — die Domain war bei jeder Gegenprobe erreichbar (IPv4, IPv6, HEAD, `www`,
+  extern, ohne Rate-Limit), der Befund also nicht reproduzierbar. Ursache blieb offen; sie
+  ist auch nicht der Punkt. `authorUrl` ist eine **Verfügbarkeitszusage gegenüber einem
+  fremden Prüfer**, und diese an den eigenen Server zu hängen riskiert sie bei jedem
+  Neustart neu. Der Fehler kam mehrfach und wurde jedes Mal einzeln behoben — dieselbe
+  Klasse Wiederholungsarbeit wie bei den Inline-disables (0.3.1/0.6.1), und dieselbe
+  Antwort: die Ursache abstellen statt den Befund. **Nicht auf die eigene Domain
+  zurückstellen**; sie steht ohnehin im Impressum und auf der Release-Seite.
 - **`isDesktopOnly: false`** — das Plugin läuft auf Mobile. Alle Desktop-only-APIs sind
   bewacht: PDF-Export verzweigt auf `Platform.isDesktopApp` (Desktop: `contentWindow.print()`;
   Mobile: HTML-Datei schreiben + `openWithDefaultApp`); „Im Finder anzeigen" prüft
