@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-08-14
+
 ### Added
 - **Die `crimson`-Familie als eingebautes Theme** — `crimson-dark`, `crimson-dark-lc`,
   `crimson-light`, `crimson-light-lc`. Ein Serifen-Display über einem Mono-Fließtext,
