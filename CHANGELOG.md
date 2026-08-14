@@ -19,8 +19,6 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [0.7.3] — 2026-08-12
 
-## [0.7.3] — 2026-08-12
-
 ### Fixed
 - **`authorUrl` now points at GitHub instead of the author's own domain.** The store review
   repeatedly reported "Manifest URL field is not reachable" for `https://jkaindl.de`, while
@@ -33,8 +31,6 @@ versioning follows [SemVer](https://semver.org/).
 ### Note
 - **`main.js` is unchanged from 0.7.1 and 0.7.2** (sha256 `3cc119bf…`). This release carries
   a manifest correction only; nothing about the running plugin differs.
-
-## [0.7.2] — 2026-08-12
 
 ## [0.7.2] — 2026-08-12
 
@@ -54,8 +50,6 @@ versioning follows [SemVer](https://semver.org/).
 - **`main.js` is byte-identical to 0.7.1** (sha256 `3cc119bf…`, 4,530,422 bytes): the change
   lives entirely in the type system and emits no different JavaScript. Nothing about the
   running plugin differs from the previous release.
-
-## [0.7.1] — 2026-08-12
 
 ## [0.7.1] — 2026-08-12
 
