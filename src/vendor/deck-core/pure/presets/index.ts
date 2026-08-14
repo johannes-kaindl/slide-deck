@@ -3,6 +3,7 @@ import { kuroPreset } from "./kuro";
 import { sumiPreset } from "./sumi";
 import { kairoPreset } from "./kairo";
 import { kurenaiPreset } from "./kurenai";
+import { crimsonDark, crimsonDarkLc, crimsonLight, crimsonLightLc } from "./crimson";
 
 export type MermaidTheme = "default" | "dark" | "neutral" | "forest";
 
@@ -20,6 +21,9 @@ export interface Preset {
 
 export const PRESETS: Record<string, Preset> = {
   shiro: shiroPreset, kuro: kuroPreset, sumi: sumiPreset, kairo: kairoPreset, kurenai: kurenaiPreset,
+  // Crimson (Marp-Import, Ebene A: Farben/Fonts/Atmosphäre — Skala/Rhythmus bleibt global).
+  "crimson-dark": crimsonDark, "crimson-dark-lc": crimsonDarkLc,
+  "crimson-light": crimsonLight, "crimson-light-lc": crimsonLightLc,
 };
 
 /** Legacy 0.4.x keys resolve silently to their nordstern successor. */

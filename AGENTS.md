@@ -83,6 +83,10 @@ src/vendor/deck-core/pure/   Vendorierter Kern — kein obsidian-Import, kein DO
     index.ts        Preset-Typ + PRESETS-Registry; presetFor() (total); presetTokensCss();
                     assembleDeckCss().
     kairo.ts · kurenai.ts · kuro.ts · shiro.ts · sumi.ts   je ein Preset (Token-Block + hljs/mermaid).
+    crimson.ts         die Crimson-Familie (4 Modi) aus dem Marp-Import — Ebene A: Farben,
+                       Fonts, Atmosphäre. Keine Skala/Spacing (die ist global, s. _marp-shared).
+    _marp-shared.ts    marpAtmosphere() + der normalisierte Marp-Token-Vorrat. MARP_SCALE_TOKENS
+                       und MARP_PAD sind bewusst NICHT verdrahtet — Vorrat fürs Ebene-B-Projekt.
     structure.css.ts  geteiltes, theme-unabhängiges Struktur-CSS (var(--sd-*); kein --sd-base).
     layouts.css.ts    LAYOUTS/layoutFor() + geteiltes Layout-CSS (.sd-layout-*, .sd-region).
 

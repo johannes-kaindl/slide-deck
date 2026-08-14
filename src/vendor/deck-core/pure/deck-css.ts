@@ -16,7 +16,7 @@ function hljsFor(vendor: VendorCss, name: string | undefined): string {
   return vendor.hljs[name ?? ""] ?? vendor.hljs["github-dark"];
 }
 
-/** The five nordstern built-in themes as registry entries (token block + extraCss + their hljs + mermaid). */
+/** The built-in themes as registry entries (token block + extraCss + their hljs + mermaid). */
 export function builtinThemeEntries(vendor: VendorCss): ThemeEntry[] {
   return Object.values(PRESETS).map((p) => ({
     key: p.id,

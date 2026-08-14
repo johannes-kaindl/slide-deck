@@ -6,6 +6,17 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Die `crimson`-Familie als eingebautes Theme** — `crimson-dark`, `crimson-dark-lc`,
+  `crimson-light`, `crimson-light-lc`. Ein Serifen-Display über einem Mono-Fließtext,
+  dazu eine feine Scanline und ein Glow auf `h1`, die die kontrastarmen Modi dämpfen
+  bzw. abschalten. Wählbar über `theme:` wie die Nordstern-Themes; Code-Highlighting
+  und Mermaid-Theme kommen mit. Neue Fremd-CSS-Dateien braucht es nicht.
+  Kommt aus deck-core 0.4.0 (Marp-Import, Ebene A: Farben/Fonts/Atmosphäre).
+
+### Changed
+- **Vendorter Kern auf deck-core 0.4.0** (`01da676`) angehoben.
+
 ## [0.7.3] — 2026-08-12
 
 ## [0.7.3] — 2026-08-12
