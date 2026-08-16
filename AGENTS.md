@@ -280,6 +280,20 @@ gestartetes Obsidian voraus.
 
 ## Gotchas
 
+**OFFEN (gemessen 2026-08-16): die Statusklasse `unauthorized` fehlt im Wörterbuch.**
+Der vendorte `endpoint_diagnostics.ts` kennt sie (Kit 0.24.0), dieses Repo führt die
+Endpunkt-Statusklassen aber selbst über `t()` — und dort fehlt der Schlüssel. `t()` fällt
+bei unbekanntem Schlüssel auf den **Schlüssel** zurück, nicht auf EN: in der Oberfläche
+stünde ``deck.settings.endpoint.status.unauthorized`` und sähe aus wie ein plausibler String, nicht wie ein Fehler. Getroffen
+wird ausgerechnet der Fall, für den die Klasse eingeführt wurde — ein gehosteter Endpunkt
+mit fehlendem oder falschem API-Schlüssel (401/403).
+
+**Fix (zwei Zeilen + ein Wächter):** Schlüssel ``deck.settings.endpoint.status.unauthorized`` in EN **und** DE ergänzen
+(PROF-OBS-07), dazu ein Vollständigkeits-`Record<EndpointStatusKind, true>` im Test — der
+bricht am `typecheck:test`, sobald das nächste Kit-Update eine weitere Klasse mitbringt.
+Referenz-Implementierung: `obsidian-transmute/tests/i18n-status-keys.test.ts`.
+Verbindlich als **CORE-TEST-04**. Gefunden beim Consumer-Sweep, nicht vom Gate.
+
 - **Themes/Tokens-Invariante:** Themes setzen nur Tokens; Struktur/Layout-CSS ist theme-unantastbar (fit-kritisch). `--sd-base` lebt einzig in `presetTokensCss`.
 - **Theme-Registry:** Themes sind `ThemeEntry { key, label?, source, themeCss, hljs, katex, mermaid, mermaidVars?, baseFontPx, overridesBuiltin? }`.
   `katex` ist Pflicht (vom Host hereingereichtes Fremd-CSS, s. `deck-css.ts` oben); `label`,
