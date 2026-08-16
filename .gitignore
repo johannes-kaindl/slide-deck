@@ -12,3 +12,6 @@ design/
 
 # Visual-Smoke-Harness output (scripts/visual-smoke.mjs) — generated PNGs, never committed
 _visual/
+
+# Aufnahme-Treiber: gebündeltes Zwischenprodukt von scripts/shots-obsidian.ts
+.shots-obsidian.mjs

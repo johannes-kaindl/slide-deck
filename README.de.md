@@ -3,10 +3,10 @@
 Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilderserie exportieren — mit Live-Lesbarkeitsprüfung.
 
 [![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE)
-[![Release](https://img.shields.io/badge/Release-0.3.1-green.svg)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
+[![Release](https://img.shields.io/badge/Release-0.8.0-green.svg)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
 [![Plattform: Desktop + Mobile](https://img.shields.io/badge/Plattform-Desktop%20%2B%20Mobile-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/manifest.json)
 
-![Slide Deck — eine Zwei-Spalten-Folie mit Aufzählung, Inline-Mathe und Bild](https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png)
+<img width="820" alt="Eine Zwei-Spalten-Folie im Theme shiro: links eine Aufzählung mit Inline-Code und KaTeX-Mathe, rechts ein Balkendiagramm, das die Spalte füllt" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png">
 
 [English](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/README.md)
 
@@ -38,7 +38,37 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 
 ## Screenshots
 
-![Barrierefreie Callouts mit Symbol, Form und Label gerendert](https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/callouts.png)
+**Die Notiz und ihre Projektion.** Das Deck rendert in einem Seitenpanel und bringt die
+Werkzeugleiste mit: Theme-Auswahl, Herkunft des aktiven Themes, die beiden Export-Wege.
+
+<img width="820" alt="Obsidian mit der Notiz links und der Slide-Deck-Vorschau rechts: Theme-Auswahl, Herkunftszeile from frontmatter, Export-Knöpfe für PDF und Bilder, Folien mit laufender Kopfzeile und Seitenanzeige" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/preview-pane.png">
+
+**Neun eingebaute Themes.** Dieselbe Folie in jedem — nur Farbe, Schrift und Akzent ändern
+sich; die Struktur bleibt theme-unabhängig.
+
+<img width="820" alt="Ein Drei-mal-drei-Raster mit derselben Folie in allen neun eingebauten Themes: shiro, kuro, sumi, kairo, kurenai, crimson-dark, crimson-dark-lc, crimson-light und crimson-light-lc" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/themes.png">
+
+**Neun Folien-Templates.** Per Layout-Direktive gesetzt — oder aus der Form der Folie
+abgeleitet.
+
+<img width="820" alt="Ein Drei-mal-drei-Raster der neun Folien-Templates: title, section, quote, image-focus, two-column, columns-3, stat, cover-image und default" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/layouts.png">
+
+**Fit-or-warn.** Eine Folie, die Text unterhalb der Lesbarkeitsgrenze bräuchte, wird in der
+Vorschau markiert statt stumm beschnitten.
+
+<img width="820" alt="Die Vorschau mit der Warnung, dass der Inhalt von Folie 1 an der Lesbarkeitsgrenze überläuft, darüber die mit einem roten Balken markierte Folie" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/overflow-warning.png">
+
+**Barrierefreie Callouts.** Die Bedeutung wird dreifach kodiert — Rahmenfarbe, geometrische
+Form und ein sichtbares Label-Wort.
+
+<img width="820" alt="Eine Folie mit allen fünf Callout-Typen (note, tip, info, warning, danger), jeder mit farbigem Rahmen, eigenem Symbol und Label-Wort" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/callouts.png">
+
+**Einstellungen.** Der Tab listet alle gültigen `theme:`-Werte live — auch die Themes, die du
+selbst in den Themes-Ordner legst.
+
+<a href="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/settings.png"><img width="380" alt="Der Einstellungen-Tab von Slide Deck mit Standard-Theme, der Liste aller neun gültigen Theme-Schlüssel, der Lesbarkeitsgrenze, den Export- und Themes-Ordnern und dem Abschnitt für den lokalen KI-Endpunkt" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/thumbs/settings.png"></a>
+
+<sub>Klick auf die Vorschau öffnet die Vollauflösung.</sub>
 
 ## Voraussetzungen
 

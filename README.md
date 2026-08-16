@@ -3,10 +3,10 @@
 Turn a Markdown note into a slide deck and export it to PDF or a PNG image series, with live readability checks.
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE)
-[![Release](https://img.shields.io/badge/Release-0.3.1-green.svg)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
+[![Release](https://img.shields.io/badge/Release-0.8.0-green.svg)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
 [![Platform: Desktop + Mobile](https://img.shields.io/badge/Platform-Desktop%20%2B%20Mobile-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/manifest.json)
 
-![Slide Deck — a two-column slide with bullet list, inline math, and an image](https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png)
+<img width="820" alt="A two-column slide in the shiro theme: a bullet list with inline code and KaTeX math on the left, a bar chart filling the right column" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png">
 
 [Deutsch](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/README.de.md)
 
@@ -38,7 +38,37 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 
 ## Screenshots
 
-![Accessible callouts rendered with icon, shape, and label](https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/callouts.png)
+**The note and its projection.** The deck renders in a side panel and carries the toolbar:
+theme picker, where the active theme comes from, and the two export paths.
+
+<img width="820" alt="Obsidian with the note on the left and the Slide Deck preview on the right, showing the theme picker, the from-frontmatter source label, PDF and image export buttons, and slides with a running header and page indicator" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/preview-pane.png">
+
+**Nine built-in themes.** The same slide in each — only colour, type and accent change; the
+structure is theme-independent.
+
+<img width="820" alt="A three-by-three grid showing the same slide rendered in all nine built-in themes: shiro, kuro, sumi, kairo, kurenai, crimson-dark, crimson-dark-lc, crimson-light and crimson-light-lc" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/themes.png">
+
+**Nine per-slide templates.** Set one with a layout directive, or let the layout be inferred
+from the slide's shape.
+
+<img width="820" alt="A three-by-three grid of the nine slide templates: title, section, quote, image-focus, two-column, columns-3, stat, cover-image and default" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/layouts.png">
+
+**Fit-or-warn.** A slide that would need text below the legibility floor is flagged in the
+preview instead of being silently clipped.
+
+<img width="820" alt="The preview pane showing the warning: slide 1 content overflows at the legibility floor, condense this slide, above the slide marked with a red bar" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/overflow-warning.png">
+
+**Accessible callouts.** Meaning is carried three ways at once — border colour, geometric
+shape, and a visible label word.
+
+<img width="820" alt="A slide showing all five callout types (note, tip, info, warning, danger), each with a coloured border, a distinct symbol and a label word" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/callouts.png">
+
+**Settings.** The tab lists every valid `theme:` value live, including themes you drop into
+the themes folder yourself.
+
+<a href="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/settings.png"><img width="380" alt="The Slide Deck settings tab, showing the default theme picker, the list of all nine valid theme keys, the legibility floor, export and themes folders, and the local AI endpoint section" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/thumbs/settings.png"></a>
+
+<sub>Click the preview for the full-resolution image.</sub>
 
 ## Requirements
 
