@@ -17,9 +17,9 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { Cdp, attachTo, closeExtraLeaves, openExisting, pollUntil } from "./lib/cdp";
-import { boxAround, boxOf, capture, setWindowSize, withMetrics, writeShot } from "./lib/shot";
-import { buildVault, stagingVaultDir } from "./lib/vault";
+import { Cdp, attachTo, closeExtraLeaves, openExisting, pollUntil } from "../../tools/obsidian-cdp/cdp.js";
+import { boxAround, boxOf, capture, setWindowSize, withMetrics, writeShot } from "../../tools/obsidian-cdp/shot.js";
+import { buildVault, stagingVaultDir } from "../../tools/obsidian-cdp/vault.js";
 
 const PLUGIN_ID = "slide-deck";
 const VAULT_NAME = "slide-deck";
