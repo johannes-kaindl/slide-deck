@@ -213,7 +213,17 @@ npm run lint                      # inline-disable-Gate + eslint src (reproduzie
 npm test                          # check-no-abs-paths + Core-Purity-Check + bundle-smoke (every-theme deckCss) + vitest run
 npm run typecheck                 # tsc --noEmit (separat von vitest)
 npm run version-bump              # Version bumpen (package.json/manifest.json/versions.json synct)
+npm run shots                     # README-Bilder: Folien headless in Chrome, OHNE Obsidian
+npm run shots:obsidian            # README-Bilder, die Obsidians Oberflaeche zeigen (CDP)
+npm run shots:check               # Vertrag <-> Dateien <-> README-Einbettungen abgleichen
 ```
+
+**README-Bilder:** Der Aufnahme-Vertrag steht in `docs/images/README.md` — was jedes Bild
+zeigen muss, beide Aufnahme-Wege, zehn dokumentierte Fallen und die Befunde am Pruefling.
+Die Trennung folgt der Pure-Core-Naht: Folien entstehen in `deck-core`, also braucht ihre
+Aufnahme kein Obsidian; nur Vorschau-Pane, Overflow-Warnung und Einstellungen brauchen es.
+`shots:obsidian` setzt `$STAGING_VAULTS_DIR` und ein mit `--remote-debugging-port=9222`
+gestartetes Obsidian voraus.
 
 **Obsidian-Commands (registriert via `this.addCommand`):**
 
