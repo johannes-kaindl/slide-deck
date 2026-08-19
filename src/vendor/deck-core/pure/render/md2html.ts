@@ -2,7 +2,7 @@ import MarkdownIt from "markdown-it";
 import type { RenderRule } from "markdown-it/lib/renderer.mjs";
 import katexImport from "@vscode/markdown-it-katex";
 import hljs from "./hljs";
-import type { Warning } from "../constraints/engine";
+import type { SlideWarning } from "../constraints/engine";
 import { calloutPlugin } from "./callouts";
 
 // Interop guard: esbuild's CJS bundling exposes this package's default export as
@@ -19,7 +19,7 @@ export interface RenderInput {
 
 export interface RenderedSlide {
   html: string;
-  warnings: Omit<Warning, "slideIndex">[];
+  warnings: SlideWarning[];
 }
 
 function toBase64Utf8(s: string): string {
@@ -74,7 +74,7 @@ function buildMd(): MarkdownIt {
 
 export function renderMarkdown(input: RenderInput): RenderedSlide {
   const md = buildMd();
-  const warnings: Omit<Warning, "slideIndex">[] = [];
+  const warnings: SlideWarning[] = [];
 
   // Pre-process ![[ref]] Obsidian embed syntax before markdown-it sees it
   const preprocessed = input.markdown.replace(/!\[\[([^\]]+?)\]\]/g, (_m, ref: string) => {

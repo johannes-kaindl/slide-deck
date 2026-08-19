@@ -157,7 +157,15 @@ export class SlideDeckView extends ItemView {
     this.fitToWidth();
     this.previewFrame.reveal();
     for (const w of warnings) {
-      const row = this.warnEl.createDiv({ cls: `sd-warn sd-warn-${w.kind}`, text: `#${w.slideIndex + 1} — ${w.message}` });
+      // Severity carries a colour, so it needs a second, non-colour channel: the glyphs
+      // are three distinct SHAPES (triangle/disc/letter), and the title spells the word.
+      // Colour alone would fail WCAG 1.4.1 — the same promise the callouts keep.
+      const mark = w.severity === "error" ? "▲" : w.severity === "warn" ? "●" : "ℹ";
+      const row = this.warnEl.createDiv({
+        cls: `sd-warn sd-warn-${w.kind} sd-warn-sev-${w.severity}`,
+        text: `${mark} #${w.slideIndex + 1} — ${w.message}`,
+      });
+      row.setAttribute("title", t(`warn.severity.${w.severity}`));
       if (w.sourceLine !== undefined) row.addEventListener("click", () => this.jumpTo(w.sourceLine!));
     }
     this.syncThemeControls();

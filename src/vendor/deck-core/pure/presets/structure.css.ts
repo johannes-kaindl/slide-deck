@@ -121,6 +121,23 @@ export const STRUCTURE_CSS = `
 .sd-content.sd-has-media .sd-region > p > img.sd-embed:only-child,
 .sd-content.sd-has-media .sd-region > .sd-media-cell > img.sd-embed,
 .sd-content.sd-has-media .sd-region > .sd-mermaid > svg{ width:100%; height:100%; object-fit:contain; }
+
+/* Media in a COLUMN. The rules above bind the fill to .sd-content, which only works when
+   the slide has a single region — on two/three-column layouts .sd-content is the grid and
+   the media sits one level down, so nothing bounded it: max-height:100% on the image had
+   no resolved basis and the image sized the grid row instead, pushing the footer off the
+   slide. render-dom marks the bearing REGION here, and the row it lives in is given the
+   leftover height so that basis exists. Two paths on purpose — the single-region chain
+   above stays untouched, because it is the one every existing deck renders through. */
+.sd-content:has(> .sd-region-title):has(> .sd-region.sd-has-media){ grid-template-rows:min-content 1fr; }
+.sd-content:not(:has(> .sd-region-title)):has(> .sd-region.sd-has-media){ grid-template-rows:1fr; }
+.sd-region.sd-has-media{ min-height:0; display:flex; flex-direction:column; }
+.sd-region.sd-has-media > p:has(> img.sd-embed:only-child),
+.sd-region.sd-has-media > .sd-media-cell,
+.sd-region.sd-has-media > .sd-mermaid{ flex:1 1 0; min-height:0; margin:var(--sd-space-xs,.5em) 0; }
+.sd-region.sd-has-media > p > img.sd-embed:only-child,
+.sd-region.sd-has-media > .sd-media-cell > img.sd-embed,
+.sd-region.sd-has-media > .sd-mermaid > svg{ width:100%; height:100%; object-fit:contain; }
 .sd-missing-embed{ color:#8a4b00; border:2px dashed #8a4b00; padding:0 .3em; border-radius:4px; }
 
 /* Callouts: Bedeutung redundant — Rahmenfarbe + Form (::before) + Label-Wort.

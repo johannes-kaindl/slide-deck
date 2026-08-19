@@ -66,10 +66,18 @@
   padding: 6px 10px;
   border-radius: 4px;
   background: var(--background-secondary);
-  border-left: 4px solid var(--text-error, #e5534b);
+  border-left: 4px solid var(--text-muted);
   color: var(--text-normal);
   cursor: pointer;
 }
+
+/* Colour follows the core's severity, never the warning kind — an `info` reports a name
+   the core passed through (a theme's own layout or modifier), which is the documented
+   extension path and must not read as a defect. The glyph in the row text carries the
+   same distinction without colour (WCAG 1.4.1). */
+.sd-warn.sd-warn-sev-error { border-left-color: var(--text-error, #e5534b); }
+.sd-warn.sd-warn-sev-warn { border-left-color: var(--text-warning, #c98a00); }
+.sd-warn.sd-warn-sev-info { border-left-color: var(--text-faint); color: var(--text-muted); }
 
 .sd-message {
   padding: 24px 16px;

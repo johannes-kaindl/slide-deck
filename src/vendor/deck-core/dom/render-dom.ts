@@ -3,7 +3,7 @@ import type { HostDocument } from "./host-document";
 import { renderMarkdown } from "../pure/render/md2html";
 import { computeFit } from "../pure/layout/fit";
 import { shouldCenterCompose } from "../pure/layout/compose";
-import { collectWarnings, collectDeckWarnings, type Warning, type SlideWarning } from "../pure/constraints/engine";
+import { collectWarnings, collectDeckWarnings, WARNING_SEVERITY, type Warning, type SlideWarning } from "../pure/constraints/engine";
 import { deckCss } from "../pure/deck-css";
 import { geometryFor } from "../pure/geometry";
 import { resolveTheme, type ThemeRegistry } from "../pure/presets";
@@ -48,12 +48,15 @@ async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnin
       // can scale the diagram to fill its area.
       const svgEl = slots[i].querySelector("svg");
       svgEl?.style.removeProperty("max-width");
-      // Top-align the diagram in its media cell (default xMidYMid floats it
-      // vertically centered with a gap to the title above).
-      svgEl?.setAttribute("preserveAspectRatio", "xMidYMin meet");
+      // Centre the diagram in its media cell. This was xMidYMin ("top-align"), which
+      // pins the diagram to the top edge: whenever the cell is taller than the diagram's
+      // aspect ratio needs — the normal case for a wide diagram on a 16:9 slide — all the
+      // slack collects underneath and the slide reads as unbalanced. A theme cannot correct
+      // it, because preserveAspectRatio is an SVG attribute and CSS does not reach it.
+      svgEl?.setAttribute("preserveAspectRatio", "xMidYMid meet");
     } catch {
       slots[i].textContent = "⚠ Mermaid error";
-      warnings.push({ slideIndex, kind: "mermaid-error", message: "Mermaid diagram failed to parse" });
+      warnings.push({ slideIndex, kind: "mermaid-error", severity: WARNING_SEVERITY["mermaid-error"], message: "Mermaid diagram failed to parse" });
     }
   }
 }
@@ -147,6 +150,22 @@ export async function renderDeckToContainer(
         cell.appendChild(img);
       }
     }
+    // Multi-region slides: the marker goes on the bearing REGION instead. Without it a
+    // column's media has no bounded height at all — it grew past the slide edge and over
+    // the footer. Deliberately a second path rather than a generalisation of the branch
+    // above: that one governs every single-region deck already in the wild.
+    if (slide.layout !== "cover-image" && slide.regions.length > 1) {
+      for (const region of Array.from(inner.querySelectorAll<HTMLElement>(".sd-region"))) {
+        if (!region.querySelector(":scope > p > img.sd-embed:only-child, :scope > img.sd-embed, :scope > .sd-mermaid")) continue;
+        region.classList.add("sd-has-media");
+        for (const img of Array.from(region.querySelectorAll(":scope > img.sd-embed"))) {
+          const cell = doc.createElement("div");
+          cell.className = "sd-media-cell";
+          img.parentNode?.insertBefore(cell, img);
+          cell.appendChild(img);
+        }
+      }
+    }
     appendSlots(doc, box, deck, slide.index);
     await renderMermaidSlots(inner, slide.index, warnings);
     container.appendChild(box);
@@ -187,8 +206,11 @@ export async function renderDeckToContainer(
       box.classList.add("sd-compose-center");
     }
     const slideWarnings = collectWarnings(slide, renderWarnings, fit);
-    if (slideWarnings.some((w) => w.kind === "overflow" || w.kind === "belowFloor")) box.classList.add("sd-slide-warn");
-    else if (slideWarnings.length > 0) box.classList.add("sd-slide-warn-soft");
+    // Colour by severity, never by kind: an `info` warning reports a name the core does not
+    // know but passed through — the documented way a theme adds its own layouts and
+    // modifiers. Flagging that amber marks the supported extension path as a defect.
+    if (slideWarnings.some((w) => w.severity === "error")) box.classList.add("sd-slide-warn");
+    else if (slideWarnings.some((w) => w.severity === "warn")) box.classList.add("sd-slide-warn-soft");
     warnings.push(...slideWarnings);
   }
   return warnings;

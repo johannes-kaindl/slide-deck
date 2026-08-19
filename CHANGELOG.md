@@ -6,6 +6,31 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Ein Deck kann zwei Theme-Varianten führen.** Jedes Token einer Folien-Direktive nach dem
+  Layoutnamen wird zur CSS-Klasse: `<!-- layout: default sand -->` erzeugt
+  `.sd-slide.sd-mod-sand`. Ein Theme kann damit beide Paletten einer Vorlage mitführen und
+  pro Folie umschalten — bisher galt `theme:` unteilbar fürs ganze Deck, und ein fremdes
+  Token wurde verworfen *und* als Fehler gemeldet.
+- **Warnungen unterscheiden drei Schweren.** Die Vorschau färbt den Streifen links nach
+  Schwere und stellt der Zeile ein Formzeichen voran (▲ Fehler · ● Warnung · ℹ Hinweis),
+  damit die Bedeutung nicht nur an der Farbe hängt (WCAG 1.4.1) — dieselbe Zusage wie bei
+  den Callouts. Neue Wörterbuch-Einträge in EN und DE.
+
+### Fixed
+- **Bilder auf zwei- und dreispaltigen Folien werden begrenzt.** Sie waren völlig
+  unbeschränkt, sprengten den Folienrand und schoben die Fußzeile aus dem Bild — sichtbar
+  in Vorschau *und* Export. Einspaltige Folien rendern unverändert.
+- **Ein eigener Layoutname löst keinen Alarm mehr aus.** Ein Theme darf eigene Layouts und
+  Modifier definieren; der Kern reichte den Namen bereits durch, färbte die Folie in der
+  Vorschau aber amber und meldete zusätzlich eine falsche Regionenzahl. Beides gemeldet der
+  vorgesehene Erweiterungsweg als Defekt. Die Hinweise bleiben — als `info`, ohne Streifen.
+- **Mermaid-Diagramme sitzen senkrecht mittig** statt oben angeheftet, mit dem Freiraum
+  gesammelt darunter.
+
+### Changed
+- **Vendorter Kern auf deck-core 0.5.0** (`4fc922d`) angehoben.
+
 ## [0.8.0] — 2026-08-14
 
 ### Added

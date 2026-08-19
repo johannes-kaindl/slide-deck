@@ -10,7 +10,11 @@ const COLUMN_LIKE = /^<!--\s*column\b/i;
 /** Catches any <!--word:--> comment that looks directive-like but wasn't recognized. */
 const DIRECTIVE_LIKE = /^<!--\s*\w[\w-]*\s*:/i;
 
-/** Recognized density modifiers (combine with any structural layout). */
+/** Density modifiers the core itself understands. NOT a whitelist: any further token on a
+ *  layout directive becomes a `sd-mod-*` class too, so a theme can define its own variants
+ *  (the same open contract layout names and callout types already have). This set only
+ *  decides two things — which token may precede the layout name, and which ones pass
+ *  without a `modifier-unknown` note. */
 const MODIFIERS = new Set(["compact", "code-heavy"]);
 
 /** Forgiving aliases for layout names authors (and LLMs) naturally reach for. */
@@ -56,11 +60,19 @@ export function parseDirectives(slideMarkdown: string): DirectiveResult {
       if (!layoutDirectiveSeen) {
         layoutDirectiveSeen = true;
         const tokens = lm[1].toLowerCase().split(/\s+/).filter(Boolean);
-        const structural = tokens.filter((t) => !MODIFIERS.has(t));
-        for (const t of tokens) if (MODIFIERS.has(t) && !modifiers.includes(t)) modifiers.push(t);
-        if (structural.length >= 1) { layout = LAYOUT_ALIASES[structural[0]] ?? structural[0]; layoutSet = true; }
-        if (structural.length > 1) {
-          warnings.push({ kind: "directive-malformed", message: `Unrecognized extra layout token(s): ${structural.slice(1).join(" ")}` });
+        // The first token that is not a built-in modifier names the layout; every other
+        // token is a modifier. Unknown names are passed through rather than discarded —
+        // dropping them silently is what kept a theme from carrying two palettes.
+        const layoutIdx = tokens.findIndex((t) => !MODIFIERS.has(t));
+        const unknown: string[] = [];
+        tokens.forEach((t, i) => {
+          if (i === layoutIdx || modifiers.includes(t)) return;
+          modifiers.push(t);
+          if (!MODIFIERS.has(t)) unknown.push(t);
+        });
+        if (layoutIdx >= 0) { layout = LAYOUT_ALIASES[tokens[layoutIdx]] ?? tokens[layoutIdx]; layoutSet = true; }
+        if (unknown.length > 0) {
+          warnings.push({ kind: "modifier-unknown", message: `Unknown modifier(s) passed through as .sd-mod-* classes: ${unknown.join(" ")}` });
         }
       } else {
         warnings.push({ kind: "layout-multiple", message: "Multiple layout directives — using the first." });

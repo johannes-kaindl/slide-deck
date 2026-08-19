@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { pickLang, setLang, t, STRINGS_EN, STRINGS_DE } from "../src/i18n";
 import { statusKindKey, warnRuleKey } from "../src/llm/ai-settings-model";
 import type { EndpointStatusKind } from "../src/vendor/kit/endpoint_diagnostics";
+import type { WarningSeverity } from "../src/vendor/deck-core/pure/constraints/engine";
 
 describe("i18n", () => {
   beforeEach(() => setLang("en"));
@@ -71,5 +72,24 @@ describe("AI settings i18n coverage", () => {
     const key = warnRuleKey(rule);
     setLang("en"); expect(t(key)).not.toBe(key);
     setLang("de"); expect(t(key)).not.toBe(key);
+  });
+});
+
+describe("warning severity strings", () => {
+  // Vollstaendigkeits-Waechter (CORE-TEST-04): dieser Record ist TOTAL ueber
+  // WarningSeverity — bringt ein kuenftiges deck-core eine weitere Schwere mit,
+  // bricht der typecheck hier, statt dass die Oberflaeche stumm einen Schluessel
+  // anzeigt (t() faellt auf den Schluessel zurueck, nicht auf EN).
+  const ALL: Record<WarningSeverity, true> = { error: true, warn: true, info: true };
+
+  it("has EN + DE for every severity the core can emit", () => {
+    for (const sev of Object.keys(ALL) as WarningSeverity[]) {
+      const k = `warn.severity.${sev}`;
+      setLang("en");
+      expect(t(k), `EN ${k}`).not.toBe(k);
+      setLang("de");
+      expect(t(k), `DE ${k}`).not.toBe(k);
+    }
+    setLang("en");
   });
 });
