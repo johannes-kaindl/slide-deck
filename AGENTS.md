@@ -213,6 +213,7 @@ npm run lint                      # inline-disable-Gate + eslint src (reproduzie
 npm test                          # check-no-abs-paths + Core-Purity-Check + bundle-smoke (every-theme deckCss) + vitest run
 npm run typecheck                 # tsc --noEmit (separat von vitest)
 npm run version-bump              # Version bumpen (package.json/manifest.json/versions.json synct)
+npm run visual-smoke              # Deck headless rendern -> _visual/<theme>.png (Default: demo-deck)
 npm run shots                     # README-Bilder: Folien headless in Chrome, OHNE Obsidian
 npm run shots:obsidian            # README-Bilder, die Obsidians Oberflaeche zeigen (CDP)
 npm run shots:check               # Vertrag <-> Dateien <-> README-Einbettungen abgleichen
@@ -224,6 +225,15 @@ Die Trennung folgt der Pure-Core-Naht: Folien entstehen in `deck-core`, also bra
 Aufnahme kein Obsidian; nur Vorschau-Pane, Overflow-Warnung und Einstellungen brauchen es.
 `shots:obsidian` setzt `$STAGING_VAULTS_DIR` und ein mit `--remote-debugging-port=9222`
 gestartetes Obsidian voraus.
+
+**Regressions-Deck:** `docs/themes/regression-deck.md` ist kein Demo, sondern ein Prüfling —
+jede seiner fünf Folien hat einen Defekt ausgelöst, der in `deck-core` 0.5.0 behoben wurde
+(Bild in Spalten unbegrenzt, eigener Layoutname als Fehlalarm, verworfener Modifier). Aufnahme
+mit `node scripts/visual-smoke.mjs docs/themes/regression-deck.md shiro`. Die Bilder stecken
+als `data:`-URI darin, damit er ohne Vault und ohne Netz läuft — **SVG geht dafür nicht**,
+markdown-its `validateLink` lässt von `data:` nur gif/png/jpeg/webp durch und rendert ein
+`data:image/svg+xml` als Literaltext. Wer die Klassen statt der Pixel prüfen will, nimmt
+Chromes `--dump-dom` gegen denselben Entry (`scripts/visual-smoke-entry.ts`).
 
 **Obsidian-Commands (registriert via `this.addCommand`):**
 
@@ -294,6 +304,17 @@ bricht am `typecheck:test`, sobald das nächste Kit-Update eine weitere Klasse m
 Referenz-Implementierung: `obsidian-transmute/tests/i18n-status-keys.test.ts`.
 Verbindlich als **CORE-TEST-04**. Gefunden beim Consumer-Sweep, nicht vom Gate.
 
+- **Warnungen färbt der Consumer nach `severity`, nie nach `kind`.** Seit `deck-core` 0.5.0
+  trägt jede `Warning` eine Schwere (`error`/`warn`/`info`) aus einem **totalen**
+  `Record<WarningKind, WarningSeverity>` — eine neue Warnungsart ohne Einstufung bricht dort
+  den Build. Wer die kind-Liste im Consumer nachbaut, muss jede Erweiterung des Kerns neu
+  lernen; die erste, die das gekostet hat, war `layout-unknown`. Ein Theme **darf** eigene
+  Layoutnamen und Modifier definieren, der Kern reicht sie durch — die alte kind-Färbung
+  meldete genau diesen vorgesehenen Erweiterungsweg als Defekt (amber Streifen an der Folie).
+  `info` heißt „durchgereicht, nicht verstanden" und bekommt keinen Streifen. `preview-view.ts`
+  stellt zusätzlich ein Formzeichen voran (▲/●/ℹ): eine reine Farbunterscheidung wäre ein
+  selbst eingebauter WCAG-1.4.1-Verstoß, während die Callouts nebenan Redundanz zusagen.
+  Die drei Schwere-Wörter liegen in `i18n.ts` (EN+DE) mit Vollständigkeits-Record im Test.
 - **Themes/Tokens-Invariante:** Themes setzen nur Tokens; Struktur/Layout-CSS ist theme-unantastbar (fit-kritisch). `--sd-base` lebt einzig in `presetTokensCss`.
 - **Theme-Registry:** Themes sind `ThemeEntry { key, label?, source, themeCss, hljs, katex, mermaid, mermaidVars?, baseFontPx, overridesBuiltin? }`.
   `katex` ist Pflicht (vom Host hereingereichtes Fremd-CSS, s. `deck-css.ts` oben); `label`,
