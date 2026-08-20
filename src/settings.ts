@@ -6,6 +6,7 @@ import { THEME_ALIASES } from "./vendor/deck-core/pure/presets";
 import { endpointListStrings, renderModelField, renderThinkingRow } from "./ai-settings-ui";
 import { makeDeckLlmClient } from "./llm-client";
 import { reasoningHappened } from "./vendor/kit/reasoning";
+import { writeClipboard } from "./vendor/kit/clipboard";
 import { mergeSettings } from "./vendor/kit/settings";
 import { migrateEndpointList, resolveActiveEndpointConfig, type EndpointConfig } from "./vendor/kit/endpoint_config";
 import { renderSettingDefinitions, settingBodyHost, refreshSettingsTab } from "./vendor/kit-obsidian/settings_walker";
@@ -301,7 +302,7 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       const tag = e.source === "user" ? t("settings.userTag") : t("settings.builtinTag");
       const label = /\s/.test(e.key) ? `"${e.key}"` : e.key;
       const chip = chips.createSpan({ cls: "sd-theme-chip", text: `${label} (${tag})` });
-      chip.addEventListener("click", () => void navigator.clipboard?.writeText(e.key));
+      chip.addEventListener("click", () => void writeClipboard(e.key));
     }
   }
 

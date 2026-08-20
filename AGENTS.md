@@ -120,8 +120,9 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
                      CSS, das einen Vault-Ordner im Datei-Explorer ausblendet (vault-rag-Muster,
                      data-path-Attribut, activeDocument.adoptedStyleSheets in main.applyFolderHide()).
   llm/
-    error-envelope.ts     parseErrorEnvelope(text) — erkennt OpenAI-kompatible Fehler-Envelopes in
-                          HTTP-200-Bodies (LM Studio antwortet Fehlern oft ohne Fehlerstatus).
+                          (die frühere error-envelope.ts ist seit dem Kit-0.27.0-Vendoring
+                          `src/vendor/kit/error_body.ts` → errorMessageFromText, beide
+                          Aufrufstellen in llm-client.ts mit `bodyMayBeSuccess: true`.)
     model-info.ts         Re-Export von Kits parseLmStudioContext/parseOllamaContext/ModelContext
                           (model-context.ts) + eigene estimateTokens(chars), contextOverflow(...).
     ai-settings-model.ts  Pure Zustandslogik der KI-Settings: applyEndpointEdit,
@@ -193,7 +194,7 @@ Wirkungskreises.
 
 Was hier blieb, kennt Obsidian, das Kit oder den Endpunkt: `adapter`,
 `theme-registry`, `export`, `main`, die Ansichten, die Einstellungen, `llm-client`,
-`folder-hide`, `llm/ai-settings-model`, `llm/error-envelope`, `llm/model-info`.
+`folder-hide`, `llm/ai-settings-model`, `llm/model-info`.
 
 Dazu `vendor-css.ts`: die vier `import … from "*.css"`, die `deck-core` bewusst
 nicht selbst macht — ein CSS-Import ist eine Annahme über den Bundler.

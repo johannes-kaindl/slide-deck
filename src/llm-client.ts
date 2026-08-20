@@ -6,7 +6,7 @@ import { suppressParams } from "./vendor/kit/reasoning";
 import { classifyEndpointStatus, extractModelIds, type EndpointStatus, type ProbeInput } from "./vendor/kit/endpoint_diagnostics";
 import { withTimeout } from "./vendor/kit/timeout";
 import { effectiveSuppress } from "./llm/ai-settings-model";
-import { parseErrorEnvelope } from "./llm/error-envelope";
+import { errorMessageFromText } from "./vendor/kit/error_body";
 import { parseLmStudioContext, parseOllamaContext, type ModelContext } from "./llm/model-info";
 import type { ChatMessage } from "./vendor/deck-core/pure/llm/deck-prompt";
 
@@ -112,7 +112,7 @@ export class DeckLlmClient {
     if (signal?.aborted) { const e = new Error("Aborted"); e.name = "AbortError"; throw e; }
     const res = await this.http({ url: `${this.endpoint}/v1/chat/completions`, method: "POST", headers: { "Content-Type": "application/json", ...this.auth }, body: this.buildBody(messages, opts, false) });
     if (signal?.aborted) { const e = new Error("Aborted"); e.name = "AbortError"; throw e; } // Stop during the fallback → no write
-    const envelope = parseErrorEnvelope(res.text);
+    const envelope = errorMessageFromText(res.text, { bodyMayBeSuccess: true });
     if (envelope) throw new Error(envelope);
     if (res.status < 200 || res.status >= 300) throw new Error(`HTTP ${res.status}`);
     const j = res.json as { choices?: { message?: { content?: string }; finish_reason?: string }[] };
@@ -122,7 +122,7 @@ export class DeckLlmClient {
 
   private throwIfEnvelope(r: StreamResult): void {
     if (!r.content.trim() && !/^\s*data:/m.test(r.raw)) {
-      const envelope = parseErrorEnvelope(r.raw);
+      const envelope = errorMessageFromText(r.raw, { bodyMayBeSuccess: true });
       if (envelope) throw new Error(envelope);
     }
   }
