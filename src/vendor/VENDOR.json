@@ -56,6 +56,16 @@
       "file": "model-list-cache.ts",
       "version": "0.26.0",
       "sha": "2a7b5d7"
+    },
+    {
+      "file": "error_body.ts",
+      "version": "0.27.0",
+      "sha": "548041b"
+    },
+    {
+      "file": "clipboard.ts",
+      "version": "0.27.0",
+      "sha": "548041b"
     }
   ]
 }
