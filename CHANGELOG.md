@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-08-20
+
 ### Added
 - **Ein Deck kann zwei Theme-Varianten führen.** Jedes Token einer Folien-Direktive nach dem
   Layoutnamen wird zur CSS-Klasse: `<!-- layout: default sand -->` erzeugt
