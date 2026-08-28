@@ -5,7 +5,7 @@ const opts = { model: "m", temperature: 0.3, maxTokens: 8192, suppressThinking: 
 const msg = [{ role: "user" as const, content: "x" }];
 
 function fakeHttp(impl: (url: string, init?: any) => { status: number; json?: unknown; text?: string }): HttpJson {
-  return (param) => Promise.resolve({ status: 200, json: {}, text: "", ...impl(param.url, param) });
+  return (param) => Promise.resolve({ json: {}, text: "", ...impl(param.url, param) });
 }
 const okStream = (over: any = {}): any =>
   (_u: string, _i: any, onC: (t: string) => void) => { onC(over.content ?? "# A"); return Promise.resolve({ content: "# A", reasoning: "", model: "m", raw: "data: x", finishReason: undefined, ...over }); };

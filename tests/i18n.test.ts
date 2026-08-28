@@ -57,7 +57,7 @@ describe("AI settings i18n coverage", () => {
   // listed — an array typed as EndpointStatusKind[] would silently stay incomplete.
   const KIND_SET: Record<EndpointStatusKind, true> = {
     "ok": true, "refused": true, "unknown-host": true, "timeout": true,
-    "not-an-llm-api": true, "unknown": true,
+    "not-an-llm-api": true, "unauthorized": true, "unknown": true,
   };
   const KINDS = Object.keys(KIND_SET) as EndpointStatusKind[];
   const RULES = ["scheme", "malformed", "port", "placeholder-ip"];

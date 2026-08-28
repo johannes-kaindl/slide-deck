@@ -291,19 +291,25 @@ Chromes `--dump-dom` gegen denselben Entry (`scripts/visual-smoke-entry.ts`).
 
 ## Gotchas
 
-**OFFEN (gemessen 2026-08-16): die Statusklasse `unauthorized` fehlt im Wörterbuch.**
-Der vendorte `endpoint_diagnostics.ts` kennt sie (Kit 0.24.0), dieses Repo führt die
-Endpunkt-Statusklassen aber selbst über `t()` — und dort fehlt der Schlüssel. `t()` fällt
-bei unbekanntem Schlüssel auf den **Schlüssel** zurück, nicht auf EN: in der Oberfläche
-stünde ``deck.settings.endpoint.status.unauthorized`` und sähe aus wie ein plausibler String, nicht wie ein Fehler. Getroffen
-wird ausgerechnet der Fall, für den die Klasse eingeführt wurde — ein gehosteter Endpunkt
-mit fehlendem oder falschem API-Schlüssel (401/403).
+**BEHOBEN (2026-08-28, ursprünglich gemessen 2026-08-16): die Statusklasse `unauthorized`
+fehlte im Wörterbuch.** Der vendorte `endpoint_diagnostics.ts` kennt sie (Kit 0.24.0), dieses
+Repo führt die Endpunkt-Statusklassen aber selbst über `t()` — und dort fehlte der Schlüssel.
+`t()` fällt bei unbekanntem Schlüssel auf den **Schlüssel** zurück, nicht auf EN: in der
+Oberfläche stand ``deck.settings.endpoint.status.unauthorized`` und sah aus wie ein
+plausibler String, nicht wie ein Fehler. Getroffen wurde ausgerechnet der Fall, für den die
+Klasse eingeführt wurde — ein gehosteter Endpunkt mit fehlendem oder falschem API-Schlüssel
+(401/403).
 
-**Fix (zwei Zeilen + ein Wächter):** Schlüssel ``deck.settings.endpoint.status.unauthorized`` in EN **und** DE ergänzen
-(PROF-OBS-07), dazu ein Vollständigkeits-`Record<EndpointStatusKind, true>` im Test — der
-bricht am `typecheck:test`, sobald das nächste Kit-Update eine weitere Klasse mitbringt.
-Referenz-Implementierung: `obsidian-transmute/tests/i18n-status-keys.test.ts`.
-Verbindlich als **CORE-TEST-04**. Gefunden beim Consumer-Sweep, nicht vom Gate.
+**Fix (zwei Zeilen + ein Wächter):** Schlüssel ``deck.settings.endpoint.status.unauthorized``
+in EN **und** DE ergänzt (PROF-OBS-07), dazu den Vollständigkeits-`Record<EndpointStatusKind, true>`
+in `tests/i18n.test.ts` selbst vervollständigt — der war ebenfalls nicht total (fehlte
+`unauthorized`) und `typecheck:test` lief bis dahin **gar nicht**: `tsconfig.test.json` lag
+im Repo, aber kein Script rief es auf. Jetzt `"typecheck:test": "tsc -p tsconfig.test.json
+--noEmit"` in `package.json`, eingehängt in `npm run gate` — der Wächter bricht künftig
+tatsächlich, sobald das nächste Kit-Update eine weitere Klasse mitbringt. Referenz-
+Implementierung: `obsidian-transmute/tests/i18n-status-keys.test.ts`. Verbindlich als
+**CORE-TEST-04**. Gefunden beim Consumer-Sweep, nicht vom Gate — die Lehre bleibt: ein
+Vollständigkeits-Record, den niemand typecheckt, ist keine Absicherung, sondern eine Notiz.
 
 - **Warnungen färbt der Consumer nach `severity`, nie nach `kind`.** Seit `deck-core` 0.5.0
   trägt jede `Warning` eine Schwere (`error`/`warn`/`info`) aus einem **totalen**
