@@ -174,7 +174,7 @@ async function settingsShot(workspace: Cdp): Promise<string> {
     app.setting.openTabById(${JSON.stringify(PLUGIN_ID)});
   `);
   await new Promise((r) => setTimeout(r, 1200));
-  const settings = (await attachTo("settings", PORT)) ?? workspace;
+  const settings = (await attachTo("settings", PORT, VAULT_NAME)) ?? workspace;
   // Der Tab ist hoeher als das Fenster und scrollt. Ohne simulierte Fensterhoehe endet das
   // Bild mitten in den Einstellungen — vollstaendig aussehend, weil unten sauber abgesetzt,
   // und trotzdem ohne die halbe Seite (hier fehlten Themes-Ordner oeffnen, Theme
