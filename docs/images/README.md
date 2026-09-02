@@ -56,9 +56,9 @@ ausdrücklich nennt (`npm run shots _cover-check`).
 
 ⚠️ **Vor dem Quit koordinieren — Obsidian ist geteilte Infrastruktur.** Dieses Rezept
 braucht den frischen Start (ein Bild pro Start, jeder Lauf hinterlässt Zustand); Mitnutzen ist
-hier keine Alternative. Aber Obsidian ist Single-Instance: der Quit trifft die Instanz, an der
-möglicherweise eine andere Session arbeitet, und zerstört deren Zustand. Der eigene Lauf ist
-danach sauber grün; der Schaden fällt nicht auf.
+hier keine Alternative. Der Quit trifft aber die Instanz, an der möglicherweise eine andere
+Session arbeitet, und zerstört deren Zustand. Der eigene Lauf ist danach sauber grün; der
+Schaden fällt nicht auf.
 
 ```bash
 lsof -nP -iTCP:9222 -sTCP:LISTEN >/dev/null && echo "belegt — erst fragen, wem"
@@ -68,6 +68,15 @@ Hört der Port, hängt jemand dran: **erst fragen, dann quitten.** ⚠️ Und di
 Frage nicht — sie zeigt aktive CDP-Treiber, aber nicht, wer ein Fenster offen hält oder auf den
 Port wartet; am 2026-08-30 hätte sie einen zwei Stunden alten Reindex nicht gezeigt, denn der
 hing an Ollama, nicht am Port.
+
+ⓘ **Hier stand bis 2026-09-02 „Obsidian ist Single-Instance" — das stimmt nicht.** Die Sperre
+hängt am Profil, nicht am Rechner: mit eigenem `--user-data-dir` und eigenem Debug-Port läuft
+eine zweite Instanz neben der regulären (gemessen 2026-09-02, Rezept in der `AGENTS.md` des
+Dachs). Dieses Rezept nimmt ohnehin gegen ein eigenes Staging-Vault auf — `--setup` baut es aus
+dem getrackten Fixture —, der dortige Vorbehalt gegen Zweitinstanzen bei README-Bildern („sollen
+den echten Vault zeigen") trifft es also nicht. Gefahren wurde der Weg hier noch nicht; wer den
+Quit vermeiden will, probiert ihn. Die Koordinationspflicht oben gilt für den Standardweg
+unverändert.
 
 ```bash
 export STAGING_VAULTS_DIR="/pfad/zu/StagingVaults"

@@ -12,9 +12,9 @@
  *
  * ⚠️ **Vor dem Quit koordinieren — Obsidian ist geteilte Infrastruktur.** Dieses Rezept
  * braucht den frischen Start (ein Bild pro Start, jeder Lauf hinterlaesst Zustand); Mitnutzen ist
- * hier keine Alternative. Aber Obsidian ist Single-Instance: der Quit trifft die Instanz, an der
- * moeglicherweise eine andere Session arbeitet, und zerstoert deren Zustand. Der eigene Lauf ist
- * danach sauber gruen; der Schaden faellt nicht auf.
+ * hier keine Alternative. Der Quit trifft aber die Instanz, an der moeglicherweise eine andere
+ * Session arbeitet, und zerstoert deren Zustand. Der eigene Lauf ist danach sauber gruen; der
+ * Schaden faellt nicht auf.
  *
  * ```bash
  * lsof -nP -iTCP:9222 -sTCP:LISTEN >/dev/null && echo "belegt — erst fragen, wem"
@@ -24,6 +24,13 @@
  * Frage nicht — sie zeigt aktive CDP-Treiber, aber nicht, wer ein Fenster offen haelt oder auf den
  * Port wartet; am 2026-08-30 haette sie einen zwei Stunden alten Reindex nicht gezeigt, denn der
  * hing an Ollama, nicht am Port.
+ *
+ * ⓘ Hier stand bis 2026-09-02 "Obsidian ist Single-Instance" — das stimmt nicht. Die Sperre haengt
+ * am Profil, nicht am Rechner: mit eigenem `--user-data-dir` und eigenem Debug-Port laeuft eine
+ * zweite Instanz neben der regulaeren (gemessen 2026-09-02, Rezept in der AGENTS.md des Dachs).
+ * Dieses Rezept nimmt ohnehin gegen ein eigenes Staging-Vault auf (`--setup` baut es aus dem
+ * getrackten Fixture), der dortige Vorbehalt gegen Zweitinstanzen bei README-Bildern trifft es
+ * also nicht. Gefahren wurde der Weg hier noch nicht; wer den Quit vermeiden will, probiert ihn.
  *
  * Obsidian muss mit offenem Debug-Port laufen:
  *   kill <pid>   # Electron behandelt SIGTERM als Quit; `osascript quit` scheiterte mit -128
