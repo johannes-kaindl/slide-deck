@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    // Der Treiber redet mit einem fremden Renderer (Obsidians `app`, CDP-Antworten) —
+    // DOM-Typen fuer die Ausdruecke, die dort laufen, plus `lib.dom` fuer `WebSocket`.
+    "lib": ["ES2022", "DOM"],
+    "noEmit": true
+  },
+  // `src/css-modules.d.ts` muss mit: die *-entry.ts unter scripts/ importieren src/, und
+  // dort steht `import css from "*.css"` — ohne die Deklaration bricht der Typecheck an
+  // vier Fremd-CSS-Importen, die mit den Treibern nichts zu tun haben.
+  "include": ["scripts/**/*.ts", "src/css-modules.d.ts"]
+}

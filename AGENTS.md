@@ -218,6 +218,7 @@ npm run visual-smoke              # Deck headless rendern -> _visual/<theme>.png
 npm run shots                     # README-Bilder: Folien headless in Chrome, OHNE Obsidian
 npm run shots:obsidian            # README-Bilder, die Obsidians Oberflaeche zeigen (CDP)
 npm run shots:check               # Vertrag <-> Dateien <-> README-Einbettungen abgleichen
+npm run smoke:gui                 # Checkliste aus docs/SMOKE.md gegen ein LAUFENDES Obsidian
 ```
 
 **README-Bilder:** Der Aufnahme-Vertrag steht in `docs/images/README.md` — was jedes Bild
@@ -226,6 +227,16 @@ Die Trennung folgt der Pure-Core-Naht: Folien entstehen in `deck-core`, also bra
 Aufnahme kein Obsidian; nur Vorschau-Pane, Overflow-Warnung und Einstellungen brauchen es.
 `shots:obsidian` setzt `$STAGING_VAULTS_DIR` und ein mit `--remote-debugging-port=9222`
 gestartetes Obsidian voraus.
+
+**GUI-Smoke (CORE-TEST-02 b):** `scripts/gui-smoke.ts` faehrt zwoelf Pruefpunkte per CDP gegen
+ein laufendes Obsidian — die Naht, die `vitest` mit `environment: "node"` strukturell nicht
+sieht: iframe-Isolation, Schrift-Metriken, Explorer-Markup, Bilder-Export. Checkliste,
+Hand-Runde und Durchlauf-Vermerke in `docs/SMOKE.md`; die CDP-Bruecke kommt aus
+`tools/obsidian-cdp/` (nicht vendoriert). Vault ist der Staging-Vault aus demselben Fixture wie
+die README-Bilder (`npm run shots:obsidian -- --setup`), nie der Arbeitsvault — `requireEigenerBuild`
+prueft vor dem ersten Punkt per sha1, dass der Lauf ueberhaupt gegen den Repo-Stand geht.
+**Ein gruener Lauf zaehlt erst nach einer Gegenprobe:** die erste hier hat einen Fehler im
+Treiber aufgedeckt, nicht im Plugin (`\b` gegen zusammengeklebtes `textContent`, s. `docs/SMOKE.md`).
 
 **Regressions-Deck:** `docs/themes/regression-deck.md` ist kein Demo, sondern ein Prüfling —
 jede seiner fünf Folien hat einen Defekt ausgelöst, der in `deck-core` 0.5.0 behoben wurde

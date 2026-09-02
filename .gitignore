@@ -15,3 +15,6 @@ _visual/
 
 # Aufnahme-Treiber: gebündeltes Zwischenprodukt von scripts/shots-obsidian.ts
 .shots-obsidian.mjs
+
+# GUI-Smoke: gebündeltes Zwischenprodukt von scripts/gui-smoke.ts
+.gui-smoke.mjs
