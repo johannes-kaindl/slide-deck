@@ -228,7 +228,7 @@ Aufnahme kein Obsidian; nur Vorschau-Pane, Overflow-Warnung und Einstellungen br
 `shots:obsidian` setzt `$STAGING_VAULTS_DIR` und ein mit `--remote-debugging-port=9222`
 gestartetes Obsidian voraus.
 
-**GUI-Smoke (CORE-TEST-02 b):** `scripts/gui-smoke.ts` faehrt sechzehn Pruefpunkte per CDP gegen
+**GUI-Smoke (CORE-TEST-02 b):** `scripts/gui-smoke.ts` faehrt achtzehn Pruefpunkte per CDP gegen
 ein laufendes Obsidian — die Naht, die `vitest` mit `environment: "node"` strukturell nicht
 sieht: iframe-Isolation, Schrift-Metriken, Explorer-Markup, Bilder-Export. Checkliste,
 Hand-Runde und Durchlauf-Vermerke in `docs/SMOKE.md`; die CDP-Bruecke kommt aus

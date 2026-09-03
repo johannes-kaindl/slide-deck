@@ -82,6 +82,52 @@ const REGRESSION_CUSTOM_LAYOUT = 4;  // E · `<!-- layout: tagesordnung -->` →
 const MOD_PROBE_CSS = ".sd-slide.sd-mod-sand { background: #d81b60 !important; }";
 const MOD_PROBE_RGB: [number, number, number] = [216, 27, 96];
 
+/** Abschnitt M — der Ordner-Theme-Pruefling. Eigene Probefarbe, bewusst NICHT die des
+ *  Modifiers: taeuchten in einem Protokoll zwei Punkte mit derselben Farbe auf, waere bei
+ *  einem roten Lauf nicht mehr zu sehen, welcher Weg sie dorthin gebracht hat. */
+const MERMAID_THEME_KEY = "zz-mermaid-probe";
+const MERMAID_NOTE = "Mermaid probe.md";
+const MERMAID_PROBE_RGB: [number, number, number] = [0, 131, 143];
+
+/** Das Ordner-Theme des Pruefpunkts. Zwei Eigenschaften sind Absicht, nicht Zufall:
+ *  die Farbe kommt ueber eine `var()`-Kette, und `--sd-surface` ist zweimal deklariert.
+ *  Genau daran waere der billigere Weg gescheitert, der bei der Entscheidung zur Wahl stand
+ *  (Regex im Pure-Core): er haette den Literaltext "var(--probe-akzent)" an Mermaid gereicht
+ *  und die zweite Deklaration nicht als Sieger der Kaskade erkannt. `getComputedStyle` loest
+ *  beides auf, weil der Browser es ohnehin tut. Der Pruefpunkt misst damit nicht nur, DASS
+ *  die Ableitung wirkt, sondern den Fall, fuer den sie so gebaut wurde.
+ *
+ *  `pin` schaltet die ausdrueckliche `sd-mermaid`-Angabe zu — der Gegenstand von M2. */
+function mermaidThemeCss(pin: boolean): string {
+  return `${pin ? "/* sd-mermaid: dark */\n" : ""}/* sd-base: 24px */
+:root { --probe-akzent: #00838f; --probe-tinte: #101014; }
+.sd-slide {
+  --sd-surface: #999999;
+  --sd-surface: var(--probe-akzent);
+  --sd-fg: var(--probe-tinte);
+  --sd-muted: #5a5a66;
+  --sd-bg: #fdfdfd;
+  --sd-code-bg: #eceff4;
+  --sd-font: "Inter", sans-serif;
+  background: var(--sd-bg);
+  color: var(--sd-fg);
+}
+`;
+}
+
+/** Die Pruefnotiz: eine Folie, ein Mermaid-Block, das Ordner-Theme in der Frontmatter. */
+const MERMAID_NOTE_MD = `---
+theme: ${MERMAID_THEME_KEY}
+---
+
+# Mermaid probe
+
+\`\`\`mermaid
+flowchart LR
+  A[Erste] --> B[Zweite]
+\`\`\`
+`;
+
 // --- Protokoll ---------------------------------------------------------------
 
 interface Check {
@@ -179,6 +225,50 @@ async function ensureRegressionNote(cdp: Cdp): Promise<void> {
     return true;
   `);
   if (angelegt) erzeugtePfade.push(REGRESSION_NOTE);
+}
+
+/** Die Theme-Registry neu einlesen und die offene Vorschau nachziehen. Das Plugin tut das
+ *  von sich aus bei `create`/`delete`/`rename` unter dem Themes-Ordner — aber NICHT bei
+ *  `modify`, und M2 aendert eine bestehende Datei. Ohne diesen Aufruf misst M2 das Theme
+ *  von M1 und ist gruen, ohne seinen Gegenstand je gesehen zu haben. */
+async function refreshThemes(cdp: Cdp): Promise<void> {
+  await cdp.evaluate(`
+    const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+    if (typeof plugin.refreshThemes === "function") await plugin.refreshThemes();
+    await new Promise((r) => setTimeout(r, 800));
+    return true;
+  `);
+}
+
+interface MermaidKnoten { fill: string; knoten: number }
+
+/** Die Fuellfarbe der Mermaid-Knoten aus dem GERENDERTEN SVG im Deck-iframe.
+ *
+ *  `getComputedStyle`, nicht das `fill`-Attribut: Mermaid schreibt seine Farben teils als
+ *  Attribut, teils in ein `<style>` innerhalb der Grafik, und welchen Weg es waehlt, haengt
+ *  an der Diagrammart. Der berechnete Wert deckt beide ab.
+ *
+ *  Der Aufruf steht in `pollUntil`, weil Mermaid asynchron rendert: `renderMermaidSlots`
+ *  laeuft nach dem Folienaufbau, und zwischen "Folie steht" und "Grafik steht" liegt ein
+ *  Fenster, in dem hier nichts zu finden waere — ein Punkt ohne Warten waere zufaellig rot. */
+async function mermaidKnoten(cdp: Cdp): Promise<MermaidKnoten | null> {
+  return pollUntil<MermaidKnoten>(cdp, `
+    ${DECK_DOC}
+    if (!deck) return null;
+    const svg = deck.querySelector(".sd-mermaid svg, svg[id^='sd-mermaid']");
+    if (!svg) return null;
+    const knoten = svg.querySelectorAll(".node rect, .node polygon, .basic.label-container, rect.basic");
+    if (knoten.length === 0) return null;
+    return { fill: deck.defaultView.getComputedStyle(knoten[0]).fill, knoten: knoten.length };
+  `, 20_000);
+}
+
+/** "rgb(r, g, b)" gegen ein Zieltripel, mit derselben Toleranz wie der Pixel-Vergleich in D2
+ *  (Rundung beim Rendern). Ein nicht lesbarer String ist FALSCH, nicht gleich — sonst waere
+ *  ein Punkt gruen, weil die Messung misslang. */
+function nahAn(rgb: string, ziel: [number, number, number]): boolean {
+  const teile = rgb.match(/\d+/g)?.slice(0, 3).map(Number);
+  return Boolean(teile) && teile!.length === 3 && teile!.every((v, i) => Math.abs(v - ziel[i]) <= 8);
 }
 
 interface WarnRow { sev: string; title: string; text: string }
@@ -417,6 +507,82 @@ const vorschau: Section = {
         ? `${folienRegression} Folien statt ${REGRESSION_SLIDES} · ${await diagnose(cdp)}`
         : `Folie ${REGRESSION_CUSTOM_LAYOUT + 1}: ${ohneStreifen ? "kein Streifen" : "GESTREIFT"} (${eigen.klassen})` +
           ` · info-Zeile ${infoZeile ? `"${infoZeile.text.slice(0, 70)}" title="${infoZeile.title}"` : "FEHLT"}`,
+    );
+  },
+};
+
+/** M — Mermaid-Farben eines ORDNER-Themes. Der Prueffall, den `deck-core` strukturell nicht
+ *  fuehren kann: `mermaidVarsFromDocument` haengt eine `.sd-slide`-Sonde ins Deck-Dokument und
+ *  liest die Tokens per `getComputedStyle` — ohne Browser gibt es nichts zu messen, und
+ *  `vitest` laeuft dort wie hier mit `environment: "node"`.
+ *
+ *  Warum das ein eigener Abschnitt ist und nicht ein Punkt in A: er stellt seinen Gegenstand
+ *  selbst her (Theme-Datei + Notiz), und er misst am gerenderten SVG, nicht am CSS. Mermaid
+ *  inlined seine Farben in die Grafik; eine CSS-Regel im Deck erreicht sie nicht. Genau
+ *  deshalb existiert die Token-Ableitung ueberhaupt. */
+const mermaid: Section = {
+  key: "mermaid",
+  title: "M · Mermaid-Farben aus Theme-Tokens",
+  async run(cdp) {
+    const themesFolder = await cdp.evaluate<string>(`
+      return app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.themesFolder;
+    `);
+    const cssPfad = `${themesFolder}/${MERMAID_THEME_KEY}.css`;
+
+    // Ordner und Dateien anlegen — ueber den Vault, nicht ueber `fs`: der Treiber kann per
+    // --vault an jedes Fenster andocken, und dann liegt der Vault nicht dort, wo dieses
+    // Skript ihn vermuten wuerde. Alles Angelegte geht ins Papierkorb-Protokoll.
+    const angelegt = await cdp.evaluate<{ ordner: boolean; css: boolean; note: boolean }>(`
+      const ordner = ${JSON.stringify(themesFolder)};
+      const neuerOrdner = !(await app.vault.adapter.exists(ordner));
+      if (neuerOrdner) await app.vault.createFolder(ordner);
+      const schreibe = async (pfad, inhalt) => {
+        const da = app.vault.getAbstractFileByPath(pfad);
+        if (da) { await app.vault.modify(da, inhalt); return false; }
+        await app.vault.create(pfad, inhalt);
+        return true;
+      };
+      const css = await schreibe(${JSON.stringify(cssPfad)}, ${JSON.stringify(mermaidThemeCss(false))});
+      const note = await schreibe(${JSON.stringify(MERMAID_NOTE)}, ${JSON.stringify(MERMAID_NOTE_MD)});
+      await new Promise((r) => setTimeout(r, 600));
+      return { ordner: neuerOrdner, css, note };
+    `);
+    if (angelegt.ordner) erzeugtePfade.push(themesFolder);
+    else if (angelegt.css) erzeugtePfade.push(cssPfad);
+    if (angelegt.note) erzeugtePfade.push(MERMAID_NOTE);
+
+    // M1: die Tokens des Ordner-Themes erreichen das Diagramm.
+    await refreshThemes(cdp);
+    await openPreview(cdp, MERMAID_NOTE);
+    const m1 = await mermaidKnoten(cdp);
+    record(
+      "M1 Ordner-Theme faerbt das Diagramm ueber seine Tokens",
+      Boolean(m1) && nahAn(m1!.fill, MERMAID_PROBE_RGB),
+      m1
+        ? `Knotenfuellung ${m1.fill} (${m1.knoten} Knoten) · Probe rgb(${MERMAID_PROBE_RGB.join(",")})` +
+          (nahAn(m1.fill, MERMAID_PROBE_RGB) ? "" : " · ACHTUNG: die Tokens des Themes erreichen Mermaid nicht")
+        : `kein Mermaid-SVG im Deck · ${await diagnose(cdp)}`,
+    );
+
+    // M2: eine ausdrueckliche `sd-mermaid`-Angabe schlaegt die Ableitung (`mermaidPinned`).
+    // Ohne diesen Punkt waere M1 auch dann gruen, wenn die Ableitung eine bewusste
+    // Theme-Entscheidung ueberstimmt — der Fehler, den deck-core 0.6.0 hatte und 0.6.1 behob.
+    await cdp.evaluate(`
+      const datei = app.vault.getAbstractFileByPath(${JSON.stringify(cssPfad)});
+      await app.vault.modify(datei, ${JSON.stringify(mermaidThemeCss(true))});
+      await new Promise((r) => setTimeout(r, 400));
+      return true;
+    `);
+    await refreshThemes(cdp);
+    await openPreview(cdp, MERMAID_NOTE);
+    const m2 = await mermaidKnoten(cdp);
+    record(
+      "M2 sd-mermaid-Angabe schlaegt die Token-Ableitung",
+      Boolean(m2) && !nahAn(m2!.fill, MERMAID_PROBE_RGB),
+      m2
+        ? `Knotenfuellung ${m2.fill} (benanntes Thema "dark") · nicht rgb(${MERMAID_PROBE_RGB.join(",")})` +
+          (nahAn(m2.fill, MERMAID_PROBE_RGB) ? " · ACHTUNG: die Tokens ueberstimmen die Angabe" : "")
+        : `kein Mermaid-SVG im Deck · ${await diagnose(cdp)}`,
     );
   },
 };
@@ -704,7 +870,10 @@ const exportSektion: Section = {
   },
 };
 
-const SECTIONS: Section[] = [vorschau, einstellungen, explorer, exportSektion];
+/** M steht VOR dem Export, nicht dahinter: der Export-Abschnitt setzt eine Probe-Regel ins
+ *  `customCss` und raeumt sie erst im `finally` des Laufs weg. Liefe M danach, faerbte diese
+ *  Regel in die Messung hinein. */
+const SECTIONS: Section[] = [vorschau, mermaid, einstellungen, explorer, exportSektion];
 
 // --- Lauf --------------------------------------------------------------------
 
