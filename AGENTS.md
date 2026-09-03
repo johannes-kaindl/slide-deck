@@ -228,7 +228,7 @@ Aufnahme kein Obsidian; nur Vorschau-Pane, Overflow-Warnung und Einstellungen br
 `shots:obsidian` setzt `$STAGING_VAULTS_DIR` und ein mit `--remote-debugging-port=9222`
 gestartetes Obsidian voraus.
 
-**GUI-Smoke (CORE-TEST-02 b):** `scripts/gui-smoke.ts` faehrt zwoelf Pruefpunkte per CDP gegen
+**GUI-Smoke (CORE-TEST-02 b):** `scripts/gui-smoke.ts` faehrt sechzehn Pruefpunkte per CDP gegen
 ein laufendes Obsidian — die Naht, die `vitest` mit `environment: "node"` strukturell nicht
 sieht: iframe-Isolation, Schrift-Metriken, Explorer-Markup, Bilder-Export. Checkliste,
 Hand-Runde und Durchlauf-Vermerke in `docs/SMOKE.md`; die CDP-Bruecke kommt aus
@@ -237,6 +237,11 @@ die README-Bilder (`npm run shots:obsidian -- --setup`), nie der Arbeitsvault �
 prueft vor dem ersten Punkt per sha1, dass der Lauf ueberhaupt gegen den Repo-Stand geht.
 **Ein gruener Lauf zaehlt erst nach einer Gegenprobe:** die erste hier hat einen Fehler im
 Treiber aufgedeckt, nicht im Plugin (`\b` gegen zusammengeklebtes `textContent`, s. `docs/SMOKE.md`).
+Die zweite Runde ebenso: B4 war rot, weil auf dem Rechner ein LLM-Server antwortete und das
+Modellfeld deshalb ein Dropdown ohne Placeholder war — **ein Pruefpunkt stellt seinen Gegenstand
+selbst her** (Endpunkt auf toten Port), statt ihn von der Umgebung zu erwarten. Der Pruefling fuer
+Warn-Schwere und Modifier-Export ist `docs/themes/regression-deck.md`, zur Laufzeit in den Vault
+geschrieben, nicht als zweite Kopie im Fixture.
 
 **Regressions-Deck:** `docs/themes/regression-deck.md` ist kein Demo, sondern ein Prüfling —
 jede seiner fünf Folien hat einen Defekt ausgelöst, der in `deck-core` 0.5.0 behoben wurde
