@@ -88,6 +88,12 @@ export const LAYOUTS_CSS = `
    with clearance above the footer zone */
 .sd-layout-cover-image .sd-content{ display:flex; flex-direction:column; justify-content:flex-end; }
 .sd-layout-cover-image .sd-region{ padding-bottom:var(--sd-space-m,1em); }
+/* Die Tinte gehört zum Scrim, nicht zum Theme: über dem abgedunkelten Bildrand ist
+   --sd-fg auf hellen Themes dunkel auf dunkel (drei von neun, darunter das Default-Theme).
+   Nur mit Bild — ohne Bild gibt es keinen Scrim und die Theme-Tinte stimmt wieder. */
+.sd-layout-cover-image:not(.sd-cover-empty) .sd-content{ color:var(--sd-cover-fg); }
+/* Der Kicker (h2) trägt sonst --sd-accent und bliebe dunkel, während der Titel schon sitzt. */
+.sd-layout-cover-image:not(.sd-cover-empty) .sd-content h2{ color:inherit; }
 .sd-cover-empty .sd-content{ justify-content:center; align-items:center; text-align:center; }
 .sd-cover-empty .sd-region{ text-align:center; max-width:85%; }
 .sd-cover-empty .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }

@@ -9,6 +9,7 @@ import { geometryFor } from "../pure/geometry";
 import { resolveTheme, type ThemeRegistry } from "../pure/presets";
 import type { SlideDeck } from "../pure/slide-model";
 import { createIsolatedDeckIframe } from "./iframe-host";
+import { mermaidVarsFromDocument } from "./theme-tokens";
 
 let mermaidSeq = 0;
 
@@ -68,15 +69,21 @@ export async function renderDeckToContainer(
   const geo = geometryFor(deck.directives.aspect);
   const entry = resolveTheme(registry, deck.directives.theme);
   const minScale = deck.directives.minFontPx / entry.baseFontPx;
-  // Built-ins carry token-derived themeVariables (mermaid inlines colors into
-  // its SVG — CSS custom properties can't reach it); user themes fall back to
-  // the named mermaid theme as before.
-  mermaid.initialize(entry.mermaidVars
-    ? { startOnLoad: false, theme: "base", themeVariables: entry.mermaidVars }
-    : { startOnLoad: false, theme: entry.mermaid });
   const warnings: Warning[] = [];
   warnings.push(...collectDeckWarnings(deck, registry));
   container.replaceChildren();
+  // Mermaid inlines colours into its SVG — CSS custom properties can't reach it, so the
+  // theme has to be handed over as themeVariables. A built-in carries them from its token
+  // record; a user .css has no record, so its tokens are resolved out of the emptied
+  // container's own cascade. Only a theme that declares none of them keeps the named theme.
+  // `mermaidPinned` bricht das ab: nennt die Theme-Datei ein Mermaid-Grundthema selbst, ist
+  // das eine Wahl des Autors und schlägt die aus Tokens abgeleiteten Farben. Ohne diese Zeile
+  // würde die 0.6.0-Ableitung genau die Angabe überstimmen, die es dafür schon gab.
+  const mermaidVars = entry.mermaidVars
+    ?? (entry.mermaidPinned ? undefined : mermaidVarsFromDocument(doc, container));
+  mermaid.initialize(mermaidVars
+    ? { startOnLoad: false, theme: "base", themeVariables: mermaidVars }
+    : { startOnLoad: false, theme: entry.mermaid });
 
   // Pass 1 — build every slide's DOM (native createElement; runs in any realm).
   const built: { box: HTMLElement; inner: HTMLElement; slide: SlideDeck["slides"][number]; renderWarnings: SlideWarning[] }[] = [];

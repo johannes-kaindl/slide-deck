@@ -5,6 +5,13 @@
  *  owned by the per-theme hljs stylesheet — only the wrapper background is tokenized.
  *  Type roles, spacing scale, and vertical rhythm (owl selector) live here as tokens;
  *  themes override token VALUES only — never re-declare margins or heading rules. */
+/** Tinte des cover-image-Titels, solange kein Theme etwas anderes sagt. Bewusst themefrei:
+ *  über dem Scrim steht der Titel auf abgedunkeltem Bild, nicht auf dem Theme-Hintergrund —
+ *  an `--sd-fg` gebunden war er auf jedem hellen Theme dunkel auf dunkel. Ein Theme
+ *  überschreibt `--sd-cover-fg` auf `.sd-slide` und gewinnt damit (Theme-CSS kommt nach der
+ *  Struktur); den Kontrast seiner Wahl rechnet `tests/pure/cover-contrast` nach. */
+export const COVER_FG_DEFAULT = "#f6f2ea";
+
 export const STRUCTURE_CSS = `
 .sd-slide{ width:var(--sd-w,1280px); height:var(--sd-h,720px); box-sizing:border-box;
   padding:var(--sd-pad,64px); overflow:hidden; position:relative; background:var(--sd-bg); color:var(--sd-fg);
@@ -164,6 +171,7 @@ export const STRUCTURE_CSS = `
 .sd-slide-pagination{ bottom:24px; right:32px; }
 
 /* cover-image: full-bleed background + readability scrim behind the content. */
+.sd-layout-cover-image{ --sd-cover-fg:${COVER_FG_DEFAULT}; }
 .sd-cover-media{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
 /* Scrim: bottom-only, eased. The top band was dropped — a dark-over-photo
    gradient bands visibly at its upper edge; the header/footer get a local

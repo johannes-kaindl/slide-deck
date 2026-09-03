@@ -58,10 +58,22 @@ export interface ThemeEntry {
    *  colors into its SVG, so CSS vars can't reach it). Absent for user themes
    *  → render falls back to the named `mermaid` theme. */
   mermaidVars?: Record<string, string>;
+  /** True when the theme file itself named `mermaid` (`/* sd-mermaid: … *\/`), as opposed to
+   *  the fallback that was put there for it. An explicit choice outranks colours derived
+   *  from tokens; at the entry the two are otherwise indistinguishable. */
+  mermaidPinned?: boolean;
   baseFontPx: number;
   overridesBuiltin?: boolean;
 }
 export type ThemeRegistry = Map<string, ThemeEntry>;
+
+/** The tokens `mermaidVarsFor` reads. A built-in hands over its `tokens` record and this
+ *  list is redundant; a user .css has no such record — its values exist only in the cascade,
+ *  and something has to tell the DOM probe which names to resolve. Kept in step with the
+ *  function by a test, not by memory. */
+export const MERMAID_TOKENS = [
+  "--sd-font", "--sd-fg", "--sd-muted", "--sd-surface", "--sd-code-bg", "--sd-bg",
+] as const;
 
 /** Map preset tokens onto mermaid themeVariables so diagrams speak the theme
  *  (font, panel surfaces, muted lines, ink) instead of mermaid's default look. */

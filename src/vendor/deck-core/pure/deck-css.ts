@@ -49,6 +49,7 @@ export function userThemeEntry(key: string, fileCss: string, vendor: VendorCss):
     hljs: vendor.hljs[meta.hljs ?? ""] ?? hljsFor(vendor, d.hljs),
     katex: vendor.katex,
     mermaid: meta.mermaid ?? d.mermaid,
+    mermaidPinned: meta.mermaid !== undefined,
     baseFontPx: parseBaseFontPx(fileCss) ?? d.baseFontPx,
   };
 }
