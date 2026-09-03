@@ -626,6 +626,49 @@ async function oeffneTab(cdp: Cdp, ctx: Ctx): Promise<OffenerTab> {
   return { ziel, eigenesFenster, tab };
 }
 
+interface HostMessung { display: string; kinder: number; stapelt: boolean }
+interface LayoutMessung {
+  hosts: HostMessung[];
+  /** Gegenkontrolle: ist ein GEWOEHNLICHES `.setting-item` in dieser Obsidian-Version
+   *  ueberhaupt eine Flex-Row? Ohne diese Frage misst B5 nichts. */
+  normalIstFlex: boolean;
+  normalDisplay: string;
+}
+
+/** Das gerechnete Layout der §8-Host-Elemente. Gemessen wird der EFFEKT, nicht die Klasse:
+ *  `settingBodyHost()` strippt `setting-item`, aber ob die Zeilen dann wirklich stapeln, sagt
+ *  erst die Geometrie. „Stapelt" heisst: mindestens zwei Kinder, verschiedene `top`, gleiche
+ *  linke Kante — nebeneinander stehende Kinder teilen sich das `top` und unterscheiden sich
+ *  im `left`, das ist der Fall, den 0.6.0 gezeigt hat. */
+async function hostLayout(cdp: Cdp, ctx: Ctx): Promise<LayoutMessung> {
+  const offen = await oeffneTab(cdp, ctx);
+  try {
+    return await offen.ziel.evaluate<LayoutMessung>(`
+      const wurzel = document.querySelector(".vertical-tab-content-container .vertical-tab-content")
+        ?? document.querySelector(".vertical-tab-content");
+      const hosts = [];
+      for (const h of (wurzel ? wurzel.querySelectorAll(".sd-settings-host") : [])) {
+        const kinder = [...h.children].map((k) => k.getBoundingClientRect());
+        const tops = new Set(kinder.map((r) => Math.round(r.top)));
+        const lefts = new Set(kinder.map((r) => Math.round(r.left)));
+        hosts.push({
+          display: getComputedStyle(h).display,
+          kinder: kinder.length,
+          // Zwei Kinder mit gleichem top und verschiedenem left stehen nebeneinander; das
+          // Gegenteil ist die Zusage. Bei einem einzigen Kind ist nichts zu stapeln — der
+          // Host zaehlt dann nicht als Beleg, aber auch nicht als Defekt.
+          stapelt: kinder.length >= 2 && tops.size === kinder.length && lefts.size === 1,
+        });
+      }
+      const normal = wurzel ? wurzel.querySelector(".setting-item:not(.sd-settings-host)") : null;
+      const normalDisplay = normal ? getComputedStyle(normal).display : "(keins gefunden)";
+      return { hosts, normalIstFlex: normalDisplay === "flex", normalDisplay };
+    `);
+  } finally {
+    await schliesseTab(cdp, offen);
+  }
+}
+
 async function schliesseTab(cdp: Cdp, offen: OffenerTab): Promise<void> {
   if (offen.eigenesFenster) offen.ziel.close();
   await cdp.evaluate(`app.setting.close(); await new Promise((r) => setTimeout(r, 500)); return true;`);
@@ -699,6 +742,35 @@ const einstellungen: Section = {
       if (offline) await schliesseTab(cdp, offline);
       await setPluginSetting(cdp, PLUGIN_ID, "llmEndpoints", endpunkteVorher);
     }
+
+    // B5: die §8-Bloecke stapeln, statt in einer Flex-Row zu landen. Das Risiko aus 0.6.0:
+    // `hostFor()` reicht EIN Setting an einen Block weiter, der darin MEHRERE Zeilen zeichnet
+    // — Obsidians `.setting-item` ist aber `display:flex; flex-direction:row`, und ohne das
+    // Strippen dieser Klasse (`settingBodyHost`) wuerden Endpunkt-Liste, Modellfeld und
+    // Denk-Schalter nebeneinander stehen statt untereinander. Im Repo praezedenzlos, von
+    // keinem Unit-Test erreichbar: es ist eine Aussage ueber gerechnetes Layout.
+    const layout = await hostLayout(cdp, ctx);
+    const kaputt = layout.hosts.filter((h) => h.display === "flex");
+    const gestapelt = layout.hosts.filter((h) => h.stapelt);
+    record(
+      "B5 KI-Settings-Bloecke stapeln, statt eine Flex-Row zu werden",
+      layout.hosts.length > 0 && kaputt.length === 0 && gestapelt.length > 0 && layout.normalIstFlex,
+      layout.hosts.length === 0
+        ? "kein .sd-settings-host im Tab — der Punkt hat keinen Gegenstand"
+        : !layout.normalIstFlex
+          // Ohne diese Gegenkontrolle waere der Punkt tautologisch: in einer Obsidian-Version,
+          // die `.setting-item` nicht mehr als Flex-Row zeichnet, waere "nicht flex" gratis
+          // wahr und der Punkt gruen, ohne je etwas gemessen zu haben (Muster von A3).
+          ? `Gegenkontrolle fehlgeschlagen: ein normales .setting-item ist hier "${layout.normalDisplay}", nicht flex — dann sagt "Host ist nicht flex" nichts aus`
+          // Die display-Werte kommen aus der Messung, nicht aus dem Satz: eine erste Fassung
+          // schrieb "alle display:block" fest und meldete das im roten Fall neben
+          // "3 Host(s) sind flex" — ein Protokoll, das sich selbst widerspricht, kostet mehr
+          // Zeit als eines, das schweigt.
+          : `${layout.hosts.length} Host(s) display=[${layout.hosts.map((h) => h.display).join(", ")}]` +
+            ` · ${gestapelt.length}/${layout.hosts.length} mit gestapelten Kindern` +
+            (kaputt.length ? ` · ACHTUNG: ${kaputt.length} Host(s) sind flex` : "") +
+            ` · Gegenkontrolle: normales .setting-item ist ${layout.normalDisplay}`,
+    );
   },
 };
 

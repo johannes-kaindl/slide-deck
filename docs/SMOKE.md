@@ -43,6 +43,7 @@ nehmen, sonst blockt der Guard den ersten Treiber-Aufruf.
 | B2 | Kein roher i18n-Schlüssel in der Oberfläche | Tab-Text gegen `/deck\.[a-z]+\.…/` — `t()` fällt bei unbekanntem Schlüssel auf den Schlüssel zurück, nicht auf EN |
 | B3 | Endpunkt-Zeileneditor ist verdrahtet | `.okit-ep-row` im Tab (Kit-Baustein, vendoriert) |
 | B4 | Modellfeld-Placeholder ist der übersetzte Satz | ein `input[placeholder]` im Tab trägt exakt `deck.settings.model.placeholder` aus EN oder DE — „ähnlich" wäre ein Kit-Default |
+| B5 | KI-Settings-Blöcke stapeln, statt eine Flex-Row zu werden | `display` der `.sd-settings-host`-Elemente **und** die Geometrie ihrer Kinder (verschiedene `top`, gleiche linke Kante) — **mit** Gegenkontrolle, dass ein gewöhnliches `.setting-item` in dieser Obsidian-Version überhaupt `display:flex` ist |
 | C1 | Themes-Ordner ist im Explorer ausgeblendet | `display: none` am `.nav-folder-title[data-path=…]` — erst Existenz belegen, dann Eigenschaft |
 | C2 | Ausschalten macht ihn wieder sichtbar | dieselbe Messung, invertiert |
 | D1 | Bilder-Export schreibt die volle Serie | PNG-Dateien > 1 KB im Export-Ordner, Zahl gegen die Folienzahl |
@@ -56,6 +57,36 @@ Gegenprobe soll die Quelle treffen, nicht einen Stand von gestern.
 **B2 ist der Wächter für den Befund von CORE-TEST-04** (`unauthorized` fehlte im Wörterbuch,
 die Oberfläche zeigte den Schlüssel und sah aus wie ein plausibler String). Der Typecheck deckt
 seither die Endpunkt-Statusklassen ab; **jeder andere** Schlüssel fällt weiterhin nur hier auf.
+
+**B5 misst die Sache, nicht ihr Mittel — und die Gegenprobe hat gezeigt, warum das nötig war.**
+`hostFor()` reicht *ein* Setting an einen §8-Block weiter, der darin *mehrere* Zeilen zeichnet.
+Obsidians `.setting-item` ist `display:flex; flex-direction:row` — ohne Gegenmaßnahme stünden
+Endpunkt-Liste, Modellfeld und Denk-Schalter nebeneinander statt untereinander (das Risiko aus
+0.6.0). Die Aufgabe hatte dafür „einen Punkt auf `display`/`flex-direction` des Hosts" verlangt.
+**Ein solcher Punkt hätte den benannten Defekt nicht gefunden.**
+
+Gemessen am 2026-09-03 mit drei Sabotagen:
+
+| Weggenommen | B5 | Warum |
+|---|---|---|
+| nur `removeClass("setting-item")` in `settingBodyHost` (der 0.6.0-Fall) | **grün** | `styles.css` setzt `.sd-settings-host { display: block }` und überschreibt die Flex-Row |
+| nur `display: block` aus `styles.css` | grün | die Klasse ist gestrippt, der Host ist ohnehin ein `div` |
+| **beides** | **rot** | 3 Hosts `display:flex`, 0 mit gestapelten Kindern |
+
+**Die Blöcke hängen also an zwei unabhängigen Riegeln, nicht an einem.** Das ist keine Schwäche
+des Prüfpunkts, sondern eine Eigenschaft des Aufbaus: solange ein Riegel hält, ist die Sache in
+Ordnung, und ein roter Punkt wäre falsch. Deshalb misst B5 den **Zustand** („stapeln sie?") statt
+eines der beiden Mittel — ein Punkt auf `settingBodyHost` allein wäre bei Sabotage 1 rot geworden,
+obwohl die Oberfläche korrekt aussieht, und ein Punkt auf `display` allein wäre dort grün
+geblieben, ohne je etwas gemessen zu haben.
+
+⚠️ **Der Umkehrschluss steht auch fest:** ein Ausfall eines einzelnen Riegels bleibt unbemerkt.
+Wer `settingBodyHost` entfernt, weil „der Smoke ja grün bleibt", nimmt dem Aufbau die Redundanz,
+ohne dass irgendetwas widerspricht — die Doppelung ist Absicht und gehört nicht wegoptimiert.
+
+Die Gegenkontrolle auf das gewöhnliche `.setting-item` ist Pflicht, nicht Zierde: in einer
+Obsidian-Version, die es nicht mehr als Flex-Row zeichnet, wäre „Host ist nicht flex" gratis wahr
+und der Punkt grün ohne Gegenstand — dasselbe Muster wie bei A3.
 
 **M ist der einzige Beleg, den `deck-core` nicht selbst führen kann.** `mermaidVarsFromDocument`
 hängt eine `.sd-slide`-Sonde ins Deck-Dokument und liest die Tokens per `getComputedStyle` —
@@ -96,6 +127,7 @@ mehr zu sehen, welcher Weg sie dorthin gebracht hat.
 | 2026-09-02 | 1.13.7 | 12/12 grün (Vault `slide-deck`, Plugin 0.9.0) | 9/12 — A5, B2, C1 rot wie erwartet, kein weiterer fiel mit; nach Rückbau wieder 12/12 |
 | 2026-09-03 | 1.13.7 | 16/16 grün (A6, A8, B4, D2 neu) | zwei Läufe: G1 (Streifen nach Anzahl statt Schwere, Modifier verworfen, Placeholder leer) → 13/16, rot A8, B4, D2; G2 (`title` der Warnzeile leer) → 14/16, rot A6, A8. Kein weiterer fiel mit; nach Rückbau 16/16 |
 | 2026-09-03 (abends) | 1.14.0 | 18/18 grün gegen `deck-core` 0.6.2 (M1, M2 neu) | zwei Läufe mit `--section mermaid`: G1 (`mermaidVarsFromDocument` → `return undefined`) → nur M1 rot, Füllung `rgb(236,236,255)` (Mermaid-Default); G2 (`mermaidPinned` ignoriert) → nur M2 rot, Füllung = Probefarbe. Jeder Punkt an seinem eigenen Gegenstand; nach Rückbau 18/18 |
+| 2026-09-03 (spät) | 1.14.0 | 19/19 grün (B5 neu) | drei Sabotagen, s. § B5: nur `removeClass` weg → grün (zweiter Riegel hält); nur `display:block` weg → grün; **beide weg → B5 rot** (3 Hosts flex, 0 gestapelt). Der in der Aufgabe benannte Defekt allein macht den Punkt nicht rot — und soll es nicht |
 
 ### Warum M überhaupt gebraucht wurde — und was der erste Anlauf kostete (2026-09-03)
 
