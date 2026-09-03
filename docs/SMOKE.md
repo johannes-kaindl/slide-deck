@@ -34,13 +34,22 @@ nehmen, sonst blockt der Guard den ersten Treiber-Aufruf.
 | A3 | Vault-Theme erreicht die Folien nicht | Hintergrundfarbe der Folie bei getauschter Body-Theme-Klasse — **mit** Gegenkontrolle, dass die Elternfarbe wechselt |
 | A4 | Code-Hervorhebung erreicht den iframe | hljs-Token-Farbe ≠ Fließtextfarbe (Fremd-CSS kommt über `deckCss` an) |
 | A5 | Overflow wird gewarnt, nicht beschnitten | `.sd-warn` vorhanden **und** mit Formzeichen (▲/●/ℹ) — Bedeutung nicht nur über Farbe (WCAG 1.4.1) |
-| A6 | Theme-Dropdown wirkt sofort und ephemer | Folienfarbe ändert sich **und** die Frontmatter der Notiz bleibt unangetastet |
+| A6 | Overflow-Folie trägt den roten Streifen, Warnzeile den Schwere-Namen als `title` | `inset`-box-shadow an der Folie im iframe (Effekt, nicht Klasse) **und** `title` der `error`-Zeile = `warn.severity.error` aus EN oder DE |
+| A7 | Theme-Dropdown wirkt sofort und ephemer | Folienfarbe ändert sich **und** die Frontmatter der Notiz bleibt unangetastet |
+| A8 | Eigener Layoutname: Hinweiszeile, aber kein Streifen | Regressions-Deck Folie 5 (`<!-- layout: tagesordnung -->`): keine `sd-slide-warn*`-Klasse, kein `inset`-Schatten, **und** eine `info`-Zeile für `#5` mit `title` = `warn.severity.info` — fehlt die Zeile, hat der Punkt keinen Gegenstand |
 | B1 | Einstellungen-Tab öffnet | Modal im Hauptfenster **oder** eigenes Settings-Fenster (ab Obsidian 1.13) |
 | B2 | Kein roher i18n-Schlüssel in der Oberfläche | Tab-Text gegen `/deck\.[a-z]+\.…/` — `t()` fällt bei unbekanntem Schlüssel auf den Schlüssel zurück, nicht auf EN |
 | B3 | Endpunkt-Zeileneditor ist verdrahtet | `.okit-ep-row` im Tab (Kit-Baustein, vendoriert) |
+| B4 | Modellfeld-Placeholder ist der übersetzte Satz | ein `input[placeholder]` im Tab trägt exakt `deck.settings.model.placeholder` aus EN oder DE — „ähnlich" wäre ein Kit-Default |
 | C1 | Themes-Ordner ist im Explorer ausgeblendet | `display: none` am `.nav-folder-title[data-path=…]` — erst Existenz belegen, dann Eigenschaft |
 | C2 | Ausschalten macht ihn wieder sichtbar | dieselbe Messung, invertiert |
 | D1 | Bilder-Export schreibt die volle Serie | PNG-Dateien > 1 KB im Export-Ordner, Zahl gegen die Folienzahl |
+| D2 | Modifier-Klasse überlebt den Export | `customCss` färbt `.sd-mod-sand` in eine Probe-Farbe, die kein Theme trägt; Pixel am linken Rand des PNG von Folie 4 des Regressions-Decks = Probe, das der Nachbarfolie ≠ Probe. Gelesen aus den geschriebenen Dateien (adapter → ImageBitmap), nicht aus dem Export-iframe |
+
+**A8 und D2 fahren gegen `docs/themes/regression-deck.md`.** Der Treiber schreibt den Prüfling zur
+Laufzeit als `Regression deck.md` in den Vault und räumt ihn danach in den Papierkorb (`--keep`
+lässt ihn liegen). Bewusst keine zweite Kopie im Fixture: der Prüfling hat eine Quelle, und die
+Gegenprobe soll die Quelle treffen, nicht einen Stand von gestern.
 
 **B2 ist der Wächter für den Befund von CORE-TEST-04** (`unauthorized` fehlte im Wörterbuch,
 die Oberfläche zeigte den Schlüssel und sah aus wie ein plausibler String). Der Typecheck deckt
@@ -61,6 +70,23 @@ seither die Endpunkt-Statusklassen ab; **jeder andere** Schlüssel fällt weiter
 | Datum | Obsidian | Ergebnis | Gegenprobe |
 |---|---|---|---|
 | 2026-09-02 | 1.13.7 | 12/12 grün (Vault `slide-deck`, Plugin 0.9.0) | 9/12 — A5, B2, C1 rot wie erwartet, kein weiterer fiel mit; nach Rückbau wieder 12/12 |
+| 2026-09-03 | 1.13.7 | 16/16 grün (A6, A8, B4, D2 neu) | zwei Läufe: G1 (Streifen nach Anzahl statt Schwere, Modifier verworfen, Placeholder leer) → 13/16, rot A8, B4, D2; G2 (`title` der Warnzeile leer) → 14/16, rot A6, A8. Kein weiterer fiel mit; nach Rückbau 16/16 |
+
+### Was der erste Lauf von B4 gefunden hat — wieder im Werkzeug (2026-09-03)
+
+B4 war beim ersten Lauf rot: kein `input[placeholder]` im Tab trug den Modell-Satz. Die
+naheliegende Lesart „das Plugin hat den Placeholder verloren" war falsch. Der Placeholder gehört
+zum **Freitext-Fallback**, und der existiert nur, solange kein Endpunkt Modelle liefert — sobald
+die Probe zurück ist, wird das Feld zum Dropdown, am globalen Feld wie in der Kit-Zeile. Auf dem
+Maintainer-Rechner antwortet LM Studio auf `:1234`, also gab es im Tab schlicht kein Textfeld.
+Der Punkt stellt den Offline-Fall seither selbst her (Endpunkt auf einen toten Port, Tab neu
+öffnen, danach zurückstellen). Die Lehre ist dieselbe wie bei A3: **ein Prüfpunkt muss seinen
+Gegenstand herstellen, nicht voraussetzen** — was er misst, darf nicht davon abhängen, welche
+Dienste auf dem Rechner gerade laufen.
+
+Ebenfalls im Werkzeug, aber vor dem ersten Lauf gefangen: ein `\b` vor `sd-slide-warn` im
+Klassen-Regex hätte auch `sd-slide-warn-soft` getroffen — der Bindestrich ist eine Wortgrenze.
+Für Klassenlisten gilt `(^|\s)name(\s|$)`, nicht `\b`.
 
 ### Was die erste Gegenprobe gefunden hat — im Werkzeug, nicht im Prüfling
 

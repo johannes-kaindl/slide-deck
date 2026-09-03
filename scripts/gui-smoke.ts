@@ -44,6 +44,7 @@
  */
 
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   Cdp,
@@ -58,7 +59,7 @@ import { requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
 // Das Woerterbuch selbst, nicht eine Kopie seiner Form: daraus kommen sowohl die exakten
 // Schluessel als auch die Praefix-Liste fuer B2. Eine im Treiber gepflegte Musterliste waere
 // beim naechsten neuen Namensraum still blind — und genau diese Sorte Blindheit misst B2.
-import { STRINGS_EN } from "../src/i18n";
+import { STRINGS_DE, STRINGS_EN } from "../src/i18n";
 
 const PLUGIN_ID = "slide-deck";
 const VIEW_TYPE = "slide-deck-preview";
@@ -67,6 +68,19 @@ const DECK_NOTE = "Quarterly Review.md";
 const OVERFLOW_NOTE = "Overflow example.md";
 /** Die Folienzahl steht im Fixture, nicht im Code: fuenf `---`-getrennte Abschnitte. */
 const DECK_SLIDES = 5;
+/** Der Pruefling fuer die 0.5.0-Regressionen (eigener Layoutname, Modifier, Bild in Spalten).
+ *  Er liegt getrackt unter docs/themes/ und wird zur LAUFZEIT in den Vault geschrieben, statt
+ *  als zweite Kopie im Fixture zu liegen — eine Kopie hiesse: die Quelle aendert sich, der
+ *  Smoke misst weiter den alten Stand und meldet ihn als aktuell. */
+const REGRESSION_SRC = join("docs", "themes", "regression-deck.md");
+const REGRESSION_NOTE = "Regression deck.md";
+const REGRESSION_SLIDES = 5;
+/** Folien-Indizes (0-basiert) im Regressions-Deck, aus der Datei abgelesen. */
+const REGRESSION_MOD_SLIDE = 3;      // D · `<!-- layout: default sand -->` → .sd-mod-sand
+const REGRESSION_CUSTOM_LAYOUT = 4;  // E · `<!-- layout: tagesordnung -->` → info, kein Streifen
+/** Was der Modifier im Export sichtbar machen soll: eine Farbe, die kein Theme traegt. */
+const MOD_PROBE_CSS = ".sd-slide.sd-mod-sand { background: #d81b60 !important; }";
+const MOD_PROBE_RGB: [number, number, number] = [216, 27, 96];
 
 // --- Protokoll ---------------------------------------------------------------
 
@@ -92,8 +106,8 @@ function skipped(name: string, reason: string): void {
 
 // --- Helfer ------------------------------------------------------------------
 
-/** Vom Lauf angelegte Ordner — im `finally` in den PAPIERKORB, nie hart geloescht. */
-const erzeugteOrdner: string[] = [];
+/** Vom Lauf angelegte Ordner und Notizen — im `finally` in den PAPIERKORB, nie hart geloescht. */
+const erzeugtePfade: string[] = [];
 
 /** Ausdruck, der im Renderer das Deck-iframe der Vorschau greift. Immer ueber den
  *  plugin-eigenen Anker (`.sd-deck-iframe` im Container der eigenen View), nie ueber eine
@@ -149,6 +163,54 @@ async function diagnose(cdp: Cdp): Promise<string> {
     return teile.join(" · ");
   `);
 }
+
+/** Den Regressions-Pruefling in den Vault schreiben (oder auf den Repo-Stand bringen) und
+ *  fuer den Papierkorb vormerken. Der Inhalt geht als String durch CDP — 42 KB, die Bilder
+ *  stecken als data:-URI darin, deshalb braucht der Pruefling weder Assets noch Netz. */
+async function ensureRegressionNote(cdp: Cdp): Promise<void> {
+  const inhalt = readFileSync(join(process.cwd(), REGRESSION_SRC), "utf8");
+  const angelegt = await cdp.evaluate<boolean>(`
+    const pfad = ${JSON.stringify(REGRESSION_NOTE)};
+    const inhalt = ${JSON.stringify(inhalt)};
+    const da = app.vault.getAbstractFileByPath(pfad);
+    if (da) { await app.vault.modify(da, inhalt); return false; }
+    await app.vault.create(pfad, inhalt);
+    await new Promise((r) => setTimeout(r, 600));
+    return true;
+  `);
+  if (angelegt) erzeugtePfade.push(REGRESSION_NOTE);
+}
+
+interface WarnRow { sev: string; title: string; text: string }
+
+/** Die Warnzeilen der Vorschau mit Schwere-Klasse, `title` und Text. */
+const WARN_ROWS = `
+  const leaf = app.workspace.getLeavesOfType(${JSON.stringify(VIEW_TYPE)})[0];
+  const rows = leaf ? [...leaf.view.containerEl.querySelectorAll(".sd-warn")] : [];
+  const warnRows = rows.map((r) => ({
+    sev: ([...r.classList].find((c) => c.startsWith("sd-warn-sev-")) || "").replace("sd-warn-sev-", ""),
+    title: r.getAttribute("title") || "",
+    text: r.textContent.trim(),
+  }));
+`;
+
+/** Das Wort, das der `title` einer Warnzeile tragen muss — EN oder DE, je App-Sprache.
+ *  Beide Woerterbuecher zulassen, statt die Sprache zu raten: falsch geraten waere rot am
+ *  Werkzeug, und das Wort selbst kommt so oder so aus `i18n.ts`, nicht aus dem Treiber. */
+function severityWords(sev: string): string[] {
+  return [STRINGS_EN[`warn.severity.${sev}`], STRINGS_DE[`warn.severity.${sev}`]].filter(Boolean) as string[];
+}
+
+/** Streifen am Folienrand, gemessen am EFFEKT: der Vorschau-Chrome zeichnet ihn als
+ *  `inset`-box-shadow in die Folie. Klasse allein reicht nicht — ohne PREVIEW_CHROME_CSS
+ *  im iframe raegt sie inert mit und faerbt nichts. */
+const STRIPE = (index: number): string => `
+  ${DECK_DOC}
+  const folie = deck ? deck.querySelectorAll(".sd-slide")[${index}] : null;
+  if (!folie) return { da: false, klassen: "", schatten: "" };
+  return { da: true, klassen: folie.className, schatten: getComputedStyle(folie).boxShadow };
+`;
+interface Stripe { da: boolean; klassen: string; schatten: string }
 
 /** (a) Schluessel, die es im Woerterbuch gibt und die trotzdem als Text dastehen. */
 function bekannteSichtbar(text: string): string[] {
@@ -281,7 +343,25 @@ const vorschau: Section = {
         : `keine Warnung · ${folienOverflow} Folien · ${await diagnose(cdp)}`,
     );
 
-    // A6: das Dropdown schaltet ephemer — Wirkung sofort sichtbar, Notiz unangetastet.
+    // A6: die Farbe der Warnung ist ihre SCHWERE, nicht ihre Art — `error` zeichnet einen
+    // roten Streifen in die Folie. Gemessen am Effekt (inset-Schatten im iframe), und die
+    // Warnzeile muss den Schwere-Namen als `title` tragen (zweiter Kanal neben Farbe und
+    // Formzeichen, WCAG 1.4.1). Das Deck ist noch die Overflow-Notiz aus A5.
+    const rot = await cdp.evaluate<Stripe>(STRIPE(0));
+    const zeilenOverflow = await cdp.evaluate<WarnRow[]>(`${WARN_ROWS} return warnRows;`);
+    const errorZeile = zeilenOverflow.find((r) => r.sev === "error");
+    const rotStreifen = rot.da && /(^|\s)sd-slide-warn(\s|$)/.test(rot.klassen) && /inset/.test(rot.schatten);
+    const errorTitel = Boolean(errorZeile) && severityWords("error").includes(errorZeile!.title);
+    record(
+      "A6 Overflow-Folie traegt den roten Streifen, Warnzeile den Schwere-Namen als title",
+      rotStreifen && errorTitel,
+      !rot.da
+        ? "keine Folie im iframe"
+        : `Folie: ${/inset/.test(rot.schatten) ? "inset-Schatten" : "KEIN inset-Schatten"} (${rot.klassen})` +
+          ` · title="${errorZeile ? errorZeile.title : "(keine error-Zeile)"}" erwartet ${JSON.stringify(severityWords("error"))}`,
+    );
+
+    // A7: das Dropdown schaltet ephemer — Wirkung sofort sichtbar, Notiz unangetastet.
     // Zwei Haelften, weil genau die Trennung die dokumentierte Zusage ist ("Setzen"
     // schreibt, das Dropdown nicht).
     await openPreview(cdp, DECK_NOTE);
@@ -308,7 +388,7 @@ const vorschau: Section = {
     const sichtbar = wechsel.vorher !== "" && wechsel.nachher !== "" && wechsel.vorher !== wechsel.nachher;
     const ephemer = wechsel.frontmatter === wechsel.von;
     record(
-      "A6 Theme-Dropdown wirkt sofort und laesst die Notiz in Ruhe",
+      "A7 Theme-Dropdown wirkt sofort und laesst die Notiz in Ruhe",
       sichtbar && ephemer,
       wechsel.fehler
         ? wechsel.fehler
@@ -317,46 +397,81 @@ const vorschau: Section = {
           (sichtbar ? "" : " · ACHTUNG: kein sichtbarer Unterschied") +
           (ephemer ? "" : " · ACHTUNG: die Notiz wurde geschrieben"),
     );
+
+    // A8: der Erweiterungsweg darf nicht wie ein Defekt aussehen. Ein Theme darf eigene
+    // Layoutnamen fuehren; der Kern reicht sie als `info` durch — und `info` faerbt nichts.
+    // Vor deck-core 0.5.0 stand hier ein amber Streifen (`layout-unknown` nach kind gefaerbt).
+    // Der Punkt hat nur dann einen Gegenstand, wenn die info-Zeile da ist: fehlt sie, wurde
+    // der Name gar nicht als unbekannt erkannt, und "kein Streifen" bewiese nichts.
+    await ensureRegressionNote(cdp);
+    const folienRegression = await openPreview(cdp, REGRESSION_NOTE);
+    const eigen = await cdp.evaluate<Stripe>(STRIPE(REGRESSION_CUSTOM_LAYOUT));
+    const zeilenRegression = await cdp.evaluate<WarnRow[]>(`${WARN_ROWS} return warnRows;`);
+    const infoZeile = zeilenRegression.find((r) => r.sev === "info" && r.text.includes(`#${REGRESSION_CUSTOM_LAYOUT + 1}`));
+    const ohneStreifen = eigen.da && !/sd-slide-warn/.test(eigen.klassen) && !/inset/.test(eigen.schatten);
+    const infoTitel = Boolean(infoZeile) && severityWords("info").includes(infoZeile!.title);
+    record(
+      "A8 Eigener Layoutname: Hinweiszeile (info), aber kein Streifen an der Folie",
+      folienRegression === REGRESSION_SLIDES && ohneStreifen && infoTitel,
+      folienRegression !== REGRESSION_SLIDES
+        ? `${folienRegression} Folien statt ${REGRESSION_SLIDES} · ${await diagnose(cdp)}`
+        : `Folie ${REGRESSION_CUSTOM_LAYOUT + 1}: ${ohneStreifen ? "kein Streifen" : "GESTREIFT"} (${eigen.klassen})` +
+          ` · info-Zeile ${infoZeile ? `"${infoZeile.text.slice(0, 70)}" title="${infoZeile.title}"` : "FEHLT"}`,
+    );
   },
 };
+
+interface TabInhalt { gefunden: boolean; text: string; endpunkte: number; placeholders: string[] }
+interface OffenerTab { ziel: Cdp; eigenesFenster: boolean; tab: TabInhalt }
+
+/** Den Plugin-Tab oeffnen und seinen Inhalt lesen. Erst im Hauptfenster nach dem Modal sehen,
+ *  sonst auf das Settings-Fenster verbinden (ab Obsidian 1.13 ein eigenes Fenster). Nie ueber
+ *  den Fenstertitel entscheiden — sein erstes Wort ist lokalisiert. */
+async function oeffneTab(cdp: Cdp, ctx: Ctx): Promise<OffenerTab> {
+  await cdp.evaluate(`
+    app.setting.open();
+    app.setting.openTabById(${JSON.stringify(PLUGIN_ID)});
+    await new Promise((r) => setTimeout(r, 1200));
+    return true;
+  `);
+  let ziel: Cdp = cdp;
+  let eigenesFenster = false;
+  const imHauptfenster = await cdp.evaluate<boolean>(`
+    return Boolean(document.querySelector(".modal.mod-settings .vertical-tab-content"));
+  `);
+  if (!imHauptfenster) {
+    const settings = await attachTo("settings", ctx.port, ctx.vault);
+    if (settings) {
+      ziel = settings;
+      eigenesFenster = true;
+    }
+  }
+  const tab = await ziel.evaluate<TabInhalt>(`
+    const wurzel = document.querySelector(".vertical-tab-content-container .vertical-tab-content")
+      ?? document.querySelector(".vertical-tab-content");
+    if (!wurzel) return { gefunden: false, text: "", endpunkte: 0, placeholders: [] };
+    return {
+      gefunden: true,
+      text: wurzel.textContent,
+      endpunkte: wurzel.querySelectorAll(".okit-ep-row").length,
+      placeholders: [...wurzel.querySelectorAll("input[placeholder]")].map((i) => i.placeholder),
+    };
+  `);
+  return { ziel, eigenesFenster, tab };
+}
+
+async function schliesseTab(cdp: Cdp, offen: OffenerTab): Promise<void> {
+  if (offen.eigenesFenster) offen.ziel.close();
+  await cdp.evaluate(`app.setting.close(); await new Promise((r) => setTimeout(r, 500)); return true;`);
+}
 
 /** B — die Einstellungen. Ab Obsidian 1.13 ein eigenes Fenster; beide Faelle offen halten. */
 const einstellungen: Section = {
   key: "einstellungen",
   title: "B · Einstellungen (i18n + Endpunkt-Editor)",
   async run(cdp, ctx) {
-    await cdp.evaluate(`
-      app.setting.open();
-      app.setting.openTabById(${JSON.stringify(PLUGIN_ID)});
-      await new Promise((r) => setTimeout(r, 1200));
-      return true;
-    `);
-
-    // Erst im Hauptfenster nach dem Modal sehen, sonst auf das Settings-Fenster verbinden.
-    // Nie ueber den Fenstertitel entscheiden — sein erstes Wort ist lokalisiert.
-    let ziel: Cdp = cdp;
-    let eigenesFenster = false;
-    const imHauptfenster = await cdp.evaluate<boolean>(`
-      return Boolean(document.querySelector(".modal.mod-settings .vertical-tab-content"));
-    `);
-    if (!imHauptfenster) {
-      const settings = await attachTo("settings", ctx.port, ctx.vault);
-      if (settings) {
-        ziel = settings;
-        eigenesFenster = true;
-      }
-    }
-
-    const tab = await ziel.evaluate<{ gefunden: boolean; text: string; endpunkte: number }>(`
-      const wurzel = document.querySelector(".vertical-tab-content-container .vertical-tab-content")
-        ?? document.querySelector(".vertical-tab-content");
-      if (!wurzel) return { gefunden: false, text: "", endpunkte: 0 };
-      return {
-        gefunden: true,
-        text: wurzel.textContent,
-        endpunkte: wurzel.querySelectorAll(".okit-ep-row").length,
-      };
-    `);
+    const offen = await oeffneTab(cdp, ctx);
+    const { tab, eigenesFenster } = offen;
     record(
       "B1 Einstellungen-Tab oeffnet",
       tab.gefunden,
@@ -389,8 +504,35 @@ const einstellungen: Section = {
       tab.endpunkte > 0 ? `${tab.endpunkte} Zeile(n) (.okit-ep-row)` : "keine .okit-ep-row im Tab",
     );
 
-    if (eigenesFenster) ziel.close();
-    await cdp.evaluate(`app.setting.close(); return true;`);
+    await schliesseTab(cdp, offen);
+
+    // B4: der Placeholder des Modellfelds ist ein uebersetzter Satz ("Model ID such as qwen3"),
+    // keine Kit-Vorgabe — er kommt aus i18n.ts. Er ist nur im OFFLINE-Fall sichtbar: sobald die
+    // Probe Modelle liefert, wird das Feld zum Dropdown (globales Feld wie Kit-Zeile). Der erste
+    // Lauf dieses Punkts war deshalb rot am Werkzeug, nicht am Plugin — auf dem Maintainer-
+    // Rechner antwortet LM Studio auf :1234. Der Punkt stellt den Offline-Fall selbst her:
+    // Endpunkt auf einen toten Port, Tab neu oeffnen, messen, zurueckstellen. Gemessen wird
+    // der exakte Text gegen beide Woerterbuecher; "aehnlich" waere ein Kit-Default.
+    const endpunkteVorher = await cdp.evaluate<unknown>(`
+      return app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.llmEndpoints;
+    `);
+    await setPluginSetting(cdp, PLUGIN_ID, "llmEndpoints", [{ url: "http://127.0.0.1:9" }]);
+    let offline: OffenerTab | null = null;
+    try {
+      offline = await oeffneTab(cdp, ctx);
+      const erwartet = [STRINGS_EN["deck.settings.model.placeholder"], STRINGS_DE["deck.settings.model.placeholder"]];
+      const treffer = offline.tab.placeholders.filter((p) => erwartet.includes(p));
+      record(
+        "B4 Modellfeld-Placeholder ist der uebersetzte Satz aus i18n (Endpunkt offline)",
+        offline.tab.gefunden && treffer.length > 0,
+        treffer.length
+          ? `"${treffer[0]}" (${treffer.length}x, ${offline.tab.placeholders.length} Placeholder im Tab)`
+          : `keiner von ${JSON.stringify(erwartet)} · gesehen: ${JSON.stringify(offline.tab.placeholders.slice(0, 8))}`,
+      );
+    } finally {
+      if (offline) await schliesseTab(cdp, offline);
+      await setPluginSetting(cdp, PLUGIN_ID, "llmEndpoints", endpunkteVorher);
+    }
   },
 };
 
@@ -413,7 +555,7 @@ const explorer: Section = {
       await new Promise((r) => setTimeout(r, 800));
       return true;
     `);
-    if (angelegt) erzeugteOrdner.push(ordner);
+    if (angelegt) erzeugtePfade.push(ordner);
 
     await setPluginSetting(cdp, PLUGIN_ID, "hideThemesFolder", true);
     await cdp.evaluate(`
@@ -498,7 +640,7 @@ const exportSektion: Section = {
       return voll >= ${DECK_SLIDES} ? voll : 0;
     `, 90_000, 2000);
     const meldung = await notices(cdp);
-    if (bilder) erzeugteOrdner.push(zielOrdner);
+    if (bilder && !erzeugtePfade.includes(zielOrdner)) erzeugtePfade.push(zielOrdner);
     record(
       `D1 Bilder-Export schreibt ${DECK_SLIDES} PNG nach "${bildOrdner}"`,
       bilder === DECK_SLIDES,
@@ -506,6 +648,58 @@ const exportSektion: Section = {
         ? `${bilder} PNG > 1 KB${meldung ? ` · Meldung: ${meldung}` : ""}`
         : `keine vollstaendige Serie${meldung ? ` · Meldung: ${meldung}` : " · keine Meldung des Pruflings"}` +
           ` · ${await diagnose(cdp)}`,
+    );
+
+    // D2: die Modifier-Klasse ueberlebt den Export — bisher nur strukturell belegt (sie steht
+    // im serialisierten slidesHtml). Gemessen wird am ARTEFAKT: eine Probe-Regel im
+    // customCss faerbt `.sd-mod-sand` in eine Farbe, die kein Theme traegt, und das PNG der
+    // Modifier-Folie muss sie tragen, das einer Nachbarfolie nicht. Die Pixel werden im
+    // Renderer aus den geschriebenen Dateien gelesen (adapter → Blob → ImageBitmap), nicht
+    // aus dem iframe, den der Export gleich wieder wegwirft.
+    await ensureRegressionNote(cdp);
+    if (!(await openExisting(cdp, REGRESSION_NOTE, "source"))) throw new Error(`Notiz fehlt im Vault: ${REGRESSION_NOTE}`);
+    await setPluginSetting(cdp, PLUGIN_ID, "customCss", MOD_PROBE_CSS);
+    const regOrdner = `${zielOrdner}/${REGRESSION_NOTE.replace(/\.md$/, "")}`;
+    await cdp.evaluate(`
+      for (const n of document.querySelectorAll(".notice")) n.remove();
+      await app.commands.executeCommandById("${PLUGIN_ID}:export-images");
+      return true;
+    `);
+    const pixel = await pollUntil<{ mod: number[]; nachbar: number[] } | null>(cdp, `
+      const adapter = app.vault.adapter;
+      const base = ${JSON.stringify(REGRESSION_NOTE.replace(/\.md$/, ""))};
+      const pfad = (i) => ${JSON.stringify(regOrdner)} + "/" + String(i + 1).padStart(2, "0") + "-" + base + ".png";
+      const lies = async (i) => {
+        if (!(await adapter.exists(pfad(i)))) return null;
+        const s = await adapter.stat(pfad(i));
+        if (!s || s.size < 1024) return null;
+        const bytes = await adapter.readBinary(pfad(i));
+        const bmp = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
+        const c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height;
+        const ctx = c.getContext("2d"); ctx.drawImage(bmp, 0, 0);
+        // Linker Rand, halbe Hoehe: Folienhintergrund, kein Inhalt, keine Kopf-/Fusszeile.
+        const d = ctx.getImageData(4, Math.floor(bmp.height / 2), 1, 1).data;
+        return [d[0], d[1], d[2]];
+      };
+      const letzte = await lies(${REGRESSION_SLIDES - 1});   // erst wenn die Serie komplett ist
+      if (!letzte) return null;
+      const mod = await lies(${REGRESSION_MOD_SLIDE});
+      const nachbar = await lies(${REGRESSION_MOD_SLIDE - 1});
+      return mod && nachbar ? { mod, nachbar } : null;
+    `, 90_000, 2000);
+    const meldung2 = await notices(cdp);
+    if (pixel && !erzeugtePfade.includes(zielOrdner)) erzeugtePfade.push(zielOrdner);
+    const nah = (a: number[], b: number[]): boolean => a.every((v, i) => Math.abs(v - b[i]) <= 8);
+    const modGefaerbt = Boolean(pixel) && nah(pixel!.mod, MOD_PROBE_RGB);
+    const nachbarNicht = Boolean(pixel) && !nah(pixel!.nachbar, MOD_PROBE_RGB);
+    record(
+      `D2 Modifier-Klasse ueberlebt den Export (Folie ${REGRESSION_MOD_SLIDE + 1} traegt die Probe-Farbe im PNG)`,
+      modGefaerbt && nachbarNicht,
+      pixel
+        ? `Folie ${REGRESSION_MOD_SLIDE + 1} rgb(${pixel.mod.join(",")}) · Nachbar rgb(${pixel.nachbar.join(",")}) · Probe rgb(${MOD_PROBE_RGB.join(",")})` +
+          (modGefaerbt ? "" : " · ACHTUNG: Modifier-Folie traegt die Farbe nicht") +
+          (nachbarNicht ? "" : " · ACHTUNG: Nachbarfolie traegt sie auch — die Probe misst nicht den Modifier")
+        : `keine vollstaendige Serie${meldung2 ? ` · Meldung: ${meldung2}` : ""} · ${await diagnose(cdp)}`,
     );
   },
 };
@@ -624,10 +818,10 @@ async function main(): Promise<void> {
         `)
         .catch(() => undefined);
     }
-    if (!keep && erzeugteOrdner.length) {
+    if (!keep && erzeugtePfade.length) {
       await cdp
         .evaluate(`
-          for (const pfad of ${JSON.stringify(erzeugteOrdner)}) {
+          for (const pfad of ${JSON.stringify(erzeugtePfade)}) {
             // Papierkorb, nicht Hard-Delete: was ein Werkzeug im Vault des Maintainers
             // anfasst, muss zurueckholbar bleiben. Kennt der Index den frisch geschriebenen
             // Ordner noch nicht, erst indizieren lassen — und nur wenn das nichts bringt,
