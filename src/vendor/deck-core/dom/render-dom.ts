@@ -6,7 +6,7 @@ import { shouldCenterCompose } from "../pure/layout/compose";
 import { collectWarnings, collectDeckWarnings, WARNING_SEVERITY, type Warning, type SlideWarning } from "../pure/constraints/engine";
 import { deckCss } from "../pure/deck-css";
 import { geometryFor } from "../pure/geometry";
-import { resolveTheme, type ThemeRegistry } from "../pure/presets";
+import { resolveTheme, mermaidConfig, type ThemeRegistry } from "../pure/presets";
 import type { SlideDeck } from "../pure/slide-model";
 import { createIsolatedDeckIframe } from "./iframe-host";
 import { mermaidVarsFromDocument } from "./theme-tokens";
@@ -79,11 +79,11 @@ export async function renderDeckToContainer(
   // `mermaidPinned` bricht das ab: nennt die Theme-Datei ein Mermaid-Grundthema selbst, ist
   // das eine Wahl des Autors und schlägt die aus Tokens abgeleiteten Farben. Ohne diese Zeile
   // würde die 0.6.0-Ableitung genau die Angabe überstimmen, die es dafür schon gab.
-  const mermaidVars = entry.mermaidVars
-    ?? (entry.mermaidPinned ? undefined : mermaidVarsFromDocument(doc, container));
-  mermaid.initialize(mermaidVars
-    ? { startOnLoad: false, theme: "base", themeVariables: mermaidVars }
-    : { startOnLoad: false, theme: entry.mermaid });
+  // Die Sonde nur fahren, wenn ihr Ergebnis gebraucht wird: sie haengt einen Knoten in den
+  // gerade geleerten Container und wieder heraus — billig, aber nicht umsonst.
+  const brauchtAbleitung = !entry.mermaidVars && !entry.mermaidPinned;
+  const derived = brauchtAbleitung ? mermaidVarsFromDocument(doc, container) : undefined;
+  mermaid.initialize({ startOnLoad: false, ...mermaidConfig(entry, derived) });
 
   // Pass 1 — build every slide's DOM (native createElement; runs in any realm).
   const built: { box: HTMLElement; inner: HTMLElement; slide: SlideDeck["slides"][number]; renderWarnings: SlideWarning[] }[] = [];

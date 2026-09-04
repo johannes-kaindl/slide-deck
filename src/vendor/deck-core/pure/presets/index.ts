@@ -62,6 +62,15 @@ export interface ThemeEntry {
    *  the fallback that was put there for it. An explicit choice outranks colours derived
    *  from tokens; at the entry the two are otherwise indistinguishable. */
   mermaidPinned?: boolean;
+  /** Single mermaid themeVariables the theme file declares itself
+   *  (`/* sd-mermaid-var: name value *\/`, repeatable). Kept apart from `mermaidVars`
+   *  because the two are produced at different times: the derived set is resolved out of
+   *  the document's cascade in the DOM layer, these stand at registry time. They are merged
+   *  last, so an author's declaration outranks the derivation — and they are the only way to
+   *  reach a themeVariable that no `--sd-*` token implies (`pieOpacity` is a number, not a
+   *  colour). A theme that cannot declare it has to fight mermaid's SVG-internal <style>
+   *  with `opacity: 1 !important`, and that rule is dropped by the PNG export. */
+  mermaidVarOverrides?: Record<string, string>;
   baseFontPx: number;
   overridesBuiltin?: boolean;
 }
@@ -89,6 +98,34 @@ export function mermaidVarsFor(tokens: Record<string, string>): Record<string, s
     secondaryColor: surface, tertiaryColor: bg,
     clusterBkg: surface, edgeLabelBackground: bg,
   };
+}
+
+/** What to hand `mermaid.initialize` for a theme — TOTAL over the four cases.
+ *
+ *  `derived` is the DOM layer's contribution: the themeVariables resolved out of a user
+ *  theme's cascade (`mermaidVarsFromDocument`), or undefined when nothing resolved. The
+ *  decision itself is pure, so it can be tested with no DOM in reach.
+ *
+ *  Two rules meet here. A theme that names its own base (`sd-mermaid`) outranks colours
+ *  derived from tokens — otherwise the derivation would overrule the very directive that
+ *  existed for it. And a declared variable (`sd-mermaid-var`) outranks both, because it is
+ *  the most specific thing the author said. The two combine rather than compete: a pinned
+ *  base keeps its name and carries the declarations as themeVariables, so `dark` plus one
+ *  adjusted value stays dark. */
+export function mermaidConfig(
+  entry: Pick<ThemeEntry, "mermaid" | "mermaidVars" | "mermaidPinned" | "mermaidVarOverrides">,
+  derived: Record<string, string> | undefined,
+): { theme: MermaidTheme | "base"; themeVariables?: Record<string, string> } {
+  const base = entry.mermaidVars ?? (entry.mermaidPinned ? undefined : derived);
+  const overrides = entry.mermaidVarOverrides;
+  if (base) {
+    return { theme: "base", themeVariables: overrides ? { ...base, ...overrides } : base };
+  }
+  // No base set: either the theme pinned its own, or nothing resolved. The named theme
+  // stays, and declarations ride on top of it.
+  return overrides
+    ? { theme: entry.mermaid, themeVariables: overrides }
+    : { theme: entry.mermaid };
 }
 
 /** TOTAL — exact key first (a user theme may shadow a legacy name), then alias, then shiro. */

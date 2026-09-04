@@ -50,6 +50,7 @@ export function userThemeEntry(key: string, fileCss: string, vendor: VendorCss):
     katex: vendor.katex,
     mermaid: meta.mermaid ?? d.mermaid,
     mermaidPinned: meta.mermaid !== undefined,
+    mermaidVarOverrides: meta.mermaidVars,
     baseFontPx: parseBaseFontPx(fileCss) ?? d.baseFontPx,
   };
 }

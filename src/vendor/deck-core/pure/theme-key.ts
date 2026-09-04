@@ -17,13 +17,18 @@ const HLJS_META_RE = /\/\*\s*sd-hljs\s*:\s*([A-Za-z0-9-]+)\s*\*\//i;
 const MERMAID_META_RE = /\/\*\s*sd-mermaid\s*:\s*([A-Za-z]+)\s*\*\//i;
 const LABEL_META_RE = /\/\*\s*sd-label\s*:\s*(.+?)\s*\*\//i;
 const MERMAID_VALUES = ["default", "dark", "neutral", "forest"];
+/** Global on purpose — the directive may appear any number of times. Read with `matchAll`,
+ *  never `.exec` in a loop: a module-level /g/ regex carries `lastIndex` between calls. */
+const MERMAID_VAR_RE = /\/\*\s*sd-mermaid-var\s*:\s*([A-Za-z][A-Za-z0-9_]*)\s+([^*]+?)\s*\*\//gi;
 
 /** Read optional `sd-hljs`, `sd-mermaid` and `sd-label` header directives from a
  *  theme's CSS (analogous to parseBaseFontPx). hljs is returned raw (validated against the
  *  HLJS map by the adapter); mermaid is validated against the MermaidTheme union here;
  *  label is a free-text display name (spaces + unicode allowed, single line). */
-export function parseThemeMeta(css: string): { hljs?: string; mermaid?: MermaidTheme; label?: string } {
-  const out: { hljs?: string; mermaid?: MermaidTheme; label?: string } = {};
+export function parseThemeMeta(
+  css: string,
+): { hljs?: string; mermaid?: MermaidTheme; label?: string; mermaidVars?: Record<string, string> } {
+  const out: { hljs?: string; mermaid?: MermaidTheme; label?: string; mermaidVars?: Record<string, string> } = {};
   const h = HLJS_META_RE.exec(css);
   if (h) out.hljs = h[1];
   const m = MERMAID_META_RE.exec(css);
@@ -33,5 +38,10 @@ export function parseThemeMeta(css: string): { hljs?: string; mermaid?: MermaidT
   }
   const l = LABEL_META_RE.exec(css);
   if (l) out.label = l[1].trim();
+  const vars: Record<string, string> = {};
+  for (const v of css.matchAll(MERMAID_VAR_RE)) vars[v[1]] = v[2].trim();
+  // Absent, not empty: the other three fields are optional too, and a caller that spreads
+  // this object must not gain an `mermaidVars: {}` that reads as "the theme declared none".
+  if (Object.keys(vars).length > 0) out.mermaidVars = vars;
   return out;
 }
