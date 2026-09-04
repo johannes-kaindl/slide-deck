@@ -7,7 +7,7 @@ import { collectWarnings, collectDeckWarnings, WARNING_SEVERITY, type Warning, t
 import { deckCss } from "../pure/deck-css";
 import { geometryFor } from "../pure/geometry";
 import { resolveTheme, mermaidConfig, type ThemeRegistry } from "../pure/presets";
-import type { SlideDeck } from "../pure/slide-model";
+import { wantsCover, type SlideDeck } from "../pure/slide-model";
 import { createIsolatedDeckIframe } from "./iframe-host";
 import { mermaidVarsFromDocument } from "./theme-tokens";
 
@@ -120,8 +120,10 @@ export async function renderDeckToContainer(
         if (firstRegion && !firstRegion.textContent?.trim() && firstRegion.childElementCount === 0) firstRegion.remove();
       }
     }
-    // cover-image: pull the first image out into a full-bleed background layer + scrim.
-    if (slide.layout === "cover-image") {
+    // cover: pull the first image out into a full-bleed background layer + scrim. Asked
+    // through `wantsCover` so the built-in layout and the `cover` modifier reach it alike.
+    const cover = wantsCover(slide);
+    if (cover) {
       const img = inner.querySelector<HTMLImageElement>("img");
       if (img) {
         const media = doc.createElement("img");
@@ -134,7 +136,7 @@ export async function renderDeckToContainer(
         box.insertBefore(media, scrim);
       } else {
         box.classList.add("sd-cover-empty"); // center the title instead of bottom-anchoring it
-        renderWarnings.push({ kind: "cover-no-image", message: "cover-image slide has no image — rendering title only." });
+        renderWarnings.push({ kind: "cover-no-image", message: "cover slide has no image — rendering title only." });
       }
     }
     // Media-bearing single-column slides: mark so the media cell fills the
@@ -142,7 +144,7 @@ export async function renderDeckToContainer(
     // independent of raster decode timing. cover-image (above) uses its image
     // as a background layer, not an in-flow media block.
     if (
-      slide.layout !== "cover-image" &&
+      !cover &&
       slide.regions.length === 1 &&
       inner.querySelector(".sd-region > p > img.sd-embed:only-child, .sd-region > img.sd-embed, .sd-region > .sd-mermaid")
     ) {
@@ -161,7 +163,7 @@ export async function renderDeckToContainer(
     // column's media has no bounded height at all — it grew past the slide edge and over
     // the footer. Deliberately a second path rather than a generalisation of the branch
     // above: that one governs every single-region deck already in the wild.
-    if (slide.layout !== "cover-image" && slide.regions.length > 1) {
+    if (!cover && slide.regions.length > 1) {
       for (const region of Array.from(inner.querySelectorAll<HTMLElement>(".sd-region"))) {
         if (!region.querySelector(":scope > p > img.sd-embed:only-child, :scope > img.sd-embed, :scope > .sd-mermaid")) continue;
         region.classList.add("sd-has-media");

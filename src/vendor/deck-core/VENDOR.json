@@ -1,7 +1,7 @@
 {
   "source": "https://git.jkaindl.de/jkaindl/deck-core",
-  "version": "0.7.0",
-  "sha": "0257f3d",
+  "version": "0.8.0",
+  "sha": "dcd853d",
   "vendored": "2026-09-04",
   "modules": [
     "pure/",

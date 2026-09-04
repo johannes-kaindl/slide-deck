@@ -9,6 +9,22 @@ export interface Slide {
 }
 export interface SlideDeck { directives: DeckDirectives; slides: Slide[]; }
 
+/** Does this slide pull its first image into a full-bleed background layer?
+ *
+ *  Two ways to say so: the built-in `cover-image` layout, or the `cover` modifier on any
+ *  layout name. The modifier exists because the built-in way is a name comparison, and a
+ *  theme's own layouts do not inherit from a name — so a theme with its own picture slides
+ *  had to run them as `cover-image` plus modifiers instead of under their own names, which
+ *  reads worse in the markdown than it needs to.
+ *
+ *  One function rather than the comparison repeated at each site: the renderer asks three
+ *  times (extract the image; do NOT mark an in-flow media cell; same for multi-region), and
+ *  the three have to agree. Two of them ask it negated, which is exactly where a fourth site
+ *  would eventually disagree. */
+export function wantsCover(slide: Pick<Slide, "layout" | "modifiers">): boolean {
+  return slide.layout === "cover-image" || slide.modifiers.includes("cover");
+}
+
 const DEFAULTS: DeckDirectives = { theme: "default", aspect: "16:9", minFontPx: 24 };
 
 function parseFrontmatter(lines: string[], base: DeckDirectives): { directives: DeckDirectives; bodyStart: number; hasFrontmatter: boolean } {
