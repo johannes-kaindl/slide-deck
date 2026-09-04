@@ -79,7 +79,7 @@ Quit vermeiden will, probiert ihn. Die Koordinationspflicht oben gilt für den S
 unverändert.
 
 ```bash
-export STAGING_VAULTS_DIR="/pfad/zu/StagingVaults"
+export STAGING_VAULTS_DIR=<verzeichnis ausserhalb der Repos>
 npm run build
 npm run shots:obsidian -- --setup     # Aufnahme-Vault bauen
 # Obsidian NEU STARTEN:

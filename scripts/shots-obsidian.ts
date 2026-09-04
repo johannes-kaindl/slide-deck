@@ -4,7 +4,7 @@
  * auf; hier steht ausschliesslich, was Obsidians eigene Oberflaeche im Bild braucht.
  *
  * ```bash
- * export STAGING_VAULTS_DIR="/pfad/zu/StagingVaults"
+ * export STAGING_VAULTS_DIR=<verzeichnis ausserhalb der Repos>
  * npm run build && npm run shots:obsidian -- --setup   # Vault bauen, dann Obsidian NEU STARTEN
  * npm run shots:obsidian                               # aufnehmen
  * npm run shots:obsidian -- --only preview-pane        # ein einzelnes Bild
