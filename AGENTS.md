@@ -363,6 +363,20 @@ Vollständigkeits-Record, den niemand typecheckt, ist keine Absicherung, sondern
   Export-Ordner und ruft `app.openWithDefaultApp` (window.print ist im Mobile-WebView
   ein No-op — letterhead-Muster). `print-color-adjust: exact` in `PRINT_CSS` erzwingt
   den Theme-Hintergrund im Druck.
+- **Der PNG-Export verliert jede CSS-Regel, die auf den DEFAULT-Wert zurücksetzt.**
+  `modern-screenshot` klont die Folie und schreibt berechnete Stile inline — aber nur die,
+  die vom Default **abweichen** (`getDiffStyle`: `if (defaultStyle.get(name) === value &&
+  !priority) return`). Die `priority`-Hälfte greift nie: `getComputedStyle().getPropertyPriority()`
+  liefert für berechnete Stile immer `""`, weil `!important` ein Merkmal der Kaskade ist und
+  im Ergebnis nicht mehr existiert. Wer also im Theme gegen eine mitgeklonte Fremd-CSS
+  anschreibt (Mermaid legt sein `<style>` **in** das SVG), darf den Default nicht als
+  Korrekturwert nehmen: `opacity: 1 !important` wirkt in der Ansicht und **verschwindet im
+  PNG**, `transform: none`, `filter: none` und `visibility: visible` genauso.
+  Gemessen 2026-09-04 an einem Mermaid-`pie`: Ansicht `opacity: 1`, PNG exakt Alpha 0.70 —
+  und mit `opacity: 0.99 !important` (kein Default) kommt derselbe Wert sauber durch, 525.266
+  voll deckende Pixel gegen 0. **Der saubere Weg ist `mermaidVars`**, damit Mermaid den Wert
+  gar nicht erst schreibt; `0.999` ist ein Workaround, kein Fix. Volle Messung in der
+  deck-core-Task „Export ≠ Ansicht".
 - **PDF via window.print (Desktop):** Der Desktop-PDF-Export druckt den isolierten iframe via
   `contentWindow.print()`. Obsidian-Themes, Browser-Erweiterungen und Systemdruck-Einstellungen
   können das Ergebnis beeinflussen. Die `@page`-CSS-Regel setzt die Seitengröße auf die
