@@ -339,9 +339,18 @@ Vollständigkeits-Record, den niemand typecheckt, ist keine Absicherung, sondern
   selbst eingebauter WCAG-1.4.1-Verstoß, während die Callouts nebenan Redundanz zusagen.
   Die drei Schwere-Wörter liegen in `i18n.ts` (EN+DE) mit Vollständigkeits-Record im Test.
 - **Themes/Tokens-Invariante:** Themes setzen nur Tokens; Struktur/Layout-CSS ist theme-unantastbar (fit-kritisch). `--sd-base` lebt einzig in `presetTokensCss`.
-- **Theme-Registry:** Themes sind `ThemeEntry { key, label?, source, themeCss, hljs, katex, mermaid, mermaidVars?, baseFontPx, overridesBuiltin? }`.
+- **Theme-Registry:** Themes sind `ThemeEntry { key, label?, source, themeCss, hljs, katex, mermaid, mermaidVars?, mermaidPinned?, mermaidVarOverrides?, baseFontPx, overridesBuiltin? }`.
   `katex` ist Pflicht (vom Host hereingereichtes Fremd-CSS, s. `deck-css.ts` oben); `label`,
   `mermaidVars` und `overridesBuiltin` sind optional.
+  **Die drei Mermaid-Felder sind nicht austauschbar** und entstehen zu verschiedenen Zeiten:
+  `mermaidVars` trägt ein *eingebautes* Theme aus seinem Token-Record (Registry-Zeit);
+  ein Ordner-Theme hat keinen und bekommt seine Werte in der DOM-Ebene aus der Kaskade
+  (`mermaidVarsFromDocument`); `mermaidVarOverrides` sind die per
+  `/* sd-mermaid-var: name wert */` deklarierten Einzelwerte und werden **zuletzt**
+  darübergelegt. `mermaidPinned` sagt, dass die Datei ihr Grundthema selbst genannt hat —
+  dann bleibt dieses erhalten und trägt die Overrides als `themeVariables` (`dark` plus ein
+  justierter Wert bleibt dark). Die Entscheidung darüber ist eine einzige totale Funktion,
+  `mermaidConfig()` in `pure/presets/index.ts` — nicht über den Renderer verteilt.
   `ThemeStore` (`theme-registry.ts`) merged Built-ins (`builtinThemeEntries`) mit User-`.css` aus
   `settings.themesFolder` (`scanThemeFiles`). Frontmatter `theme:` = SoT der Notiz (Settings-`defaultTheme`
   nur für Notizen ohne `theme:`). Das Preview-Dropdown schaltet ephemer; „Setzen" schreibt via
@@ -374,8 +383,10 @@ Vollständigkeits-Record, den niemand typecheckt, ist keine Absicherung, sondern
   PNG**, `transform: none`, `filter: none` und `visibility: visible` genauso.
   Gemessen 2026-09-04 an einem Mermaid-`pie`: Ansicht `opacity: 1`, PNG exakt Alpha 0.70 —
   und mit `opacity: 0.99 !important` (kein Default) kommt derselbe Wert sauber durch, 525.266
-  voll deckende Pixel gegen 0. **Der saubere Weg ist `mermaidVars`**, damit Mermaid den Wert
-  gar nicht erst schreibt; `0.999` ist ein Workaround, kein Fix. Volle Messung in der
+  voll deckende Pixel gegen 0. **Der saubere Weg steht seit deck-core 0.7.0 bereit:**
+  `/* sd-mermaid-var: pieOpacity 1 */` im Kopf der Theme-CSS — dann schreibt Mermaid den
+  Wert gar nicht erst, und es gibt nichts zu überschreiben. `0.999` bleibt ein Workaround
+  für alles, was keine Mermaid-Variable ist. Volle Messung in der
   deck-core-Task „Export ≠ Ansicht".
 - **PDF via window.print (Desktop):** Der Desktop-PDF-Export druckt den isolierten iframe via
   `contentWindow.print()`. Obsidian-Themes, Browser-Erweiterungen und Systemdruck-Einstellungen
