@@ -51,8 +51,12 @@ export function cardVm(block: SlotBlock, state: CardState): CardVm {
       return { ...base, status: "is-checking", statusIcon: "loader",
                statusLabel: t(`image.phase.${state.phase}`), progress: state.pct };
     case "error":
+      // state.message ist bereits eine FERTIGE, uebersetzte Meldung — wer einen echten
+      // Generierungsfehler meldet, verpackt ihn an der Aufrufstelle (image.fail.failed),
+      // nicht hier. Alles verpacken machte jede Meldung zu "Generation failed", auch eine
+      // bereits uebersetzte (Bildpfad-Meldung nach gegluecktem Speichern).
       return { ...base, buttonEnabled: true, status: "is-error", statusIcon: "circle-x",
-               statusLabel: t("image.fail.failed", state.message) };
+               statusLabel: state.message };
     case "done":
       return { ...base, status: "is-ok", statusIcon: "circle-check",
                statusLabel: t("image.slot.done", state.path) };

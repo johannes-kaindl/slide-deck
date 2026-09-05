@@ -76,7 +76,14 @@ export default class SlideDeckPlugin extends Plugin {
     // error-Zustand, nie in einem haengenden.
     try {
       const status = await ensureReady(api);
-      if (!status.ready && status.reason) { onState({ kind: "blocked", reason: status.reason }); return; }
+      if (!status.ready) {
+        // `reason` ist UNABHAENGIG von `ready` typisiert — `ready:false, reason:null` ist eine
+        // gueltige Kombination und darf NICHT durchfallen: das Backend hat sich gerade selbst
+        // als nicht bereit gemeldet. Kein erfundener Fehlgrund, sondern eine ehrliche Meldung.
+        if (status.reason) onState({ kind: "blocked", reason: status.reason });
+        else onState({ kind: "error", message: t("image.fail.not-ready") });
+        return;
+      }
 
       const block = parseSlot(source);
       const req = buildRequest(block, status.capabilities, this.settings.imageSuffixes);
@@ -85,17 +92,20 @@ export default class SlideDeckPlugin extends Plugin {
       const res = await api.generate({ ...req,
         onProgress: (pct, phase) => onState({ kind: "running", phase, pct }) });
       if (!res.ok) {
-        if (res.reason === "failed") onState({ kind: "error", message: res.message });
+        if (res.reason === "failed") onState({ kind: "error", message: t("image.fail.failed", res.message) });
         else onState({ kind: "blocked", reason: res.reason });
         return;
       }
 
       // `createNote` bewusst WEGGELASSEN: dann gilt die Einstellung des Nutzers in LIG.
       const saved = await api.save(res.image);
-      if (!saved.ok) { onState({ kind: "error", message: saved.message }); return; }
+      if (!saved.ok) { onState({ kind: "error", message: t("image.fail.write-failed", saved.message) }); return; }
 
       const datei = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
-      if (!(datei instanceof TFile)) { onState({ kind: "error", message: ctx.sourcePath }); return; }
+      // Erzeugen UND Speichern sind an dieser Stelle bereits geglueckt — das Bild existiert,
+      // wir koennen es nur nicht mehr einsetzen. Fuer den Nutzer ist das derselbe Fall wie
+      // "Block nicht mehr auffindbar": er braucht den Pfad SEINES BILDES, nicht den der Notiz.
+      if (!(datei instanceof TFile)) { onState({ kind: "error", message: t("image.slot.lost", saved.imagePath) }); return; }
 
       // Der Block wird ueber TEXTIDENTITAET wiedergefunden, nicht ueber die Zeilen aus
       // getSectionInfo: zwischen Start und Ende liegen Minuten, in denen die Notiz sich
@@ -112,7 +122,7 @@ export default class SlideDeckPlugin extends Plugin {
       if (getroffen) onState({ kind: "done", path: saved.imagePath });
       else onState({ kind: "error", message: t("image.slot.lost", saved.imagePath) });
     } catch (err) {
-      onState({ kind: "error", message: err instanceof Error ? err.message : String(err) });
+      onState({ kind: "error", message: t("image.fail.failed", err instanceof Error ? err.message : String(err)) });
     }
   }
 
