@@ -15,7 +15,7 @@ import { registerSlotCard } from "./image/slot-card";
 import type { CardState } from "./image/slot-card-model";
 import type { MarkdownPostProcessorContext } from "obsidian";   // TFile ist bereits importiert
 import { readImageApi, ensureReady } from "./image/image-api";
-import { parseSlot, filledMarkdown, replaceSlot } from "./image/slot-format";
+import { parseSlot, filledMarkdown, replaceSlot, findSlotOnce, fenceSlot } from "./image/slot-format";
 import { buildRequest } from "./image/functions";
 import { insertImageSlot } from "./image/insert-slot";
 
@@ -80,6 +80,23 @@ export default class SlideDeckPlugin extends Plugin {
     // Rest der Sitzung im Lade-Zustand haengen. Jede Ausnahme endet deshalb im sichtbaren
     // error-Zustand, nie in einem haengenden.
     try {
+      // W2: der Block muss VOR dem minutenlangen Lauf eindeutig auffindbar sein — die Spec
+      // verlangt "geschrieben -> geprueft -> gerechnet", nicht umgekehrt. Drei der Faelle, in
+      // denen das Rueckschreiben sonst scheitert (andere Fence-Form, Mehrfachvorkommen,
+      // Einrueckung), sind schon jetzt sichtbar; nur "waehrend des Laufs geaendert" ist es
+      // nicht — dafuer bleibt die Pruefung nach dem Lauf weiter unten stehen.
+      const voll = fenceSlot(source);
+      const vorDatei = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
+      if (!(vorDatei instanceof TFile)) {
+        onState({ kind: "error", message: t("image.slot.notFound") });
+        return;
+      }
+      const vorInhalt = await this.app.vault.read(vorDatei);
+      if (!findSlotOnce(vorInhalt, voll)) {
+        onState({ kind: "error", message: t("image.slot.notFound") });
+        return;
+      }
+
       const status = await ensureReady(api);
       if (!status.ready) {
         // `reason` ist UNABHAENGIG von `ready` typisiert — `ready:false, reason:null` ist eine
@@ -115,7 +132,6 @@ export default class SlideDeckPlugin extends Plugin {
       // Der Block wird ueber TEXTIDENTITAET wiedergefunden, nicht ueber die Zeilen aus
       // getSectionInfo: zwischen Start und Ende liegen Minuten, in denen die Notiz sich
       // geaendert haben kann. Nicht gefunden oder mehrdeutig -> NICHT schreiben.
-      const voll = "```slide-image\n" + source.replace(/\n$/, "") + "\n```";
       const ersatz = filledMarkdown(block.funktion, block.prompt, saved.imagePath);
       let getroffen = false;
       await this.app.vault.process(datei, (inhalt) => {

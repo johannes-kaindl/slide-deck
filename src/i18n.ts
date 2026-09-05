@@ -186,6 +186,7 @@ const EN: Dict = {
   "image.unavailable": "Local Image Generator is not available.",
   "image.unavailable.cta": "Learn how to install it",
   "image.slot.lost": "The image slot changed while generating. The image is saved as {0} — insert it yourself.",
+  "image.slot.notFound": "This image slot could not be found uniquely in the note — check that it wasn't edited, renamed, or duplicated, then try again.",
 };
 const DE: Dict = {
   "cmd.openPreview": "Präsentations-Vorschau öffnen",
@@ -368,6 +369,7 @@ const DE: Dict = {
   "image.unavailable": "Local Image Generator ist nicht verfügbar.",
   "image.unavailable.cta": "Installation nachlesen",
   "image.slot.lost": "Der Bildplatz hat sich während der Erzeugung geändert. Das Bild liegt als {0} — bitte selbst einsetzen.",
+  "image.slot.notFound": "Dieser Bildplatz wurde in der Notiz nicht eindeutig gefunden — prüfen, ob er anderswo bearbeitet, umbenannt oder verdoppelt wurde, dann erneut versuchen.",
 };
 const STRINGS: Record<Lang, Dict> = { en: EN, de: DE };
 export const STRINGS_EN: Dict = EN;

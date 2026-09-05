@@ -1,9 +1,10 @@
 import { SuggestModal, type App, type Editor } from "obsidian";
 import { t } from "../i18n";
 import { IMAGE_FUNCTIONS, type ImageFunction } from "./functions";
+import { SLOT_LANG } from "./slot-format";
 
 export function slotSnippet(fn: ImageFunction): string {
-  return "```slide-image\n" + `funktion: ${fn}\n` + "\n```\n";
+  return "```" + SLOT_LANG + "\n" + `funktion: ${fn}\n` + "\n```\n";
 }
 
 /** Der einzige Ort, an dem die Taxonomie sich selbst erklärt — ohne ihn lernt sie niemand. */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseSlot, filledMarkdown, replaceSlot } from "../src/image/slot-format";
+import { parseSlot, filledMarkdown, replaceSlot, findSlotOnce, fenceSlot, SLOT_LANG } from "../src/image/slot-format";
 // ImageFunctionModal wird in GUI-Smoke getestet; slotSnippet ist pure und hier testbar.
 import { slotSnippet } from "../src/image/insert-slot";
 
@@ -60,6 +60,42 @@ describe("replaceSlot", () => {
   it("refuses when the block occurs more than once — which one was meant is unknown", () => {
     const src = `${block}\n\n${block}`;
     expect(replaceSlot(src, block, "![[a.png]]")).toBeNull();
+  });
+});
+
+describe("fenceSlot", () => {
+  it("wraps the body in the fence form used to search the note — the single source of it (G1)", () => {
+    expect(fenceSlot("funktion: emotional\nEisberg")).toBe(
+      "```" + SLOT_LANG + "\nfunktion: emotional\nEisberg\n```",
+    );
+  });
+
+  it("matches the block replaceSlot expects, round trip", () => {
+    const src = "funktion: emotional\nEisberg";
+    const block = fenceSlot(src);
+    const note = `# Folie\n\n${block}\n\nText`;
+    expect(replaceSlot(note, block, "![[a.png]]")).toBe("# Folie\n\n![[a.png]]\n\nText");
+  });
+});
+
+describe("findSlotOnce — W2 pre-flight check before the expensive run", () => {
+  const block = "```slide-image\nfunktion: emotional\nEisberg\n```";
+
+  it("is true when the block occurs exactly once", () => {
+    expect(findSlotOnce(`# Folie\n\n${block}\n\nText`, block)).toBe(true);
+  });
+
+  it("is false when the block is missing — a different fence form, e.g.", () => {
+    expect(findSlotOnce("# Folie\n\nText", block)).toBe(false);
+  });
+
+  it("is false when the block occurs more than once", () => {
+    expect(findSlotOnce(`${block}\n\n${block}`, block)).toBe(false);
+  });
+
+  it("is false for an indented copy — a different string entirely", () => {
+    const indented = block.split("\n").map((l) => `  ${l}`).join("\n");
+    expect(findSlotOnce(`# Folie\n\n${indented}\n\nText`, block)).toBe(false);
   });
 });
 
