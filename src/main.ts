@@ -11,6 +11,9 @@ import { makeDeckLlmClient } from "./llm-client";
 import type { EndpointConfig } from "./vendor/kit/endpoint_config";
 import { buildDeckPrompt } from "./vendor/deck-core/pure/llm/deck-prompt";
 import { getAuthoringContract } from "./vendor/deck-core/pure/constraints/contract";
+import { registerSlotCard } from "./image/slot-card";
+import type { CardState } from "./image/slot-card-model";
+import type { MarkdownPostProcessorContext } from "obsidian";   // TFile ist bereits importiert
 
 export interface DeckGenInput {
   sourceBody: string; slideTarget: number | "auto"; hint: string;
@@ -37,6 +40,7 @@ export default class SlideDeckPlugin extends Plugin {
     this.addSettingTab(new SlideDeckSettingTab(this.app, this));
     this.registerView(VIEW_TYPE, (leaf) => new SlideDeckView(leaf, this));
     this.registerView(VIEW_TYPE_GENERATE, (leaf) => new GenerateDeckView(leaf, this));
+    registerSlotCard(this);
     this.addRibbonIcon("wand-2", t("cmd.generateDeck"), () => void this.activateGenerateView());
 
     this.addCommand({ id: "open-preview", name: t("cmd.openPreview"), callback: () => void this.activatePreview() });
@@ -59,6 +63,10 @@ export default class SlideDeckPlugin extends Plugin {
   }
 
   async saveSettings(): Promise<void> { await this.saveData(this.settings); }
+
+  async runSlot(_source: string, _ctx: MarkdownPostProcessorContext, _onState: (s: CardState) => void): Promise<void> {
+    /* Task 9 */
+  }
 
   /** Re-scan the themes folder, then refresh any open preview so the dropdown reflects it. */
   async refreshThemes(): Promise<void> {

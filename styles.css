@@ -246,3 +246,29 @@
 .sd-model-input { width: 100%; }
 .sd-model-info { color: var(--text-muted); font-size: var(--font-ui-smaller); padding: 0 0 var(--size-4-2) 0; }
 .setting-item.is-disabled .setting-item-name { color: var(--text-muted); }
+
+/* Bildplatz-Karte — Info-/Ergebnis-Karten-Blaupause (UI-STANDARD §8) */
+.sd-slot-card { background: var(--background-secondary); border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m); padding: var(--size-4-3); display: flex; flex-direction: column; gap: var(--size-4-2); }
+.sd-slot-head { display: flex; align-items: center; gap: var(--size-4-2); }
+/* Groesse ausdruecklich setzen: ui_adoption_check sieht Typografie NICHT, und ein <h3> ohne
+   Regel wird in der Sidebar viel zu gross (anysource-sideloader, 2026-09-02). */
+.sd-slot-title { font-size: var(--font-ui-small); margin: 0; font-weight: var(--font-semibold); }
+.sd-slot-meta, .sd-slot-hint, .sd-slot-state { font-size: var(--font-ui-smaller); color: var(--text-muted); }
+.sd-slot-meta:nth-of-type(2) { font-family: var(--font-monospace); white-space: pre-wrap; }
+.sd-slot-bar { height: 4px; background: var(--background-modifier-border); border-radius: 2px; overflow: hidden; }
+.sd-slot-bar-fill { height: 100%; background: var(--interactive-accent); }
+.sd-slot-empty { font-size: var(--font-ui-smaller); color: var(--text-muted); }
+.sd-slot-status { display: inline-flex; }
+.sd-slot-status.is-ok { color: var(--text-success); }
+.sd-slot-status.is-error { color: var(--text-error); }
+
+/* §8: `is-checking` MUSS sich bewegen — ein stehendes loader-Symbol ist von einem haengenden
+   Vorgang nicht zu unterscheiden, und genau das ist der einzige Zweck dieses Zustands.
+   Gilt auch fuer den Alt-Bestand .sd-gen-ping, der bis hierher nur eine Farbe setzte. */
+@keyframes sd-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.sd-slot-status.is-checking, .sd-gen-ping.is-checking { color: var(--text-faint); }
+.sd-slot-status.is-checking svg, .sd-gen-ping.is-checking svg { animation: sd-spin 1s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .sd-slot-status.is-checking svg, .sd-gen-ping.is-checking svg { animation-duration: 3s; }
+}
