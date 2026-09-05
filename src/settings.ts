@@ -13,7 +13,7 @@ import { renderSettingDefinitions, settingBodyHost, refreshSettingsTab } from ".
 import { buildEndpointList } from "./vendor/kit-obsidian/endpoint-list";
 import { createModelListCache } from "./vendor/kit/model-list-cache";
 import { ENDPOINT_PRESETS } from "./vendor/kit/endpoint_diagnostics";
-import type { ImageFunction } from "./image/functions";
+import { IMAGE_FUNCTIONS, DEFAULT_SUFFIXES, type ImageFunction } from "./image/functions";
 
 export interface SlideDeckSettings {
   defaultTheme: string;
@@ -114,6 +114,15 @@ export class SlideDeckSettingTab extends PluginSettingTab {
           { name: t("deck.settings.suppressThinking.name"), desc: t("deck.settings.suppressThinking.desc"),
             render: (setting) => this.renderThinking(setting) },
         ],
+      },
+      {
+        type: "group",
+        heading: t("settings.imageFunctions.heading"),
+        items: IMAGE_FUNCTIONS.map((fn) => ({
+          name: t(`image.fn.${fn}.name`),
+          desc: t(`image.fn.${fn}.desc`),
+          render: (setting: Setting) => this.renderSuffixRow(setting, fn),
+        })),
       },
     ];
   }
@@ -323,6 +332,29 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       await this.plugin.refreshThemes();
       this.refreshUi(); // a new theme file may have appeared → re-render definitions (dropdown + chips)
     }));
+  }
+
+  /** Eine Zeile pro Bildfunktion. Mutation bei `blur`, NICHT bei `onChange` — sonst
+   *  persistiert jeder Tastendruck. Der Reset erscheint nur, wenn etwas zu resetten ist. */
+  private renderSuffixRow(setting: Setting, fn: ImageFunction): void {
+    const aktuell = this.plugin.settings.imageSuffixes[fn] ?? "";
+    setting.addText((text) => {
+      text.setPlaceholder(DEFAULT_SUFFIXES[fn]).setValue(aktuell);
+      text.inputEl.addEventListener("blur", () => {
+        const wert = text.getValue().trim();
+        if (wert === "" || wert === DEFAULT_SUFFIXES[fn]) delete this.plugin.settings.imageSuffixes[fn];
+        else this.plugin.settings.imageSuffixes[fn] = wert;
+        void this.plugin.saveSettings();
+      });
+    });
+    if (aktuell !== "") {
+      setting.addExtraButton((b) => b.setIcon("rotate-ccw").setTooltip(t("settings.imageFunctions.reset"))
+        .onClick(() => {
+          delete this.plugin.settings.imageSuffixes[fn];
+          void this.plugin.saveSettings();
+          this.refreshUi();
+        }));
+    }
   }
 
   /** Re-render the tab. On ≥ 1.13 the declarative framework exposes update(); on the < 1.13
