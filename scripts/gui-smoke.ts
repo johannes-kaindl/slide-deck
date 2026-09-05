@@ -1260,12 +1260,15 @@ const bildplaetze: Section = {
     /** Karte in der Leseansicht NACH einem Klick auf "Generate" — nicht davor: die Karte
      *  startet in JEDEM Fall im Zustand `idle` (Knopf aktiv), unabhaengig davon, ob die API
      *  existiert; `readImageApi` wird erst in `runSlot` gelesen, also erst beim Klick. Erst
-     *  der Klick zeigt den Unterschied: mit Stub laeuft die Karte in `blocked` ("busy", Knopf
-     *  gesperrt, aber weiterhin sichtbar mit Funktion/Prompt), ohne API sofort in
-     *  `unavailable` (Empty-State, KEINE Funktion/Prompt-Divs — Vertrag aus `renderCard`).
-     *  Ergebnis: "gesperrt" | "leer" | "aktiv" (falls der Klick aus irgendeinem Grund nichts
-     *  ausgeloest hat) | "keine Karte". Zusaetzlich die beiden §8-DOM-Klassen, gegen die
-     *  N2 im "gesperrt"-Fall prueft — `vitest` hat hier kein DOM. */
+     *  der Klick zeigt den Unterschied: mit Stub laeuft die Karte in `blocked` ("busy") —
+     *  seit der Schluss-Review-Fixwelle gibt `blocked` den Knopf WIEDER frei (heilbare
+     *  Gruende wie "busy"/"unreachable" duerfen keine Sackgasse sein, in der ein erneuter
+     *  Versuch nur nach komplettem Neu-Rendern der Notiz moeglich waere) — Knopf bleibt also
+     *  "aktiv", die Karte weiterhin sichtbar mit Funktion/Prompt; ohne API bricht `runSlot`
+     *  sofort mit `unavailable` ab (Empty-State, KEINE Funktion/Prompt-Divs — Vertrag aus
+     *  `renderCard`). Ergebnis: "aktiv" | "leer" | "gesperrt" (falls ein Zustand doch wieder
+     *  sperrt) | "keine Karte". Zusaetzlich die beiden §8-DOM-Klassen, gegen die N2 im
+     *  Ja-Fall prueft — `vitest` hat hier kein DOM. */
     const knopfZustand = async (
       notiz: string,
       mitStub: boolean,
@@ -1365,17 +1368,20 @@ const bildplaetze: Section = {
         return true;
       `);
     }
-    // Nach dem Klick: mit Stub laeuft `runSlot` bis "blocked" (busy) — der Knopf ist
-    // gesperrt, die Karte bleibt aber die volle Ansicht (Funktion+Prompt); ohne API bricht
-    // `readImageApi` sofort ab und die Karte wird zum Empty-State, der laut `renderCard`
-    // WEDER Funktion- noch Prompt-Div traegt. Die Klassenprobe (Review-Auflage) haengt
-    // deshalb am Ja-Fall — dort ist sie ueberhaupt vorhanden — und wird gegen den Nein-Fall
-    // kontrastiert, in dem beide Divs per Vertrag fehlen.
+    // Nach dem Klick: mit Stub laeuft `runSlot` bis "blocked" (busy) — seit der
+    // Schluss-Review-Fixwelle gibt `blocked` den Knopf WIEDER frei (heilbare Gruende duerfen
+    // keine Sackgasse sein, aus der nur ein komplettes Neu-Rendern der Notiz herausfuehrt),
+    // die Karte bleibt die volle Ansicht (Funktion+Prompt); ohne API bricht `readImageApi`
+    // sofort ab und die Karte wird zum Empty-State, der laut `renderCard` WEDER Funktion-
+    // noch Prompt-Div traegt. Die Klassenprobe (Review-Auflage) haengt deshalb am Ja-Fall —
+    // dort ist sie ueberhaupt vorhanden — und wird gegen den Nein-Fall kontrastiert, in dem
+    // beide Divs per Vertrag fehlen. Genau DIESE Sackgasse bewacht N2 jetzt: ein Ruecksprung
+    // auf "gesperrt" waere die Regression, die diese Fixwelle behoben hat.
     const klassenOk = Boolean(karteMitApi?.karte && karteMitApi.funktion && karteMitApi.prompt);
     const klassenFehlenOhne = karteOhneApi?.karte === true && !karteOhneApi.funktion && !karteOhneApi.prompt;
     record(
-      "N2 Nach Klick: Knopf gesperrt+Klassen da mit API, Empty-State (keine Klassen) ohne",
-      karteMitApi?.knopf === "gesperrt" && klassenOk && karteOhneApi?.knopf === "leer" && klassenFehlenOhne,
+      "N2 Nach Klick: Knopf bleibt bedienbar (heilbarer Grund) + Klassen da mit API, Empty-State (keine Klassen) ohne",
+      karteMitApi?.knopf === "aktiv" && klassenOk && karteOhneApi?.knopf === "leer" && klassenFehlenOhne,
       `${karteMitApi?.knopf} (funktion=${karteMitApi?.funktion} prompt=${karteMitApi?.prompt})` +
         ` · ${karteOhneApi?.knopf} (funktion=${karteOhneApi?.funktion} prompt=${karteOhneApi?.prompt})`,
     );

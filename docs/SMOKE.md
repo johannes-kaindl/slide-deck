@@ -50,7 +50,7 @@ nehmen, sonst blockt der Guard den ersten Treiber-Aufruf.
 | C1 | Themes-Ordner ist im Explorer ausgeblendet | `display: none` am `.nav-folder-title[data-path=…]` — erst Existenz belegen, dann Eigenschaft |
 | C2 | Ausschalten macht ihn wieder sichtbar | dieselbe Messung, invertiert |
 | N1 | Bildplatz rendert als `.sd-image-slot` | Deck-iframe einer Notiz mit `slide-image`-Block: genau 1 Slot; Gegenprobe ohne Block: 0 |
-| N2 | Nach Klick auf „Generate": Knopf gesperrt + Klassen da mit API, Empty-State ohne | mit Stub läuft `runSlot` bis `blocked` (busy) — Knopf gesperrt, `.sd-slot-function`/`.sd-slot-prompt` bleiben im DOM; ohne API bricht `readImageApi` sofort ab, die Karte wird Empty-State und trägt laut `renderCard` **keine** der beiden Klassen |
+| N2 | Nach Klick auf „Generate": Knopf bleibt bedienbar (heilbarer Grund) + Klassen da mit API, Empty-State ohne | mit Stub läuft `runSlot` bis `blocked` (busy) — der Knopf bleibt **aktiv** (heilbare Gründe dürfen keine Sackgasse sein), `.sd-slot-function`/`.sd-slot-prompt` bleiben im DOM; ohne API bricht `readImageApi` sofort ab, die Karte wird Empty-State und trägt laut `renderCard` **keine** der beiden Klassen |
 | N2b | Rückschreib-Mechanik: Objektidentität gewahrt | dieselbe Sichern-Stub-Zurückschreiben-Mechanik wie N2s eigenes `finally`, gegen einen synthetischen Wächter statt gegen den (hier immer leeren) echten Vorbestand — mit Wächter muss danach **dasselbe Objekt** (`===`) an der Stelle liegen, ohne Wächter muss der Slot wieder leer sein. Bricht der Vergleich, **wirft** der Punkt statt nur rot zu melden |
 | N3 | `is-checking` bewegt sich, `is-ok` steht | `animationName` zweier synthetischer `.sd-slot-status`-Icons (§8-Vokabel, dieselbe wie bei Endpunkt-Status) |
 | N4 | Zurückschreiben trifft, unterbleibt bei geändertem Block | `replaceSlot`-Bauart über den echten Vault-Inhalt: Treffer ersetzt den Block durch das Bild-Embed; ein zwischenzeitlich geänderter Block bleibt unberührt |
@@ -148,11 +148,22 @@ unabhängig davon, ob die API existiert. `readImageApi(app)` wird erst gelesen, 
 läuft — also erst beim Klick auf „Generate". Ein Punkt, der nur den ersten Render liest, hätte
 in beiden Fällen „aktiv" gemeldet und wäre am eigenen Gegenstand vorbeigemessen. N2 klickt
 deshalb den Knopf und liest danach: mit gestubter API läuft `runSlot` bis `status: "blocked"`
-(die Stub-`generate()` liefert `reason: "busy"`) — der Knopf ist gesperrt, aber die Karte bleibt
-die volle Ansicht mit `.sd-slot-function`/`.sd-slot-prompt`; ohne API bricht `readImageApi`
-synchron ab, die Karte wird zum Empty-State und trägt laut `renderCard` (früher Return bei
-`vm.empty`) **keine** der beiden Klassen. Genau dieser Kontrast ist die vom Review verlangte
-Klassenprobe „gegen den Fall ohne API".
+(die Stub-`generate()` liefert `reason: "busy"`) — der Knopf bleibt **aktiv** (Stand seit der
+Schluss-Review-Fixwelle, s. u.), die Karte bleibt die volle Ansicht mit
+`.sd-slot-function`/`.sd-slot-prompt`; ohne API bricht `readImageApi` synchron ab, die Karte
+wird zum Empty-State und trägt laut `renderCard` (früher Return bei `vm.empty`) **keine** der
+beiden Klassen. Genau dieser Kontrast ist die vom Review verlangte Klassenprobe „gegen den Fall
+ohne API".
+
+⚠️ **N2 erwartete zunächst „gesperrt" statt „aktiv" — das war der Stand VOR der
+Schluss-Review-Fixwelle (2026-09-06), nicht ein Fehler des Punkts.** `blocked` sperrte den Knopf
+bis dahin dauerhaft, auch bei heilbaren Gründen — ausgerechnet `busy` sagt dem Nutzer „warte, bis
+er fertig ist", und wer wartete, hatte danach keinen Knopf mehr; der einzige Ausweg war, die
+Notiz komplett neu zu rendern. Der Fix (`slot-card-model.ts`, Fall `blocked`) gibt den Knopf jetzt
+frei, genau wie `error` es schon tat. N2 hielt die alte (fehlerhafte) Erwartung fest, bis der
+Smoke-Lauf nach der Fixwelle sie als rot meldete — der Punkt hat damit **funktioniert**: er
+bewacht jetzt genau die Sackgasse, die gerade behoben wurde, und ein Rücksprung auf „gesperrt"
+wäre die Regression.
 
 **Der zweite Treiberfehler beim Bauen von N2: zwei offene Leseansichten teilen sich `document`.**
 Ein frisches Blatt pro `knopfZustand`-Aufruf (`getLeaf(true)`) reicht nicht — ohne das alte
@@ -209,6 +220,7 @@ ab, damit kein nachfolgender Punkt auf einem beschädigten Nachbarplugin-Slot au
 | 2026-09-05 | 1.14.0 | 19/19 grün gegen `deck-core` 0.10.0 (keine neuen Punkte) | **keine** — der Lauf belegt ein Vendoring, keinen neuen Prüfpunkt. Die vier Zusagen von 0.9.0/0.10.0 sind stattdessen einzeln am Kern gemessen (`modifiers:` deckweit, `sender:` kommt an, `footer:` dahinter leckt nicht, `bildfolie cover` meldet nichts) und die Consumer-Naht als vitest-Test **mit** Gegenprobe abgesichert (`tests/adapter.test.ts` § Consumer-Kette) |
 | 2026-09-05 (4) | 1.14.0 | **27/27 grün** (N1, N2, N2b, N3, N4 neu, Abschnitt `bild`) | **in jedem Punkt eingebaut**: N1 1 Slot gegen 0; N2 „gesperrt (funktion=true prompt=true)" mit API gegen „leer (funktion=false prompt=false)" ohne; N2b (erste Fassung, seither ersetzt — s. Zeile darunter) Vorzustand des Nachbarplugins vorher/nachher identisch; N3 `checking=sd-spin` gegen `ok=none`; N4 „ersetzt" gegen „unberuehrt" bei geändertem Block. Baseline direkt davor (unveränderter Treiber) lief bereits 22/22 grün — die Umgebung selbst war also nicht die Fehlerquelle. Zwei Treiberfehler unterwegs gefangen, s. § oben: N2s Annahme über den initialen Kartenzustand (Klick nötig, kein reiner Render-Vergleich) und zwei offene Leseansichten, die sich `document` teilten |
 | 2026-09-05 (5, Fix-Runde 1) | 1.14.0 | **27/27 grün** (N2b neu gebaut: Wächter-Objekt + Identitätsvergleich + Abbruch bei Bruch) | N2b „mit Waechter: Waechter (identisch) · ohne: (nichts)" — zwei unterscheidbare Werte, beide Zweige jetzt in EINEM Lauf gemessen. Gegenprobe: Rückschreib-Zeile durch bedingungsloses `delete` ersetzt → „mit Waechter: (nichts) · ohne: (nichts)", rot, **und der Lauf brach ab** (`Abbruch: N2b: Rueckschreib-Mechanik verletzt Objektidentitaet …`), bevor N3/N4 liefen. Nach Rückbau wieder 5/5 (Abschnitt) bzw. 27/27 (voller Lauf) |
+| 2026-09-06 (Fix-Runde 2) | 1.14.0 | **27/27 grün** (N2-Erwartung nachgezogen: „aktiv" statt „gesperrt") | Die Schluss-Review-Fixwelle behob eine echte Sackgasse (`blocked` sperrte den Knopf dauerhaft, auch bei heilbaren Gründen wie `busy`) — N2 wurde dadurch rot, weil sein `record()` noch „gesperrt" erwartete. Kein Abschwächen: die Erwartung wurde auf das neue, richtige Verhalten gezogen. Protokollzeile danach: „aktiv (funktion=true prompt=true) · leer (funktion=false prompt=false)" — weiterhin zwei unterscheidbare Werte |
 
 ### Warum M überhaupt gebraucht wurde — und was der erste Anlauf kostete (2026-09-03)
 
