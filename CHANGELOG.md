@@ -10,8 +10,9 @@ versioning follows [SemVer](https://semver.org/).
 - **Bildplätze:** ein ```slide-image```-Codeblock rendert in der Leseansicht als Karte mit
   Generieren-Knopf, ruft für die Erzeugung das Nachbarplugin `local-image-generator` über
   dessen API auf und ersetzt sich nach dem Speichern selbst durch ein gewöhnliches Embed samt
-  Prompt-Kommentar (Re-Roll-fähig). Neuer Befehl „Insert image slot" fügt einen Platzhalter
-  mit Funktionsauswahl ein.
+  Prompt-Kommentar als Ausgangspunkt für einen späteren Re-Roll von Hand (es gibt keinen
+  automatischen Leser dieses Kommentars). Neuer Befehl „Insert image slot" fügt einen
+  Platzhalter mit Funktionsauswahl ein.
 - **Sechs Bildfunktionen** (documentary, analytical, metaphorical, emotional, navigational,
   decorative) steuern als Prompt-Bausteine, wie ein Bildplatz formuliert wird; die
   Bausteine sind in den Einstellungen pro Funktion redigierbar.

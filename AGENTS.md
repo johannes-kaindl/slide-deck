@@ -546,6 +546,19 @@ Vollständigkeits-Record, den niemand typecheckt, ist keine Absicherung, sondern
   nicht mehr auffindbar" (`image.slot.lost`), obwohl das Bild bereits erzeugt und gespeichert
   ist. Die Begründung steht im Kommentar über der Funktion: ein Bild an der falschen Stelle ist
   schlimmer als gar keines — der Nutzer bekommt den Pfad seines Bildes und setzt es selbst ein.
+  **Geprüft wird zusätzlich VOR dem Lauf** (`main.runSlot()`, `findSlotOnce()` in
+  `slot-format.ts`): drei der Fälle, in denen das Rückschreiben scheitert (andere Fence-Form,
+  Mehrfachvorkommen, Einrückung), sind schon beim Klick sichtbar und kosten so keine Minute
+  GPU-Zeit mehr, um entdeckt zu werden — nur „während des Laufs geändert" bleibt der Job der
+  Prüfung danach. `fenceSlot()`/`SLOT_LANG` (ebenfalls `slot-format.ts`) sind seither die
+  EINZIGE Stelle, die den Fence-Namen und seine Klammerung kennt; Registrierung
+  (`slot-card.ts`), Einfüge-Vorlage (`insert-slot.ts`) und Rückschreiben (`main.ts`) importieren
+  von dort, statt die Form je einzeln zu buchstabieren.
+- **Ein ungefüllter Bildplatz exportiert den Prompt-Rohtext sichtbar ins PDF/PNG.** `.sd-image-
+  slot` ist eine gewöhnliche Folienregion — Export rendert sie wie jede andere. Spec-konform
+  (v1 warnt dafür nicht), aber überraschend, wenn eine Präsentation mit offenem Bildplatz
+  exportiert oder vorgeführt wird: der Text steht als lesbarer Prompt auf der Folie, nicht als
+  Platzhalter-Hinweis.
 
 ## Memory
 
