@@ -73,3 +73,8 @@ export async function ensureReady(api: ImageApi): Promise<ImageStatus> {
 }
 
 export function failureKey(reason: ImageFailure): string { return `image.fail.${reason}`; }
+
+/** W3: ehrliches CTA-Ziel des Empty-States — die einzige Stelle, die diesen Verbund bereits
+ *  im README nennt (Zeilen 38/157). Kein Store-/Marketplace-Link: local-image-generator liegt
+ *  nicht dort. */
+export const LOCAL_IMAGE_GENERATOR_URL = "https://git.jkaindl.de/jkaindl/local-image-generator";

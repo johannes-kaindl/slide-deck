@@ -1,6 +1,8 @@
 import { setIcon } from "obsidian";
 import type SlideDeckPlugin from "../main";
-import { parseSlot } from "./slot-format";
+import { t } from "../i18n";
+import { parseSlot, SLOT_LANG } from "./slot-format";
+import { readImageApi, LOCAL_IMAGE_GENERATOR_URL } from "./image-api";
 import { cardVm, type CardState, type CardVm } from "./slot-card-model";
 
 /** Der eigene Maler derselben §8-Vokabel. Bewusst NICHT `paintStatus` aus ai-settings-ui:
@@ -9,7 +11,9 @@ import { cardVm, type CardState, type CardVm } from "./slot-card-model";
 function paintSlotStatus(el: HTMLElement, vm: CardVm): void {
   el.empty();
   el.removeClasses(["is-checking", "is-ok", "is-error"]);
-  if (!vm.status || !vm.statusIcon) { el.setAttribute("aria-label", ""); return; }
+  // G6: ein leeres aria-label ist etwas anderes als KEINES — ein Screenreader liest das
+  // Element sonst als "leer beschriftet" statt als unbeschriftet vor.
+  if (!vm.status || !vm.statusIcon) { el.removeAttribute("aria-label"); return; }
   el.addClass(vm.status);
   setIcon(el, vm.statusIcon);
   el.setAttribute("aria-label", vm.statusLabel);
@@ -22,9 +26,14 @@ export function renderCard(host: HTMLElement, vm: CardVm, onClick: () => void): 
   kopf.createEl("h3", { text: vm.title, cls: "sd-slot-title" });
   paintSlotStatus(kopf.createSpan({ cls: "sd-slot-status" }), vm);
   if (vm.empty) {
-    // §8-Empty-State-Kanon: Kopfzeile + Empty-Zeile, sonst nichts — kein Vorbau aus
-    // Funktion/Prompt/Statuszeile, die hier nur denselben Satz doppelt zeigen wuerden.
-    host.createDiv({ cls: "sd-slot-empty", text: vm.statusLabel });
+    // §8-Empty-State-Kanon: Kopfzeile + Empty-Zeile + genau EIN mod-cta, sonst nichts — kein
+    // Vorbau aus Funktion/Prompt/Statuszeile, die hier nur denselben Satz doppelt zeigen wuerden.
+    const leer = host.createDiv({ cls: "sd-slot-empty" });
+    leer.createDiv({ text: vm.statusLabel });
+    // W3: der Knopf war bisher tot — hier fuehrt er wortwoertlich zu der Beschriftung, die
+    // er traegt: dem Repo von local-image-generator, dem einzigen ehrlichen Ziel.
+    leer.createEl("button", { text: t("image.unavailable.cta"), cls: "mod-cta" })
+      .addEventListener("click", () => window.open(LOCAL_IMAGE_GENERATOR_URL, "_blank"));
     return;
   }
   host.createDiv({ cls: "sd-slot-function", text: vm.functionName });
@@ -42,10 +51,18 @@ export function renderCard(host: HTMLElement, vm: CardVm, onClick: () => void): 
 }
 
 export function registerSlotCard(plugin: SlideDeckPlugin): void {
-  plugin.registerMarkdownCodeBlockProcessor("slide-image", (source, el, ctx) => {
+  plugin.registerMarkdownCodeBlockProcessor(SLOT_LANG, (source, el, ctx) => {
     const block = parseSlot(source);
-    let state: CardState = { kind: "idle" };
+    // W4: die API ist ein synchroner, netzfreier Zugriff (kein Zwischenspeichern noetig) — sie
+    // beim Rendern zu lesen ist billig und zeigt Mobile/ohne-LIG sofort den Empty-State statt
+    // eines einladenden Knopfs, der erst nach dem Klick in eine Sackgasse fuehrt. Beim Klick
+    // wird trotzdem erneut gelesen (in plugin.runSlot) — der Ablauf aendert sich nicht.
+    let state: CardState = readImageApi(plugin.app) ? { kind: "idle" } : { kind: "unavailable" };
     const zeichne = (): void => renderCard(el, cardVm(block, state), () => {
+      // G4: den Knopf SOFORT sperren, nicht erst nach dem ersten await in runSlot — sonst
+      // startet ein Doppelklick zwei Laeufe.
+      state = { kind: "running", phase: "loading-model", pct: null };
+      zeichne();
       void plugin.runSlot(source, ctx, (s) => { state = s; zeichne(); });
     });
     zeichne();

@@ -259,7 +259,12 @@
 .sd-slot-prompt { font-family: var(--font-monospace); white-space: pre-wrap; }
 .sd-slot-bar { height: 4px; background: var(--background-modifier-border); border-radius: 2px; overflow: hidden; }
 .sd-slot-bar-fill { height: 100%; background: var(--interactive-accent); }
-.sd-slot-empty { font-size: var(--font-ui-smaller); color: var(--text-muted); }
+/* §8-Empty-State: Text + genau ein mod-cta, mit Abstand dazwischen statt Zusammenkleben. */
+.sd-slot-empty { font-size: var(--font-ui-smaller); color: var(--text-muted);
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--size-4-2); }
+/* G2: die Klasse existierte bisher ohne Regel und haengte inert im Baum — Abstand zur
+   Metazeile darueber, statt Struktur vorzutaeuschen, die niemand stylt. */
+.sd-slot-actions { margin-top: var(--size-4-1); }
 .sd-slot-status { display: inline-flex; }
 .sd-slot-status.is-ok { color: var(--text-success); }
 .sd-slot-status.is-error { color: var(--text-error); }
