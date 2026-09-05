@@ -1102,11 +1102,34 @@ const exportSektion: Section = {
     // auf sich selbst.
     const bildOrdner = `${zielOrdner}/${DECK_NOTE.replace(/\.md$/, "")}`;
 
+    /** Den Ziel-Unterordner leeren, BEVOR exportiert wird.
+     *
+     *  ⚠️ Ohne das misst der Punkt womoeglich das Artefakt des Vorlaufs: die Wartebedingung
+     *  unten ist `exists` + `size > 1024`, und beides erfuellt eine alte Datei **sofort** —
+     *  der Poll kehrt zurueck, bevor der laufende Export geschrieben hat. Der Punkt ist dann
+     *  gruen und hat den aktuellen Build nie gesehen. Aufgeraeumt wird zwar am Ende des
+     *  Laufs, aber genau dann nicht, wenn es darauf ankommt: bei `--keep`, nach einem
+     *  Abbruch (der Aufraeum-Block haengt an `.catch`) oder wenn eine Datei dem Index fehlt.
+     *
+     *  Nach dem Loeschen kann eine gefundene Datei nur die neue sein. Dieselbe Bewegung wie
+     *  in Abschnitt M (`pieVollePixel`) und bei B4: ein Pruefpunkt stellt seinen Gegenstand
+     *  selbst her, statt ihn von der Umgebung zu erwarten. */
+    const leereExport = async (ordner: string): Promise<void> => {
+      await cdp.evaluate(`
+        const adapter = app.vault.adapter;
+        const ordner = ${JSON.stringify(ordner)};
+        if (await adapter.exists(ordner)) await adapter.rmdir(ordner, true);
+        for (const n of document.querySelectorAll(".notice")) n.remove();
+        return true;
+      `);
+    };
+
     await openPreview(cdp, DECK_NOTE);
-    // Obsidians Toast ist global — in ihn schreibt jedes Plugin im Vault. Vor der Aktion
-    // leeren, sonst liest der Punkt eine fremde Meldung.
+    // `leereExport` raeumt zweierlei weg, und beides aus demselben Grund — der Punkt soll
+    // nichts messen, was vor ihm da war: das Artefakt des Vorlaufs (s. o.) und Obsidians
+    // Toast, der app-weit ist und in den jedes Plugin im Vault schreibt.
+    await leereExport(bildOrdner);
     await cdp.evaluate(`
-      for (const n of document.querySelectorAll(".notice")) n.remove();
       await app.commands.executeCommandById("${PLUGIN_ID}:export-images");
       return true;
     `);
@@ -1146,8 +1169,8 @@ const exportSektion: Section = {
     if (!(await openExisting(cdp, REGRESSION_NOTE, "source"))) throw new Error(`Notiz fehlt im Vault: ${REGRESSION_NOTE}`);
     await setPluginSetting(cdp, PLUGIN_ID, "customCss", MOD_PROBE_CSS);
     const regOrdner = `${zielOrdner}/${REGRESSION_NOTE.replace(/\.md$/, "")}`;
+    await leereExport(regOrdner);
     await cdp.evaluate(`
-      for (const n of document.querySelectorAll(".notice")) n.remove();
       await app.commands.executeCommandById("${PLUGIN_ID}:export-images");
       return true;
     `);

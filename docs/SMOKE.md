@@ -149,6 +149,7 @@ mehr zu sehen, welcher Weg sie dorthin gebracht hat.
 | 2026-09-03 | 1.13.7 | 16/16 grün (A6, A8, B4, D2 neu) | zwei Läufe: G1 (Streifen nach Anzahl statt Schwere, Modifier verworfen, Placeholder leer) → 13/16, rot A8, B4, D2; G2 (`title` der Warnzeile leer) → 14/16, rot A6, A8. Kein weiterer fiel mit; nach Rückbau 16/16 |
 | 2026-09-03 (abends) | 1.14.0 | 18/18 grün gegen `deck-core` 0.6.2 (M1, M2 neu) | zwei Läufe mit `--section mermaid`: G1 (`mermaidVarsFromDocument` → `return undefined`) → nur M1 rot, Füllung `rgb(236,236,255)` (Mermaid-Default); G2 (`mermaidPinned` ignoriert) → nur M2 rot, Füllung = Probefarbe. Jeder Punkt an seinem eigenen Gegenstand; nach Rückbau 18/18 |
 | 2026-09-03 (spät) | 1.14.0 | 19/19 grün (B5 neu) | drei Sabotagen, s. § B5: nur `removeClass` weg → grün (zweiter Riegel hält); nur `display:block` weg → grün; **beide weg → B5 rot** (3 Hosts flex, 0 gestapelt). Der in der Aufgabe benannte Defekt allein macht den Punkt nicht rot — und soll es nicht |
+| 2026-09-05 (3) | 1.14.0 | **22/22 grün** nach dem D1/D2-Fix (`leereExport` vor jedem Export) | **drei Läufe, beide Punkte einzeln belegt** — D2 misst nach Farbwechsel die neue Farbe; ohne Löschung meldet er die Farbe des Vorlaufs (rot); D1 zählt mit einem untergeschobenen sechsten PNG sechs statt fünf, bei noch laufendem Export (rot). Der Verdacht aus der Task war damit erstmals **am Treiber** gemessen, nicht am Ad-hoc-Skript |
 | 2026-09-05 (2) | 1.14.0 | **22/22 grün** (M3, M4, M5 neu) | **in jedem Punkt eingebaut**, statt als eigener Sabotage-Lauf: M3 696.483 volle Probe-Pixel gegen 2.256, M4 1 Slot mit 162 px gegen 0 Elemente, M5 0 `modifier-unknown` gegen 1. Dazu eine ungeplante echte Gegenprobe — der erste Lauf war rot an M3 (0 gegen 2.256), weil der Ja-Fall sein Theme nicht selbst stellte; der Punkt hat seinen eigenen Treiberfehler gemeldet |
 | 2026-09-05 | 1.14.0 | 19/19 grün gegen `deck-core` 0.10.0 (keine neuen Punkte) | **keine** — der Lauf belegt ein Vendoring, keinen neuen Prüfpunkt. Die vier Zusagen von 0.9.0/0.10.0 sind stattdessen einzeln am Kern gemessen (`modifiers:` deckweit, `sender:` kommt an, `footer:` dahinter leckt nicht, `bildfolie cover` meldet nichts) und die Consumer-Naht als vitest-Test **mit** Gegenprobe abgesichert (`tests/adapter.test.ts` § Consumer-Kette) |
 
@@ -202,6 +203,38 @@ Zwei weitere Treiberfehler fielen schon beim Bauen auf, bevor sie einen Lauf kos
 Bilder-Export schreibt nach `<exportFolder>/<Notizname>/` statt flach in den Ordner, und er
 schreibt über `adapter.writeBinary` — Obsidians Datei-Index kennt die PNG erst verzögert, ein
 Prüfpunkt über `getAbstractFileByPath` hätte die Indizierung gemessen statt den Export.
+
+### Warum D1 und D2 vor dem Export löschen (2026-09-05)
+
+Beide warten auf ihr Artefakt mit `exists` + `size > 1024`. **Beides erfüllt eine Datei des
+Vorlaufs sofort** — der Poll kehrt zurück, bevor der laufende Export geschrieben hat, und der
+Prüfpunkt misst den alten Stand. Der Treiber räumt zwar am Ende auf, aber genau dann nicht,
+wenn es darauf ankommt: bei `--keep`, nach einem Abbruch (der Aufräum-Block hängt an
+`.catch`) oder wenn eine Datei dem Index fehlt. `leereExport(ordner)` löscht deshalb vorher;
+danach kann eine gefundene Datei nur die neue sein.
+
+**Bis zum 2026-09-05 war das ein Verdacht, kein Befund** — gemessen worden war es an einem
+Ad-hoc-Skript gleicher Bauart, nicht am Treiber. Jetzt ist es am Treiber gemessen, in beiden
+Punkten einzeln:
+
+| Gegenprobe | Aufbau | Ergebnis |
+|---|---|---|
+| **D2** | Lauf A mit Probe-Farbe `#d81b60` und `--keep`, dann Farbe auf `#2e7d32`, Lauf B | **mit** Löschung meldet B `rgb(46,125,50)` — die neue Farbe, also frisch exportiert |
+| **D2 ohne Löschung** | Farbe zurück auf `#d81b60`, `leereExport` ausgebaut | **rot**: gemeldet wird `rgb(46,125,50)`, die Farbe aus Lauf B. Der Punkt las die alte Datei |
+| **D1 ohne Löschung** | ein sechstes PNG in den Zielordner kopiert | **rot**: „6 PNG > 1 KB", und die Meldung stand noch auf „Exportiere…" — der Poll kehrte zurück, **während** der Export lief |
+
+⚠️ **Die harmlose Richtung ist die, die man sieht.** In allen drei Fällen wurde der Punkt rot,
+weil die Gegenprobe die Farbe bzw. die Dateizahl absichtlich verschoben hat. Im Alltag
+verschiebt sie niemand: derselbe Treiber, dieselbe Probe-Farbe, ein liegengebliebenes
+Artefakt — dann ist der Punkt **grün** und hat den aktuellen Build nie gesehen. Genau das war
+im D1-Lauf nebenbei zu sehen: D2 stand dort auf grün, obwohl seine Löschung noch ausgebaut
+war, weil die alte Datei zufällig dieselbe Farbe trug.
+
+**Negativbefund zu den Nachbarn (2026-09-05, gemessen):** `llm-lab` und `vault-rag` tragen die
+Bauart **nicht**. llm-labs Poll wartet auf eine frisch erzeugte `id` im Dateiinhalt — das ist
+das empfohlene Gegenmittel, nicht die Falle; sein `exists` ist nur ein Vorfilter. vault-rag
+hat überhaupt keinen Artefakt-Poll (die Größenschwelle dort wählt eine **bestehende** Notiz
+aus). Der Verdacht aus der Task ist damit ausgeräumt, kein Zeiger nötig.
 
 ### Was am 2026-09-05 nachgezogen wurde — und was die Lücke lehrte
 
