@@ -56,6 +56,12 @@ function buildMd(): MarkdownIt {
       const b64 = toBase64Utf8(token.content.replace(/\n$/, ""));
       return `<div class="sd-mermaid" data-src="${b64}"></div>`;
     }
+    if (token.info.trim() === "slide-image") {
+      // Der Kern reicht den Rohtext durch und parst ihn NICHT: die Feld-Grammatik ist
+      // Doktrin des Consumers und wird sich ändern; ein Kern-Release würde sie einfrieren.
+      const raw = token.content.replace(/\n$/, "");
+      return `<div class="sd-image-slot"><pre>${md.utils.escapeHtml(raw)}</pre></div>`;
+    }
     return defaultFence(tokens, idx, opts, env, self);
   };
   md.renderer.rules.fence = mermaidFence;

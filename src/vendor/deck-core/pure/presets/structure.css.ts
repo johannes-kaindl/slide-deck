@@ -198,4 +198,13 @@ export const STRUCTURE_CSS = `
 .sd-layout-cover-image :is(.sd-slide-header,.sd-slide-footer,.sd-slide-pagination,.sd-slide-sender){
   text-shadow:0 2px 16px rgba(0,0,0,.8); }
 .sd-layout-cover-image .sd-content{ position:relative; z-index:3; }
+
+/* Bildplatz — ein DEKLARIERTER Mangel, nicht ein Fehler: gestrichelter Rahmen, der Rohtext
+   klein und ruhig. Bewusst ohne Beschriftung: der Kern kennt keine i18n, und ein englisches
+   Wort auf einer deutschen Folie waere schlimmer als gar keins. */
+.sd-slide .sd-image-slot{ display:flex; align-items:center; justify-content:center;
+  border:2px dashed currentColor; border-radius:8px; opacity:.55;
+  padding:var(--sd-space-s,.75em); min-height:3em; }
+.sd-slide .sd-image-slot pre{ font-family:var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,monospace);
+  font-size:.7em; white-space:pre-wrap; margin:0; background:none; padding:0; }
 `;
