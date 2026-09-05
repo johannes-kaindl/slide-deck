@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { cardVm } from "../src/image/slot-card-model";
 import { parseSlot } from "../src/image/slot-format";
+import { t } from "../src/i18n";
 
 const block = parseSlot("funktion: metaphorical\nEisberg");
 
@@ -55,14 +56,18 @@ describe("cardVm", () => {
     expect(vm.statusLabel).not.toBe("image.fail.no-gpu"); // kein Schluessel-Fallback
   });
 
-  it("allows retry on transient error with the error message interpolated", () => {
+  it("shows the error message verbatim — no re-wrapping in the view model", () => {
     const message = "CUDA out of memory";
     const vm = cardVm(block, { kind: "error", message });
     expect(vm.status).toBe("is-error");
     expect(vm.statusIcon).toBe("circle-x");
     expect(vm.buttonEnabled).toBe(true); // Retry ist möglich
-    expect(vm.statusLabel).toContain(message); // Nachricht wird interpoliert, nicht der Schluessel
-    expect(vm.statusLabel).not.toBe("image.fail.failed"); // kein Fallback auf Key
+    // EXAKTE Gleichheit, nicht nur toContain: "Generation failed: {message}" enthaelt die
+    // Nachricht ebenso und wuerde einen Rueckbau der Verpackung nicht auffangen. Der
+    // error-Zustand traegt eine FERTIGE Meldung, die das ViewModel unveraendert ausgibt —
+    // wer sie erneut verpackt, tut das an der Aufrufstelle (image.fail.failed), nicht hier.
+    expect(vm.statusLabel).toBe(message);
+    expect(vm.statusLabel).not.toMatch(/^Generation failed/); // kein Re-Wrap ins Fehler-Praefix
   });
 
   it("shows success state with the saved image path", () => {
@@ -70,7 +75,7 @@ describe("cardVm", () => {
     const vm = cardVm(block, { kind: "done", path });
     expect(vm.status).toBe("is-ok");
     expect(vm.statusIcon).toBe("circle-check");
-    expect(vm.statusLabel).toContain(path); // Pfad wird interpoliert, nicht der Schluessel
-    expect(vm.statusLabel).not.toBe("image.slot.done"); // kein Fallback auf Key
+    // Der aufgeloeste String, nicht bloss irgendetwas, das den Pfad enthaelt.
+    expect(vm.statusLabel).toBe(t("image.slot.done", path));
   });
 });
