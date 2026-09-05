@@ -165,6 +165,15 @@ const EN: Dict = {
   "image.fn.navigational.desc": "Structures the talk and guides the eye — icons, chapter images, anchors.",
   "image.fn.decorative.name": "Decorative",
   "image.fn.decorative.desc": "Purely ornamental, no relation to the slide's content.",
+  "image.fail.busy": "The image generator is already running. Wait for it to finish.",
+  "image.fail.not-configured": "No image server configured. Set an endpoint in Local Image Generator.",
+  "image.fail.unreachable": "The image server does not answer.",
+  "image.fail.model-not-downloaded": "The built-in model is not downloaded yet.",
+  "image.fail.no-gpu": "No usable GPU found.",
+  "image.fail.failed": "Generation failed: {0}",
+  "image.fail.write-failed": "The image was generated but could not be saved: {0}",
+  "image.unavailable": "Local Image Generator is not available.",
+  "image.unavailable.cta": "Learn how to install it",
 };
 const DE: Dict = {
   "cmd.openPreview": "Präsentations-Vorschau öffnen",
@@ -326,6 +335,15 @@ const DE: Dict = {
   "image.fn.navigational.desc": "Gliedert den Vortrag und führt den Blick — Icons, Kapitelbilder, Anker.",
   "image.fn.decorative.name": "Dekorativ",
   "image.fn.decorative.desc": "Rein ornamental, ohne Bezug zum Folieninhalt.",
+  "image.fail.busy": "Der Bildgenerator rechnet bereits. Warte, bis er fertig ist.",
+  "image.fail.not-configured": "Kein Bild-Server eingerichtet. Endpunkt in Local Image Generator setzen.",
+  "image.fail.unreachable": "Der Bild-Server antwortet nicht.",
+  "image.fail.model-not-downloaded": "Das eingebaute Modell ist noch nicht heruntergeladen.",
+  "image.fail.no-gpu": "Keine nutzbare GPU gefunden.",
+  "image.fail.failed": "Erzeugung fehlgeschlagen: {0}",
+  "image.fail.write-failed": "Das Bild wurde erzeugt, konnte aber nicht gespeichert werden: {0}",
+  "image.unavailable": "Local Image Generator ist nicht verfügbar.",
+  "image.unavailable.cta": "Installation nachlesen",
 };
 const STRINGS: Record<Lang, Dict> = { en: EN, de: DE };
 export const STRINGS_EN: Dict = EN;
