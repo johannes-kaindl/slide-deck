@@ -39,6 +39,9 @@ nehmen, sonst blockt der Guard den ersten Treiber-Aufruf.
 | A8 | Eigener Layoutname: Hinweiszeile, aber kein Streifen | Regressions-Deck Folie 5 (`<!-- layout: tagesordnung -->`): keine `sd-slide-warn*`-Klasse, kein `inset`-Schatten, **und** eine `info`-Zeile für `#5` mit `title` = `warn.severity.info` — fehlt die Zeile, hat der Punkt keinen Gegenstand |
 | M1 | Ordner-Theme färbt Mermaid über seine Tokens | Füllfarbe der Knoten im **gerenderten SVG** (`getComputedStyle`, nicht das CSS) = Probefarbe des Themes — Mermaid inlined seine Farben, eine CSS-Regel erreicht sie nicht |
 | M2 | Eine `sd-mermaid`-Angabe schlägt die Ableitung | dieselbe Messung mit `/* sd-mermaid: dark */` in der Theme-Datei: Füllung ≠ Probefarbe (`mermaidPinned`) |
+| M3 | `sd-mermaid-var` trägt bis ins **PNG** | Ordner-Theme mit `pie1 <Probe>` **und** `pieOpacity 1`, exportieren, voll deckende Probe-Pixel im geschriebenen PNG zählen — Gegenprobe ohne die `pieOpacity`-Zeile im selben Punkt. Am DOM wäre er grün, während der Nutzer ein blasses Segment bekommt |
+| M4 | `sender:` steht **sichtbar** im Deck | `.sd-slide-sender` trägt den Text **und** hat Breite > 0 (Klasse ohne Regel hinge inert im Baum) — Gegenprobe: eine Notiz ohne die Direktive hat 0 solche Elemente |
+| M5 | Theme-eigener Modifier warnt nicht | Ordner-Theme mit `/* sd-modifiers: zzprobe */`, Notiz mit `<!-- layout: default zzprobe -->`: **keine** `.sd-warn-modifier-unknown`-Zeile in der Vorschau — Gegenprobe: dasselbe Theme minus der Zeile erzeugt genau eine |
 | B1 | Einstellungen-Tab öffnet | Modal im Hauptfenster **oder** eigenes Settings-Fenster (ab Obsidian 1.13) |
 | B2 | Kein roher i18n-Schlüssel in der Oberfläche | Tab-Text gegen `/deck\.[a-z]+\.…/` — `t()` fällt bei unbekanntem Schlüssel auf den Schlüssel zurück, nicht auf EN |
 | B3 | Endpunkt-Zeileneditor ist verdrahtet | `.okit-ep-row` im Tab (Kit-Baustein, vendoriert) |
@@ -104,6 +107,24 @@ grün, wenn die Ableitung eine ausdrückliche Theme-Entscheidung überstimmt —
 `deck-core` 0.6.0 hatte und 0.6.1 behob. Beide Punkte sind einzeln sabotiert worden
 (Token-Sonde tot → nur M1 rot; `mermaidPinned` ignoriert → nur M2 rot), s. § Durchläufe.
 
+**M3–M5 (2026-09-05) hängen am selben Gerüst und messen je zwei Fälle in EINEM Punkt.** Das
+ist kein Sparen an Prüfpunkten, sondern die Absicherung gegen die Falle vom 2026-09-04: der
+Theme-Wechsel zwischen den Fällen läuft über `modify`, und `modify` löst die Neuregistrierung
+**nicht** aus. Ohne `refreshThemes()` dazwischen misst der zweite Fall das Theme des ersten,
+liefert dieselbe Zahl und ist grün, ohne seinen Gegenstand gesehen zu haben. **Zwei
+verschiedene Zahlen im Protokoll sind deshalb der Beleg, dass der Apparat überhaupt wach war** —
+identische wären der stille Fehlschlag, egal welches Vorzeichen sie tragen.
+
+Aus demselben Grund löscht M3 das alte PNG, bevor er exportiert: er läuft zweimal über
+dieselbe Notiz, und ein Poll auf `exists` + `size` fände beim zweiten Mal sofort das Artefakt
+des ersten Laufs (der offene Befund an D1/D2). Nach dem Löschen kann eine gefundene Datei nur
+die neue sein.
+
+Jeder der drei stellt seinen Theme-Fall **selbst** her, statt den Stand des Vorgängers zu
+erben. Dass das nötig ist, hat der erste Lauf gezeigt: M3s Ja-Fall erbte das Aufräum-Theme aus
+M5 und maß ein Segment ohne Probefarbe — 0 Pixel gegen 2.256 in der Gegenprobe. Gefangen hat
+es die eingebaute Gegenprobe, weil sie **mehr** lieferte als der Fall, der gewinnen soll.
+
 ⚠️ **Der Abschnitt steht vor D, nicht dahinter.** Der Export-Abschnitt setzt eine Probe-Regel
 ins `customCss` und räumt sie erst im `finally` des Laufs weg; liefe M danach, färbte sie in
 die Messung hinein. Die Probefarben sind zusätzlich verschieden gewählt (`#00838f` gegen
@@ -128,6 +149,7 @@ mehr zu sehen, welcher Weg sie dorthin gebracht hat.
 | 2026-09-03 | 1.13.7 | 16/16 grün (A6, A8, B4, D2 neu) | zwei Läufe: G1 (Streifen nach Anzahl statt Schwere, Modifier verworfen, Placeholder leer) → 13/16, rot A8, B4, D2; G2 (`title` der Warnzeile leer) → 14/16, rot A6, A8. Kein weiterer fiel mit; nach Rückbau 16/16 |
 | 2026-09-03 (abends) | 1.14.0 | 18/18 grün gegen `deck-core` 0.6.2 (M1, M2 neu) | zwei Läufe mit `--section mermaid`: G1 (`mermaidVarsFromDocument` → `return undefined`) → nur M1 rot, Füllung `rgb(236,236,255)` (Mermaid-Default); G2 (`mermaidPinned` ignoriert) → nur M2 rot, Füllung = Probefarbe. Jeder Punkt an seinem eigenen Gegenstand; nach Rückbau 18/18 |
 | 2026-09-03 (spät) | 1.14.0 | 19/19 grün (B5 neu) | drei Sabotagen, s. § B5: nur `removeClass` weg → grün (zweiter Riegel hält); nur `display:block` weg → grün; **beide weg → B5 rot** (3 Hosts flex, 0 gestapelt). Der in der Aufgabe benannte Defekt allein macht den Punkt nicht rot — und soll es nicht |
+| 2026-09-05 (2) | 1.14.0 | **22/22 grün** (M3, M4, M5 neu) | **in jedem Punkt eingebaut**, statt als eigener Sabotage-Lauf: M3 696.483 volle Probe-Pixel gegen 2.256, M4 1 Slot mit 162 px gegen 0 Elemente, M5 0 `modifier-unknown` gegen 1. Dazu eine ungeplante echte Gegenprobe — der erste Lauf war rot an M3 (0 gegen 2.256), weil der Ja-Fall sein Theme nicht selbst stellte; der Punkt hat seinen eigenen Treiberfehler gemeldet |
 | 2026-09-05 | 1.14.0 | 19/19 grün gegen `deck-core` 0.10.0 (keine neuen Punkte) | **keine** — der Lauf belegt ein Vendoring, keinen neuen Prüfpunkt. Die vier Zusagen von 0.9.0/0.10.0 sind stattdessen einzeln am Kern gemessen (`modifiers:` deckweit, `sender:` kommt an, `footer:` dahinter leckt nicht, `bildfolie cover` meldet nichts) und die Consumer-Naht als vitest-Test **mit** Gegenprobe abgesichert (`tests/adapter.test.ts` § Consumer-Kette) |
 
 ### Warum M überhaupt gebraucht wurde — und was der erste Anlauf kostete (2026-09-03)
@@ -181,17 +203,21 @@ Bilder-Export schreibt nach `<exportFolder>/<Notizname>/` statt flach in den Ord
 schreibt über `adapter.writeBinary` — Obsidians Datei-Index kennt die PNG erst verzögert, ein
 Prüfpunkt über `getAbstractFileByPath` hätte die Indizierung gemessen statt den Export.
 
-### Was der 0.10.0-Lauf NICHT abdeckt (2026-09-05)
+### Was am 2026-09-05 nachgezogen wurde — und was die Lücke lehrte
 
-Der Lauf ist grün und belegt, dass das Vendoring nichts gebrochen hat — mehr nicht. **Zwei
-neue Fähigkeiten haben hier keinen Prüfpunkt**, und das ist beim nächsten Ausbau der Ort:
+Bis zu diesem Tag standen hier drei Fähigkeiten ohne Prüfpunkt: `sd-mermaid-var` (0.7.0),
+`sender:` und `sd-modifiers` (0.9.0/0.10.0). Jede war zum Zeitpunkt ihres Baus vorbildlich
+belegt — Pixelprobe, Kern-Messung, vitest mit Gegenprobe — und keine war **bewacht**. Sie sind
+jetzt M3, M4 und M5.
 
-- **`sender:`** erzeugt ein viertes Slot-Element (`.sd-slide-sender`). Dass die Direktive
-  ankommt, ist am Kern gemessen; dass der Slot im **gerenderten** Deck steht, nicht. Der
-  Fixture-Prüfling trägt kein `sender:`.
-- **`sd-modifiers`** ist über `tests/adapter.test.ts` mit Gegenprobe abgesichert — aber rein
-  strukturell (Registry → `parseDeck`). Dass ein Ordner-Theme mit eigener Deklaration in der
-  **Vorschau** keine Warnzeile mehr erzeugt, ist ungeprüft.
+**Die Fehlerklasse ist größer als die drei Fälle: „belegt ist nicht bewacht."** Ein Beleg ist
+eine Momentaufnahme, ein Prüfpunkt die Dauerbewachung. Drei Features in zwei Tagen sind so
+durchgerutscht, jedes an einer Stelle, an der die Sorgfalt sichtbar hoch war — die Lücke
+entsteht nicht aus Nachlässigkeit, sondern daraus, dass ein guter Beleg sich wie ein
+Abschluss anfühlt. **Wer eine Fähigkeit belegt, hat sie noch nicht bewacht**; das nächste
+Vendoring kann sie brechen, ohne dass etwas widerspricht.
 
-Beides gehört in Abschnitt M, der bereits ein Ordner-Theme zur Laufzeit herstellt — der
-teure Teil (Theme-Datei anlegen, `refreshThemes`, aufräumen) steht dort schon.
+Der praktische Merksatz für den nächsten Ausbau: **eine neue Zusage von `deck-core` ist erst
+fertig, wenn sie einen Prüfpunkt hat, dessen Gegenprobe im selben Punkt sitzt.** Zwei
+verschiedene Zahlen im Protokoll — nicht eine grüne — sind der Beleg dafür, dass gemessen
+wurde.

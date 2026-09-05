@@ -235,7 +235,7 @@ Aufnahme kein Obsidian; nur Vorschau-Pane, Overflow-Warnung und Einstellungen br
 `shots:obsidian` setzt `$STAGING_VAULTS_DIR` und ein mit `--remote-debugging-port=9222`
 gestartetes Obsidian voraus.
 
-**GUI-Smoke (CORE-TEST-02 b):** `scripts/gui-smoke.ts` faehrt neunzehn Pruefpunkte per CDP gegen
+**GUI-Smoke (CORE-TEST-02 b):** `scripts/gui-smoke.ts` faehrt zweiundzwanzig Pruefpunkte per CDP gegen
 ein laufendes Obsidian — die Naht, die `vitest` mit `environment: "node"` strukturell nicht
 sieht: iframe-Isolation, Schrift-Metriken, Explorer-Markup, Bilder-Export. Checkliste,
 Hand-Runde und Durchlauf-Vermerke in `docs/SMOKE.md`; die CDP-Bruecke kommt aus
@@ -249,6 +249,12 @@ Modellfeld deshalb ein Dropdown ohne Placeholder war — **ein Pruefpunkt stellt
 selbst her** (Endpunkt auf toten Port), statt ihn von der Umgebung zu erwarten. Der Pruefling fuer
 Warn-Schwere und Modifier-Export ist `docs/themes/regression-deck.md`, zur Laufzeit in den Vault
 geschrieben, nicht als zweite Kopie im Fixture.
+**Abschnitt M misst seit dem 2026-09-05 je zwei Faelle in EINEM Punkt** (M3 `sd-mermaid-var` am
+geschriebenen PNG, M4 `sender:`, M5 `sd-modifiers`) — weil der Theme-Wechsel dazwischen ueber
+`modify` laeuft und `modify` die Neuregistrierung NICHT ausloest. Ohne `refreshThemes()` misst
+der zweite Fall das Theme des ersten und ist gruen, ohne seinen Gegenstand gesehen zu haben.
+**Zwei verschiedene Zahlen im Protokoll sind deshalb der Beleg, dass gemessen wurde** —
+identische waeren der stille Fehlschlag, egal welches Vorzeichen sie tragen.
 
 **Regressions-Deck:** `docs/themes/regression-deck.md` ist kein Demo, sondern ein Prüfling —
 jede seiner fünf Folien hat einen Defekt ausgelöst, der in `deck-core` 0.5.0 behoben wurde

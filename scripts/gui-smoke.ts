@@ -89,6 +89,40 @@ const MERMAID_THEME_KEY = "zz-mermaid-probe";
 const MERMAID_NOTE = "Mermaid probe.md";
 const MERMAID_PROBE_RGB: [number, number, number] = [0, 131, 143];
 
+/** M3 — die Segmentfarbe des `pie`-Pruflings. Wieder eine eigene: M1/M2 messen die
+ *  ABGELEITETE Farbe (Token → Mermaid), M3 die DEKLARIERTE (`sd-mermaid-var`). Traegen beide
+ *  dieselbe Farbe, belegt ein gruenes M3 nicht mehr, dass die Deklaration ueberhaupt
+ *  gegriffen hat — die Ableitung haette denselben Wert geliefert. */
+const PIE_NOTE = "Mermaid pie probe.md";
+const PIE_PROBE_RGB: [number, number, number] = [255, 87, 34];
+/** Ab wie vielen voll deckenden Pixeln das Segment als "durchgetragen" gilt. Die einmalige
+ *  Messung vom 2026-09-04 lieferte 245.306 mit und 2.025 ohne die Direktive; die Schwelle
+ *  liegt zwei Groessenordnungen unter dem Ja-Fall und eine ueber dem Nein-Fall, damit weder
+ *  ein anderes Folienformat noch ein Antialias-Saum sie kippt. */
+const PIE_VOLL_MIN = 20_000;
+
+/** M4 — der `sender:`-Slot. Der Text ist absichtlich unverwechselbar: er wird im
+ *  gerenderten Deck per `textContent` gesucht, und ein Allerweltswort koennte aus einer
+ *  Fuss- oder Kopfzeile stammen. */
+const SENDER_NOTE = "Sender probe.md";
+const SENDER_TEXT = "Zz Probe Absender";
+
+/** M5 — der theme-eigene Modifier. NICHT `sand` wie im Regressions-Deck (A8/D2): derselbe
+ *  Name in zwei Punkten macht eine rote Zeile mehrdeutig. */
+const MOD_NOTE = "Modifier probe.md";
+const THEME_MOD = "zzprobe";
+
+interface ThemeOpts {
+  /** ausdrueckliche `sd-mermaid`-Angabe (M2) */
+  pin?: boolean;
+  /** `/* sd-modifiers: … *\/` deklarieren (M5) */
+  modifiers?: readonly string[];
+  /** `pie1` auf die Probefarbe setzen (M3 — beide Faelle) */
+  pie?: boolean;
+  /** zusaetzlich `pieOpacity 1` (M3 — nur der Ja-Fall) */
+  pieOpacity?: boolean;
+}
+
 /** Das Ordner-Theme des Pruefpunkts. Zwei Eigenschaften sind Absicht, nicht Zufall:
  *  die Farbe kommt ueber eine `var()`-Kette, und `--sd-surface` ist zweimal deklariert.
  *  Genau daran waere der billigere Weg gescheitert, der bei der Entscheidung zur Wahl stand
@@ -97,9 +131,18 @@ const MERMAID_PROBE_RGB: [number, number, number] = [0, 131, 143];
  *  beides auf, weil der Browser es ohnehin tut. Der Pruefpunkt misst damit nicht nur, DASS
  *  die Ableitung wirkt, sondern den Fall, fuer den sie so gebaut wurde.
  *
- *  `pin` schaltet die ausdrueckliche `sd-mermaid`-Angabe zu — der Gegenstand von M2. */
-function mermaidThemeCss(pin: boolean): string {
-  return `${pin ? "/* sd-mermaid: dark */\n" : ""}/* sd-base: 24px */
+ *  Die vier Schalter erzeugen die Faelle von M1–M3 und M5 aus EINER Quelle. Getrennte
+ *  Vorlagen waeren die naheliegende Alternative und die schlechtere: die Punkte messen
+ *  Unterschiede zwischen zwei Faellen, und zwei Vorlagen koennen unbemerkt in mehr als dem
+ *  gemessenen Merkmal auseinanderlaufen. */
+function mermaidThemeCss(opts: ThemeOpts = {}): string {
+  const kopf = [
+    opts.pin ? "/* sd-mermaid: dark */" : "",
+    opts.modifiers?.length ? `/* sd-modifiers: ${opts.modifiers.join(" ")} */` : "",
+    opts.pie ? `/* sd-mermaid-var: pie1 ${rgbCss(PIE_PROBE_RGB)} */` : "",
+    opts.pieOpacity ? "/* sd-mermaid-var: pieOpacity 1 */" : "",
+  ].filter(Boolean);
+  return `${kopf.map((z) => z + "\n").join("")}/* sd-base: 24px */
 :root { --probe-akzent: #00838f; --probe-tinte: #101014; }
 .sd-slide {
   --sd-surface: #999999;
@@ -112,7 +155,12 @@ function mermaidThemeCss(pin: boolean): string {
   background: var(--sd-bg);
   color: var(--sd-fg);
 }
+.sd-slide.sd-mod-${THEME_MOD} { letter-spacing: 0.01em; }
 `;
+}
+
+function rgbCss(rgb: [number, number, number]): string {
+  return "#" + rgb.map((v) => v.toString(16).padStart(2, "0")).join("");
 }
 
 /** Die Pruefnotiz: eine Folie, ein Mermaid-Block, das Ordner-Theme in der Frontmatter. */
@@ -126,6 +174,44 @@ theme: ${MERMAID_THEME_KEY}
 flowchart LR
   A[Erste] --> B[Zweite]
 \`\`\`
+`;
+
+/** M3 — EIN Segment, damit die gemessene Flaeche der Vollkreis ist und nicht davon abhaengt,
+ *  wohin Mermaid welchen Sektor legt. Gezaehlt werden Pixel im ganzen Bild, nicht an einer
+ *  Koordinate: wo der Kreis im PNG sitzt, haengt an Diagrammgroesse und Layout, die Menge
+ *  seiner Pixel nicht. */
+const PIE_NOTE_MD = `---
+theme: ${MERMAID_THEME_KEY}
+---
+
+\`\`\`mermaid
+pie
+  "Anteil" : 100
+\`\`\`
+`;
+
+/** M4 — `sender:` traegt einen eigenen Slot; `header:` steht daneben, damit der Punkt nicht
+ *  gruen wird, weil ueberhaupt kein Slot gerendert wird. */
+const SENDER_NOTE_MD = `---
+sender: ${SENDER_TEXT}
+header: Zz Probe Kopf
+---
+
+# Sender probe
+
+Eine Folie, zwei Slots.
+`;
+
+/** M5 — ein Modifier, den der Kern nicht kennt und das Theme deklariert. */
+const MOD_NOTE_MD = `---
+theme: ${MERMAID_THEME_KEY}
+---
+
+<!-- layout: default ${THEME_MOD} -->
+
+# Modifier probe
+
+Der Modifier steht im Theme, nicht im Kern.
 `;
 
 // --- Protokoll ---------------------------------------------------------------
@@ -532,24 +618,47 @@ const mermaid: Section = {
     // Ordner und Dateien anlegen — ueber den Vault, nicht ueber `fs`: der Treiber kann per
     // --vault an jedes Fenster andocken, und dann liegt der Vault nicht dort, wo dieses
     // Skript ihn vermuten wuerde. Alles Angelegte geht ins Papierkorb-Protokoll.
-    const angelegt = await cdp.evaluate<{ ordner: boolean; css: boolean; note: boolean }>(`
+    const dateien: Array<[string, string]> = [
+      [cssPfad, mermaidThemeCss()],
+      [MERMAID_NOTE, MERMAID_NOTE_MD],
+      [PIE_NOTE, PIE_NOTE_MD],
+      [SENDER_NOTE, SENDER_NOTE_MD],
+      [MOD_NOTE, MOD_NOTE_MD],
+    ];
+    const angelegt = await cdp.evaluate<{ ordner: boolean; neu: string[] }>(`
       const ordner = ${JSON.stringify(themesFolder)};
       const neuerOrdner = !(await app.vault.adapter.exists(ordner));
       if (neuerOrdner) await app.vault.createFolder(ordner);
-      const schreibe = async (pfad, inhalt) => {
+      const neu = [];
+      for (const [pfad, inhalt] of ${JSON.stringify(dateien)}) {
         const da = app.vault.getAbstractFileByPath(pfad);
-        if (da) { await app.vault.modify(da, inhalt); return false; }
-        await app.vault.create(pfad, inhalt);
-        return true;
-      };
-      const css = await schreibe(${JSON.stringify(cssPfad)}, ${JSON.stringify(mermaidThemeCss(false))});
-      const note = await schreibe(${JSON.stringify(MERMAID_NOTE)}, ${JSON.stringify(MERMAID_NOTE_MD)});
+        if (da) await app.vault.modify(da, inhalt);
+        else { await app.vault.create(pfad, inhalt); neu.push(pfad); }
+      }
       await new Promise((r) => setTimeout(r, 600));
-      return { ordner: neuerOrdner, css, note };
+      return { ordner: neuerOrdner, neu };
     `);
     if (angelegt.ordner) erzeugtePfade.push(themesFolder);
-    else if (angelegt.css) erzeugtePfade.push(cssPfad);
-    if (angelegt.note) erzeugtePfade.push(MERMAID_NOTE);
+    for (const pfad of angelegt.neu) {
+      // Der Themes-Ordner raeumt seinen Inhalt mit weg — ein zweiter Eintrag dafuer waere
+      // beim Aufraeumen ein Fehlschlag auf einer laengst geloeschten Datei.
+      if (angelegt.ordner && pfad.startsWith(themesFolder + "/")) continue;
+      erzeugtePfade.push(pfad);
+    }
+
+    /** Das Ordner-Theme auf einen anderen Fall stellen und die Registry nachziehen. Beides
+     *  gehoert zusammen: `modify` loest die Neuregistrierung NICHT aus (s. `refreshThemes`),
+     *  und ein Punkt, der das vergisst, misst das Theme des vorigen Punkts und ist gruen,
+     *  ohne seinen Gegenstand gesehen zu haben — am 2026-09-04 genau so passiert. */
+    const stelleTheme = async (opts: ThemeOpts): Promise<void> => {
+      await cdp.evaluate(`
+        const datei = app.vault.getAbstractFileByPath(${JSON.stringify(cssPfad)});
+        await app.vault.modify(datei, ${JSON.stringify(mermaidThemeCss(opts))});
+        await new Promise((r) => setTimeout(r, 400));
+        return true;
+      `);
+      await refreshThemes(cdp);
+    };
 
     // M1: die Tokens des Ordner-Themes erreichen das Diagramm.
     await refreshThemes(cdp);
@@ -567,13 +676,7 @@ const mermaid: Section = {
     // M2: eine ausdrueckliche `sd-mermaid`-Angabe schlaegt die Ableitung (`mermaidPinned`).
     // Ohne diesen Punkt waere M1 auch dann gruen, wenn die Ableitung eine bewusste
     // Theme-Entscheidung ueberstimmt — der Fehler, den deck-core 0.6.0 hatte und 0.6.1 behob.
-    await cdp.evaluate(`
-      const datei = app.vault.getAbstractFileByPath(${JSON.stringify(cssPfad)});
-      await app.vault.modify(datei, ${JSON.stringify(mermaidThemeCss(true))});
-      await new Promise((r) => setTimeout(r, 400));
-      return true;
-    `);
-    await refreshThemes(cdp);
+    await stelleTheme({ pin: true });
     await openPreview(cdp, MERMAID_NOTE);
     const m2 = await mermaidKnoten(cdp);
     record(
@@ -584,6 +687,151 @@ const mermaid: Section = {
           (nahAn(m2.fill, MERMAID_PROBE_RGB) ? " · ACHTUNG: die Tokens ueberstimmen die Angabe" : "")
         : `kein Mermaid-SVG im Deck · ${await diagnose(cdp)}`,
     );
+
+    // M4: der `sender:`-Slot steht im gerenderten Deck. Er kam mit deck-core 0.9.0 und war
+    // bis hierher nur am Kern belegt — dass `parseDeck` ihn liest, sagt nichts darueber, ob
+    // `appendSlots` ihn baut und das Struktur-CSS ihn sichtbar macht. Gemessen wird deshalb
+    // die BREITE, nicht die Existenz: eine Klasse ohne Regel haengt inert im Baum (dieselbe
+    // Lehre wie beim Warn-Streifen in A7). Gegenprobe im selben Punkt, weil ein Punkt, der
+    // nur die Anwesenheit prueft, auch dann gruen bliebe, wenn das Deck den Slot
+    // bedingungslos baut.
+    const senderFolien = await openPreview(cdp, SENDER_NOTE);
+    const mitSender = await cdp.evaluate<{ da: boolean; text: string; breite: number }>(`
+      ${DECK_DOC}
+      const el = deck ? deck.querySelector(".sd-slide-sender") : null;
+      if (!el) return { da: false, text: "", breite: 0 };
+      return { da: true, text: el.textContent.trim(), breite: el.getBoundingClientRect().width };
+    `);
+    await openPreview(cdp, MERMAID_NOTE);
+    const ohneSender = await cdp.evaluate<number>(`
+      ${DECK_DOC}
+      return deck ? deck.querySelectorAll(".sd-slide-sender").length : -1;
+    `);
+    const senderOk = mitSender.da && mitSender.text === SENDER_TEXT && mitSender.breite > 0;
+    record(
+      "M4 sender-Slot steht sichtbar im Deck (und fehlt ohne die Direktive)",
+      senderOk && ohneSender === 0,
+      senderFolien === 0
+        ? `Pruefling rendert nicht · ${await diagnose(cdp)}`
+        : `mit sender: ${mitSender.da ? `"${mitSender.text}" ${Math.round(mitSender.breite)}px` : "KEIN Element"}` +
+          (mitSender.da && mitSender.text !== SENDER_TEXT ? ` · ACHTUNG: erwartet "${SENDER_TEXT}"` : "") +
+          (mitSender.da && mitSender.breite === 0 ? " · ACHTUNG: ohne Breite — Klasse ohne Regel" : "") +
+          ` · ohne sender: ${ohneSender} Elemente` +
+          (ohneSender > 0 ? " · ACHTUNG: der Slot entsteht auch ohne die Direktive" : ""),
+    );
+
+    // M5: ein Theme darf seine eigenen Modifier deklarieren (`sd-modifiers`, deck-core
+    // 0.9.0/0.10.0). Die Kette laeuft ueber vier Module und zwei Repos; `tests/adapter.test.ts`
+    // prueft sie strukturell, aber nichts prueft, was in der VORSCHAU ankommt. Gemessen wird
+    // die Warnzeile, weil sie das ist, was der Autor sieht: mit Deklaration keine, ohne eine.
+    const modZeilen = async (): Promise<{ unbekannt: number; alle: number }> => cdp.evaluate(`
+      const leaf = app.workspace.getLeavesOfType(${JSON.stringify(VIEW_TYPE)})[0];
+      const rows = leaf ? [...leaf.view.containerEl.querySelectorAll(".sd-warn")] : [];
+      return {
+        unbekannt: rows.filter((r) => r.classList.contains("sd-warn-modifier-unknown")).length,
+        alle: rows.length,
+      };
+    `);
+    await stelleTheme({ modifiers: [THEME_MOD] });
+    const modFolien = await openPreview(cdp, MOD_NOTE);
+    const mitDekl = await modZeilen();
+    // Gegenprobe: dieselbe Notiz, dasselbe Theme MINUS der einen Zeile. Ohne sie belegte der
+    // Punkt nur, dass irgendetwas keine Warnung erzeugt — die Bewegung aus der
+    // Consumer-Ketten-Naht in `tests/adapter.test.ts`.
+    await stelleTheme({});
+    await openPreview(cdp, MOD_NOTE);
+    const ohneDekl = await modZeilen();
+    record(
+      `M5 Theme-eigener Modifier "${THEME_MOD}" warnt nicht (ohne Deklaration schon)`,
+      modFolien > 0 && mitDekl.unbekannt === 0 && ohneDekl.unbekannt === 1,
+      modFolien === 0
+        ? `Pruefling rendert nicht · ${await diagnose(cdp)}`
+        : `mit sd-modifiers: ${mitDekl.unbekannt} modifier-unknown (${mitDekl.alle} Warnzeilen)` +
+          (mitDekl.unbekannt > 0 ? " · ACHTUNG: die Deklaration erreicht den Parser nicht" : "") +
+          ` · ohne: ${ohneDekl.unbekannt}` +
+          (ohneDekl.unbekannt === 0 ? " · ACHTUNG: es warnt auch ohne Deklaration — der Punkt misst nichts" : ""),
+    );
+
+    // M3: `sd-mermaid-var` (deck-core 0.7.0) traegt bis ins PNG. Der teuerste Punkt des
+    // Abschnitts, und der einzige, der exportieren MUSS: in der Ansicht wirkt eine
+    // `!important`-Regel gegen Mermaids SVG-CSS, im Export nicht (`getDiffStyle` schreibt nur
+    // Abweichungen vom Default inline, und `opacity: 1` IST der Default). Am DOM gemessen
+    // waere dieser Punkt gruen, waehrend der Nutzer ein blasses Segment bekommt — genau der
+    // Befund vom 2026-09-04, der die Direktive ueberhaupt ausgeloest hat.
+    const exportOrdner = await cdp.evaluate<string>(`
+      return app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.exportFolder;
+    `);
+    const pieOrdner = `${exportOrdner}/${PIE_NOTE.replace(/\.md$/, "")}`;
+    const pieBild = `${pieOrdner}/01-${PIE_NOTE.replace(/\.md$/, "")}.png`;
+
+    /** Einmal exportieren und die voll deckenden Probe-Pixel zaehlen.
+     *
+     *  ⚠️ Das ALTE Bild wird vorher geloescht, und darauf steht der ganze Punkt: M3 laeuft
+     *  zweimal ueber dieselbe Notiz, und ein Poll auf `exists` + `size` faende beim zweiten
+     *  Mal sofort das Artefakt des ersten Laufs — beide Faelle lieferten dieselbe Zahl, der
+     *  Punkt waere gruen und haette nichts gemessen (offener Befund an D1/D2, s. Cockpit).
+     *  Nach dem Loeschen kann eine gefundene Datei nur die neue sein. */
+    const pieVollePixel = async (): Promise<number | null> => {
+      await cdp.evaluate(`
+        const adapter = app.vault.adapter;
+        if (await adapter.exists(${JSON.stringify(pieOrdner)})) await adapter.rmdir(${JSON.stringify(pieOrdner)}, true);
+        for (const n of document.querySelectorAll(".notice")) n.remove();
+        return true;
+      `);
+      await openPreview(cdp, PIE_NOTE);
+      await cdp.evaluate(`
+        await app.commands.executeCommandById("${PLUGIN_ID}:export-images");
+        return true;
+      `);
+      return pollUntil<number>(cdp, `
+        const adapter = app.vault.adapter;
+        const pfad = ${JSON.stringify(pieBild)};
+        if (!(await adapter.exists(pfad))) return null;
+        const s = await adapter.stat(pfad);
+        if (!s || s.size < 1024) return null;
+        const bmp = await createImageBitmap(new Blob([await adapter.readBinary(pfad)], { type: "image/png" }));
+        const c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height;
+        const ctx = c.getContext("2d"); ctx.drawImage(bmp, 0, 0);
+        const d = ctx.getImageData(0, 0, bmp.width, bmp.height).data;
+        const [zr, zg, zb] = ${JSON.stringify(PIE_PROBE_RGB)};
+        let voll = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          if (Math.abs(d[i] - zr) <= 4 && Math.abs(d[i + 1] - zg) <= 4 && Math.abs(d[i + 2] - zb) <= 4) voll++;
+        }
+        // 0 waere nicht von "noch nicht geschrieben" zu unterscheiden — als -1 melden, damit
+        // der Poll nicht bis zum Timeout auf ein Bild wartet, das laengst dasteht.
+        return voll === 0 ? -1 : voll;
+      `, 90_000, 2000);
+    };
+
+    // Der Ja-Fall stellt sein Theme SELBST her, statt den Stand des vorigen Punkts zu erben:
+    // M5 hinterlaesst das Theme im Grundzustand, und ohne diese Zeile maesse der Ja-Fall ein
+    // Segment ohne Probefarbe. Genau so beim ersten Lauf passiert — gefangen hat es die
+    // Gegenprobe, weil sie den hoeheren Wert lieferte als der Fall, der gewinnen soll.
+    await stelleTheme({ pie: true, pieOpacity: true });
+    const mitVar = await pieVollePixel();
+    // Gegenprobe: dasselbe Theme, dieselbe Notiz, nur ohne `pieOpacity 1`. Mermaid zeichnet
+    // das Segment dann mit seiner Voreinstellung 0.7, und die Probefarbe kommt nirgends mehr
+    // rein durch.
+    await stelleTheme({ pie: true });
+    const ohneVar = await pieVollePixel();
+    if (mitVar !== null && !erzeugtePfade.includes(exportOrdner)) erzeugtePfade.push(exportOrdner);
+    const genug = (n: number | null): boolean => n !== null && n >= PIE_VOLL_MIN;
+    record(
+      "M3 sd-mermaid-var traegt bis ins PNG (pieOpacity 1 gegen Mermaids 0.7)",
+      genug(mitVar) && !genug(ohneVar) && ohneVar !== null,
+      mitVar === null || ohneVar === null
+        ? `kein Export-PNG (${mitVar === null ? "Ja-Fall" : "Gegenprobe"}) unter "${pieBild}" · ${await diagnose(cdp)}`
+        : `mit pieOpacity: ${Math.max(mitVar, 0)} volle Probe-Pixel · ohne: ${Math.max(ohneVar, 0)}` +
+          ` · Schwelle ${PIE_VOLL_MIN}` +
+          (genug(mitVar) ? "" : " · ACHTUNG: die Deklaration erreicht das PNG nicht") +
+          (genug(ohneVar) ? " · ACHTUNG: auch ohne sie voll deckend — der Punkt misst nicht die Direktive" : ""),
+    );
+
+    // Das Theme fuer einen etwaigen naechsten Lauf auf den Ausgangsfall zuruecksetzen. Ohne
+    // das stuende bei `--keep` ein pie-gefaerbtes Theme im Vault und M1 maesse beim naechsten
+    // Mal einen Zustand, den dieser Lauf hinterlassen hat.
+    await stelleTheme({});
   },
 };
 
