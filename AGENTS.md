@@ -187,7 +187,14 @@ und der Deck-Prompt leben in [`deck-core`](https://git.jkaindl.de/jkaindl/deck-c
 und liegen hier als gepinnte Kopie unter `src/vendor/deck-core/`.
 
 **Dort nicht bearbeiten.** Änderungen gehören nach `deck-core`, danach neu
-vendorieren und `VENDOR.json` (`version`, `sha`, `vendored`) nachziehen. Der Abgleich
+vendorieren und `VENDOR.json` (`version`, `sha`, `vendored`) nachziehen.
+
+⚠️ **Beim Auflösen eines deck-core-Tags immer `<tag>^{}` nehmen, nie den Tag allein.**
+Die Tags dort sind gemischt — `git rev-parse 0.10.0` liefert bei einem **annotated** Tag das
+Tag-Objekt statt des Commits, und der landet dann falsch in `VENDOR.json`. Gemessen am
+2026-09-05: 0.7.0/0.8.0 sind lightweight, 0.5.0/0.9.0/0.10.0 annotated. `rev-parse` ohne
+`^{}` stimmt also meistens — was die Falle stellt, weil der Fehler erst auftritt, wenn man
+ihn für ausgeschlossen hält. `git archive <tag>` löst dagegen von sich aus korrekt auf. Der Abgleich
 Kopie-gegen-Quelle ist bislang **Handarbeit** — `drift-audit` deckt nur
 Kit-Doppelungen zwischen den Plugin-Repos ab; `deck-core` liegt außerhalb seines
 Wirkungskreises.

@@ -128,6 +128,7 @@ mehr zu sehen, welcher Weg sie dorthin gebracht hat.
 | 2026-09-03 | 1.13.7 | 16/16 grün (A6, A8, B4, D2 neu) | zwei Läufe: G1 (Streifen nach Anzahl statt Schwere, Modifier verworfen, Placeholder leer) → 13/16, rot A8, B4, D2; G2 (`title` der Warnzeile leer) → 14/16, rot A6, A8. Kein weiterer fiel mit; nach Rückbau 16/16 |
 | 2026-09-03 (abends) | 1.14.0 | 18/18 grün gegen `deck-core` 0.6.2 (M1, M2 neu) | zwei Läufe mit `--section mermaid`: G1 (`mermaidVarsFromDocument` → `return undefined`) → nur M1 rot, Füllung `rgb(236,236,255)` (Mermaid-Default); G2 (`mermaidPinned` ignoriert) → nur M2 rot, Füllung = Probefarbe. Jeder Punkt an seinem eigenen Gegenstand; nach Rückbau 18/18 |
 | 2026-09-03 (spät) | 1.14.0 | 19/19 grün (B5 neu) | drei Sabotagen, s. § B5: nur `removeClass` weg → grün (zweiter Riegel hält); nur `display:block` weg → grün; **beide weg → B5 rot** (3 Hosts flex, 0 gestapelt). Der in der Aufgabe benannte Defekt allein macht den Punkt nicht rot — und soll es nicht |
+| 2026-09-05 | 1.14.0 | 19/19 grün gegen `deck-core` 0.10.0 (keine neuen Punkte) | **keine** — der Lauf belegt ein Vendoring, keinen neuen Prüfpunkt. Die vier Zusagen von 0.9.0/0.10.0 sind stattdessen einzeln am Kern gemessen (`modifiers:` deckweit, `sender:` kommt an, `footer:` dahinter leckt nicht, `bildfolie cover` meldet nichts) und die Consumer-Naht als vitest-Test **mit** Gegenprobe abgesichert (`tests/adapter.test.ts` § Consumer-Kette) |
 
 ### Warum M überhaupt gebraucht wurde — und was der erste Anlauf kostete (2026-09-03)
 
@@ -179,3 +180,18 @@ Zwei weitere Treiberfehler fielen schon beim Bauen auf, bevor sie einen Lauf kos
 Bilder-Export schreibt nach `<exportFolder>/<Notizname>/` statt flach in den Ordner, und er
 schreibt über `adapter.writeBinary` — Obsidians Datei-Index kennt die PNG erst verzögert, ein
 Prüfpunkt über `getAbstractFileByPath` hätte die Indizierung gemessen statt den Export.
+
+### Was der 0.10.0-Lauf NICHT abdeckt (2026-09-05)
+
+Der Lauf ist grün und belegt, dass das Vendoring nichts gebrochen hat — mehr nicht. **Zwei
+neue Fähigkeiten haben hier keinen Prüfpunkt**, und das ist beim nächsten Ausbau der Ort:
+
+- **`sender:`** erzeugt ein viertes Slot-Element (`.sd-slide-sender`). Dass die Direktive
+  ankommt, ist am Kern gemessen; dass der Slot im **gerenderten** Deck steht, nicht. Der
+  Fixture-Prüfling trägt kein `sender:`.
+- **`sd-modifiers`** ist über `tests/adapter.test.ts` mit Gegenprobe abgesichert — aber rein
+  strukturell (Registry → `parseDeck`). Dass ein Ordner-Theme mit eigener Deklaration in der
+  **Vorschau** keine Warnzeile mehr erzeugt, ist ungeprüft.
+
+Beides gehört in Abschnitt M, der bereits ein Ordner-Theme zur Laufzeit herstellt — der
+teure Teil (Theme-Datei anlegen, `refreshThemes`, aufräumen) steht dort schon.
