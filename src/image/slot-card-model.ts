@@ -12,7 +12,8 @@ export type CardState =
 
 export interface CardVm {
   title: string;
-  meta: string[];
+  functionName: string;
+  prompt: string;
   hint: string | null;
   empty: boolean;
   buttonLabel: string;
@@ -28,7 +29,8 @@ export function cardVm(block: SlotBlock, state: CardState): CardVm {
   const funktionsName = block.funktion ? t(`image.fn.${block.funktion}.name`) : t("image.slot.noFunction");
   const base: CardVm = {
     title: t("image.slot.title"),
-    meta: [funktionsName, block.prompt],
+    functionName: funktionsName,
+    prompt: block.prompt,
     // Eine Erinnerung, KEINE Warnung: der Schaden in dieser Kategorie entsteht durch
     // UNBEABSICHTIGTE Dekoration — ein deklarierter Schmuck ist ihr Gegenteil.
     hint: block.funktion === "decorative" ? t("image.slot.decorativeHint") : null,

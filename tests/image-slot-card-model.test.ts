@@ -11,6 +11,13 @@ describe("cardVm", () => {
     expect(vm.status).toBeNull();
   });
 
+  it("keeps function name and prompt as separate fields, not one positional list", () => {
+    const vm = cardVm(block, { kind: "idle" });
+    expect(vm.functionName).not.toBe(vm.prompt);
+    expect(vm.prompt).toBe("Eisberg");
+    expect(vm.functionName.length).toBeGreaterThan(0);
+  });
+
   it("shows an empty state instead of a dead button when the api is missing", () => {
     const vm = cardVm(block, { kind: "unavailable" });
     expect(vm.buttonEnabled).toBe(false);

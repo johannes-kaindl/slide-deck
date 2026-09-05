@@ -145,7 +145,8 @@
 .sd-gen-row label { min-width: 120px; }
 .sd-gen-status { margin-bottom: 10px; opacity: 0.9; }
 .sd-gen-ping { margin-left: 8px; display: inline-flex; align-items: center; }
-.sd-gen-ping.is-checking { color: var(--text-faint); }
+/* .is-checking-Farbe steht nur noch bei der neuen §8-Keyframe-Regel weiter unten —
+   zwei identische Regeln waeren Rauschen. */
 .sd-gen-ping.is-ok { color: var(--text-success); }
 .sd-gen-ping.is-error { color: var(--text-error); }
 .sd-gen-ping-label { margin-left: var(--size-4-2); opacity: 0.9; }
@@ -254,8 +255,8 @@
 /* Groesse ausdruecklich setzen: ui_adoption_check sieht Typografie NICHT, und ein <h3> ohne
    Regel wird in der Sidebar viel zu gross (anysource-sideloader, 2026-09-02). */
 .sd-slot-title { font-size: var(--font-ui-small); margin: 0; font-weight: var(--font-semibold); }
-.sd-slot-meta, .sd-slot-hint, .sd-slot-state { font-size: var(--font-ui-smaller); color: var(--text-muted); }
-.sd-slot-meta:nth-of-type(2) { font-family: var(--font-monospace); white-space: pre-wrap; }
+.sd-slot-function, .sd-slot-prompt, .sd-slot-hint, .sd-slot-state { font-size: var(--font-ui-smaller); color: var(--text-muted); }
+.sd-slot-prompt { font-family: var(--font-monospace); white-space: pre-wrap; }
 .sd-slot-bar { height: 4px; background: var(--background-modifier-border); border-radius: 2px; overflow: hidden; }
 .sd-slot-bar-fill { height: 100%; background: var(--interactive-accent); }
 .sd-slot-empty { font-size: var(--font-ui-smaller); color: var(--text-muted); }

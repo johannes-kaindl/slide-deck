@@ -21,16 +21,19 @@ export function renderCard(host: HTMLElement, vm: CardVm, onClick: () => void): 
   const kopf = host.createDiv({ cls: "sd-slot-head" });
   kopf.createEl("h3", { text: vm.title, cls: "sd-slot-title" });
   paintSlotStatus(kopf.createSpan({ cls: "sd-slot-status" }), vm);
-  for (const zeile of vm.meta) host.createDiv({ cls: "sd-slot-meta", text: zeile });
+  if (vm.empty) {
+    // §8-Empty-State-Kanon: Kopfzeile + Empty-Zeile, sonst nichts — kein Vorbau aus
+    // Funktion/Prompt/Statuszeile, die hier nur denselben Satz doppelt zeigen wuerden.
+    host.createDiv({ cls: "sd-slot-empty", text: vm.statusLabel });
+    return;
+  }
+  host.createDiv({ cls: "sd-slot-function", text: vm.functionName });
+  host.createDiv({ cls: "sd-slot-prompt", text: vm.prompt });
   if (vm.hint) host.createDiv({ cls: "sd-slot-hint", text: vm.hint });
   if (vm.statusLabel) host.createDiv({ cls: "sd-slot-state", text: vm.statusLabel });
   if (vm.progress !== null) {
     const bar = host.createDiv({ cls: "sd-slot-bar" });
     bar.createDiv({ cls: "sd-slot-bar-fill" }).style.width = `${vm.progress}%`;
-  }
-  if (vm.empty) {
-    host.createDiv({ cls: "sd-slot-empty", text: vm.statusLabel });
-    return;
   }
   const aktionen = host.createDiv({ cls: "sd-slot-actions" });
   const knopf = aktionen.createEl("button", { text: vm.buttonLabel, cls: "mod-cta" });
