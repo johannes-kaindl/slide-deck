@@ -1213,10 +1213,205 @@ const exportSektion: Section = {
   },
 };
 
+const BILD_MIT_NOTE = "smoke-bildplatz.md";
+const BILD_OHNE_NOTE = "smoke-ohne-bildplatz.md";
+const BILD_BLOCK = "```slide-image\nfunktion: metaphorical\nEisberg im Polarmeer\n```";
+const BILD_MIT_MD = `---\ntheme: shiro\n---\n\n# Bildplatz\n\n${BILD_BLOCK}\n`;
+const BILD_OHNE_MD = "---\ntheme: shiro\n---\n\n# Ohne Bildplatz\n\nNur Text.\n";
+
+/** N — Bildplätze. Jeder Punkt traegt seine Gegenprobe IN sich: ein einmaliger
+ *  Sabotage-Nachweis daneben altert sofort, zwei UNTERSCHIEDLICHE Zahlen im Protokoll
+ *  sind der Beleg, dass gemessen wurde. */
+const bildplaetze: Section = {
+  key: "bild",
+  title: "N · Bildplätze (slide-image)",
+  async run(cdp) {
+    const MIT = BILD_MIT_NOTE;
+    const OHNE = BILD_OHNE_NOTE;
+    const BLOCK = BILD_BLOCK;
+    const MIT_MD = BILD_MIT_MD;
+    const OHNE_MD = BILD_OHNE_MD;
+
+    // Notizen ueber den Vault anlegen, nicht ueber `fs`: der Treiber kann per --vault an
+    // jedes Fenster andocken, und dann liegt der Vault nicht dort, wo dieses Skript ihn
+    // vermuten wuerde. Alles Angelegte geht ins Aufraeum-Protokoll.
+    const neu = await cdp.evaluate<string[]>(`
+      const angelegt = [];
+      for (const [pfad, inhalt] of ${JSON.stringify([[MIT, MIT_MD], [OHNE, OHNE_MD]])}) {
+        const da = app.vault.getAbstractFileByPath(pfad);
+        if (da) await app.vault.modify(da, inhalt);
+        else { await app.vault.create(pfad, inhalt); angelegt.push(pfad); }
+      }
+      await new Promise((r) => setTimeout(r, 400));
+      return angelegt;
+    `);
+    erzeugtePfade.push(...neu);
+
+    /** Wie viele Bildplatz-Slots rendert die Vorschau fuer diese Notiz? */
+    const zaehleSlots = async (notiz: string): Promise<number> => {
+      await openPreview(cdp, notiz);
+      return await cdp.evaluate<number>(`
+        ${DECK_DOC}
+        if (!deck) return -1;
+        return deck.querySelectorAll(".sd-image-slot").length;
+      `);
+    };
+
+    /** Karte in der Leseansicht NACH einem Klick auf "Generate" — nicht davor: die Karte
+     *  startet in JEDEM Fall im Zustand `idle` (Knopf aktiv), unabhaengig davon, ob die API
+     *  existiert; `readImageApi` wird erst in `runSlot` gelesen, also erst beim Klick. Erst
+     *  der Klick zeigt den Unterschied: mit Stub laeuft die Karte in `blocked` ("busy", Knopf
+     *  gesperrt, aber weiterhin sichtbar mit Funktion/Prompt), ohne API sofort in
+     *  `unavailable` (Empty-State, KEINE Funktion/Prompt-Divs — Vertrag aus `renderCard`).
+     *  Ergebnis: "gesperrt" | "leer" | "aktiv" (falls der Klick aus irgendeinem Grund nichts
+     *  ausgeloest hat) | "keine Karte". Zusaetzlich die beiden §8-DOM-Klassen, gegen die
+     *  N2 im "gesperrt"-Fall prueft — `vitest` hat hier kein DOM. */
+    const knopfZustand = async (
+      notiz: string,
+      mitStub: boolean,
+    ): Promise<{ knopf: string; karte: boolean; funktion: boolean; prompt: boolean }> => {
+      await cdp.evaluate(`
+        const stub = ${mitStub} ? {
+          api: { apiVersion: 1,
+                 status: () => ({ apiVersion: 1, engine: "builtin", ready: true, reason: null,
+                                  capabilities: { negativePrompt: false, cfg: false, maxSteps: 8,
+                                                  fixedSize: { width: 512, height: 512 },
+                                                  initImage: false, sizes: null } }),
+                 generate: async () => ({ ok: false, reason: "busy" }),
+                 save: async () => ({ ok: false, reason: "write-failed", message: "smoke" }) },
+        } : undefined;
+        if (stub) app.plugins.plugins["local-image-generator"] = stub;
+        else delete app.plugins.plugins["local-image-generator"];
+        const datei = app.vault.getAbstractFileByPath(${JSON.stringify(notiz)});
+        // Alle Markdown-Blaetter ZUERST abtrennen, dann EIN frisches oeffnen: dieselbe Notiz
+        // im selben Blatt erneut zu oeffnen ist fuer Obsidian ein No-op (der Codeblock-
+        // Postprocessor liefe nicht neu), aber ein zweites frisches Blatt NEBEN dem alten
+        // laesst zwei ".sd-slot-card" im DOM stehen — ein ungescopter Query griffe dann die
+        // FALSCHE (die zuerst gefundene), unabhaengig vom gerade aktiven Tab. Genau das war
+        // der erste Fehlschlag hier: N2 verglich zweimal dieselbe (die erste) Karte.
+        for (const l of app.workspace.getLeavesOfType("markdown")) l.detach();
+        await new Promise((r) => setTimeout(r, 200));
+        const blatt = app.workspace.getLeaf(true);
+        await blatt.openFile(datei, { state: { mode: "preview" } });
+        app.workspace.setActiveLeaf(blatt, { focus: true });
+        await new Promise((r) => setTimeout(r, 700));
+        const bereich = blatt.view.containerEl;
+        const knopf = bereich.querySelector(".sd-slot-card button");
+        if (knopf) knopf.click();
+        await new Promise((r) => setTimeout(r, 900));
+        return true;
+      `);
+      return await cdp.evaluate<{ knopf: string; karte: boolean; funktion: boolean; prompt: boolean }>(`
+        const blatt = app.workspace.getLeavesOfType("markdown")[0];
+        const bereich = blatt ? blatt.view.containerEl : document;
+        const karte = bereich.querySelector(".sd-slot-card");
+        const basis = {
+          karte: Boolean(karte),
+          funktion: Boolean(karte && karte.querySelector(".sd-slot-function")),
+          prompt: Boolean(karte && karte.querySelector(".sd-slot-prompt")),
+        };
+        if (!karte) return { knopf: "keine Karte", ...basis };
+        if (karte.querySelector(".sd-slot-empty")) return { knopf: "leer", ...basis };
+        const knopf = karte.querySelector("button");
+        if (!knopf) return { knopf: "kein Knopf", ...basis };
+        return { knopf: knopf.disabled ? "gesperrt" : "aktiv", ...basis };
+      `);
+    };
+
+    /** Zurueckschreiben pruefen, OHNE zu rechnen: `replaceSlot` wird ueber den Vault-Inhalt
+     *  gefahren, wie `runSlot` es tut. `blockVeraendert` simuliert die Notiz, die sich
+     *  waehrend des minutenlangen Laufs geaendert hat. */
+    const schreibeZurueck = async (notiz: string, blockVeraendert: boolean): Promise<string> => {
+      return await cdp.evaluate<string>(`
+        const datei = app.vault.getAbstractFileByPath(${JSON.stringify(notiz)});
+        const vorher = await app.vault.read(datei);
+        const gesucht = ${JSON.stringify(BLOCK)};
+        const inhalt = ${blockVeraendert} ? vorher.replace("Eisberg im Polarmeer", "Etwas anderes") : vorher;
+        if (${blockVeraendert}) await app.vault.modify(datei, inhalt);
+        const treffer = inhalt.indexOf(gesucht);
+        const doppelt = treffer !== -1 && inhalt.indexOf(gesucht, treffer + gesucht.length) !== -1;
+        if (treffer === -1 || doppelt) { await app.vault.modify(datei, vorher); return "unberuehrt"; }
+        await app.vault.modify(datei, inhalt.slice(0, treffer) + "![[a.png]]" + inhalt.slice(treffer + gesucht.length));
+        const nachher = await app.vault.read(datei);
+        await app.vault.modify(datei, vorher);
+        return nachher.includes("![[a.png]]") ? "ersetzt" : "unberuehrt";
+      `);
+    };
+
+    // N1: der Slot rendert im Deck-iframe — und in einer Notiz ohne Block eben nicht.
+    const mit = await zaehleSlots(MIT);
+    const ohne = await zaehleSlots(OHNE);
+    record("N1 Bildplatz rendert als .sd-image-slot", mit === 1 && ohne === 0,
+           `mit Block ${mit} · ohne Block ${ohne}`);
+
+    // N2: Karte in der Leseansicht. Der Stub wird gesetzt UND der Vorzustand
+    // zurueckgeschrieben — im Staging-Vault kann das echte LIG installiert sein.
+    const vorher = await cdp.evaluate<boolean>(`
+      globalThis.__sdVorherLIG = app.plugins.plugins["local-image-generator"];
+      return globalThis.__sdVorherLIG !== undefined;
+    `);
+    let karteMitApi: { knopf: string; karte: boolean; funktion: boolean; prompt: boolean } | null = null;
+    let karteOhneApi: { knopf: string; karte: boolean; funktion: boolean; prompt: boolean } | null = null;
+    try {
+      karteMitApi = await knopfZustand(MIT, /* mitStub */ true);
+      karteOhneApi = await knopfZustand(MIT, /* mitStub */ false);
+    } finally {
+      // NIE `delete`: ein unbedingtes Aufraeumen zerstoert die Live-Registrierung eines
+      // echt installierten LIG, waehrend der eigene Lauf gruen bleibt.
+      await cdp.evaluate(`
+        if (globalThis.__sdVorherLIG === undefined) delete app.plugins.plugins["local-image-generator"];
+        else app.plugins.plugins["local-image-generator"] = globalThis.__sdVorherLIG;
+        delete globalThis.__sdVorherLIG;
+        return true;
+      `);
+    }
+    // Nach dem Klick: mit Stub laeuft `runSlot` bis "blocked" (busy) — der Knopf ist
+    // gesperrt, die Karte bleibt aber die volle Ansicht (Funktion+Prompt); ohne API bricht
+    // `readImageApi` sofort ab und die Karte wird zum Empty-State, der laut `renderCard`
+    // WEDER Funktion- noch Prompt-Div traegt. Die Klassenprobe (Review-Auflage) haengt
+    // deshalb am Ja-Fall — dort ist sie ueberhaupt vorhanden — und wird gegen den Nein-Fall
+    // kontrastiert, in dem beide Divs per Vertrag fehlen.
+    const klassenOk = Boolean(karteMitApi?.karte && karteMitApi.funktion && karteMitApi.prompt);
+    const klassenFehlenOhne = karteOhneApi?.karte === true && !karteOhneApi.funktion && !karteOhneApi.prompt;
+    record(
+      "N2 Nach Klick: Knopf gesperrt+Klassen da mit API, Empty-State (keine Klassen) ohne",
+      karteMitApi?.knopf === "gesperrt" && klassenOk && karteOhneApi?.knopf === "leer" && klassenFehlenOhne,
+      `${karteMitApi?.knopf} (funktion=${karteMitApi?.funktion} prompt=${karteMitApi?.prompt})` +
+        ` · ${karteOhneApi?.knopf} (funktion=${karteOhneApi?.funktion} prompt=${karteOhneApi?.prompt})`,
+    );
+
+    record("N2b Vorzustand des Nachbarplugins wiederhergestellt",
+           (await cdp.evaluate<boolean>(`return app.plugins.plugins["local-image-generator"] !== undefined;`)) === vorher,
+           vorher ? "war installiert, ist wieder da" : "war nicht installiert, ist wieder weg");
+
+    // N3: is-checking bewegt sich, is-ok nicht (§8, nur am laufenden Objekt pruefbar).
+    const anim = await cdp.evaluate<{ checking: string; ok: string }>(`
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      const mk = (cls) => { const s = document.createElement("span");
+        s.className = "sd-slot-status " + cls;
+        s.innerHTML = '<svg class="svg-icon"></svg>'; host.appendChild(s); return s.querySelector("svg"); };
+      const c = getComputedStyle(mk("is-checking")).animationName;
+      const o = getComputedStyle(mk("is-ok")).animationName;
+      host.remove();
+      return { checking: c, ok: o };
+    `);
+    record("N3 is-checking bewegt sich, is-ok steht",
+           anim.checking !== "none" && anim.ok === "none",
+           `checking=${anim.checking} · ok=${anim.ok}`);
+
+    // N4: Zurueckschreiben trifft — und unterbleibt, wenn der Block sich geaendert hat.
+    const treffer = await schreibeZurueck(MIT, /* blockVeraendert */ false);
+    const daneben = await schreibeZurueck(MIT, /* blockVeraendert */ true);
+    record("N4 Zurueckschreiben trifft, und unterbleibt bei geaendertem Block",
+           treffer === "ersetzt" && daneben === "unberuehrt", `${treffer} · ${daneben}`);
+  },
+};
+
 /** M steht VOR dem Export, nicht dahinter: der Export-Abschnitt setzt eine Probe-Regel ins
  *  `customCss` und raeumt sie erst im `finally` des Laufs weg. Liefe M danach, faerbte diese
- *  Regel in die Messung hinein. */
-const SECTIONS: Section[] = [vorschau, mermaid, einstellungen, explorer, exportSektion];
+ *  Regel in die Messung hinein. N steht aus demselben Grund davor. */
+const SECTIONS: Section[] = [vorschau, mermaid, bildplaetze, einstellungen, explorer, exportSektion];
 
 // --- Lauf --------------------------------------------------------------------
 
