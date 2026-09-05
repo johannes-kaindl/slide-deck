@@ -17,6 +17,7 @@ import type { MarkdownPostProcessorContext } from "obsidian";   // TFile ist ber
 import { readImageApi, ensureReady } from "./image/image-api";
 import { parseSlot, filledMarkdown, replaceSlot } from "./image/slot-format";
 import { buildRequest } from "./image/functions";
+import { insertImageSlot } from "./image/insert-slot";
 
 export interface DeckGenInput {
   sourceBody: string; slideTarget: number | "auto"; hint: string;
@@ -54,6 +55,10 @@ export default class SlideDeckPlugin extends Plugin {
     this.addCommand({
       id: "export-images", name: t("cmd.exportImages"),
       callback: () => void exportImages(this.app, activeDocument, activeWindow, this.app.workspace.getActiveFile(), this.themeStore.getMap(), { theme: this.settings.defaultTheme, minFontPx: this.settings.minFontPx }, this.settings.imageScale, this.settings.customCss, this.settings.exportFolder),
+    });
+    this.addCommand({
+      id: "insert-image-slot", name: t("cmd.insertImageSlot"),
+      editorCallback: (editor) => insertImageSlot(this.app, editor),
     });
     this.addCommand({ id: "generate-deck", name: t("cmd.generateDeck"), callback: () => void this.activateGenerateView() });
 

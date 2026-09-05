@@ -475,6 +475,26 @@ export class FuzzySuggestModal<T> {
   __close(): void { this.onClose(); }
 }
 
+export class SuggestModal<T> extends Modal {
+  app: any;
+  inputEl: { value: string } = { value: "" };
+  static __instance: any = null;
+  constructor(app?: any) {
+    super(app);
+    this.app = app;
+    (this.constructor as any).__instance = this;
+    SuggestModal.__instance = this;
+  }
+  setPlaceholder(_s: string): this { return this; }
+  getSuggestions(_query: string): T[] | Promise<T[]> { return []; }
+  renderSuggestion(_value: T, _el: any): void {}
+  onChooseSuggestion(_value: T, _evt?: any): void {}
+  open(): void {}
+  close(): void {}
+  onOpen(): void {}
+  onClose(): void {}
+}
+
 // ---------------------------------------------------------------------------
 // Menus (json_viewer).
 // ---------------------------------------------------------------------------
@@ -664,6 +684,7 @@ export const defaultStubs = {
   Scope,
   AbstractInputSuggest,
   FuzzySuggestModal,
+  SuggestModal,
   Menu,
   MenuItem,
   TextComponent,

@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { parseSlot, filledMarkdown, replaceSlot } from "../src/image/slot-format";
+// ImageFunctionModal wird in GUI-Smoke getestet; slotSnippet ist pure und hier testbar.
+import { slotSnippet } from "../src/image/insert-slot";
 
 describe("parseSlot", () => {
   it("reads a leading funktion: line and keeps the rest as prompt", () => {
@@ -58,5 +60,14 @@ describe("replaceSlot", () => {
   it("refuses when the block occurs more than once — which one was meant is unknown", () => {
     const src = `${block}\n\n${block}`;
     expect(replaceSlot(src, block, "![[a.png]]")).toBeNull();
+  });
+});
+
+describe("slotSnippet", () => {
+  it("produces a block that parseSlot reads back — the round trip is the contract", () => {
+    const md = slotSnippet("analytical");
+    expect(md.startsWith("```slide-image\n")).toBe(true);
+    const body = md.replace(/^```slide-image\n/, "").replace(/\n```\n?$/, "");
+    expect(parseSlot(body).funktion).toBe("analytical");
   });
 });

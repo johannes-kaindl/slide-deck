@@ -273,3 +273,6 @@
 @media (prefers-reduced-motion: reduce) {
   .sd-slot-status.is-checking svg, .sd-gen-ping.is-checking svg { animation-duration: 3s; }
 }
+
+/* Image function suggest modal description (Insert image slot command) */
+.sd-slot-suggest-desc { display: block; color: var(--text-muted); font-size: var(--font-ui-smaller); }
