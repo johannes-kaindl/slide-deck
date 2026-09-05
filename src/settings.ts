@@ -13,6 +13,7 @@ import { renderSettingDefinitions, settingBodyHost, refreshSettingsTab } from ".
 import { buildEndpointList } from "./vendor/kit-obsidian/endpoint-list";
 import { createModelListCache } from "./vendor/kit/model-list-cache";
 import { ENDPOINT_PRESETS } from "./vendor/kit/endpoint_diagnostics";
+import type { ImageFunction } from "./image/functions";
 
 export interface SlideDeckSettings {
   defaultTheme: string;
@@ -29,11 +30,15 @@ export interface SlideDeckSettings {
   llmMaxTokens: number;
   llmTemperature: number;
   llmSuppressThinking: boolean;
+  /** Per-Funktion editierter Baustein — ueberschreibt DEFAULT_SUFFIXES aus image/functions.ts.
+   *  Leer bis Task 10 eine Bedienoberflaeche dafuer baut. */
+  imageSuffixes: Partial<Record<ImageFunction, string>>;
 }
 export const DEFAULT_SETTINGS: SlideDeckSettings = {
   defaultTheme: "shiro", minFontPx: 24, imageScale: 2, customCss: "",
   exportFolder: "Slide-Deck-Export", themesFolder: "Slide-Deck-Themes", hideThemesFolder: true,
   llmEndpoints: [{ url: "http://localhost:1234" }], llmModel: "", llmMaxTokens: 8192, llmTemperature: 0.3, llmSuppressThinking: true,
+  imageSuffixes: {},
 };
 
 /** Merge persisted data over defaults, then migrate `llmEndpoints`: pre-0.7 data.json files

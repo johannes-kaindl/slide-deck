@@ -1,3 +1,6 @@
+import type { ImageCapabilities, ImageRequest } from "./image-api";
+import type { SlotBlock } from "./slot-format";
+
 /** Die Bildfunktions-Taxonomie: welche Rolle ein Bild auf einer Folie spielt.
  *  Die IDs sind ENGLISCH und sprachunabhängig — sie stehen im Dokument, nicht in der
  *  Oberfläche; eine deutsche ID machte dieselbe Notiz unter englischer App-Sprache unlesbar. */
@@ -49,4 +52,19 @@ export function composePrompt(prompt: string, suffix: string): string {
   const have = parts(prompt);
   const add = parts(suffix).filter((p) => !have.includes(p));
   return [...have, ...add].join(SEP);
+}
+
+/** Baustein anhaengen und den Negativ-Prompt NUR mitschicken, wenn das Backend ihn kann —
+ *  ein Feld, das nichts bewirkt, waere eine Attrappe. */
+export function buildRequest(
+  block: SlotBlock,
+  caps: ImageCapabilities,
+  overrides: Partial<Record<ImageFunction, string>>,
+): ImageRequest {
+  if (!block.funktion) return { prompt: block.prompt };
+  const suffix = overrides[block.funktion] ?? DEFAULT_SUFFIXES[block.funktion];
+  const negativ = DEFAULT_NEGATIVES[block.funktion];
+  const req: ImageRequest = { prompt: composePrompt(block.prompt, suffix) };
+  if (caps.negativePrompt && negativ) req.negativePrompt = negativ;
+  return req;
 }

@@ -181,6 +181,7 @@ const EN: Dict = {
   "image.fail.write-failed": "The image was generated but could not be saved: {0}",
   "image.unavailable": "Local Image Generator is not available.",
   "image.unavailable.cta": "Learn how to install it",
+  "image.slot.lost": "The image slot changed while generating. The image is saved as {0} — insert it yourself.",
 };
 const DE: Dict = {
   "cmd.openPreview": "Präsentations-Vorschau öffnen",
@@ -358,6 +359,7 @@ const DE: Dict = {
   "image.fail.write-failed": "Das Bild wurde erzeugt, konnte aber nicht gespeichert werden: {0}",
   "image.unavailable": "Local Image Generator ist nicht verfügbar.",
   "image.unavailable.cta": "Installation nachlesen",
+  "image.slot.lost": "Der Bildplatz hat sich während der Erzeugung geändert. Das Bild liegt als {0} — bitte selbst einsetzen.",
 };
 const STRINGS: Record<Lang, Dict> = { en: EN, de: DE };
 export const STRINGS_EN: Dict = EN;

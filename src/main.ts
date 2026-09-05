@@ -14,6 +14,9 @@ import { getAuthoringContract } from "./vendor/deck-core/pure/constraints/contra
 import { registerSlotCard } from "./image/slot-card";
 import type { CardState } from "./image/slot-card-model";
 import type { MarkdownPostProcessorContext } from "obsidian";   // TFile ist bereits importiert
+import { readImageApi, ensureReady } from "./image/image-api";
+import { parseSlot, filledMarkdown, replaceSlot } from "./image/slot-format";
+import { buildRequest } from "./image/functions";
 
 export interface DeckGenInput {
   sourceBody: string; slideTarget: number | "auto"; hint: string;
@@ -64,8 +67,53 @@ export default class SlideDeckPlugin extends Plugin {
 
   async saveSettings(): Promise<void> { await this.saveData(this.settings); }
 
-  async runSlot(_source: string, _ctx: MarkdownPostProcessorContext, _onState: (s: CardState) => void): Promise<void> {
-    /* Task 9 */
+  async runSlot(source: string, ctx: MarkdownPostProcessorContext, onState: (s: CardState) => void): Promise<void> {
+    const api = readImageApi(this.app);
+    if (!api) { onState({ kind: "unavailable" }); return; }
+    // Der Vertrag von local-image-generator sagt zu, dass seine Aufrufe nicht werfen — aber
+    // ein FREMDES Plugin kann trotzdem werfen, und ohne dieses try bliebe die Karte fuer den
+    // Rest der Sitzung im Lade-Zustand haengen. Jede Ausnahme endet deshalb im sichtbaren
+    // error-Zustand, nie in einem haengenden.
+    try {
+      const status = await ensureReady(api);
+      if (!status.ready && status.reason) { onState({ kind: "blocked", reason: status.reason }); return; }
+
+      const block = parseSlot(source);
+      const req = buildRequest(block, status.capabilities, this.settings.imageSuffixes);
+      onState({ kind: "running", phase: "loading-model", pct: null });
+
+      const res = await api.generate({ ...req,
+        onProgress: (pct, phase) => onState({ kind: "running", phase, pct }) });
+      if (!res.ok) {
+        if (res.reason === "failed") onState({ kind: "error", message: res.message });
+        else onState({ kind: "blocked", reason: res.reason });
+        return;
+      }
+
+      // `createNote` bewusst WEGGELASSEN: dann gilt die Einstellung des Nutzers in LIG.
+      const saved = await api.save(res.image);
+      if (!saved.ok) { onState({ kind: "error", message: saved.message }); return; }
+
+      const datei = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
+      if (!(datei instanceof TFile)) { onState({ kind: "error", message: ctx.sourcePath }); return; }
+
+      // Der Block wird ueber TEXTIDENTITAET wiedergefunden, nicht ueber die Zeilen aus
+      // getSectionInfo: zwischen Start und Ende liegen Minuten, in denen die Notiz sich
+      // geaendert haben kann. Nicht gefunden oder mehrdeutig -> NICHT schreiben.
+      const voll = "```slide-image\n" + source.replace(/\n$/, "") + "\n```";
+      const ersatz = filledMarkdown(block.funktion, block.prompt, saved.imagePath);
+      let getroffen = false;
+      await this.app.vault.process(datei, (inhalt) => {
+        const neu = replaceSlot(inhalt, voll, ersatz);
+        if (neu === null) return inhalt;
+        getroffen = true;
+        return neu;
+      });
+      if (getroffen) onState({ kind: "done", path: saved.imagePath });
+      else onState({ kind: "error", message: t("image.slot.lost", saved.imagePath) });
+    } catch (err) {
+      onState({ kind: "error", message: err instanceof Error ? err.message : String(err) });
+    }
   }
 
   /** Re-scan the themes folder, then refresh any open preview so the dropdown reflects it. */
