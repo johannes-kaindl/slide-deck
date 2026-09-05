@@ -112,13 +112,45 @@ src/vendor/deck-core/dom/    Ebenfalls vendoriert aus `deck-core` — importiert
                      alle messen). renderMermaidSlots() — Mermaid SVG-Rendering (async, DOM-abhängig).
 
 src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
-  main.ts            Plugin-Entry: Commands (open-preview, export-pdf, export-images),
-                     SettingTab, View-Registration, Sprach-Detektion.
+  main.ts            Plugin-Entry: Commands (open-preview, export-pdf, export-images,
+                     insert-image-slot), SettingTab, View-Registration, Sprach-Detektion.
+                     runSlot() ist die Bildplatz-Laufzeit (s. image/ unten): liest die
+                     Nachbar-API, ruft generate()/save() auf und schreibt über
+                     replaceSlot() zurück — die einzige Stelle, die den Vault mutiert.
   adapter.ts         loadActiveDeck(app, defaults) — liest die aktive Notiz, löst Embeds
                      zu data-URLs auf (resolveEmbed-Closure), gibt SlideDeck zurück.
   folder-hide.ts     normalizeFolder(raw) — kanonische Pfadform; buildHideCss(folder, hide) —
                      CSS, das einen Vault-Ordner im Datei-Explorer ausblendet (vault-rag-Muster,
                      data-path-Attribut, activeDocument.adoptedStyleSheets in main.applyFolderHide()).
+  image/             Bildplätze — ein ```slide-image-Block, der sich selbst durch ein Embed
+                     ersetzt. Redet mit `local-image-generator`, kennt es aber nur über die
+                     Vertragsform (image-api.ts), nie per Import — das Nachbarplugin darf fehlen.
+    image-api.ts       readImageApi(app) liest `plugins.plugins["local-image-generator"].api`,
+                       prüft Form UND `apiVersion` (Muster: koda-agent/retrieval.ts). `recheck()`
+                       ist optional erst ab LIG 0.10.0 — s. Gotcha unten. ensureReady(api) holt
+                       `status()` (netzfrei, synchron) und ruft `recheck()` nur nach, wenn der
+                       Grund `unreachable` ist — ein veralteter Serverzustand ist der einzige
+                       Fall, den ein Netzaufruf heilen kann.
+    slot-format.ts     parseSlot(body) — die Feld-Grammatik des Blockinhalts (führende
+                       `schluessel: wert`-Zeilen, erste Nicht-Kopfzeile beginnt den Prompt).
+                       filledMarkdown() baut den gefüllten Zustand (Prompt-Kommentar + Embed,
+                       einzeilig). replaceSlot() ersetzt über Textidentität — s. Gotcha unten.
+    functions.ts       IMAGE_FUNCTIONS (sechs Bildfunktionen, englische IDs) + DEFAULT_SUFFIXES/
+                       DEFAULT_NEGATIVES als Prompt-Bausteine. composePrompt() hängt kommasepariert
+                       ohne Dubletten an (dieselbe Grammatik wie LIGs Stil-Presets, geteilt ist
+                       der Trenner, nicht der Code). buildRequest() lässt den Negativ-Prompt weg,
+                       wenn `capabilities.negativePrompt` fehlt — ein wirkungsloses Feld wäre eine
+                       Attrappe.
+    insert-slot.ts     insertImageSlot() — Command `insert-image-slot`: SuggestModal über die
+                       sechs Funktionen, fügt den Block-Snippet ein und setzt den Cursor in die
+                       leere Prompt-Zeile.
+    slot-card-model.ts cardVm(block, state) — reine Zustand→Ansicht-Abbildung (CardState:
+                       idle/unavailable/blocked/running/error/done) nach der §8-Status-Vokabel
+                       (is-checking/is-ok/is-error, nur diese drei).
+    slot-card.ts       registerSlotCard() — MarkdownCodeBlockProcessor für `slide-image`.
+                       paintSlotStatus() ist ein EIGENER Maler derselben Vokabel, bewusst nicht
+                       `paintStatus` aus ai-settings-ui: ein Bildlauf ist kein Endpunkt, geteilt
+                       wird die Sprache, nicht die Funktion.
   llm/
                           (die frühere error-envelope.ts ist seit dem Kit-0.27.0-Vendoring
                           `src/vendor/kit/error_body.ts` → errorMessageFromText, beide
@@ -201,7 +233,8 @@ Wirkungskreises.
 
 Was hier blieb, kennt Obsidian, das Kit oder den Endpunkt: `adapter`,
 `theme-registry`, `export`, `main`, die Ansichten, die Einstellungen, `llm-client`,
-`folder-hide`, `llm/ai-settings-model`, `llm/model-info`.
+`folder-hide`, `llm/ai-settings-model`, `llm/model-info`, `image/**` (das Nachbarplugin
+`local-image-generator` ist ein Obsidian-Plugin, keine Kern-Zuständigkeit).
 
 Dazu `vendor-css.ts`: die vier `import … from "*.css"`, die `deck-core` bewusst
 nicht selbst macht — ein CSS-Import ist eine Annahme über den Bundler.
@@ -272,6 +305,7 @@ Chromes `--dump-dom` gegen denselben Entry (`scripts/visual-smoke-entry.ts`).
 | `open-preview` | Open presentation preview |
 | `export-pdf` | Export presentation to PDF |
 | `export-images` | Export presentation to image series |
+| `insert-image-slot` | Insert image slot |
 
 ## Conventions
 
@@ -486,6 +520,32 @@ Vollständigkeits-Record, den niemand typecheckt, ist keine Absicherung, sondern
 - **`ping()` ist nicht `status===200`:** LM Studio antwortet auf `/v1/v1/...` mit HTTP 200 +
   Fehler-Body. `probe()` gibt das Rohsignal an `classifyEndpointStatus`, das erst die API-Form
   (`data`-Array) prüft — deshalb erkennt es `not-an-llm-api`.
+- **`deck-core` parst den `slide-image`-Block NICHT — die Feld-Grammatik liegt hier.** Der Kern
+  (Task 1) erkennt die Fence nur am `info`-String und reicht den Rohtext unverändert als
+  `.sd-image-slot`-Karte durch; er kennt weder `funktion:` noch die Prompt-Zeile. Das ist
+  dieselbe Pure-Core-Naht wie überall sonst: die Fence-Erkennung ist theme-/layout-artig und
+  gehört in den Kern, die Bedeutung ihres Inhalts ist Consumer-Fachwissen (welches
+  Nachbarplugin, welche Bildfunktionen es gibt) und gehört hier. `parseSlot()` in
+  `src/image/slot-format.ts` ist deshalb die EINZIGE Stelle, die `funktion:` versteht — ein
+  Grammatik-Fix in `deck-core` würde hier nichts finden, weil dort nichts geparst wird.
+- **`apiVersion` allein sagt nichts über einzelne Methoden — die Methode wird selbst geprüft.**
+  `readImageApi()` (`image-api.ts`) verlangt `apiVersion === 1` UND prüft `status`/`generate`/
+  `save` als Funktionen. Der Grund ist kein Vorsichtsreflex: `recheck()` kam erst mit LIG 0.10.0
+  dazu, und die Version blieb dabei bewusst bei 1 (kein Bruch, additive Erweiterung). Wer nur
+  auf `apiVersion` prüft, hätte auf einer älteren LIG-Version einen `undefined`-Aufruf riskiert;
+  `ensureReady()` ruft `recheck` deshalb nur auf, wenn `typeof api.recheck === "function"`.
+  Dieselbe Vorsicht gilt für jede künftige optionale Methode am Vertrag — die Versionszahl
+  markiert Formbrüche, nicht Zuwachs.
+- **Zurückgeschrieben wird über Textidentität, nicht über Zeilennummern — mehrdeutig gilt wie
+  fehlend.** Ein Bildlauf dauert Minuten (Laden des Modells, Generierung); in der Zeit kann die
+  Notiz sich geändert haben, und `getSectionInfo`-Zeilen von Aufrufbeginn wären dann falsch.
+  `replaceSlot()` (`slot-format.ts`) sucht stattdessen den vollständigen Original-Fence-Text als
+  String im aktuellen Vault-Inhalt (`app.vault.process`, nicht `modify` — dieselbe
+  Read-Modify-Write-Absicherung). Findet er ihn **kein Mal oder mehr als ein Mal**, schreibt er
+  nichts und gibt `null` zurück; `main.runSlot()` meldet dann denselben Fehlerzustand wie „Block
+  nicht mehr auffindbar" (`image.slot.lost`), obwohl das Bild bereits erzeugt und gespeichert
+  ist. Die Begründung steht im Kommentar über der Funktion: ein Bild an der falschen Stelle ist
+  schlimmer als gar keines — der Nutzer bekommt den Pfad seines Bildes und setzt es selbst ein.
 
 ## Memory
 

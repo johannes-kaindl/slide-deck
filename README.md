@@ -35,6 +35,7 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 - **Accessible callouts** — Obsidian-style `> [!note]`, `[!warning]`, `[!danger]`, `[!tip]`, `[!info]` blocks rendered with redundant coding: border color + geometric shape + visible label word (not color-only; satisfies WCAG 1.4.1).
 - **Mermaid diagrams** — fenced ` ```mermaid ``` ` blocks rendered as SVG, per-theme.
 - **EN/DE interface** — all UI strings follow Obsidian's language setting (English canonical, German supported).
+- **Image slots** (desktop, requires [local-image-generator](https://git.jkaindl.de/jkaindl/local-image-generator)) — a `slide-image` code block renders as a card with a generate button; on click it calls the neighbor plugin to produce and save an image, then replaces itself with a normal embed plus a prompt comment for re-rolling later.
 
 ## Screenshots
 
@@ -151,6 +152,33 @@ Right column content.
 Omit the directive and the layout is inferred from the slide's shape. The full template and
 modifier reference is in the [layout guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.md).
 
+## Image slots
+
+Requires the [local-image-generator](https://git.jkaindl.de/jkaindl/local-image-generator)
+plugin (desktop only). Run **Insert image slot** (command palette), pick one of six image
+functions (documentary, analytical, metaphorical, emotional, navigational, decorative) — each
+steers the prompt with its own style suffix — and write a prompt:
+
+````markdown
+```slide-image
+funktion: metaphorical
+
+A single lantern in fog, one clear light source
+```
+````
+
+The block renders as a card with a **Generate** button. Clicking it asks the neighbor plugin
+for an image, saves it per that plugin's own settings, and replaces the block with a plain
+embed plus a prompt comment (so a later re-roll has something to start from):
+
+```markdown
+<!-- image: metaphorical | A single lantern in fog, one clear light source -->
+![[lantern-fog.png]]
+```
+
+Without `local-image-generator` installed and enabled, the card shows an empty state instead
+of a button.
+
 ## Configuration
 
 ### Plugin settings
@@ -164,6 +192,7 @@ modifier reference is in the [layout guide](https://git.jkaindl.de/jkaindl/slide
 | Export folder | `exportFolder` | `Slide-Deck-Export` | Vault folder for the PNG image-series export |
 | Themes folder | `themesFolder` | `Slide-Deck-Themes` | Vault folder scanned for user `.css` themes |
 | Hide themes folder | `hideThemesFolder` | `true` | Hide the themes folder in Obsidian's file explorer |
+| Image function prompts | `imageSuffixes` | *(built-in defaults)* | One editable prompt suffix per image function (blank restores the default) |
 
 ### Per-note frontmatter
 

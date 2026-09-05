@@ -6,6 +6,21 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Bildplätze:** ein ```slide-image```-Codeblock rendert in der Leseansicht als Karte mit
+  Generieren-Knopf, ruft für die Erzeugung das Nachbarplugin `local-image-generator` über
+  dessen API auf und ersetzt sich nach dem Speichern selbst durch ein gewöhnliches Embed samt
+  Prompt-Kommentar (Re-Roll-fähig). Neuer Befehl „Insert image slot" fügt einen Platzhalter
+  mit Funktionsauswahl ein.
+- **Sechs Bildfunktionen** (documentary, analytical, metaphorical, emotional, navigational,
+  decorative) steuern als Prompt-Bausteine, wie ein Bildplatz formuliert wird; die
+  Bausteine sind in den Einstellungen pro Funktion redigierbar.
+
+### Changed
+- Die §8-Status-Vokabel (`is-checking`/`is-ok`/`is-error`) bewegt sich jetzt auch am
+  Bildplatz-Knopf — dieselbe Ikonensprache wie bei den KI-Endpunkten, für einen zweiten
+  Laufzeit-Zustand statt neu erfunden.
+
 ## [0.9.0] — 2026-08-20
 
 ### Added
