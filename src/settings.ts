@@ -335,16 +335,23 @@ export class SlideDeckSettingTab extends PluginSettingTab {
   }
 
   /** Eine Zeile pro Bildfunktion. Mutation bei `blur`, NICHT bei `onChange` — sonst
-   *  persistiert jeder Tastendruck. Der Reset erscheint nur, wenn etwas zu resetten ist. */
+   *  persistiert jeder Tastendruck. Der Reset erscheint nur, wenn etwas zu resetten ist —
+   *  und das muss sich live aktualisieren, wenn der Nutzer beim `blur` erst einen eigenen
+   *  Wert einträgt. Neu gezeichnet wird aber NUR, wenn sich die Sichtbarkeit des Knopfes
+   *  tatsächlich ändert (Eintrag entsteht/verschwindet) — ein Tab, der bei jedem `blur`
+   *  neu aufbaut, springt und kann den Fokus wegnehmen, auch wenn sich nichts geändert hat. */
   private renderSuffixRow(setting: Setting, fn: ImageFunction): void {
     const aktuell = this.plugin.settings.imageSuffixes[fn] ?? "";
     setting.addText((text) => {
       text.setPlaceholder(DEFAULT_SUFFIXES[fn]).setValue(aktuell);
       text.inputEl.addEventListener("blur", () => {
+        const hatteEintrag = fn in this.plugin.settings.imageSuffixes;
         const wert = text.getValue().trim();
         if (wert === "" || wert === DEFAULT_SUFFIXES[fn]) delete this.plugin.settings.imageSuffixes[fn];
         else this.plugin.settings.imageSuffixes[fn] = wert;
         void this.plugin.saveSettings();
+        const hatEintrag = fn in this.plugin.settings.imageSuffixes;
+        if (hatteEintrag !== hatEintrag) this.refreshUi();
       });
     });
     if (aktuell !== "") {
