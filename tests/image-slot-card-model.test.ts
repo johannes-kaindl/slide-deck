@@ -47,4 +47,23 @@ describe("cardVm", () => {
     expect(vm.statusIcon).toBe("circle-x");
     expect(vm.statusLabel).not.toBe("image.fail.no-gpu"); // kein Schluessel-Fallback
   });
+
+  it("allows retry on transient error with the error message interpolated", () => {
+    const message = "CUDA out of memory";
+    const vm = cardVm(block, { kind: "error", message });
+    expect(vm.status).toBe("is-error");
+    expect(vm.statusIcon).toBe("circle-x");
+    expect(vm.buttonEnabled).toBe(true); // Retry ist möglich
+    expect(vm.statusLabel).toContain(message); // Nachricht wird interpoliert, nicht der Schluessel
+    expect(vm.statusLabel).not.toBe("image.fail.failed"); // kein Fallback auf Key
+  });
+
+  it("shows success state with the saved image path", () => {
+    const path = "attachments/slide-image-001.png";
+    const vm = cardVm(block, { kind: "done", path });
+    expect(vm.status).toBe("is-ok");
+    expect(vm.statusIcon).toBe("circle-check");
+    expect(vm.statusLabel).toContain(path); // Pfad wird interpoliert, nicht der Schluessel
+    expect(vm.statusLabel).not.toBe("image.slot.done"); // kein Fallback auf Key
+  });
 });
