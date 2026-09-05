@@ -66,4 +66,17 @@ describe("failure texts", () => {
     }
     setLang("en");
   });
+
+  // G3: diese beiden werden dem Nutzer tatsaechlich gezeigt (main.ts::runSlot), stehen aber
+  // ausserhalb von IMAGE_FAILURES/failureKey — ohne diese Zeile lief die Vollstaendigkeits-
+  // Pruefung an ihnen vorbei, obwohl ein anderer Test (EN/DE-Paritaet) nur Schluesselgleichheit
+  // sichert, nicht dass der Wert vom Schluessel abweicht.
+  it("has an EN and a DE text for the two out-of-band failure keys — G3", () => {
+    const keys = ["image.fail.not-ready", "image.fail.write-failed"] as const;
+    for (const lang of ["en", "de"] as const) {
+      setLang(lang);
+      for (const k of keys) expect(t(k)).not.toBe(k);
+    }
+    setLang("en");
+  });
 });
