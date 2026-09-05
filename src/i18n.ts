@@ -153,6 +153,18 @@ const EN: Dict = {
   "deck.settings.thinking.testFail": "The model thinks despite “off” — its server ignores the suppress params.",
   "deck.settings.thinking.testError": "Test failed: {0}",
   "deck.settings.thinking.testNoModel": "Pick a model first.",
+  "image.fn.documentary.name": "Documentary",
+  "image.fn.documentary.desc": "Backs a claim, shows physical reality — photos of products, places, people.",
+  "image.fn.analytical.name": "Analytical",
+  "image.fn.analytical.desc": "Turns data, structures or processes into a readable scheme.",
+  "image.fn.metaphorical.name": "Metaphorical",
+  "image.fn.metaphorical.desc": "Carries an abstract idea as a familiar picture — iceberg, compass, gears.",
+  "image.fn.emotional.name": "Emotional",
+  "image.fn.emotional.desc": "Creates mood, empathy or curiosity; supports storytelling.",
+  "image.fn.navigational.name": "Navigational",
+  "image.fn.navigational.desc": "Structures the talk and guides the eye — icons, chapter images, anchors.",
+  "image.fn.decorative.name": "Decorative",
+  "image.fn.decorative.desc": "Purely ornamental, no relation to the slide's content.",
 };
 const DE: Dict = {
   "cmd.openPreview": "Präsentations-Vorschau öffnen",
@@ -302,6 +314,18 @@ const DE: Dict = {
   "deck.settings.thinking.testFail": "Das Modell denkt trotz „aus” — sein Server ignoriert die Suppress-Parameter.",
   "deck.settings.thinking.testError": "Test fehlgeschlagen: {0}",
   "deck.settings.thinking.testNoModel": "Erst ein Modell wählen.",
+  "image.fn.documentary.name": "Dokumentarisch",
+  "image.fn.documentary.desc": "Belegt eine Aussage, zeigt die physische Realität — Fotos von Produkten, Orten, Menschen.",
+  "image.fn.analytical.name": "Analytisch",
+  "image.fn.analytical.desc": "Übersetzt Daten, Strukturen oder Abläufe in ein lesbares Schema.",
+  "image.fn.metaphorical.name": "Metaphorisch",
+  "image.fn.metaphorical.desc": "Trägt eine abstrakte Idee als vertrautes Bild — Eisberg, Kompass, Zahnräder.",
+  "image.fn.emotional.name": "Emotional",
+  "image.fn.emotional.desc": "Erzeugt Stimmung, Empathie oder Neugier; trägt Geschichten.",
+  "image.fn.navigational.name": "Navigierend",
+  "image.fn.navigational.desc": "Gliedert den Vortrag und führt den Blick — Icons, Kapitelbilder, Anker.",
+  "image.fn.decorative.name": "Dekorativ",
+  "image.fn.decorative.desc": "Rein ornamental, ohne Bezug zum Folieninhalt.",
 };
 const STRINGS: Record<Lang, Dict> = { en: EN, de: DE };
 export const STRINGS_EN: Dict = EN;
