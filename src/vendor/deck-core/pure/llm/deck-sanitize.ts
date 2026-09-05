@@ -2,7 +2,7 @@ const FENCE_RE = /^\s*(```|~~~)/;
 // General frontmatter key grammar — mirrors slide-model.ts parseFrontmatter (`\s*` allows `theme:dark`).
 const FM_KEY_RE = /^\w+:\s*\S/;
 // Recognized deck directive keys — used ONLY to drop echoed frontmatter blocks mid-deck.
-const DIRECTIVE_KEY_RE = /^(theme|aspect|minFontPx|header|footer|paginate):\s*\S/;
+const DIRECTIVE_KEY_RE = /^(theme|aspect|minFontPx|header|footer|paginate|sender|modifiers):\s*\S/;
 
 /** Line-0 `---` … next `---`. Returns the closing delimiter index, or null if there is no block. */
 export function frontmatterRange(lines: string[]): { end: number } | null {
@@ -120,11 +120,14 @@ export function setDeckTheme(md: string, key: string): string {
   return lines.join("\n");
 }
 
-const SLOT_KEY_RE = /^(header|footer|paginate):\s*\S/;
+const SLOT_KEY_RE = /^(header|footer|paginate|sender|modifiers):\s*\S/;
 
-/** Move deck-slot lines (header:/footer:/paginate:) the model emitted as leading BODY content
- *  into the frontmatter block, where parseFrontmatter reads them (otherwise they render as stray
- *  text on slide 1). Assumes a frontmatter block exists (run after setDeckTheme). No-op otherwise. */
+/** Move deck-directive lines the model emitted as leading BODY content into the frontmatter
+ *  block, where parseFrontmatter reads them (otherwise they render as stray text on slide 1).
+ *  Every key parseFrontmatter understands and a model might emit belongs in SLOT_KEY_RE:
+ *  the loop stops at the first line it does not recognise, so ONE unknown key drags every
+ *  slot behind it down into the body too. Assumes a frontmatter block exists (run after
+ *  setDeckTheme). No-op otherwise. */
 export function hoistDeckSlots(md: string): string {
   const lines = md.split("\n");
   const range = frontmatterRange(lines);

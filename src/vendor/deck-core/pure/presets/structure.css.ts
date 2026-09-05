@@ -17,7 +17,8 @@ export const STRUCTURE_CSS = `
   padding:var(--sd-pad,64px); overflow:hidden; position:relative; background:var(--sd-bg); color:var(--sd-fg);
   font-size:var(--sd-base); line-height:var(--sd-lh-body,1.45); font-family:var(--sd-font); }
 
-/* ── Type roles — modular scale, ratio 1.25 (see docs/themes/THEMING-GUIDE.md).
+/* ── Type roles — modular scale, ratio 1.25 (the guide travelled with the consumer:
+   markdown-presentation/docs/themes/THEMING-GUIDE.md — there is no docs/themes/ here).
    Themes override token VALUES only; the display treatment (italic serif etc.)
    comes from --sd-display-* treatment tokens, never from theme h1/h2 rules. ── */
 .sd-slide h1{ font-family:var(--sd-heading-font); font-size:var(--sd-size-h1,1.95em);
@@ -169,6 +170,13 @@ export const STRUCTURE_CSS = `
 .sd-slide-header{ top:24px; right:32px; text-transform:uppercase; }
 .sd-slide-footer{ bottom:24px; left:32px; }
 .sd-slide-pagination{ bottom:24px; right:32px; }
+/* The sender is a brand element, not a metadata eyebrow — it shares the slots' layer and
+   margin, deliberately not their mono/tracked voice. Sits above the pagination because
+   bottom-right is taken; the theme overrides position and size anyway. */
+.sd-slide-sender{ position:absolute; z-index:4; right:32px; bottom:56px;
+  font-size:var(--sd-slot-size,var(--sd-size-eyebrow,.68em));
+  font-family:var(--sd-heading-font,var(--sd-font,inherit));
+  color:var(--sd-slot-fg,var(--sd-fg,#111827)); }
 
 /* cover-image: full-bleed background + readability scrim behind the content. */
 .sd-layout-cover-image{ --sd-cover-fg:${COVER_FG_DEFAULT}; }
@@ -187,7 +195,7 @@ export const STRUCTURE_CSS = `
 /* Slots over a full-bleed image carry their own shadow (the top scrim is gone).
    One soft shadow, not two — a tight second shadow doubled the glyph edge into a
    faint "ghost" ring over bright sky. */
-.sd-layout-cover-image :is(.sd-slide-header,.sd-slide-footer,.sd-slide-pagination){
+.sd-layout-cover-image :is(.sd-slide-header,.sd-slide-footer,.sd-slide-pagination,.sd-slide-sender){
   text-shadow:0 2px 16px rgba(0,0,0,.8); }
 .sd-layout-cover-image .sd-content{ position:relative; z-index:3; }
 `;

@@ -2,7 +2,7 @@ import { parseDirectives, type DirectiveWarning } from "./directives";
 import { inferLayout } from "./infer-layout";
 
 export type Aspect = "16:9" | "4:3";
-export interface DeckDirectives { theme: string; aspect: Aspect; minFontPx: number; header?: string; footer?: string; paginate?: boolean; }
+export interface DeckDirectives { theme: string; aspect: Aspect; minFontPx: number; header?: string; footer?: string; paginate?: boolean; modifiers?: string[]; sender?: string; }
 export interface Slide {
   index: number; markdown: string; speakerNotes?: string; startLine: number;
   layout: string; modifiers: string[]; regions: string[]; directiveWarnings: DirectiveWarning[];
@@ -41,14 +41,21 @@ function parseFrontmatter(lines: string[], base: DeckDirectives): { directives: 
     else if (key === "minFontPx") { const n = Number(val); if (Number.isFinite(n) && n > 0) d.minFontPx = n; }
     else if (key === "header") d.header = val.replace(/^["']|["']$/g, "");
     else if (key === "footer") d.footer = val.replace(/^["']|["']$/g, "");
+    else if (key === "sender") d.sender = val.replace(/^["']|["']$/g, "");
     else if (key === "paginate") d.paginate = /^(true|yes|on)$/i.test(val);
+    else if (key === "modifiers") d.modifiers = val.split(/[\s,]+/).map((m) => m.toLowerCase()).filter(Boolean);
   }
   return { directives: d, bodyStart: end + 1, hasFrontmatter: true };
 }
 
 const FENCE_RE = /^\s*(```|~~~)/;
 
-export function parseDeck(source: string, defaults?: Partial<DeckDirectives>): SlideDeck {
+/** Parser options. Deliberately not part of DeckDirectives: `knownModifiers` is what the
+ *  THEME declared, not what the deck asked for — folding it into the directives would
+ *  hang theme knowledge off every parsed deck. */
+export interface ParseOptions { knownModifiers?: readonly string[]; }
+
+export function parseDeck(source: string, defaults?: Partial<DeckDirectives>, opts?: ParseOptions): SlideDeck {
   const lines = source.replace(/\r\n/g, "\n").split("\n");
   const base: DeckDirectives = { ...DEFAULTS, ...defaults };
   const { directives, bodyStart } = parseFrontmatter(lines, base);
@@ -60,11 +67,15 @@ export function parseDeck(source: string, defaults?: Partial<DeckDirectives>): S
   const flush = () => {
     const md = buf.join("\n");
     if (md.trim().length > 0 && slideStart !== null) {
-      const d = parseDirectives(md);
+      const d = parseDirectives(md, opts?.knownModifiers);
       const layout = d.layoutExplicit ? d.layout : inferLayout(d.regions);
+      // Deck-wide modifiers lead, per-slide ones follow; a name declared in both appears
+      // once. The order carries no cascade meaning — class order in the attribute does not
+      // decide anything in CSS — it only keeps the shared prefix stable across slides.
+      const deckMods = (directives.modifiers ?? []).filter((m) => !d.modifiers.includes(m));
       slides.push({
         index: slides.length, markdown: d.regions.join("\n"), startLine: slideStart,
-        layout, modifiers: d.modifiers, regions: d.regions, directiveWarnings: d.warnings,
+        layout, modifiers: [...deckMods, ...d.modifiers], regions: d.regions, directiveWarnings: d.warnings,
       });
     }
   };

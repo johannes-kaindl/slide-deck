@@ -31,7 +31,7 @@ async function exportDeckHtmlAndOpen(app: App, file: TFile | null, slidesHtml: s
 
 export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, registry: ThemeRegistry, defaults?: Partial<DeckDirectives>, customCss = "", themeOverride?: string, exportFolder = "Slide-Deck-Export"): Promise<void> {
  try {
-  const loaded = await loadDeck(app, file, defaults);
+  const loaded = await loadDeck(app, file, defaults, { registry, themeKey: themeOverride });
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const deck = withTheme(loaded.deck, themeOverride);
   const geo = geometryFor(deck.directives.aspect);
@@ -61,7 +61,7 @@ export async function exportPdf(app: App, doc: Document, win: Window, file: TFil
 export async function exportImages(app: App, doc: Document, win: Window, file: TFile | null, registry: ThemeRegistry, defaults?: Partial<DeckDirectives>, scale = 2, customCss = "", exportFolder = "Slide-Deck-Export", themeOverride?: string): Promise<void> {
   void win;
  try {
-  const loaded = await loadDeck(app, file, defaults);
+  const loaded = await loadDeck(app, file, defaults, { registry, themeKey: themeOverride });
   if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
   const deck = withTheme(loaded.deck, themeOverride);
   const geo = geometryFor(deck.directives.aspect);

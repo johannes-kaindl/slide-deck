@@ -71,6 +71,14 @@ export interface ThemeEntry {
    *  colour). A theme that cannot declare it has to fight mermaid's SVG-internal <style>
    *  with `opacity: 1 !important`, and that rule is dropped by the PNG export. */
   mermaidVarOverrides?: Record<string, string>;
+  /** Modifier names the theme file declares for itself (`/* sd-modifiers: a b c *\/`).
+   *  They exist so a theme with its own variants stops reporting them as unknown — the
+   *  parser takes them as `ParseOptions.knownModifiers`. Absent for built-ins, which
+   *  declare none. It sits HERE rather than beside the parser because the registry is the
+   *  one place that already holds what a theme said about itself: a consumer that had to
+   *  re-parse the CSS for this would keep a second map next to the registry and hold it in
+   *  step by hand (measured from markdown-presentation, 2026-09-05). */
+  modifiers?: string[];
   baseFontPx: number;
   overridesBuiltin?: boolean;
 }

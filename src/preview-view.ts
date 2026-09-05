@@ -113,7 +113,10 @@ export class SlideDeckView extends ItemView {
       this.currentFile = active && active.extension === "md" ? active : null;
       this.fileLabel.setText(this.currentFile ? this.currentFile.basename : "");
       this.ephemeralTheme = undefined; // a fresh load drops any try-on
-      const loaded = await loadDeck(this.app, this.currentFile, { theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx });
+      // Ohne themeKey: `ephemeralTheme` ist eine Zeile darueber zurueckgesetzt, es gilt also
+      // Frontmatter bzw. Default. Ein spaeterer Dropdown-Wechsel rendert nur neu (`rerenderTheme`)
+      // und parst nicht erneut — die Modifier-Meldungen bleiben die des geladenen Themes.
+      const loaded = await loadDeck(this.app, this.currentFile, { theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx }, { registry: this.plugin.themeStore.getMap() });
       this.warnEl.empty();
       this.messageEl.empty();
       this.messageEl.removeClass("sd-error");

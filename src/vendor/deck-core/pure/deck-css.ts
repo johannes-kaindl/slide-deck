@@ -51,6 +51,7 @@ export function userThemeEntry(key: string, fileCss: string, vendor: VendorCss):
     mermaid: meta.mermaid ?? d.mermaid,
     mermaidPinned: meta.mermaid !== undefined,
     mermaidVarOverrides: meta.mermaidVars,
+    modifiers: meta.modifiers,
     baseFontPx: parseBaseFontPx(fileCss) ?? d.baseFontPx,
   };
 }

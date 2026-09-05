@@ -23,7 +23,9 @@ function setHtml(el: HTMLElement, html: string): void {
   el.replaceChildren(...Array.from(parsed.body.childNodes, (n) => ownerDoc.importNode(n, true)));
 }
 
-function appendSlots(doc: HostDocument, box: HTMLElement, deck: SlideDeck, slideIndex: number): void {
+/** Exported for the seam: the slots are the one part of rendering that is pure
+ *  string-to-element, so it can be proven against a four-method fake document. */
+export function appendSlots(doc: HostDocument, box: HTMLElement, deck: SlideDeck, slideIndex: number): void {
   const d = deck.directives;
   const make = (cls: string, text: string) => {
     const el = doc.createElement("div");
@@ -33,6 +35,7 @@ function appendSlots(doc: HostDocument, box: HTMLElement, deck: SlideDeck, slide
   };
   if (d.header) make("sd-slide-header", d.header);
   if (d.footer) make("sd-slide-footer", d.footer);
+  if (d.sender) make("sd-slide-sender", d.sender);
   if (d.paginate) make("sd-slide-pagination", `${slideIndex + 1} / ${deck.slides.length}`);
 }
 

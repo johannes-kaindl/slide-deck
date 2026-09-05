@@ -338,6 +338,21 @@ Vollständigkeits-Record, den niemand typecheckt, ist keine Absicherung, sondern
   stellt zusätzlich ein Formzeichen voran (▲/●/ℹ): eine reine Farbunterscheidung wäre ein
   selbst eingebauter WCAG-1.4.1-Verstoß, während die Callouts nebenan Redundanz zusagen.
   Die drei Schwere-Wörter liegen in `i18n.ts` (EN+DE) mit Vollständigkeits-Record im Test.
+- **`/* sd-modifiers: … */` — ein Theme erklärt seine eigenen Modifier** (deck-core 0.10.0).
+  Ohne die Erklärung meldet ein Theme mit planmäßig eigenen Varianten auf jeder zweiten Folie
+  einen Zustand, der genau so gewollt ist (`modifier-unknown`, Schwere `info`).
+  **Die Kette läuft über vier Module und zwei Repos, und die Naht dazwischen ist nur hier
+  geprüft** (`tests/adapter.test.ts` § „Consumer-Kette", mit Gegenprobe): Theme-CSS →
+  `parseThemeMeta()` → `ThemeEntry.modifiers` → `knownModifiersFor()` →
+  `parseDeck(src, defaults, { knownModifiers })`.
+  `knownModifiersFor` liegt bewusst **außerhalb** von `loadDeck`: dort bräuchte ein Test einen
+  App-Mock, hier genügt eine Registry — dieselbe Naht wie `mermaidConfig` im Kern.
+  ⓘ **Welches Theme zählt, steht vor dem Parsen fest**, ohne das Deck anzufassen: Obsidian hat
+  die Frontmatter bereits geparst (`metadataCache.getFileCache().frontmatter.theme`). Ein
+  ausdrücklicher `themeKey` (Export-Override) schlägt sie, weil damit gerendert wird.
+  ⚠️ **Ein Dropdown-Wechsel in der Vorschau ändert die Meldungen nicht:** `rerenderTheme()`
+  rendert neu, parst aber nicht erneut — die Modifier-Meldungen bleiben die des **geladenen**
+  Themes. Folgenlos (`info`, kein Streifen), aber beim Anprobieren eines fremden Themes sichtbar.
 - **Themes/Tokens-Invariante:** Themes setzen nur Tokens; Struktur/Layout-CSS ist theme-unantastbar (fit-kritisch). `--sd-base` lebt einzig in `presetTokensCss`.
 - **Theme-Registry:** Themes sind `ThemeEntry { key, label?, source, themeCss, hljs, katex, mermaid, mermaidVars?, mermaidPinned?, mermaidVarOverrides?, baseFontPx, overridesBuiltin? }`.
   `katex` ist Pflicht (vom Host hereingereichtes Fremd-CSS, s. `deck-css.ts` oben); `label`,

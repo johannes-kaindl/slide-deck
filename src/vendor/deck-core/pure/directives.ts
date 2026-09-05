@@ -12,10 +12,18 @@ const DIRECTIVE_LIKE = /^<!--\s*\w[\w-]*\s*:/i;
 
 /** Density modifiers the core itself understands. NOT a whitelist: any further token on a
  *  layout directive becomes a `sd-mod-*` class too, so a theme can define its own variants
- *  (the same open contract layout names and callout types already have). This set only
- *  decides two things — which token may precede the layout name, and which ones pass
- *  without a `modifier-unknown` note. */
+ *  (the same open contract layout names and callout types already have). Since 0.9.0 this
+ *  set decides ONE thing: which token may precede the layout name. Whether a token warns is
+ *  SILENT_MODIFIERS below — the two used to be the same set, which is why `cover` had to
+ *  keep warning about itself. */
 const MODIFIERS = new Set(["compact", "code-heavy"]);
+
+/** Which tokens pass without a `modifier-unknown` note. A SECOND set on purpose: MODIFIERS
+ *  above also decides which token may precede the layout name, and `cover` must not — it is
+ *  a layout alias, so listing it there would make `<!-- layout: cover -->` find no layout at
+ *  all. Splitting the two roles is what lets a core-owned modifier stop warning about
+ *  itself, and a theme add its own, without either touching layout resolution. */
+const SILENT_MODIFIERS = new Set([...MODIFIERS, "cover"]);
 
 /** Forgiving aliases for layout names authors (and LLMs) naturally reach for. */
 const LAYOUT_ALIASES: Record<string, string> = {
@@ -30,7 +38,10 @@ const LAYOUT_ALIASES: Record<string, string> = {
 /** Parse per-slide directives. Fence-aware: directives inside ```/~~~ blocks are literal.
  *  Indented code blocks are intentionally NOT fence-protected (rare; documented limitation).
  *  CRLF line endings are normalized to LF internally before parsing. */
-export function parseDirectives(slideMarkdown: string): DirectiveResult {
+export function parseDirectives(slideMarkdown: string, knownModifiers?: readonly string[]): DirectiveResult {
+  const silent = knownModifiers?.length
+    ? new Set([...SILENT_MODIFIERS, ...knownModifiers.map((m) => m.toLowerCase())])
+    : SILENT_MODIFIERS;
   const lines = slideMarkdown.replace(/\r\n/g, "\n").split("\n");
   const warnings: DirectiveWarning[] = [];
   let layout = "default";
@@ -68,7 +79,7 @@ export function parseDirectives(slideMarkdown: string): DirectiveResult {
         tokens.forEach((t, i) => {
           if (i === layoutIdx || modifiers.includes(t)) return;
           modifiers.push(t);
-          if (!MODIFIERS.has(t)) unknown.push(t);
+          if (!silent.has(t)) unknown.push(t);
         });
         if (layoutIdx >= 0) { layout = LAYOUT_ALIASES[tokens[layoutIdx]] ?? tokens[layoutIdx]; layoutSet = true; }
         if (unknown.length > 0) {
