@@ -45,7 +45,12 @@ export function cardVm(block: SlotBlock, state: CardState): CardVm {
     case "unavailable":
       return { ...base, empty: true, statusLabel: t("image.unavailable") };
     case "blocked":
-      return { ...base, status: "is-error", statusIcon: "circle-x",
+      // W1: alle sechs Gruende (busy, not-configured, unreachable, model-not-downloaded,
+      // no-gpu — dazu der explizite "failed"-Zweig, der hier nie ankommt) sind heilbar durch
+      // einen erneuten Versuch. Ohne diese Zeile blieb der Knopf tot, bis der Nutzer die
+      // ganze Notiz neu rendert — nirgends dokumentiert und fuer die Faelle am schlimmsten,
+      // die sich von selbst loesen (busy, unreachable).
+      return { ...base, buttonEnabled: true, status: "is-error", statusIcon: "circle-x",
                statusLabel: t(failureKey(state.reason)) };
     case "running":
       return { ...base, status: "is-checking", statusIcon: "loader",

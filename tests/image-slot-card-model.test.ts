@@ -56,6 +56,12 @@ describe("cardVm", () => {
     expect(vm.statusLabel).not.toBe("image.fail.no-gpu"); // kein Schluessel-Fallback
   });
 
+  it("W1: keeps the button usable when blocked — the reason is recoverable, not the end", () => {
+    for (const reason of ["busy", "not-configured", "unreachable", "model-not-downloaded", "no-gpu"] as const) {
+      expect(cardVm(block, { kind: "blocked", reason }).buttonEnabled).toBe(true);
+    }
+  });
+
   it("shows the error message verbatim — no re-wrapping in the view model", () => {
     const message = "CUDA out of memory";
     const vm = cardVm(block, { kind: "error", message });
