@@ -1380,9 +1380,80 @@ const bildplaetze: Section = {
         ` · ${karteOhneApi?.knopf} (funktion=${karteOhneApi?.funktion} prompt=${karteOhneApi?.prompt})`,
     );
 
-    record("N2b Vorzustand des Nachbarplugins wiederhergestellt",
-           (await cdp.evaluate<boolean>(`return app.plugins.plugins["local-image-generator"] !== undefined;`)) === vorher,
-           vorher ? "war installiert, ist wieder da" : "war nicht installiert, ist wieder weg");
+    // N2b: die RUECKSCHREIB-MECHANIK selbst, nicht der zufaellige Vorbestand dieses Vaults.
+    // In diesem Staging-Vault ist lokal kein "local-image-generator" installiert — ein Punkt,
+    // der nur den hiesigen Vorbestand spiegelt, faehrt deshalb IMMER denselben Zweig
+    // ("war nicht installiert") und misst den schutzbeduerftigeren Fall ("war installiert ->
+    // ist danach dasselbe Objekt") in keinem einzigen Lauf. Und `!== undefined` allein waere
+    // auch dann wahr, wenn dort ein FREMDES Objekt laege — also genau dann, wenn die
+    // Wiederherstellung schiefgegangen ist. Deshalb: ein synthetischer, eindeutig
+    // wiedererkennbarer Waechter statt des echten Vorbestands, Vergleich per Objektidentitaet
+    // (`===`), UND der echte Vorbestand dieses Vaults wird waehrend der Messung gesichert und
+    // danach zurueckgeschrieben — derselben Sorgfalt, die dieser Punkt selbst einfordert.
+    const pruefeRestoreMechanik = async (
+      mitWaechter: boolean,
+    ): Promise<{ identisch: boolean; nachher: string }> =>
+      cdp.evaluate(`
+        const waechter = ${mitWaechter} ? { __sdWaechter: true, marke: "sd-smoke-" + Math.random() } : undefined;
+        if (waechter) app.plugins.plugins["local-image-generator"] = waechter;
+        else delete app.plugins.plugins["local-image-generator"];
+
+        // Dieselbe Mechanik wie N2s eigenes finally: Vorbestand sichern, Stub setzen,
+        // zurueckschreiben.
+        const vorherInnen = app.plugins.plugins["local-image-generator"];
+        app.plugins.plugins["local-image-generator"] = {
+          api: { apiVersion: 1,
+                 status: () => ({ apiVersion: 1, engine: "builtin", ready: true, reason: null,
+                                  capabilities: { negativePrompt: false, cfg: false, maxSteps: 8,
+                                                  fixedSize: null, initImage: false, sizes: null } }),
+                 generate: async () => ({ ok: false, reason: "busy" }),
+                 save: async () => ({ ok: false, reason: "write-failed", message: "smoke" }) },
+        };
+        if (vorherInnen === undefined) delete app.plugins.plugins["local-image-generator"];
+        else app.plugins.plugins["local-image-generator"] = vorherInnen;
+
+        const nachher = app.plugins.plugins["local-image-generator"];
+        const identisch = waechter ? nachher === waechter : nachher === undefined;
+        return {
+          identisch,
+          nachher: nachher === undefined ? "(nichts)" : nachher === waechter ? "Waechter (identisch)" : "FREMDES OBJEKT",
+        };
+      `);
+
+    let mitWaechterErgebnis: { identisch: boolean; nachher: string } | null = null;
+    let ohneWaechterErgebnis: { identisch: boolean; nachher: string } | null = null;
+    try {
+      await cdp.evaluate(`
+        globalThis.__sdEchterVorbestand = app.plugins.plugins["local-image-generator"];
+        return true;
+      `);
+      mitWaechterErgebnis = await pruefeRestoreMechanik(/* mitWaechter */ true);
+      ohneWaechterErgebnis = await pruefeRestoreMechanik(/* mitWaechter */ false);
+    } finally {
+      await cdp.evaluate(`
+        if (globalThis.__sdEchterVorbestand === undefined) delete app.plugins.plugins["local-image-generator"];
+        else app.plugins.plugins["local-image-generator"] = globalThis.__sdEchterVorbestand;
+        delete globalThis.__sdEchterVorbestand;
+        return true;
+      `);
+    }
+
+    const n2bOk = Boolean(mitWaechterErgebnis?.identisch && ohneWaechterErgebnis?.identisch);
+    record(
+      "N2b Rueckschreib-Mechanik: Objektidentitaet gewahrt (mit Waechter) und Slot leer (ohne)",
+      n2bOk,
+      `mit Waechter: ${mitWaechterErgebnis?.nachher} · ohne: ${ohneWaechterErgebnis?.nachher}`,
+    );
+    if (!n2bOk) {
+      // Ein misslungenes Zurueckschreiben ist kein Testergebnis, sondern ein Schaden an
+      // fremdem Zustand (dem Nachbarplugin-Slot) — der Lauf bricht deshalb ab, statt mit
+      // einer roten Zeile weiterzulaufen, als waere nichts geschehen.
+      throw new Error(
+        `N2b: Rueckschreib-Mechanik verletzt Objektidentitaet — mit Waechter: ${mitWaechterErgebnis?.nachher}` +
+        ` · ohne: ${ohneWaechterErgebnis?.nachher}. Abbruch, damit kein weiterer Punkt auf einem` +
+        ` beschaedigten Nachbarplugin-Zustand aufbaut.`,
+      );
+    }
 
     // N3: is-checking bewegt sich, is-ok nicht (§8, nur am laufenden Objekt pruefbar).
     const anim = await cdp.evaluate<{ checking: string; ok: string }>(`

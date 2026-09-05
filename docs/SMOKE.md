@@ -51,7 +51,7 @@ nehmen, sonst blockt der Guard den ersten Treiber-Aufruf.
 | C2 | Ausschalten macht ihn wieder sichtbar | dieselbe Messung, invertiert |
 | N1 | Bildplatz rendert als `.sd-image-slot` | Deck-iframe einer Notiz mit `slide-image`-Block: genau 1 Slot; Gegenprobe ohne Block: 0 |
 | N2 | Nach Klick auf „Generate": Knopf gesperrt + Klassen da mit API, Empty-State ohne | mit Stub läuft `runSlot` bis `blocked` (busy) — Knopf gesperrt, `.sd-slot-function`/`.sd-slot-prompt` bleiben im DOM; ohne API bricht `readImageApi` sofort ab, die Karte wird Empty-State und trägt laut `renderCard` **keine** der beiden Klassen |
-| N2b | Vorzustand des Nachbarplugins wiederhergestellt | `app.plugins.plugins["local-image-generator"]` nach dem Lauf identisch zum Stand davor — der Stub wird zurückgeschrieben, nie gelöscht |
+| N2b | Rückschreib-Mechanik: Objektidentität gewahrt | dieselbe Sichern-Stub-Zurückschreiben-Mechanik wie N2s eigenes `finally`, gegen einen synthetischen Wächter statt gegen den (hier immer leeren) echten Vorbestand — mit Wächter muss danach **dasselbe Objekt** (`===`) an der Stelle liegen, ohne Wächter muss der Slot wieder leer sein. Bricht der Vergleich, **wirft** der Punkt statt nur rot zu melden |
 | N3 | `is-checking` bewegt sich, `is-ok` steht | `animationName` zweier synthetischer `.sd-slot-status`-Icons (§8-Vokabel, dieselbe wie bei Endpunkt-Status) |
 | N4 | Zurückschreiben trifft, unterbleibt bei geändertem Block | `replaceSlot`-Bauart über den echten Vault-Inhalt: Treffer ersetzt den Block durch das Bild-Embed; ein zwischenzeitlich geänderter Block bleibt unberührt |
 | D1 | Bilder-Export schreibt die volle Serie | PNG-Dateien > 1 KB im Export-Ordner, Zahl gegen die Folienzahl |
@@ -162,12 +162,29 @@ Beide Fälle meldeten deshalb identisch „gesperrt" — der stille Fehlschlag, 
 mehreren Stellen davor warnt. Der Fix: alle Markdown-Blätter abtrennen, bevor das nächste
 öffnet, und danach über `blatt.view.containerEl` lesen statt über das globale `document`.
 
-**N2b schreibt den LIG-Stub zurück, statt ihn zu löschen.** Der Staging-Vault hat
-`local-image-generator` nicht installiert, aber ein Treiber, der unbedingt `delete
-app.plugins.plugins["local-image-generator"]` fährt, zerstört bei jedem, der es installiert hat,
-dessen Live-Registrierung — der eigene Lauf bliebe grün, der Schaden entstünde beim Nachbarn.
-N2b sichert den Vorzustand einmal (`vorher`), das `finally` schreibt ihn zurück, und der Punkt
-vergleicht per Identität, ob das gelungen ist.
+**N2b prüft die Rückschreib-MECHANIK, nicht den zufälligen Vorbestand dieses Vaults.**
+`local-image-generator` ist im Staging-Vault nie installiert — ein Punkt, der nur den hiesigen
+Vorbestand spiegelt, führt deshalb in jedem Lauf denselben Zweig („war nicht installiert") und
+misst den eigentlich schutzbedürftigeren Fall („war installiert → ist danach **dasselbe
+Objekt**") in keinem einzigen Durchlauf. Und ein Vergleich auf `!== undefined` allein wäre auch
+dann wahr, wenn dort ein **fremdes** Objekt läge — also genau dann, wenn die Wiederherstellung
+schiefgegangen ist. Die erste Fassung dieses Punkts hatte beide Lücken.
+
+N2b legt deshalb vor jeder Messung einen synthetischen, eindeutig wiedererkennbaren Wächter an
+und fährt zweimal dieselbe Sichern-Stub-Zurückschreiben-Mechanik wie N2s eigenes `finally` (auch
+ein Treiber, der einen Stub „unbedingt" löscht statt zurückzuschreiben, zerstört bei jedem, der
+das echte LIG installiert hat, dessen Live-Registrierung — der eigene Lauf bliebe grün, der
+Schaden entstünde beim Nachbarn): einmal mit Wächter vorher (danach muss exakt **derselbe**
+Wächter wieder da sein, `===`, nicht bloß „irgendetwas"), einmal ohne (danach muss der Slot
+wieder leer sein). Der echte Vorbestand dieses Vaults wird während der Messung gesichert und
+danach zurückgeschrieben — derselbe Sorgfalt, die der Punkt selbst einfordert.
+
+**Bricht der Identitätsvergleich, wirft N2b zusätzlich zum roten `record()`.** Ein misslungenes
+Zurückschreiben ist kein Testergebnis, sondern ein Schaden an fremdem Zustand — der Lauf bricht
+ab, damit kein nachfolgender Punkt auf einem beschädigten Nachbarplugin-Slot aufbaut. Gegenprobe
+(2026-09-05, Fix-Runde 1): die Zurückschreib-Zeile durch ein bedingungsloses `delete` ersetzt →
+`mit Waechter: (nichts) · ohne: (nichts)`, rot, und der Lauf brach mit einer eigenen
+`Abbruch:`-Meldung ab, **bevor** N3/N4 liefen. Nach Rückbau wieder 5/5.
 
 ## Hand-Runde (bewusst nicht automatisiert)
 
@@ -190,7 +207,8 @@ vergleicht per Identität, ob das gelungen ist.
 | 2026-09-05 (3) | 1.14.0 | **22/22 grün** nach dem D1/D2-Fix (`leereExport` vor jedem Export) | **drei Läufe, beide Punkte einzeln belegt** — D2 misst nach Farbwechsel die neue Farbe; ohne Löschung meldet er die Farbe des Vorlaufs (rot); D1 zählt mit einem untergeschobenen sechsten PNG sechs statt fünf, bei noch laufendem Export (rot). Der Verdacht aus der Task war damit erstmals **am Treiber** gemessen, nicht am Ad-hoc-Skript |
 | 2026-09-05 (2) | 1.14.0 | **22/22 grün** (M3, M4, M5 neu) | **in jedem Punkt eingebaut**, statt als eigener Sabotage-Lauf: M3 696.483 volle Probe-Pixel gegen 2.256, M4 1 Slot mit 162 px gegen 0 Elemente, M5 0 `modifier-unknown` gegen 1. Dazu eine ungeplante echte Gegenprobe — der erste Lauf war rot an M3 (0 gegen 2.256), weil der Ja-Fall sein Theme nicht selbst stellte; der Punkt hat seinen eigenen Treiberfehler gemeldet |
 | 2026-09-05 | 1.14.0 | 19/19 grün gegen `deck-core` 0.10.0 (keine neuen Punkte) | **keine** — der Lauf belegt ein Vendoring, keinen neuen Prüfpunkt. Die vier Zusagen von 0.9.0/0.10.0 sind stattdessen einzeln am Kern gemessen (`modifiers:` deckweit, `sender:` kommt an, `footer:` dahinter leckt nicht, `bildfolie cover` meldet nichts) und die Consumer-Naht als vitest-Test **mit** Gegenprobe abgesichert (`tests/adapter.test.ts` § Consumer-Kette) |
-| 2026-09-05 (4) | 1.14.0 | **27/27 grün** (N1, N2, N2b, N3, N4 neu, Abschnitt `bild`) | **in jedem Punkt eingebaut**: N1 1 Slot gegen 0; N2 „gesperrt (funktion=true prompt=true)" mit API gegen „leer (funktion=false prompt=false)" ohne; N2b Vorzustand des Nachbarplugins vorher/nachher identisch (war nicht installiert, ist wieder weg); N3 `checking=sd-spin` gegen `ok=none`; N4 „ersetzt" gegen „unberuehrt" bei geändertem Block. Baseline direkt davor (unveränderter Treiber) lief bereits 22/22 grün — die Umgebung selbst war also nicht die Fehlerquelle. Zwei Treiberfehler unterwegs gefangen, s. § oben: N2s Annahme über den initialen Kartenzustand (Klick nötig, kein reiner Render-Vergleich) und zwei offene Leseansichten, die sich `document` teilten |
+| 2026-09-05 (4) | 1.14.0 | **27/27 grün** (N1, N2, N2b, N3, N4 neu, Abschnitt `bild`) | **in jedem Punkt eingebaut**: N1 1 Slot gegen 0; N2 „gesperrt (funktion=true prompt=true)" mit API gegen „leer (funktion=false prompt=false)" ohne; N2b (erste Fassung, seither ersetzt — s. Zeile darunter) Vorzustand des Nachbarplugins vorher/nachher identisch; N3 `checking=sd-spin` gegen `ok=none`; N4 „ersetzt" gegen „unberuehrt" bei geändertem Block. Baseline direkt davor (unveränderter Treiber) lief bereits 22/22 grün — die Umgebung selbst war also nicht die Fehlerquelle. Zwei Treiberfehler unterwegs gefangen, s. § oben: N2s Annahme über den initialen Kartenzustand (Klick nötig, kein reiner Render-Vergleich) und zwei offene Leseansichten, die sich `document` teilten |
+| 2026-09-05 (5, Fix-Runde 1) | 1.14.0 | **27/27 grün** (N2b neu gebaut: Wächter-Objekt + Identitätsvergleich + Abbruch bei Bruch) | N2b „mit Waechter: Waechter (identisch) · ohne: (nichts)" — zwei unterscheidbare Werte, beide Zweige jetzt in EINEM Lauf gemessen. Gegenprobe: Rückschreib-Zeile durch bedingungsloses `delete` ersetzt → „mit Waechter: (nichts) · ohne: (nichts)", rot, **und der Lauf brach ab** (`Abbruch: N2b: Rueckschreib-Mechanik verletzt Objektidentitaet …`), bevor N3/N4 liefen. Nach Rückbau wieder 5/5 (Abschnitt) bzw. 27/27 (voller Lauf) |
 
 ### Warum M überhaupt gebraucht wurde — und was der erste Anlauf kostete (2026-09-03)
 
