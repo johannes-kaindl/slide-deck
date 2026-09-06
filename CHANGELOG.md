@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-09-06
+
 ### Added
 - **Bildplätze:** ein ```slide-image```-Codeblock rendert in der Leseansicht als Karte mit
   Generieren-Knopf, ruft für die Erzeugung das Nachbarplugin `local-image-generator` über
