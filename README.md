@@ -95,7 +95,7 @@ Planned: once accepted into the Obsidian community plugin registry it will be in
 ### BRAT (Beta Reviewers Auto-update Tool)
 
 1. Install the [BRAT plugin](https://obsidian.md/plugins?id=obsidian42-brat).
-2. In BRAT settings, add `https://git.jkaindl.de/jkaindl/slide-deck` (or its GitHub mirror `https://github.com/johannes-kaindl/slide-deck`).
+2. In BRAT settings, add `https://git.jkaindl.de/jkaindl/slide-deck`.
 3. Reload Obsidian.
 
 ### Build from source
