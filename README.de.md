@@ -3,7 +3,7 @@
 Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilderserie exportieren — mit Live-Lesbarkeitsprüfung.
 
 [![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE)
-[![Release](https://img.shields.io/badge/Release-0.8.0-green.svg)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
+[![Release](https://img.shields.io/gitea/v/release/jkaindl/slide-deck?gitea_url=https%3A%2F%2Fgit.jkaindl.de&label=release)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
 [![Plattform: Desktop + Mobile](https://img.shields.io/badge/Plattform-Desktop%20%2B%20Mobile-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/manifest.json)
 
 <img width="820" alt="Eine Zwei-Spalten-Folie im Theme shiro: links eine Aufzählung mit Inline-Code und KaTeX-Mathe, rechts ein Balkendiagramm, das die Spalte füllt" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png">

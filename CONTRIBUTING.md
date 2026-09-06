@@ -27,7 +27,9 @@ Contributions of all sizes are welcome: bug reports, fixes, docs, and features. 
 
 - Releases are tagged with [SemVer](https://semver.org/) **without** a `v` prefix — e.g. `0.1.0`, not `v0.1.0`.
 - [Forgejo](https://git.jkaindl.de/jkaindl/slide-deck) is the canonical, primary remote (`origin`).
-- The [GitHub repository](https://github.com/johannes-kaindl/slide-deck) is a **mirror** only (used for the community plugin registry and release CI). Open your contributions against Forgejo.
+- **There is no GitHub mirror any more** (removed 2026-09-06, along with the release CI that
+  ran there). Forgejo is the only remote — open your contributions there. Releases are
+  published as Forgejo releases and listed in a subscribable catalog; see the README.
 
 ## Quality gate
 

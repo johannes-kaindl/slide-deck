@@ -3,7 +3,7 @@
 Turn a Markdown note into a slide deck and export it to PDF or a PNG image series, with live readability checks.
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE)
-[![Release](https://img.shields.io/badge/Release-0.8.0-green.svg)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
+[![Release](https://img.shields.io/gitea/v/release/jkaindl/slide-deck?gitea_url=https%3A%2F%2Fgit.jkaindl.de&label=release)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
 [![Platform: Desktop + Mobile](https://img.shields.io/badge/Platform-Desktop%20%2B%20Mobile-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/manifest.json)
 
 <img width="820" alt="A two-column slide in the shiro theme: a bullet list with inline code and KaTeX math on the left, a bar chart filling the right column" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png">
