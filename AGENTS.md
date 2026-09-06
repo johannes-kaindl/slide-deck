@@ -580,16 +580,26 @@ Stand: siehe `CHANGELOG.md` / `manifest.json` (dort steht die maßgebliche Versi
 keine, damit dieser Block nicht durch Zeitablauf falsch wird). Bewusste, begründete Abweichungen
 (comply-or-explain):
 
-- **`authorUrl` zeigt auf GitHub, nicht auf `jkaindl.de`** (seit 2026-08-12). Der Store-Review
-  prüft das Feld auf Erreichbarkeit und meldete wiederholt „Manifest URL field is not
-  reachable" — die Domain war bei jeder Gegenprobe erreichbar (IPv4, IPv6, HEAD, `www`,
-  extern, ohne Rate-Limit), der Befund also nicht reproduzierbar. Ursache blieb offen; sie
-  ist auch nicht der Punkt. `authorUrl` ist eine **Verfügbarkeitszusage gegenüber einem
-  fremden Prüfer**, und diese an den eigenen Server zu hängen riskiert sie bei jedem
-  Neustart neu. Der Fehler kam mehrfach und wurde jedes Mal einzeln behoben — dieselbe
-  Klasse Wiederholungsarbeit wie bei den Inline-disables (0.3.1/0.6.1), und dieselbe
-  Antwort: die Ursache abstellen statt den Befund. **Nicht auf die eigene Domain
-  zurückstellen**; sie steht ohnehin im Impressum und auf der Release-Seite.
+- **Kein GitHub mehr: `npm run release` fährt fest mit `--no-github`, das `github`-Remote
+  ist entfernt** (seit 2026-09-06). Anlass war das 0.10.0-Release: Tag und Branch liefen per
+  SSH noch in den Mirror, die Action aber nicht — es entstand **kein GitHub-Release**, und die
+  REST-API antwortete mit einer vorgeschobenen Rate-Limit-Meldung (403, „exceeded for user
+  ID …", während gar kein Kontingent erschöpft war). Ein Store-Rescan hätte damit ins Leere
+  gegriffen und das Plugin binnen 24 h aus der Suche genommen.
+  ⚠️ **Beides gehört zusammen und darf nie einzeln passieren:** ohne das Flag ist ein
+  fehlendes `github`-Remote ein **harter Abbruch** im Release-Skript — wer nur das Remote
+  löscht, zerstört die Releases. Form übernommen aus `anysource-sideloader` (2026-09-03).
+  Verteilung läuft über den Forgejo-Release (Assets + `checksums.sha256`) und den
+  AnySource-Sideloader-Katalog. `.github/workflows/release.yml` bleibt liegen: sie schadet
+  nicht und trüge wieder, falls das Konto je entsperrt wird.
+- **`authorUrl` zeigt auf `https://jkaindl.de`** (seit 2026-09-06, vorher GitHub).
+  ⚠️ **Die alte Regel ist damit aufgehoben, nicht vergessen** — sie lautete „nie auf die eigene
+  Domain", weil der Store-Review das Feld auf Erreichbarkeit prüft und dreimal „Manifest URL
+  field is not reachable" gemeldet hatte, während die Domain in jeder Gegenprobe antwortete.
+  Ihre Begründung war der **Store-Review**, und der findet für dieses Plugin nicht mehr statt
+  (s. Zeile darüber). Es bleibt der Nachteil: `authorUrl` ist in Obsidians Plugin-Liste
+  anklickbar und zeigte nutzersichtbar auf ein aufgegebenes Profil. Gemessen am 2026-09-06:
+  `jkaindl.de` antwortet mit 200.
 - **`isDesktopOnly: false`** — das Plugin läuft auf Mobile. Alle Desktop-only-APIs sind
   bewacht: PDF-Export verzweigt auf `Platform.isDesktopApp` (Desktop: `contentWindow.print()`;
   Mobile: HTML-Datei schreiben + `openWithDefaultApp`); „Im Finder anzeigen" prüft
