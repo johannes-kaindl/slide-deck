@@ -80,9 +80,18 @@ selbst in den Themes-Ordner legst.
 
 ## Installation
 
-### Community Plugins (vorgesehener Kanal)
+### AnySource Sideloader (vorgesehener Kanal)
 
-Geplant: Sobald das Plugin in die Obsidian Community Plugin Registry aufgenommen wurde, ist es über **Einstellungen → Community-Plugins → Durchsuchen → „Slide Deck"** installierbar.
+Slide Deck wird **nicht über den Obsidian Community Store verteilt.** Es erscheint als Release
+auf der eigenen Forge und steht in einem abonnierbaren Katalog — Updates kommen also so an, wie
+sie über den Store kämen, nur ohne ihn.
+
+1. [AnySource Sideloader](https://git.jkaindl.de/jkaindl/anysource-sideloader) installieren
+   (manuell, dieselben drei Dateien wie unten).
+2. In dessen Einstellungen **Kataloge durchsuchen** öffnen und hinzufügen:
+   `https://git.jkaindl.de/jkaindl/obsidian-catalog/raw/branch/main/catalog.json`
+3. **Slide Deck** aus dem Katalog installieren. Die Versionsprüfung geht live an die Releases
+   dieses Repositorys — der Katalog listet nur, was es gibt, und liefert die Dateien nie selbst.
 
 ### Manuelle Installation
 
