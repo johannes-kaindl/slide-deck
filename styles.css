@@ -275,6 +275,12 @@
 @keyframes sd-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .sd-slot-status.is-checking, .sd-gen-ping.is-checking { color: var(--text-faint); }
 .sd-slot-status.is-checking svg, .sd-gen-ping.is-checking svg { animation: sd-spin 1s linear infinite; }
+/* Bei reduzierter Bewegung wird die Drehung VERLANGSAMT, nicht abgeschaltet — und das ist
+   eine bewusste Abwaegung, keine Nachlaessigkeit: die Bewegung ist hier nicht Zierde, sondern
+   die Bedeutung des Zustands. Ein stehendes Ladesymbol ist von einem haengenden Vorgang nicht
+   zu unterscheiden, und ein Bildlauf steht minutenlang in "Modell wird geladen". Abschalten
+   naehme dem Zustand also genau das, wofuer es ihn gibt. 3 s statt 1 s ist das Gegenteil von
+   auffaellig und bleibt trotzdem ein Lebenszeichen. */
 @media (prefers-reduced-motion: reduce) {
   .sd-slot-status.is-checking svg, .sd-gen-ping.is-checking svg { animation-duration: 3s; }
 }

@@ -7,6 +7,16 @@ export function slotSnippet(fn: ImageFunction): string {
   return "```" + SLOT_LANG + "\n" + `funktion: ${fn}\n` + "\n```\n";
 }
 
+/** Um wie viele Zeilen der Cursor nach dem Einfuegen zurueckspringen muss, damit er in der
+ *  leeren Prompt-Zeile landet — aus dem Schnipsel ABGELEITET, nicht als Zahl geraten.
+ *  Eine feste 2 haengt an der genauen Form von `slotSnippet`; aendert die sich, landet der
+ *  Cursor still woanders, und kein Test merkt es. Hier wandert die Ableitung mit. */
+export function promptLineOffset(snippet: string): number {
+  const zeilen = snippet.split("\n");
+  const fenceZu = zeilen.lastIndexOf("```");
+  return zeilen.length - 1 - (fenceZu - 1);
+}
+
 /** Der einzige Ort, an dem die Taxonomie sich selbst erklärt — ohne ihn lernt sie niemand. */
 export class ImageFunctionModal extends SuggestModal<ImageFunction> {
   constructor(app: App, private onPick: (fn: ImageFunction) => void) {
@@ -41,6 +51,6 @@ export function insertImageSlot(app: App, editor: Editor): void {
     editor.replaceSelection(slotSnippet(fn));
     // Cursor in die leere Prompt-Zeile: zwei Zeilen über das Fence-Ende.
     const c = editor.getCursor();
-    editor.setCursor({ line: c.line - 2, ch: 0 });
+    editor.setCursor({ line: c.line - promptLineOffset(slotSnippet(fn)), ch: 0 });
   }).open();
 }

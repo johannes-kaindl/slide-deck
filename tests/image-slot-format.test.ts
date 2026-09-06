@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { parseSlot, filledMarkdown, replaceSlot, findSlotOnce, fenceSlot, SLOT_LANG } from "../src/image/slot-format";
 // ImageFunctionModal wird in GUI-Smoke getestet; slotSnippet ist pure und hier testbar.
-import { slotSnippet } from "../src/image/insert-slot";
+import { slotSnippet, promptLineOffset } from "../src/image/insert-slot";
+import { IMAGE_FUNCTIONS } from "../src/image/functions";
 
 describe("parseSlot", () => {
   it("reads a leading funktion: line and keeps the rest as prompt", () => {
@@ -105,5 +106,33 @@ describe("slotSnippet", () => {
     expect(md.startsWith("```slide-image\n")).toBe(true);
     const body = md.replace(/^```slide-image\n/, "").replace(/\n```\n?$/, "");
     expect(parseSlot(body).funktion).toBe("analytical");
+  });
+});
+
+describe("promptLineOffset", () => {
+  // Der Cursor soll nach dem Einfuegen in der leeren Prompt-Zeile stehen. Frueher war das
+  // eine feste 2 im Aufrufer — sie haengt an der genauen Form von `slotSnippet`, und eine
+  // Formaenderung haette den Cursor still woanders abgesetzt. Der Test prueft deshalb die
+  // BEZIEHUNG, nicht die Zahl: die errechnete Zeile muss leer sein UND innerhalb des Blocks
+  // liegen. Damit ueberlebt er eine Formaenderung, statt sie zu zementieren.
+  it("points at an empty line inside the block, for every function", () => {
+    for (const fn of IMAGE_FUNCTIONS) {
+      const md = slotSnippet(fn);
+      const zeilen = md.split("\n");
+      const ziel = zeilen.length - 1 - promptLineOffset(md);
+      expect(zeilen[ziel]).toBe("");
+      expect(ziel).toBeGreaterThan(0);                       // nicht die Fence-Kopfzeile
+      expect(ziel).toBeLessThan(zeilen.lastIndexOf("```"));  // vor dem schliessenden Fence
+    }
+  });
+
+  // Gegenprobe im selben Test: bei einem Schnipsel mit einer Zeile mehr wandert das Ziel mit.
+  it("moves with the shape instead of staying at a fixed number", () => {
+    const schmal = "```x\nfunktion: a\n\n```\n";
+    const breit = "```x\nfunktion: a\nstil: b\n\n```\n";
+    expect(promptLineOffset(schmal)).toBe(2);
+    expect(promptLineOffset(breit)).toBe(2);
+    const zeilenBreit = breit.split("\n");
+    expect(zeilenBreit[zeilenBreit.length - 1 - promptLineOffset(breit)]).toBe("");
   });
 });
