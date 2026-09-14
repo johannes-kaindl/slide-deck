@@ -562,7 +562,7 @@ Vollständigkeits-Record, den niemand typecheckt, ist keine Absicherung, sondern
 
 ## Memory
 
-- **Projekt-Memory:** `~/.claude/projects/-Users-Shared-code-markdown-presentation/memory/`
+- **Projekt-Memory:** über die Memory-Bindung von claude-data (`10_Memory/_bindings`, Store `code/markdown-presentation`) — der Pfad unter `~/.claude/projects/` folgt dem Repo-Ort und ist kein fester Name
 - **SDD-Artefakte (ab 2026-07-16):** **Cockpit**, nicht Repo — `$VAULT/25_Coding/markdown-presentation/_SDD/`
   (CORE-META-14). Specs/Plans tragen Arbeitskontext (Vault-Pfade, Schwester-Repo-Interna), der in
   einem public Repo niemandem nützt. Das Repo behält die Design-Essenz in dieser Datei + `CHANGELOG.md`.
