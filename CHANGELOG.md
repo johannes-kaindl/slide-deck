@@ -6,6 +6,17 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **Streaming-Antwortbereich im Deck-Generieren-Panel läuft jetzt über `buildStreamArea`
+  aus `obsidian-kit` (UI-STANDARD §8) statt über einen eigenen `<details>`/`<pre>`-Bau.**
+  Zwei Verhaltensänderungen: der Gedankenblock steht während des laufenden Streams offen
+  (vorher zugeklappt bis zum ersten manuellen Aufklappen), und der Scroll folgt dem
+  laufenden Text nur, solange der Leser ohnehin unten steht (`followTail`) statt
+  bedingungslos ans Ende zu springen.
+- Kit-Pin `obsidian-kit` 0.26.0 → 0.35.0 (`code-kit` 0.6.0) — alle vendorten Module unter
+  `src/vendor/kit(-obsidian)` neu gezogen, jetzt über `tools/sync-kit.sh`
+  (übernommen aus `lingotuner`) statt von Hand.
+
 ## [0.10.0] — 2026-09-06
 
 ### Added

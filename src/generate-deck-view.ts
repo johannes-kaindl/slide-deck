@@ -10,6 +10,7 @@ import { modelFieldMode, statusLabelParts, initialModelSelection } from "./llm/a
 import { paintStatus } from "./ai-settings-ui";
 import type { GenState, GenerationHandle } from "./generate-deck";
 import { t } from "./i18n";
+import { buildStreamArea, type StreamArea } from "./vendor/kit-obsidian/stream-area";
 
 export const VIEW_TYPE_GENERATE = "slide-deck-generate";
 
@@ -241,10 +242,18 @@ export class GenerateDeckView extends ItemView {
     const phaseEl = head.createSpan({ cls: "sd-gen-phase", text: t("deck.modal.generating") });
     const elapsedEl = head.createSpan({ cls: "sd-gen-elapsed" });
 
-    const details = contentEl.createEl("details", { cls: "sd-gen-reasoning" });
-    details.createEl("summary", { text: t("deck.modal.reasoning") });
-    const reasoningEl = details.createEl("pre");
-    const tailEl = contentEl.createEl("pre", { cls: "sd-gen-tail" });
+    // Streaming-Antwortbereich aus dem Kit (UI-STANDARD §8, buildStreamArea). Bauart 3
+    // (Pull per subscribe(snapshot)): der Snapshot bleibt die Wahrheit, area.setReasoning/
+    // setTail werden je Snapshot einfach neu gesetzt — kein Token-Callback, kein StableWriter
+    // (der ist nur fuer die Push-Bauart mit Markdown-Anspruch gedacht).
+    // Verhaltenswechsel gegenueber dem Eigenbau: der Gedankenblock steht waehrend des Streams
+    // offen (reasoningOpen: true), und der Scroll folgt nur, wenn der Leser ohnehin unten steht
+    // (area.followTail() statt bedingungslosem Ans-Ende-Setzen).
+    const area: StreamArea = buildStreamArea(contentEl, {
+      strings: { reasoning: t("deck.modal.reasoning") },
+      cls: "sd-gen-stream",
+      reasoningOpen: true,
+    });
 
     const cta = contentEl.createDiv({ cls: "sd-gen-cta" });
     cta.createEl("button", { cls: "mod-warning", text: t("deck.modal.stop") }).addEventListener("click", () => handle.abort());
@@ -252,8 +261,9 @@ export class GenerateDeckView extends ItemView {
     const stopTimer = (): void => { if (this.timer != null) { window.clearInterval(this.timer); this.timer = null; } };
     const render = (s: GenState): void => {
       phaseEl.setText(s.phase === "retrying" ? t("deck.modal.attempt", s.attempt) : s.phase === "error" ? (s.error ?? "") : t("deck.modal.generating"));
-      reasoningEl.setText(s.reasoning.slice(-4000));
-      tailEl.setText(s.content.slice(-1200));
+      if (s.reasoning !== "") area.setReasoning(s.reasoning.slice(-4000));
+      area.setTail(s.content.slice(-1200));
+      area.followTail();
       if (s.phase === "error") stopTimer();
     };
     render(handle.snapshot());
