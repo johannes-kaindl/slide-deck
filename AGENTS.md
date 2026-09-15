@@ -500,6 +500,11 @@ Vollständigkeits-Record, den niemand typecheckt, ist keine Absicherung, sondern
   Das Purity-Gate walkt `src/vendor/deck-core/pure` **und**
   `src/vendor/kit`; deshalb darf Core aus vendor importieren, ohne dass ein unpure
   gewordenes Kit-Modul still durchschlägt.
+  **Re-Vendoring läuft seit Welle 2 (2026-09-15) über `tools/sync-kit.sh`** (übernommen aus
+  `lingotuner/tools/sync-kit.sh`) statt von Hand — `KIT_REF=<tag> CODE_KIT_REF=<tag> sh
+  tools/sync-kit.sh` schreibt beide Bäume aus einer festen Ref (CORE-META-22) und beide
+  `VENDOR.json` neu. Modul-Liste im Skript-Kopf; `think.ts` (lokal) ↔ `think-splitter.ts`
+  (Kit-Quelle) ist die einzige Namensabweichung, mechanisch im Skript abgebildet.
 - **Der Endpunkt-Zeilen-Editor gehört dem Kit:** die Liste (URL · Schlüssel · Modell-Override
   je Zeile, Adder, Status-Icon, Rollenzeile, Presets) ist `buildEndpointList` aus
   `src/vendor/kit-obsidian/endpoint-list.ts` — hier steht nur noch der Strings-Adapter

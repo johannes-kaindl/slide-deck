@@ -23,4 +23,15 @@ export default [
       },
     },
   },
+  {
+    // Kit-Pin-Sprung 0.26.0 -> 0.35.0 (Welle 2, 2026-09-15): `effectiveModel` traegt seit
+    // einer der uebersprungenen Versionen ein @deprecated (endpoint_config.ts) — dieses
+    // Repo (frueher markdown-presentation) ist einer der fuenf im Kit namentlich genannten
+    // Konsumenten, die noch ein globales Modellfeld statt eines Zeilen-Overrides fahren
+    // (Migration ist eine eigene UI-Aufgabe, nicht Teil der Streaming-Antwortbereich-Welle).
+    // Kein Faehigkeitsmangel dieses Repos, sondern angekuendigte, noch nicht abgearbeitete
+    // Kit-Migrationsschuld — an obsidian-plugins-3d gemeldet statt hier durchgeprügelt.
+    files: ["src/llm-client.ts"],
+    rules: { "@typescript-eslint/no-deprecated": "off" },
+  },
 ];

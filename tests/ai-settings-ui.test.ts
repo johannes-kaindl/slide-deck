@@ -29,10 +29,13 @@ describe("endpointListStrings", () => {
   });
 
   it("spells out an unset global model instead of rendering an empty parenthesis", () => {
+    // Optional seit obsidian-kit 0.35.0 (Migration weg vom globalen Modellfeld, s.
+    // eslint.overrides.mjs) — unser Adapter setzt es aber immer; das Nicht-Null-Assert
+    // steht fuer diese Zusage, nicht fuer eine Testschwaeche.
     const s = endpointListStrings();
-    expect(s.emptyModelLabel("")).toContain("not set");
-    expect(s.emptyModelLabel("")).not.toContain("()");
-    expect(s.emptyModelLabel("qwen3")).toContain("qwen3");
+    expect(s.emptyModelLabel!("")).toContain("not set");
+    expect(s.emptyModelLabel!("")).not.toContain("()");
+    expect(s.emptyModelLabel!("qwen3")).toContain("qwen3");
   });
 
   it("fills the standby position into the role text and leaves no placeholder behind", () => {

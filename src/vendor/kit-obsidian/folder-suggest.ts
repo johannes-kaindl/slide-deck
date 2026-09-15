@@ -1,5 +1,4 @@
-// vendored from obsidian-kit@0.25.0 (1ca3861) — src/obsidian/folder-suggest.ts — verbatim, do not edit here.
-// Transitive Abhaengigkeit von settings_walker.ts (case "folder").
+// vendored from obsidian-kit@0.35.0, src/obsidian/folder-suggest.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 import { AbstractInputSuggest, type App, type TFolder } from "obsidian";
 
 /** Ordner-Autocomplete für ein Settings-Textfeld (REGISTRY „Ordner-Autocomplete

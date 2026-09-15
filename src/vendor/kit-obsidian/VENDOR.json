@@ -1,26 +1,7 @@
 {
-  "source": "https://git.jkaindl.de/jkaindl/obsidian-kit",
-  "note": "Verbatim copies of obsidian-kit/src/obsidian/*. Never edit here — re-vendor from the pinned sha. Distinct from ../VENDOR.json (src/vendor/kit/*, obsidian-free modules) — these import obsidian and would fail check-core-purity.mjs's OBSIDIAN_AND_WINDOW rule if placed under src/vendor/kit/. endpoint-list.ts and model-picker.ts carry ONE mechanical deviation from verbatim: kit-internal imports of ../pure/* are rewritten to ../kit/* to match this repo's vendor layout. Reproduce that rewrite on every re-vendor; nothing else may differ.",
-  "modules": [
-    {
-      "file": "settings_walker.ts",
-      "version": "0.25.0",
-      "sha": "1ca3861"
-    },
-    {
-      "file": "folder-suggest.ts",
-      "version": "0.25.0",
-      "sha": "1ca3861"
-    },
-    {
-      "file": "endpoint-list.ts",
-      "version": "0.26.0",
-      "sha": "2a7b5d7"
-    },
-    {
-      "file": "model-picker.ts",
-      "version": "0.26.0",
-      "sha": "2a7b5d7"
-    }
-  ]
+  "source": "obsidian-kit",
+  "version": "0.35.0",
+  "sha": "e7e3e19",
+  "vendored": "endpoint-list.ts, folder-suggest.ts, model-picker.ts, settings_walker.ts, stream-area.ts",
+  "note": "Verbatim snapshot. Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien. endpoint-list.ts und model-picker.ts tragen EINE mechanische Abweichung: kit-interne Importe von ../pure/* sind auf ../kit/* umgeschrieben (Vendor-Layout). Bei jedem Re-Vendoring reproduzieren; sonst darf nichts abweichen."
 }
