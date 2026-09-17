@@ -1279,6 +1279,7 @@ const bildplaetze: Section = {
     ): Promise<{ knopf: string; karte: boolean; funktion: boolean; prompt: boolean }> => {
       await cdp.evaluate(`
         const stub = ${mitStub} ? {
+          __sdSmokeStub: true,
           api: { apiVersion: 1,
                  status: () => ({ apiVersion: 1, engine: "builtin", ready: true, reason: null,
                                   capabilities: { negativePrompt: false, cfg: false, maxSteps: 8,
@@ -1525,6 +1526,55 @@ async function main(): Promise<void> {
   // zurueckschreiben koennen.
   let vorherigeEinstellungen: string | null = null;
 
+  // Ein SIGINT mitten im Lauf ueberspringt das `finally` unten NICHT im try/catch-Sinn,
+  // sondern beendet den Node-Prozess sofort — drei Zustandssorten ueberleben das sonst:
+  //  · `vorherigeEinstellungen` (der volle Settings-Snapshot; deckt auch die inneren
+  //    Test-Mutationen ab, die ihre eigenen `finally`s haben, z. B. B4s llmEndpoints-Stub —
+  //    die stehen alle unter demselben `plugin.settings`-Objekt).
+  //  · `erzeugtePfade` (modulweiter Array, angelegte Test-Ordner/-Notizen fuer den Papierkorb).
+  //  · der `local-image-generator`-Plugin-Slot (N2/N2b) — als `globalThis.__sdVorherLIG` bzw.
+  //    `globalThis.__sdEchterVorbestand` im RENDERER gesichert, nicht als Node-Closure: nur so
+  //    erreicht sie ein Handler, der unabhaengig davon feuert, WELCHER Abschnitt gerade laeuft.
+  //    Ohne Rueckbau bliebe ein Stub stehen, der die Live-Registrierung eines echt
+  //    installierten LIG ueberschreibt (dieselbe Gefahrenklasse wie vault-rag/llm-lab).
+  let signalCleanupRunning = false;
+  const onAbortSignal = (signal: NodeJS.Signals): void => {
+    if (signalCleanupRunning) return;
+    signalCleanupRunning = true;
+    void (async () => {
+      console.log(`\n\nAbbruch durch ${signal} — raeume Vault-Zustand auf...`);
+      await cdp.evaluate(`
+        const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+        if (plugin) {
+          ${vorherigeEinstellungen !== null ? `
+          Object.assign(plugin.settings, JSON.parse(${JSON.stringify(vorherigeEinstellungen)}));
+          await plugin.saveSettings?.();
+          if (typeof plugin.applyFolderHide === "function") plugin.applyFolderHide();
+          ` : ""}
+        }
+        if (globalThis.__sdVorherLIG !== undefined || "__sdVorherLIG" in globalThis) {
+          if (globalThis.__sdVorherLIG === undefined) delete app.plugins.plugins["local-image-generator"];
+          else app.plugins.plugins["local-image-generator"] = globalThis.__sdVorherLIG;
+          delete globalThis.__sdVorherLIG;
+        }
+        if (globalThis.__sdEchterVorbestand !== undefined || "__sdEchterVorbestand" in globalThis) {
+          if (globalThis.__sdEchterVorbestand === undefined) delete app.plugins.plugins["local-image-generator"];
+          else app.plugins.plugins["local-image-generator"] = globalThis.__sdEchterVorbestand;
+          delete globalThis.__sdEchterVorbestand;
+        }
+        for (const pfad of ${JSON.stringify(erzeugtePfade)}) {
+          const f = app.vault.getAbstractFileByPath(pfad);
+          if (f) await app.fileManager.trashFile(f);
+        }
+        return true;
+      `).catch(() => { console.log("  ! Aufraeumen im Renderer fehlgeschlagen — Vault von Hand pruefen"); });
+      cdp.close();
+      process.exit(130);
+    })();
+  };
+  process.on("SIGINT", onAbortSignal);
+  process.on("SIGTERM", onAbortSignal);
+
   try {
     // Ohne Fokus drosselt Chromium den Renderer, das Deck rendert nicht und JEDER Punkt
     // waere rot — die Suche begaenne dann am Plugin statt am Fenster.
@@ -1583,6 +1633,21 @@ async function main(): Promise<void> {
     if (!plugin.an) throw new Error(`Plugin ${PLUGIN_ID} liess sich nicht aktivieren.`);
     console.log(`Plugin: ${PLUGIN_ID} ${plugin.version} (frisch geladen)\n`);
 
+    // 0 — ein liegen gebliebener local-image-generator-Stub aus einem per Ctrl-C
+    // abgebrochenen Vorlauf (vor diesem Handler bzw. bei einem SIGKILL) waere sonst still UND
+    // gefaehrlich: die Live-Registrierung eines echt installierten LIG bliebe ueberschrieben,
+    // bis Obsidian neu startet. Der Marker `__sdSmokeStub` macht ihn erkennbar.
+    const staleStub = await cdp.evaluate<boolean>(`
+      const p = app.plugins.plugins["local-image-generator"];
+      if (p && p.__sdSmokeStub) { delete app.plugins.plugins["local-image-generator"]; return true; }
+      return false;
+    `);
+    record(
+      "0. Kein liegen gebliebener local-image-generator-Stub aus einem abgebrochenen Vorlauf",
+      !staleStub,
+      staleStub ? "Stub aus einem Vorlauf gefunden und entfernt" : "kein Rest gefunden",
+    );
+
     vorherigeEinstellungen = await cdp.evaluate<string>(`
       return JSON.stringify(app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings);
     `);
@@ -1628,6 +1693,10 @@ async function main(): Promise<void> {
     }
     await closeExtraLeaves(cdp).catch(() => 0);
     cdp.close();
+    // Abmelden, sonst haengt ein SPAETES Signal (nach normalem Abschluss, cdp schon zu) den
+    // Prozess in onAbortSignal an einer toten Verbindung auf.
+    process.off("SIGINT", onAbortSignal);
+    process.off("SIGTERM", onAbortSignal);
   }
 
   const rot = results.filter((c) => !c.passed);

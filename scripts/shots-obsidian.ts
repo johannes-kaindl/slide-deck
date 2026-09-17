@@ -218,6 +218,23 @@ const vaultDir = stagingVaultDir(VAULT_NAME);
 if (!existsSync(vaultDir)) throw new Error(`Aufnahme-Vault fehlt: ${vaultDir}\nErst: npm run shots:obsidian -- --setup`);
 
 const cdp = await Cdp.attach(PORT, VAULT_NAME);
+// Anders als gui-smoke.ts schreibt dieses Rezept nie in `settings`/`saveSettings` und stubt
+// keinen fremden Plugin-Slot — es oeffnet Panes und macht Screenshots gegen die dedizierte
+// Aufnahme-Vault. Ein fehlender Handler ist deshalb fuer sich kein Befund (Dach-Task „Kein
+// GUI-Smoke-Treiber raeumt bei Ctrl-C auf"): es gibt keinen geteilten Zustand, den ein
+// Abbruch beschaedigen koennte. Trotzdem ergaenzt, fuer denselben sauberen cdp.close() wie
+// bei einem normalen Abschluss — eine offene WebSocket-Verbindung ist harmlos, aber unnoetig.
+let signalCleanupRunning = false;
+const onAbortSignal = (signal: NodeJS.Signals): void => {
+  if (signalCleanupRunning) return;
+  signalCleanupRunning = true;
+  console.log(`\n\nAbbruch durch ${signal}.`);
+  cdp.close();
+  process.exit(130);
+};
+process.on("SIGINT", onAbortSignal);
+process.on("SIGTERM", onAbortSignal);
+
 try {
   const namen = only ? [only.endsWith(".png") ? only : `${only}.png`] : [...Object.keys(SHOTS), "settings.png"];
   for (const name of namen) {
@@ -233,4 +250,6 @@ try {
   }
 } finally {
   cdp.close();
+  process.off("SIGINT", onAbortSignal);
+  process.off("SIGTERM", onAbortSignal);
 }
