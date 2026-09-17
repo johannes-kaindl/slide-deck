@@ -2,6 +2,6 @@
   "source": "obsidian-kit",
   "version": "0.35.0",
   "sha": "e7e3e19",
-  "vendored": "endpoint-list.ts, folder-suggest.ts, model-picker.ts, settings_walker.ts, stream-area.ts",
+  "vendored": "endpoint-list.ts, folder-suggest.ts, hub.ts, model-picker.ts, settings_walker.ts, stream-area.ts",
   "note": "Verbatim snapshot. Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien. endpoint-list.ts und model-picker.ts tragen EINE mechanische Abweichung: kit-interne Importe von ../pure/* sind auf ../kit/* umgeschrieben (Vendor-Layout). Bei jedem Re-Vendoring reproduzieren; sonst darf nichts abweichen."
 }

@@ -6,6 +6,9 @@ export function getLang(): Lang { return currentLang; }
 type Dict = Record<string, string>;
 
 const EN: Dict = {
+  "hub.title": "Slide deck",
+  "hub.tab.preview": "Preview",
+  "hub.tab.generate": "Generate",
   "cmd.openPreview": "Open presentation preview",
   "cmd.exportPdf": "Export presentation to PDF",
   "cmd.exportImages": "Export presentation to image series",
@@ -189,6 +192,9 @@ const EN: Dict = {
   "image.slot.notFound": "This image slot could not be found uniquely in the note — check that it wasn't edited, renamed, or duplicated, then try again.",
 };
 const DE: Dict = {
+  "hub.title": "Slide deck",
+  "hub.tab.preview": "Vorschau",
+  "hub.tab.generate": "Erzeugen",
   "cmd.openPreview": "Präsentations-Vorschau öffnen",
   "cmd.exportPdf": "Präsentation als PDF exportieren",
   "cmd.exportImages": "Präsentation als Bilderserie exportieren",

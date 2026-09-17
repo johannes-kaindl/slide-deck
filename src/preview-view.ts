@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, MarkdownView, Notice, Platform, setIcon, type TFile } from "obsidian";
+import { MarkdownView, Notice, Platform, setIcon, type TFile } from "obsidian";
 import { loadDeck } from "./adapter";
 import { buildIsolatedDeck } from "./vendor/deck-core/dom/render-dom";
 import { createIsolatedDeckIframe, type IsolatedIframe } from "./vendor/deck-core/dom/iframe-host";
@@ -10,10 +10,19 @@ import { geometryFor } from "./vendor/deck-core/pure/geometry";
 import { t } from "./i18n";
 import type { SlideDeck } from "./vendor/deck-core/pure/slide-model";
 import type SlideDeckPlugin from "./main";
+import type { HubPanel } from "./vendor/kit-obsidian/hub";
+import type { HubTabId } from "./hub-view";
 
-export const VIEW_TYPE = "slide-deck-preview";
+/** Vorschau-Panel im Hub (UI-STANDARD §8, `buildHubInto`). Mount-once: `mount()` baut die
+ *  Toolbar + den Deck-Container genau einmal; `refresh()` (aufgerufen bei jedem `onShow` UND
+ *  extern von `main.refreshThemes`/`refreshActivePreview`) tauscht nur den iframe-Inhalt aus —
+ *  Rueckbau der ehemaligen `SlideDeckView` (ItemView), jetzt ohne eigenes `contentEl`. */
+export class PreviewPanel implements HubPanel<HubTabId> {
+  readonly id: HubTabId = "preview";
+  get label(): string { return t("hub.tab.preview"); }
+  readonly icon = "presentation";
 
-export class SlideDeckView extends ItemView {
+  private root!: HTMLElement;
   private warnEl!: HTMLElement;
   private deckEl!: HTMLElement;
   private deckHost!: HTMLElement;
@@ -31,21 +40,27 @@ export class SlideDeckView extends ItemView {
   private resolveEmbedFn: (r: string) => string | null = () => null;
   private geoWidth = 1280;
 
-  constructor(leaf: WorkspaceLeaf, private plugin: SlideDeckPlugin) { super(leaf); }
-  getViewType(): string { return VIEW_TYPE; }
-  getDisplayText(): string { return "Slide deck"; }
-  getIcon(): string { return "presentation"; }
+  constructor(private plugin: SlideDeckPlugin) {}
 
-  async onOpen(): Promise<void> {
-    this.contentEl.addClass("sd-view");
+  mount(container: HTMLElement): void {
+    this.root = container;
+    this.root.addClass("sd-view");
     this.buildToolbar();
-    this.warnEl = this.contentEl.createDiv({ cls: "sd-warnings" });
-    this.deckEl = this.contentEl.createDiv({ cls: "sd-deck" });
+    this.warnEl = this.root.createDiv({ cls: "sd-warnings" });
+    this.deckEl = this.root.createDiv({ cls: "sd-deck" });
     this.messageEl = this.deckEl.createDiv({ cls: "sd-message" });
     this.deckHost = this.deckEl.createDiv({ cls: "sd-deck-host" });
     this.resizeObs = new ResizeObserver(() => this.fitToWidth());
     this.resizeObs.observe(this.deckEl);
-    await this.refresh();
+  }
+
+  onShow(): void { void this.refresh(); }
+
+  destroy(): void {
+    this.resizeObs?.disconnect();
+    this.disposeFrame();
+    this.warnEl?.empty();
+    this.messageEl?.empty();
   }
 
   /** Canonical key — resolves any legacy/alias/unknown source (ephemeral try-on, note
@@ -58,7 +73,7 @@ export class SlideDeckView extends ItemView {
   private get dirty(): boolean { return this.ephemeralTheme !== undefined && this.ephemeralTheme !== this.persistedTheme; }
 
   private buildToolbar(): void {
-    const bar = this.contentEl.createDiv({ cls: "sd-toolbar" });
+    const bar = this.root.createDiv({ cls: "sd-toolbar" });
     const mkBtn = (parent: HTMLElement, icon: string, label: string, onClick: () => void): void => {
       const b = parent.createEl("button", { cls: "sd-toolbar-btn" });
       setIcon(b.createSpan({ cls: "sd-toolbar-icon" }), icon);
@@ -91,8 +106,8 @@ export class SlideDeckView extends ItemView {
     const expRow = bar.createDiv({ cls: "sd-tb-row sd-tb-export-row" });
     expRow.createSpan({ cls: "sd-tb-label", text: t("toolbar.export") });
     const defaults = () => ({ theme: this.effectiveTheme, minFontPx: this.plugin.settings.minFontPx });
-    mkBtn(expRow, "file-text", t("toolbar.exportPdf"), () => void exportPdf(this.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.customCss, this.effectiveTheme, this.plugin.settings.exportFolder));
-    mkBtn(expRow, "image", t("toolbar.exportImages"), () => void exportImages(this.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.imageScale, this.plugin.settings.customCss, this.plugin.settings.exportFolder, this.effectiveTheme));
+    mkBtn(expRow, "file-text", t("toolbar.exportPdf"), () => void exportPdf(this.plugin.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.customCss, this.effectiveTheme, this.plugin.settings.exportFolder));
+    mkBtn(expRow, "image", t("toolbar.exportImages"), () => void exportImages(this.plugin.app, activeDoc(), activeWin(), this.currentFile, this.plugin.themeStore.getMap(), defaults(), this.plugin.settings.imageScale, this.plugin.settings.customCss, this.plugin.settings.exportFolder, this.effectiveTheme));
 
     this.fileLabel = bar.createSpan({ cls: "sd-toolbar-file" });
   }
@@ -109,14 +124,14 @@ export class SlideDeckView extends ItemView {
 
   async refresh(): Promise<void> {
     try {
-      const active = this.app.workspace.getActiveFile();
+      const active = this.plugin.app.workspace.getActiveFile();
       this.currentFile = active && active.extension === "md" ? active : null;
       this.fileLabel.setText(this.currentFile ? this.currentFile.basename : "");
       this.ephemeralTheme = undefined; // a fresh load drops any try-on
       // Ohne themeKey: `ephemeralTheme` ist eine Zeile darueber zurueckgesetzt, es gilt also
       // Frontmatter bzw. Default. Ein spaeterer Dropdown-Wechsel rendert nur neu (`rerenderTheme`)
       // und parst nicht erneut — die Modifier-Meldungen bleiben die des geladenen Themes.
-      const loaded = await loadDeck(this.app, this.currentFile, { theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx }, { registry: this.plugin.themeStore.getMap() });
+      const loaded = await loadDeck(this.plugin.app, this.currentFile, { theme: this.plugin.settings.defaultTheme, minFontPx: this.plugin.settings.minFontPx }, { registry: this.plugin.themeStore.getMap() });
       this.warnEl.empty();
       this.messageEl.empty();
       this.messageEl.removeClass("sd-error");
@@ -178,7 +193,7 @@ export class SlideDeckView extends ItemView {
   private async commitTheme(): Promise<void> {
     if (!this.currentFile) return;
     const key = this.effectiveTheme;
-    await setNoteTheme(this.app, this.currentFile, key);
+    await setNoteTheme(this.plugin.app, this.currentFile, key);
     this.persistedTheme = key;       // optimistic — metadataCache updates async
     this.ephemeralTheme = undefined;
     new Notice(t("notice.themeSet", key));
@@ -213,20 +228,13 @@ export class SlideDeckView extends ItemView {
   private jumpTo(line: number): void {
     if (!this.currentFile) return;
     const path = this.currentFile.path;
-    const leaf = this.app.workspace.getLeavesOfType("markdown").find((l) => l.view instanceof MarkdownView && l.view.file?.path === path);
+    const leaf = this.plugin.app.workspace.getLeavesOfType("markdown").find((l) => l.view instanceof MarkdownView && l.view.file?.path === path);
     if (leaf && leaf.view instanceof MarkdownView) {
-      void this.app.workspace.revealLeaf(leaf);
+      void this.plugin.app.workspace.revealLeaf(leaf);
       leaf.view.editor.setCursor({ line, ch: 0 });
       leaf.view.editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: 0 } }, true);
     } else {
-      void this.app.workspace.openLinkText(path, "", false);
+      void this.plugin.app.workspace.openLinkText(path, "", false);
     }
-  }
-
-  async onClose(): Promise<void> {
-    this.resizeObs?.disconnect();
-    this.disposeFrame();
-    this.warnEl?.empty();
-    this.messageEl?.empty();
   }
 }

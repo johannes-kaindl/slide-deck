@@ -7,6 +7,16 @@ versioning follows [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
+- **Vorschau und Generieren teilen sich jetzt EINE Sidebar mit Tab-Leiste** (UI-STANDARD §8,
+  Kit-Baustein `buildHubInto` aus `obsidian-kit`@0.35.0) statt zwei getrennter Leaves
+  (`slide-deck-preview`/`slide-deck-generate`). Beide Commands und der Ribbon-Knopf öffnen
+  denselben Hub-View (`slide-deck-hub`) und wechseln nur noch den Tab. Sichtbare Folge: ein
+  gespeichertes Workspace-Layout mit den alten View-Typen zeigt dort ein leeres Pane, bis der
+  Hub einmal neu geöffnet wird.
+- Ordner-Einstellungen (`exportFolder`, `themesFolder`) nutzen jetzt das native
+  `type: "folder"`-Control (Obsidian-Vorschlagsliste über den Kit-Walker-Fallback
+  `src/vendor/kit-obsidian/settings_walker.ts`, unverändert seit 0.35.0) statt eines
+  reinen Textfelds.
 - **Streaming-Antwortbereich im Deck-Generieren-Panel läuft jetzt über `buildStreamArea`
   aus `obsidian-kit` (UI-STANDARD §8) statt über einen eigenen `<details>`/`<pre>`-Bau.**
   Zwei Verhaltensänderungen: der Gedankenblock steht während des laufenden Streams offen

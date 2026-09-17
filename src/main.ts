@@ -1,11 +1,10 @@
 import { Plugin, getLanguage, TFile, TAbstractFile, Notice, normalizePath } from "obsidian";
 import { exportPdf, exportImages } from "./export";
-import { SlideDeckView, VIEW_TYPE } from "./preview-view";
+import { SlideDeckHubView, VIEW_TYPE_HUB } from "./hub-view";
 import { t, pickLang, setLang } from "./i18n";
 import { SlideDeckSettings, SlideDeckSettingTab, migrateLegacyThemeKeys, loadSettings } from "./settings";
 import { ThemeStore } from "./theme-registry";
 import { buildHideCss, normalizeFolder } from "./folder-hide";
-import { GenerateDeckView, VIEW_TYPE_GENERATE } from "./generate-deck-view";
 import { runGenerateDeck, type GenState, type GenerateResult, type GenerationHandle } from "./generate-deck";
 import { makeDeckLlmClient } from "./llm-client";
 import type { EndpointConfig } from "./vendor/kit/endpoint_config";
@@ -42,8 +41,7 @@ export default class SlideDeckPlugin extends Plugin {
     this.app.workspace.onLayoutReady(() => this.applyFolderHide());
 
     this.addSettingTab(new SlideDeckSettingTab(this.app, this));
-    this.registerView(VIEW_TYPE, (leaf) => new SlideDeckView(leaf, this));
-    this.registerView(VIEW_TYPE_GENERATE, (leaf) => new GenerateDeckView(leaf, this));
+    this.registerView(VIEW_TYPE_HUB, (leaf) => new SlideDeckHubView(leaf, this));
     registerSlotCard(this);
     this.addRibbonIcon("wand-2", t("cmd.generateDeck"), () => void this.activateGenerateView());
 
@@ -150,8 +148,8 @@ export default class SlideDeckPlugin extends Plugin {
   /** Re-scan the themes folder, then refresh any open preview so the dropdown reflects it. */
   async refreshThemes(): Promise<void> {
     await this.themeStore.refresh();
-    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
-      if (leaf.view instanceof SlideDeckView) void leaf.view.refresh();
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_HUB)) {
+      if (leaf.view instanceof SlideDeckHubView) void leaf.view.refreshPreview();
     }
   }
 
@@ -187,29 +185,28 @@ export default class SlideDeckPlugin extends Plugin {
     doc.adoptedStyleSheets = doc.adoptedStyleSheets.filter((s) => s !== this.hideSheet);
   }
 
-  async activatePreview(): Promise<void> {
+  /** Open (or reveal) the hub and switch it to the given tab. Both commands and the ribbon
+   *  icon share one leaf/view now (UI-STANDARD §8 hub) instead of two separate leaves. */
+  private async activateHub(tab: "preview" | "generate"): Promise<void> {
     const { workspace } = this.app;
-    const existing = workspace.getLeavesOfType(VIEW_TYPE)[0];
+    const existing = workspace.getLeavesOfType(VIEW_TYPE_HUB)[0];
     const leaf = existing ?? workspace.getRightLeaf(false);
     if (!leaf) return;
-    await leaf.setViewState({ type: VIEW_TYPE, active: true });
+    await leaf.setViewState({ type: VIEW_TYPE_HUB, active: true });
     void workspace.revealLeaf(leaf);
+    if (leaf.view instanceof SlideDeckHubView) leaf.view.setTab(tab);
   }
 
-  /** Open (or reveal) the generation sidebar. */
-  async activateGenerateView(): Promise<void> {
-    const { workspace } = this.app;
-    const existing = workspace.getLeavesOfType(VIEW_TYPE_GENERATE)[0];
-    const leaf = existing ?? workspace.getRightLeaf(false);
-    if (!leaf) return;
-    await leaf.setViewState({ type: VIEW_TYPE_GENERATE, active: true });
-    void workspace.revealLeaf(leaf);
-  }
+  async activatePreview(): Promise<void> { await this.activateHub("preview"); }
 
-  /** Refresh every open preview leaf (SlideDeckView has no active-leaf listener). */
+  /** Open (or reveal) the hub on the generation tab. */
+  async activateGenerateView(): Promise<void> { await this.activateHub("generate"); }
+
+  /** Refresh the preview panel in every open hub leaf, regardless of which tab is active —
+   *  the same guarantee the former standalone SlideDeckView gave (no active-leaf listener). */
   async refreshActivePreview(): Promise<void> {
-    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
-      if (leaf.view instanceof SlideDeckView) await leaf.view.refresh();
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_HUB)) {
+      if (leaf.view instanceof SlideDeckHubView) await leaf.view.refreshPreview();
     }
   }
 

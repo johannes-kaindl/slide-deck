@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
+import { TFile } from "obsidian";
 import type SlideDeckPlugin from "./main";
 import type { DeckGenInput } from "./main";
 import { makeDeckLlmClient } from "./llm-client";
@@ -11,8 +11,8 @@ import { paintStatus } from "./ai-settings-ui";
 import type { GenState, GenerationHandle } from "./generate-deck";
 import { t } from "./i18n";
 import { buildStreamArea, type StreamArea } from "./vendor/kit-obsidian/stream-area";
-
-export const VIEW_TYPE_GENERATE = "slide-deck-generate";
+import type { HubPanel } from "./vendor/kit-obsidian/hub";
+import type { HubTabId } from "./hub-view";
 
 /** A note "looks like a deck" if it has frontmatter with a theme: line and a body --- separator. */
 function looksLikeDeck(md: string): boolean {
@@ -24,10 +24,17 @@ function looksLikeDeck(md: string): boolean {
   return hasTheme && hasSep;
 }
 
-/** Right-sidebar control for generating a deck from the active note (replaces the old modal).
- *  Persistent: the source is whatever note is active when you press Generate. Attaches to the
- *  plugin's generation handle, so progress survives switching away and back. */
-export class GenerateDeckView extends ItemView {
+/** Erzeugen-Panel im Hub (UI-STANDARD §8, `buildHubInto`) — generiert ein Deck aus der aktiven
+ *  Notiz. Persistent: die Quelle ist die Notiz, die beim Klick auf "Erzeugen" aktiv war. Haengt
+ *  am plugin-eigenen Generation-Handle, ueberlebt also einen Tab-Wechsel weg und zurueck.
+ *  Rueckbau der ehemaligen `GenerateDeckView` (ItemView) — `onFileOpen` ersetzt den frueheren
+ *  eigenen `active-leaf-change`-Listener, der Hub dispatcht ihn zentral an alle Panels. */
+export class GeneratePanel implements HubPanel<HubTabId> {
+  readonly id: HubTabId = "generate";
+  get label(): string { return t("hub.tab.generate"); }
+  readonly icon = "wand-2";
+
+  private root!: HTMLElement;
   private endpoint: EndpointConfig | null = null;
   private model = "";
   private currentSource: TFile | null = null;
@@ -35,7 +42,7 @@ export class GenerateDeckView extends ItemView {
   private timer: number | null = null;
   private startedAt = 0;
   private starting = false;                     // guards start() across its first await (F1)
-  private closed = false;                        // set on onClose so late callbacks bail (F2)
+  private closed = false;                        // set on destroy so late callbacks bail (F2)
   private mode: "input" | "running" = "input";   // real view mode (F4)
 
   // input-state elements refreshed when the active note changes
@@ -49,24 +56,26 @@ export class GenerateDeckView extends ItemView {
   private hintInput?: HTMLInputElement;
   private themeSel?: HTMLSelectElement;
 
-  constructor(leaf: WorkspaceLeaf, private plugin: SlideDeckPlugin) { super(leaf); }
-  getViewType(): string { return VIEW_TYPE_GENERATE; }
-  getDisplayText(): string { return t("deck.modal.title"); }
-  getIcon(): string { return "wand-2"; }
+  constructor(private plugin: SlideDeckPlugin) {}
 
-  async onOpen(): Promise<void> {
+  mount(container: HTMLElement): void {
+    this.root = container;
+    this.root.addClass("sd-gen-view");
     this.closed = false;
-    this.contentEl.addClass("sd-gen-view");
-    this.registerEvent(this.app.workspace.on("active-leaf-change", () => { if (this.mode === "input") this.refreshSourceBits(); }));
     if (this.plugin.activeGeneration) { this.renderRunning(this.plugin.activeGeneration); return; }
-    await this.renderInput();
+    void this.renderInput();
   }
 
-  async onClose(): Promise<void> {
+  /** Der Hub dispatcht Datei-Wechsel zentral (ein `active-leaf-change`-Listener im Host-View
+   *  statt je einem pro Panel) — nur im Eingabemodus relevant, eine laufende Generierung
+   *  haengt nicht an der aktiven Notiz. */
+  onFileOpen(): void { if (this.mode === "input") this.refreshSourceBits(); }
+
+  destroy(): void {
     this.closed = true;
     this.unsubscribe?.(); this.unsubscribe = null;
     if (this.timer != null) { window.clearInterval(this.timer); this.timer = null; }
-    this.contentEl.empty();
+    this.root?.empty();
   }
 
   private targetBase(file: TFile): string {
@@ -74,11 +83,11 @@ export class GenerateDeckView extends ItemView {
     const dir = parentPath && parentPath !== "/" ? `${parentPath}/` : "";
     return `${dir}${file.basename} — Deck`;
   }
-  private existsAt(p: string): boolean { return this.app.vault.getAbstractFileByPath(p) instanceof TFile; }
+  private existsAt(p: string): boolean { return this.plugin.app.vault.getAbstractFileByPath(p) instanceof TFile; }
   private updateEnabled(): void { if (this.genBtn) this.genBtn.disabled = !this.endpoint || !this.model || !this.currentSource; }
 
   private async renderInput(): Promise<void> {
-    const { contentEl } = this;
+    const contentEl = this.root;
     this.mode = "input";
     contentEl.empty();
 
@@ -129,6 +138,7 @@ export class GenerateDeckView extends ItemView {
 
     // Resolve endpoint + ping + models (once per open).
     this.endpoint = await resolveActiveEndpointConfig(this.plugin.settings.llmEndpoints, (ep) => makeDeckLlmClient(ep, "").ping());
+    if (this.closed) return;
     if (!this.endpoint) {
       // No resolved endpoint → nothing left to probe() for a kind; "unknown" carries the
       // shared error visual (circle-x/is-error) while the label stays the specific,
@@ -138,11 +148,13 @@ export class GenerateDeckView extends ItemView {
       this.warnEl.setText(t("deck.modal.noEndpoint"));
     } else {
       const st = await makeDeckLlmClient(this.endpoint, "").probe();
+      if (this.closed) return;
       const parts = statusLabelParts(st.kind, st.raw);
       const label = parts.suffix ? `${t(parts.key)} — ${parts.suffix}` : t(parts.key);
       paintStatus(pingEl, st.kind, label);
       pingLabelEl.setText(`${this.endpoint.url} — ${label}`);
       const models = await makeDeckLlmClient(this.endpoint, "").listModels();
+      if (this.closed) return;
       if (modelFieldMode(models) === "dropdown") {
         // Keep a saved-but-absent model selectable instead of losing it (UI-STANDARD §8,
         // same rule as the settings model field).
@@ -163,7 +175,7 @@ export class GenerateDeckView extends ItemView {
 
   /** Update the source-note-dependent widgets (label, replace choice, deck hint, context warn). */
   private refreshSourceBits(): void {
-    const active = this.app.workspace.getActiveFile();
+    const active = this.plugin.app.workspace.getActiveFile();
     this.currentSource = active && active.extension === "md" ? active : null;
     if (!this.sourceLabel || !this.existsBox || !this.deckHintEl) return;
     this.existsBox.empty();
@@ -189,7 +201,7 @@ export class GenerateDeckView extends ItemView {
 
   /** Deck-lookalike hint + context-length warning (needs a vault read + optional model probe). */
   private async checkSourceAsync(file: TFile): Promise<void> {
-    const raw = await this.app.vault.read(file);
+    const raw = await this.plugin.app.vault.read(file);
     if (this.currentSource !== file) return; // switched away while reading
     if (this.deckHintEl && looksLikeDeck(raw)) this.deckHintEl.setText(t("deck.modal.sourceIsDeck"));
     if (!this.endpoint || !this.warnEl) return;
@@ -214,7 +226,7 @@ export class GenerateDeckView extends ItemView {
     this.starting = true;
     try {
       const source = this.currentSource;
-      const raw = await this.app.vault.read(source);
+      const raw = await this.plugin.app.vault.read(source);
       const body = stripNoteFrontmatter(raw);
       const slideTarget: number | "auto" = this.countSel.value === "auto" ? "auto" : Number(this.countSel.value);
       let targetPath = `${this.targetBase(source)}.md`;
@@ -230,7 +242,7 @@ export class GenerateDeckView extends ItemView {
   }
 
   private renderRunning(handle: GenerationHandle): void {
-    const { contentEl } = this;
+    const contentEl = this.root;
     this.mode = "running";
     // Restore the "at most one live timer/subscription" invariant before wiring new ones.
     this.unsubscribe?.(); this.unsubscribe = null;
@@ -273,7 +285,7 @@ export class GenerateDeckView extends ItemView {
     void handle.done.then(
       (r) => {
         stopTimer();
-        if (this.closed) return; // view was closed mid-run; do not touch DOM or re-ping (F2)
+        if (this.closed) return; // panel was destroyed mid-run; do not touch DOM or re-ping (F2)
         if (r.status === "ok" || r.status === "aborted") { void this.renderInput(); return; }
         // fatal: keep the error text visible; offer a fresh start.
         cta.empty();

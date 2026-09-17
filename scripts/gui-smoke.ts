@@ -62,7 +62,11 @@ import { requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
 import { STRINGS_DE, STRINGS_EN } from "../src/i18n";
 
 const PLUGIN_ID = "slide-deck";
-const VIEW_TYPE = "slide-deck-preview";
+// Seit Welle 6 (Hub-Tab-Leiste, `src/hub-view.ts`): ein View-Typ fuer Vorschau UND Erzeugen,
+// Tabs statt getrennter Leaves. Alle Pruefpunkte unten suchen weiterhin per Klassen-Selektor
+// (`.sd-message`, `.sd-warn`, …) innerhalb `leaf.view.containerEl` — das findet sie unabhaengig
+// davon, ob sie eine Ebene tiefer im Hub-Panel liegen. `openPreview()` schaltet den Tab explizit.
+const VIEW_TYPE = "slide-deck-hub";
 /** Fixture-Notizen (docs/images/fixture/notes/ — buildVault legt sie flach in den Vault). */
 const DECK_NOTE = "Quarterly Review.md";
 const OVERFLOW_NOTE = "Overflow example.md";

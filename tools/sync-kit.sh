@@ -112,7 +112,7 @@ mkdir -p src/vendor/kit src/vendor/kit-obsidian
 # think.ts (lokal) <- think-splitter.ts (Quelle) — s. AGENTS.md Gotchas, nicht mechanisch
 # angeglichen, um die bestehenden Importe (`./vendor/kit/think`) nicht anzufassen.
 PURE_MODULE="clipboard sse endpoint endpoint_config endpoint_diagnostics model-choice model-context model-list-cache reasoning think=think-splitter timeout error_body settings"
-OBSIDIAN_MODULE="endpoint-list folder-suggest model-picker settings_walker stream-area"
+OBSIDIAN_MODULE="endpoint-list folder-suggest hub model-picker settings_walker stream-area"
 
 # Die "vendored"-Liste der VENDOR.json wird aus derselben Liste erzeugt, aus der kopiert wird.
 # Zwei Orte fuer dieselbe Wahrheit driften (CORE-META-16) — und zwar leise: die Datei, in der
