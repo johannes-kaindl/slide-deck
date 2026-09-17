@@ -83,9 +83,9 @@ export class SlideDeckSettingTab extends PluginSettingTab {
           { name: t("settings.imageScale.name"), desc: t("settings.imageScale.desc"),
             control: { type: "number", key: "imageScale", min: 1, step: "any" } },
           { name: t("settings.exportFolder.name"), desc: t("settings.exportFolder.desc"),
-            control: { type: "text", key: "exportFolder", placeholder: DEFAULT_SETTINGS.exportFolder } },
+            control: { type: "folder", key: "exportFolder", placeholder: DEFAULT_SETTINGS.exportFolder, includeRoot: true } },
           { name: t("settings.themesFolder.name"), desc: t("settings.themesFolder.desc"),
-            control: { type: "text", key: "themesFolder", placeholder: DEFAULT_SETTINGS.themesFolder } },
+            control: { type: "folder", key: "themesFolder", placeholder: DEFAULT_SETTINGS.themesFolder, includeRoot: true } },
           { name: t("settings.openFolder.name"), desc: t("settings.openFolder.desc"),
             render: (setting) => {
               setting.addButton((b) => b.setButtonText(t("settings.openFolder.button"))
