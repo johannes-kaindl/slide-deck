@@ -28,6 +28,8 @@ export const shiroPreset: Preset = {
   background-repeat: no-repeat;
 }
 .sd-slide pre.hljs{ border:1px solid rgba(125,94,38,0.24); border-left:3px solid var(--sd-accent); }
+/* closing: a paper veil settles the field on the right (specimen: 285deg veil). */
+.sd-slide.sd-layout-closing{ box-shadow: inset -560px 0 420px -160px rgba(247, 242, 232, 0.9); }
 .sd-slide .sd-callout{ border-left-color:var(--sd-accent); }
 .sd-slide .sd-callout-note{ border-left-color:#5f8d96; }
 .sd-slide .sd-callout-info{ border-left-color:#2f97a6; }

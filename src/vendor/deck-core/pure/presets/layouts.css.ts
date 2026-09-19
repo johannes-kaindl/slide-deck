@@ -11,6 +11,9 @@ export const LAYOUTS: Record<string, LayoutSpec> = {
   "columns-3": { id: "columns-3", regions: 3 },
   stat: { id: "stat", regions: 1 },
   "cover-image": { id: "cover-image", regions: 1 },
+  agenda: { id: "agenda", regions: 1 },
+  threads: { id: "threads", regions: 1 },
+  closing: { id: "closing", regions: 1 },
 };
 
 /** TOTAL — unknown layout id falls back to default. */
@@ -97,6 +100,46 @@ export const LAYOUTS_CSS = `
 .sd-cover-empty .sd-content{ justify-content:center; align-items:center; text-align:center; }
 .sd-cover-empty .sd-region{ text-align:center; max-width:85%; }
 .sd-cover-empty .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
+
+/* ── agenda · threads · closing — the Order-from-Traces slide specimens.
+   Markdown: a level-1 title, then a level-2 eyebrow (shown above, like the hero kicker), then
+   agenda: an ordered list, a trailing inline code span is the row's meta;
+   threads: an ordered list, each item \`**Card title** text\`;
+   closing: a bullet list of \`**key** value\` contact lines. ── */
+.sd-layout-agenda .sd-region,.sd-layout-threads .sd-region,.sd-layout-closing .sd-region{ display:flex; flex-direction:column; }
+.sd-layout-agenda .sd-region > h2,.sd-layout-threads .sd-region > h2,.sd-layout-closing .sd-region > h2{
+  order:-1; margin:0 0 var(--sd-space-xs,.5em);
+  font-family:var(--sd-eyebrow-font,var(--sd-font)); font-size:var(--sd-size-eyebrow,.68em);
+  font-weight:600; font-style:normal; text-transform:uppercase;
+  letter-spacing:var(--sd-eyebrow-tracking,.14em); color:var(--sd-eyebrow-fg,var(--sd-accent));
+  line-height:var(--sd-lh-heading,1.2); }
+.sd-layout-agenda .sd-region > h1,.sd-layout-threads .sd-region > h1{ margin:0 0 .7em; }
+.sd-layout-agenda ol,.sd-layout-threads ol,.sd-layout-closing ul{ list-style:none; margin:0; padding:0; }
+.sd-layout-agenda ol{ counter-reset:sd-agenda; border-bottom:1px solid color-mix(in srgb,var(--sd-accent) 14%,transparent); }
+.sd-layout-agenda ol > li{ counter-increment:sd-agenda; display:flex; align-items:baseline; gap:1.1em; margin:0;
+  padding:.75em 0; border-top:1px solid color-mix(in srgb,var(--sd-accent) 14%,transparent); font-size:.9em; font-weight:600; }
+.sd-layout-agenda ol > li::before{ content:counter(sd-agenda, decimal-leading-zero); flex:none; width:2.2em;
+  font-family:var(--sd-mono,monospace); font-size:.68em; font-weight:400; letter-spacing:.1em; color:var(--sd-accent); }
+.sd-layout-agenda ol > li > code:last-child{ margin-left:auto; padding:0; border:none; background:none;
+  font-size:.56em; font-weight:400; letter-spacing:.08em; color:color-mix(in srgb,var(--sd-muted,var(--sd-fg)) 72%,var(--sd-bg)); }
+.sd-layout-threads ol{ counter-reset:sd-threads; display:grid; grid-template-columns:repeat(2, 1fr); gap:.7em; }
+.sd-layout-threads ol > li{ counter-increment:sd-threads; margin:0; padding:.9em 1em;
+  background:var(--sd-surface,var(--sd-code-bg)); border:1px solid color-mix(in srgb,var(--sd-accent) 14%,transparent);
+  border-radius:14px; font-size:.58em; line-height:1.5; color:var(--sd-muted,var(--sd-fg)); }
+.sd-layout-threads ol > li::before{ content:counter(sd-threads, decimal-leading-zero); display:block;
+  font-family:var(--sd-mono,monospace); font-size:.94em; letter-spacing:.1em; color:var(--sd-accent); }
+.sd-layout-threads ol > li > strong:first-child,.sd-layout-threads ol > li > p > strong:first-child{
+  display:block; margin:.45em 0 .3em; font-size:1.38em; font-weight:600; line-height:1.25; color:var(--sd-fg); }
+.sd-layout-threads ol > li > p{ margin:0; }
+.sd-layout-closing .sd-content{ display:flex; flex-direction:column; justify-content:center; }
+.sd-layout-closing .sd-region > h1{ font-size:var(--sd-size-display,2.44em); line-height:1.06; max-width:16ch; margin:0; }
+.sd-layout-closing ul{ display:flex; flex-direction:column; gap:.35em; margin-top:1.4em; }
+.sd-layout-closing ul > li{ display:flex; gap:.9em; margin:0; font-family:var(--sd-mono,monospace);
+  font-size:.64em; letter-spacing:.02em; color:var(--sd-muted,var(--sd-fg)); }
+.sd-layout-closing ul > li::before{ content:none; }
+.sd-layout-closing ul > li > strong:first-child{ flex:none; width:7.8em; font-weight:400;
+  color:color-mix(in srgb,var(--sd-muted,var(--sd-fg)) 72%,var(--sd-bg)); }
+.sd-layout-closing a{ color:inherit; text-decoration:none; }
 
 /* density modifiers (combine with any layout) */
 .sd-mod-compact .sd-content{ font-size:var(--sd-compact-scale,0.82em); line-height:1.3; }

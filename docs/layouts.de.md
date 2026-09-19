@@ -41,6 +41,19 @@ Spalten-Kommentar, um Bereiche in Mehrspalten-Templates zu trennen:
 | `columns-3` | Drei Spalten, getrennt durch `<!-- column -->`; eine führende Überschrift spannt über alle |
 | `stat` | Eine große Zahl/Aussage mit kurzer Bildunterschrift |
 | `cover-image` | Das erste Bild wird zum vollflächigen Hintergrund mit Scrim und überlagertem Titel |
+| `agenda` | Nummeriertes Inhaltsverzeichnis: Mono-Indizes, Haarlinien-Zeilen, eine Meta-Angabe am Zeilenende |
+| `threads` | Raster aus vier nummerierten Karten |
+| `closing` | Abschluss: große Serifenzeile, Kontaktzeilen in Mono |
+
+### `agenda`, `threads`, `closing`
+
+Diese drei stammen aus den Folien-Spezimen von Order from Traces. Jedes nimmt einen `# Titel` und eine `## Eyebrow` (im Quelltext nach dem Titel, angezeigt darüber, wie bei den Hero-Layouts) und liest eine Liste auf feste Weise. Die eingebauten Themes `kuro` und `shiro` legen auf einer `closing`-Folie zusätzlich einen Schleier über die rechte Seite des Hintergrunds. Beispiel-Deck: `docs/themes/traces-layouts-deck.md`.
+
+| Layout | Welche Liste es liest |
+|---|---|
+| `agenda` | eine nummerierte Liste; ein Inline-Code am Ende eines Punkts (`` `5 min` ``) ist die Meta-Angabe rechts |
+| `threads` | eine nummerierte Liste; jeder Punkt beginnt mit `**Kartentitel**`, danach der Text |
+| `closing` | eine Aufzählung aus Kontaktzeilen `**Schlüssel** Wert` |
 
 ## Automatische Layout-Erkennung
 

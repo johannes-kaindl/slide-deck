@@ -6,6 +6,9 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Drei neue Folien-Layouts `agenda`, `threads`, `closing`** aus den Folien-Spezimen von Order from Traces. Sie kommen mit `deck-core` 0.12.0 (neu vendoriert, `e62dfa8`) und wirken in jedem Theme; `kuro` und `shiro` legen auf `closing` zusätzlich einen Schleier über den Hintergrund. `agenda` liest eine nummerierte Liste mit Meta-Angabe als Inline-Code am Ende, `threads` eine nummerierte Liste mit `**Kartentitel**` und `closing` eine Aufzählung `**Schlüssel** Wert`. Doku in `docs/layouts.md`, Beispiel in `docs/themes/traces-layouts-deck.md`. Der Deck-Prompt der Generate-Ansicht bietet die drei Layouts jetzt auch dem Modell an.
+
 ### Changed
 - **Vorschau und Generieren teilen sich jetzt EINE Sidebar mit Tab-Leiste** (UI-STANDARD §8,
   Kit-Baustein `buildHubInto` aus `obsidian-kit`@0.35.0) statt zwei getrennter Leaves

@@ -19,6 +19,9 @@ const ATMOSPHERE = `
   box-shadow: inset 0 0 240px 26px rgba(0,0,0,0.5);
 }
 .sd-slide h1{ text-shadow: 0 0 34px rgba(199, 154, 74, 0.16); }
+/* closing: the veil settles the field on the right (specimen: 285deg veil); the
+   vignette is repeated because this rule replaces the .sd-slide box-shadow. */
+.sd-slide.sd-layout-closing{ box-shadow: inset -560px 0 420px -160px rgba(16, 14, 12, 0.85), inset 0 0 240px 26px rgba(0,0,0,0.5); }
 .sd-slide .sd-callout-note{ border-left-color:#8c9e96; background:rgba(140,158,150,0.08); }
 .sd-slide .sd-callout-info{ border-left-color:#8faa7e; background:rgba(143,170,126,0.09); }
 .sd-slide .sd-callout-tip{ border-left-color:#aeb072; background:rgba(174,176,114,0.09); }

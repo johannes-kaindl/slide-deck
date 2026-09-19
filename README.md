@@ -17,7 +17,7 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 - **Live theme switcher** — the preview toolbar has a theme dropdown for ephemeral try-on, a source label (`from frontmatter` / `from default` / `● unsaved`) that shows where the active theme comes from, and a **Set** button that writes `theme:` directly into the note's frontmatter. Frontmatter is the source of truth; the Settings default applies only to notes without a `theme:` key.
 - **User themes** — drop `.css` files into a configurable themes folder (default `Slide-Deck-Themes/`); the frontmatter `theme:` value is the filename without the `.css` extension. Each file is a `--sd-*` token block with optional extra CSS on top of the plugin's design system (type scale, spacing, rhythm) — a 7-token theme already looks finished; user themes inherit the `shiro` theme's code-highlight and Mermaid styles unless overridden. See the [theming guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/themes/THEMING-GUIDE.md). The Settings tab shows all valid theme keys live.
 - **Theme import/export** — an **Open in Finder** button reveals the themes folder so you can drop files in; **Export theme as .css** writes any theme as an editable `.css` starting point; a toggle hides the themes folder in Obsidian's file explorer.
-- **Nine per-slide templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image` — set per slide with a layout directive (an HTML comment); columns are separated by a column directive, and in multi-column templates the leading heading spans all columns. See the [layout guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.md).
+- **Twelve per-slide templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`, `agenda`, `threads`, `closing` — set per slide with a layout directive (an HTML comment); columns are separated by a column directive, and in multi-column templates the leading heading spans all columns. See the [layout guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.md).
 - **Combinable density modifiers** — add `compact` (tighter type) or `code-heavy` (smaller code) to any template in the same layout directive.
 - **Smart layout inference** — with no explicit directive, the layout is inferred from content shape: a lone heading becomes `section`, a lone block quote becomes `quote`, a lone image or diagram becomes `image-focus`, and column splits pick `two-column` / `columns-3`. An explicit layout directive always wins.
 - **Deck slots** — `header:`, `footer:`, and `paginate:` frontmatter keys render as floating corner slots on every slide (pagination shows `n / N`).
@@ -49,8 +49,8 @@ structure is theme-independent.
 
 <img width="820" alt="A three-by-three grid showing the same slide rendered in all nine built-in themes: shiro, kuro, sumi, kairo, kurenai, crimson-dark, crimson-dark-lc, crimson-light and crimson-light-lc" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/themes.png">
 
-**Nine per-slide templates.** Set one with a layout directive, or let the layout be inferred
-from the slide's shape.
+**Twelve per-slide templates.** Set one with a layout directive, or let the layout be inferred
+from the slide's shape. The grid shows the nine general ones; `agenda`, `threads` and `closing` are in the layout guide.
 
 <img width="820" alt="A three-by-three grid of the nine slide templates: title, section, quote, image-focus, two-column, columns-3, stat, cover-image and default" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/layouts.png">
 
@@ -229,7 +229,7 @@ paginate: true
 
 ### Slide layout & syntax
 
-Nine per-slide templates (`default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`), combinable density modifiers (`compact`, `code-heavy`), the layout and column directives, and smart layout inference are documented in the **[Slide layouts & syntax guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.md)**.
+Twelve per-slide templates (`default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`, `agenda`, `threads`, `closing`), combinable density modifiers (`compact`, `code-heavy`), the layout and column directives, and smart layout inference are documented in the **[Slide layouts & syntax guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.md)**.
 
 ### Slide separator
 

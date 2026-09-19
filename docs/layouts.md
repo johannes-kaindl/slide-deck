@@ -40,6 +40,19 @@ to separate regions in multi-column templates:
 | `columns-3` | Three columns separated by `<!-- column -->`; a leading heading spans all |
 | `stat` | One big number/fact with a short caption |
 | `cover-image` | First image becomes a full-bleed background with a scrim and overlaid title |
+| `agenda` | Numbered contents: mono indices, hairline rows, a trailing meta per row |
+| `threads` | Four-up grid of numbered cards |
+| `closing` | Sign-off: large serif line, mono contact lines |
+
+### `agenda`, `threads`, `closing`
+
+These three come from the Order from Traces slide specimens. Each takes a `# Title` and a `## eyebrow` (written after the title, shown above it, as in the hero layouts), and they read a list in a fixed way. The built-in `kuro` and `shiro` themes also veil the background on the right of a `closing` slide. Example deck: `docs/themes/traces-layouts-deck.md`.
+
+| Layout | List it reads |
+|---|---|
+| `agenda` | an ordered list; an inline code span at the end of an item (`` `5 min` ``) is the meta shown on the right |
+| `threads` | an ordered list; each item starts with `**Card title**`, followed by its text |
+| `closing` | a bullet list of `**key** value` contact lines |
 
 ## Smart layout inference
 
