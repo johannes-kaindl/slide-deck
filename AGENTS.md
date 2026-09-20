@@ -82,7 +82,7 @@ src/vendor/deck-core/pure/   Vendorierter Kern — kein obsidian-Import, kein DO
   presets/
     index.ts        Preset-Typ + PRESETS-Registry; presetFor() (total); presetTokensCss();
                     assembleDeckCss().
-    kairo.ts · kurenai.ts · kuro.ts · shiro.ts · sumi.ts   je ein Preset (Token-Block + hljs/mermaid).
+    kairo.ts · kami.ts · kogane.ts · kurenai.ts · sumi.ts   je ein Preset (Token-Block + hljs/mermaid).
     crimson.ts         die Crimson-Familie (4 Modi) aus dem Marp-Import — Ebene A: Farben,
                        Fonts, Atmosphäre. Keine Skala/Spacing (die ist global, s. _marp-shared).
     _marp-shared.ts    marpAtmosphere() + der normalisierte Marp-Token-Vorrat. MARP_SCALE_TOKENS
@@ -292,7 +292,7 @@ identische waeren der stille Fehlschlag, egal welches Vorzeichen sie tragen.
 **Regressions-Deck:** `docs/themes/regression-deck.md` ist kein Demo, sondern ein Prüfling —
 jede seiner fünf Folien hat einen Defekt ausgelöst, der in `deck-core` 0.5.0 behoben wurde
 (Bild in Spalten unbegrenzt, eigener Layoutname als Fehlalarm, verworfener Modifier). Aufnahme
-mit `node scripts/visual-smoke.mjs docs/themes/regression-deck.md shiro`. Die Bilder stecken
+mit `node scripts/visual-smoke.mjs docs/themes/regression-deck.md kami`. Die Bilder stecken
 als `data:`-URI darin, damit er ohne Vault und ohne Netz läuft — **SVG geht dafür nicht**,
 markdown-its `validateLink` lässt von `data:` nur gif/png/jpeg/webp durch und rendert ein
 `data:image/svg+xml` als Literaltext. Wer die Klassen statt der Pixel prüfen will, nimmt

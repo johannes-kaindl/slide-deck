@@ -6,16 +6,16 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 [![Release](https://img.shields.io/gitea/v/release/jkaindl/slide-deck?gitea_url=https%3A%2F%2Fgit.jkaindl.de&label=release)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
 [![Platform: Desktop + Mobile](https://img.shields.io/badge/Platform-Desktop%20%2B%20Mobile-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/manifest.json)
 
-<img width="820" alt="A two-column slide in the shiro theme: a bullet list with inline code and KaTeX math on the left, a bar chart filling the right column" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png">
+<img width="820" alt="A two-column slide in the kami theme: a bullet list with inline code and KaTeX math on the left, a bar chart filling the right column" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png">
 
 [Deutsch](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/README.de.md)
 
 ## Features
 
 - **Theme isolation** — slides render inside a sandboxed iframe, so the active Obsidian theme never leaks into the preview or the exports. A deck looks identical regardless of the vault theme.
-- **Nine built-in themes** — the Nordstern set: `shiro` 白 (light, default), `kuro` 黒 (dark), `sumi` 墨 (true-black, high-contrast), `kairo` 回路 (dark, cyan), `kurenai` 紅 (dark, red); plus the `crimson` 紅 family in four modes (`crimson-dark`, `crimson-dark-lc`, `crimson-light`, `crimson-light-lc`), which adds a serif display face over a mono body and a faint scanline the low-contrast modes dim. Selected per deck via the `theme:` frontmatter key; each carries a matching code-highlight and Mermaid theme. Legacy 0.4.x keys (`default`, `dark`, `serif`, `high-contrast`) still work — they resolve silently to their Nordstern successor.
+- **Nine built-in themes** — the Nordstern set: `kami` 紙 (light, default), `kogane` 黄金 (dark), `sumi` 墨 (true-black, high-contrast), `kairo` 回路 (dark, cyan), `kurenai` 紅 (dark, red); plus the `crimson` 紅 family in four modes (`crimson-dark`, `crimson-dark-lc`, `crimson-light`, `crimson-light-lc`), which adds a serif display face over a mono body and a faint scanline the low-contrast modes dim. Selected per deck via the `theme:` frontmatter key; each carries a matching code-highlight and Mermaid theme. Legacy 0.4.x keys (`default`, `dark`, `serif`, `high-contrast`) still work — they resolve silently to their Nordstern successor.
 - **Live theme switcher** — the preview toolbar has a theme dropdown for ephemeral try-on, a source label (`from frontmatter` / `from default` / `● unsaved`) that shows where the active theme comes from, and a **Set** button that writes `theme:` directly into the note's frontmatter. Frontmatter is the source of truth; the Settings default applies only to notes without a `theme:` key.
-- **User themes** — drop `.css` files into a configurable themes folder (default `Slide-Deck-Themes/`); the frontmatter `theme:` value is the filename without the `.css` extension. Each file is a `--sd-*` token block with optional extra CSS on top of the plugin's design system (type scale, spacing, rhythm) — a 7-token theme already looks finished; user themes inherit the `shiro` theme's code-highlight and Mermaid styles unless overridden. See the [theming guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/themes/THEMING-GUIDE.md). The Settings tab shows all valid theme keys live.
+- **User themes** — drop `.css` files into a configurable themes folder (default `Slide-Deck-Themes/`); the frontmatter `theme:` value is the filename without the `.css` extension. Each file is a `--sd-*` token block with optional extra CSS on top of the plugin's design system (type scale, spacing, rhythm) — a 7-token theme already looks finished; user themes inherit the `kami` theme's code-highlight and Mermaid styles unless overridden. See the [theming guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/themes/THEMING-GUIDE.md). The Settings tab shows all valid theme keys live.
 - **Theme import/export** — an **Open in Finder** button reveals the themes folder so you can drop files in; **Export theme as .css** writes any theme as an editable `.css` starting point; a toggle hides the themes folder in Obsidian's file explorer.
 - **Twelve per-slide templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`, `agenda`, `threads`, `closing` — set per slide with a layout directive (an HTML comment); columns are separated by a column directive, and in multi-column templates the leading heading spans all columns. See the [layout guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.md).
 - **Combinable density modifiers** — add `compact` (tighter type) or `code-heavy` (smaller code) to any template in the same layout directive.
@@ -47,7 +47,7 @@ theme picker, where the active theme comes from, and the two export paths.
 **Nine built-in themes.** The same slide in each — only colour, type and accent change; the
 structure is theme-independent.
 
-<img width="820" alt="A three-by-three grid showing the same slide rendered in all nine built-in themes: shiro, kuro, sumi, kairo, kurenai, crimson-dark, crimson-dark-lc, crimson-light and crimson-light-lc" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/themes.png">
+<img width="820" alt="A three-by-three grid showing the same slide rendered in all nine built-in themes: kami, kogane, sumi, kairo, kurenai, crimson-dark, crimson-dark-lc, crimson-light and crimson-light-lc" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/themes.png">
 
 **Twelve per-slide templates.** Set one with a layout directive, or let the layout be inferred
 from the slide's shape. The grid shows the nine general ones; `agenda`, `threads` and `closing` are in the layout guide.
@@ -126,7 +126,7 @@ cp main.js manifest.json styles.css /path/to/vault/.obsidian/plugins/slide-deck/
 
 ```yaml
 ---
-theme: shiro
+theme: kami
 aspect: "16:9"
 minFontPx: 24
 header: My talk
@@ -194,7 +194,7 @@ of a button.
 
 | Setting | Key | Default | Description |
 |---|---|---|---|
-| Default preset | `defaultTheme` | `shiro` | Preset used when a note has no `theme` frontmatter directive |
+| Default preset | `defaultTheme` | `kami` | Preset used when a note has no `theme` frontmatter directive |
 | Minimum body font size (px) | `minFontPx` | `24` | Legibility floor — slides that would need smaller text are flagged as overflowing |
 | Image export scale | `imageScale` | `2` | Pixel multiplier for PNG export (`2` = 2×, crisp on HiDPI screens) |
 | Custom CSS | `customCss` | *(empty)* | CSS appended to the deck styles in preview and exports, for branding or tweaks |
@@ -209,7 +209,7 @@ Add a YAML frontmatter block at the top of your note to control presentation-lev
 
 ```yaml
 ---
-theme: kuro
+theme: kogane
 aspect: 16:9
 minFontPx: 24
 header: My talk
@@ -220,7 +220,7 @@ paginate: true
 
 | Key | Values | Description |
 |---|---|---|
-| `theme` | `shiro` · `kuro` · `sumi` · `kairo` · `kurenai` · `crimson-dark` · `crimson-dark-lc` · `crimson-light` · `crimson-light-lc` · *user-theme-key* (legacy `default`/`dark`/`serif`/`high-contrast` still resolve) | Visual preset name; user theme key = the `.css` filename without the extension |
+| `theme` | `kami` · `kogane` · `sumi` · `kairo` · `kurenai` · `crimson-dark` · `crimson-dark-lc` · `crimson-light` · `crimson-light-lc` · *user-theme-key* (legacy `default`/`dark`/`serif`/`high-contrast` still resolve) | Visual preset name; user theme key = the `.css` filename without the extension |
 | `aspect` | `16:9` (default), `4:3` | Canvas size: 1280×720 (16:9) or 960×720 (4:3) |
 | `minFontPx` | any positive number | Per-note legibility floor; overrides the plugin setting |
 | `header` | any text | Floating header slot shown on every slide |
@@ -237,7 +237,7 @@ Use a line containing **only `---`** to split slides:
 
 ```markdown
 ---
-theme: shiro
+theme: kami
 aspect: 16:9
 ---
 

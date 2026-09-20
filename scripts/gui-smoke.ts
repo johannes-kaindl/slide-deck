@@ -1220,8 +1220,8 @@ const exportSektion: Section = {
 const BILD_MIT_NOTE = "smoke-bildplatz.md";
 const BILD_OHNE_NOTE = "smoke-ohne-bildplatz.md";
 const BILD_BLOCK = "```slide-image\nfunktion: metaphorical\nEisberg im Polarmeer\n```";
-const BILD_MIT_MD = `---\ntheme: shiro\n---\n\n# Bildplatz\n\n${BILD_BLOCK}\n`;
-const BILD_OHNE_MD = "---\ntheme: shiro\n---\n\n# Ohne Bildplatz\n\nNur Text.\n";
+const BILD_MIT_MD = `---\ntheme: kami\n---\n\n# Bildplatz\n\n${BILD_BLOCK}\n`;
+const BILD_OHNE_MD = "---\ntheme: kami\n---\n\n# Ohne Bildplatz\n\nNur Text.\n";
 
 /** N — Bildplätze. Jeder Punkt traegt seine Gegenprobe IN sich: ein einmaliger
  *  Sabotage-Nachweis daneben altert sofort, zwei UNTERSCHIEDLICHE Zahlen im Protokoll

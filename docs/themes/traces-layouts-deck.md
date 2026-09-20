@@ -1,5 +1,5 @@
 ---
-theme: kuro
+theme: kogane
 ---
 
 <!-- layout: agenda -->

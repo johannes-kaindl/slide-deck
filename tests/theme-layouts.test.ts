@@ -27,15 +27,15 @@ describe("Layouts agenda/threads/closing", () => {
   });
 
   const { map } = mergeThemes(builtinThemeEntries(VENDOR), []);
-  for (const theme of ["kuro", "shiro", "sumi"]) {
+  for (const theme of ["kogane", "kami", "sumi"]) {
     it(`das Deck-CSS von ${theme} traegt die Regeln aller drei`, () => {
       const css = deckCss(resolveTheme(map, theme));
       for (const l of LAYOUTS) expect(css).toContain(`.sd-layout-${l} .sd-region`);
     });
   }
 
-  it("kuro und shiro legen den Schleier auf closing", () => {
-    for (const theme of ["kuro", "shiro"]) {
+  it("kogane und kami legen den Schleier auf closing", () => {
+    for (const theme of ["kogane", "kami"]) {
       expect(deckCss(resolveTheme(map, theme))).toContain(".sd-slide.sd-layout-closing{");
     }
   });

@@ -8,7 +8,7 @@ describe("image suffix settings", () => {
   });
 
   it("survives a merge with an old data.json that predates the field", () => {
-    const merged = mergeSettings(DEFAULT_SETTINGS, { defaultTheme: "kuro" } as never);
+    const merged = mergeSettings(DEFAULT_SETTINGS, { defaultTheme: "kogane" } as never);
     expect(merged.imageSuffixes).toEqual({});
   });
 });

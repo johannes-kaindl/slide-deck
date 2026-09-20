@@ -15,7 +15,7 @@ describe("binaryToDataUrl", () => {
 // einen App-Mock, hier reicht eine Registry. Dieselbe Naht wie `mermaidConfig` im Kern.
 describe("knownModifiersFor", () => {
   const reg = new Map<string, ThemeEntry>([
-    ["shiro", { key: "shiro", source: "builtin", themeCss: "", hljs: "", katex: "", mermaid: "default", baseFontPx: 24 }],
+    ["kami", { key: "kami", source: "builtin", themeCss: "", hljs: "", katex: "", mermaid: "default", baseFontPx: 24 }],
     ["gruene", { key: "gruene", source: "user", themeCss: "", hljs: "", katex: "", mermaid: "default", baseFontPx: 24, modifiers: ["sand", "halb"] }],
   ]) as ThemeRegistry;
 
@@ -24,10 +24,10 @@ describe("knownModifiersFor", () => {
   });
 
   it("liefert undefined fuer ein Theme, das keine deklariert", () => {
-    expect(knownModifiersFor(reg, "shiro")).toBeUndefined();
+    expect(knownModifiersFor(reg, "kami")).toBeUndefined();
   });
 
-  // resolveTheme ist total und faellt auf shiro zurueck — ein Tippfehler im `theme:` darf
+  // resolveTheme ist total und faellt auf kami zurueck — ein Tippfehler im `theme:` darf
   // nicht die Modifier eines fremden Themes erben.
   it("erbt bei unbekanntem Schluessel die Modifier des Fallbacks, nicht die des letzten Themes", () => {
     expect(knownModifiersFor(reg, "gibt-es-nicht")).toBeUndefined();

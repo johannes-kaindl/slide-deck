@@ -1,5 +1,5 @@
 ---
-theme: kuro
+theme: kogane
 aspect: "16:9"
 ---
 
@@ -7,7 +7,7 @@ aspect: "16:9"
 
 # Slide Deck
 
-## Kuro Signal Protocol
+## Kogane Signal Protocol
 
 Präsentationen direkt aus dem Vault — Live-Theme-Switch, Fit-or-warn, PDF/PNG-Export.
 
@@ -110,6 +110,6 @@ graph LR
 
 <!-- layout: section -->
 
-# Jetzt live zu `shiro` wechseln
+# Jetzt live zu `kami` wechseln
 
-Im Preview das Theme-Dropdown auf **shiro** stellen — dieselben Folien, helles Reispapier.
+Im Preview das Theme-Dropdown auf **kami** stellen — dieselben Folien, helles Reispapier.

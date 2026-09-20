@@ -7,8 +7,8 @@ import { SlideDeckSettingTab, DEFAULT_SETTINGS, migrateLegacyThemeKeys, type Sli
 
 function makeFakePlugin(settings: SlideDeckSettings) {
   const themes = [
-    { key: "shiro", source: "builtin" as const },
-    { key: "kuro", source: "builtin" as const },
+    { key: "kami", source: "builtin" as const },
+    { key: "kogane", source: "builtin" as const },
     { key: "mytheme", source: "user" as const },
   ];
   const calls = { saveSettings: 0, refreshThemes: 0, applyFolderHide: 0 };
@@ -51,7 +51,7 @@ describe("SlideDeckSettingTab (declarative)", () => {
     }
 
     const newValues: Record<string, unknown> = {
-      defaultTheme: "kuro", minFontPx: 30, imageScale: 3, exportFolder: "Out", themesFolder: "Themes",
+      defaultTheme: "kogane", minFontPx: 30, imageScale: 3, exportFolder: "Out", themesFolder: "Themes",
       hideThemesFolder: false, customCss: "body{}",
       llmMaxTokens: 4096, llmTemperature: 0.7,
     };
@@ -97,8 +97,8 @@ describe("SlideDeckSettingTab (declarative)", () => {
     const { plugin } = makeFakePlugin(settings);
     const tab = new SlideDeckSettingTab({} as any, plugin as any);
 
-    // unknown persisted theme → dropdown reads back "shiro" (a valid option)
-    expect(tab.getControlValue("defaultTheme")).toBe("shiro");
+    // unknown persisted theme → dropdown reads back "kami" (a valid option)
+    expect(tab.getControlValue("defaultTheme")).toBe("kami");
 
     await tab.setControlValue("exportFolder", "   ");
     expect(settings.exportFolder).toBe(DEFAULT_SETTINGS.exportFolder);
@@ -106,25 +106,25 @@ describe("SlideDeckSettingTab (declarative)", () => {
     expect(settings.themesFolder).toBe(DEFAULT_SETTINGS.themesFolder);
   });
 
-  it("defaults to shiro and coerces legacy keys through the alias map", async () => {
-    expect(DEFAULT_SETTINGS.defaultTheme).toBe("shiro");
+  it("defaults to kami and coerces legacy keys through the alias map", async () => {
+    expect(DEFAULT_SETTINGS.defaultTheme).toBe("kami");
     const settings: SlideDeckSettings = { ...DEFAULT_SETTINGS, defaultTheme: "dark" };
     const { plugin } = makeFakePlugin(settings);
     const tab = new SlideDeckSettingTab({} as any, plugin as any);
-    expect(tab.getControlValue("defaultTheme")).toBe("kuro"); // Alias dark→kuro
+    expect(tab.getControlValue("defaultTheme")).toBe("kogane"); // Alias dark→kogane
   });
 });
 
 describe("migrateLegacyThemeKeys", () => {
   it("maps legacy 0.4.x keys through THEME_ALIASES", () => {
-    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "default" }).defaultTheme).toBe("shiro");
-    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "dark" }).defaultTheme).toBe("kuro");
-    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "serif" }).defaultTheme).toBe("shiro");
+    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "default" }).defaultTheme).toBe("kami");
+    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "dark" }).defaultTheme).toBe("kogane");
+    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "serif" }).defaultTheme).toBe("kami");
     expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "high-contrast" }).defaultTheme).toBe("sumi");
   });
 
   it("leaves canonical or unknown keys untouched", () => {
-    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "shiro" }).defaultTheme).toBe("shiro");
+    expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "kami" }).defaultTheme).toBe("kami");
     expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "kurenai" }).defaultTheme).toBe("kurenai");
     expect(migrateLegacyThemeKeys({ ...DEFAULT_SETTINGS, defaultTheme: "ghost" }).defaultTheme).toBe("ghost");
   });

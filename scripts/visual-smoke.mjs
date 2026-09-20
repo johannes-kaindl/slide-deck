@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const CHROME = process.env.CHROME_BIN ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const ALL_THEMES = ["shiro", "kuro", "sumi", "kairo", "kurenai"];
+const ALL_THEMES = ["kami", "kogane", "sumi", "kairo", "kurenai"];
 const [deckArg, ...themeArgs] = process.argv.slice(2);
 const deckPath = deckArg ?? "docs/themes/demo-deck.md";
 const themes = themeArgs.length ? themeArgs : ALL_THEMES;

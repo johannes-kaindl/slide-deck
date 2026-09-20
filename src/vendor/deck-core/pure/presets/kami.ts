@@ -1,6 +1,6 @@
 import type { Preset } from "./index";
-export const shiroPreset: Preset = {
-  id: "shiro", label: "Shiro · 白 — rice paper", baseFontPx: 28,
+export const kamiPreset: Preset = {
+  id: "kami", label: "Kami · 紙 — rice paper", baseFontPx: 28,
   tokens: {
     "--sd-bg": "#f7f2e8", "--sd-fg": "#1f1a13", "--sd-accent": "#7d5e26",
     "--sd-code-bg": "#efe7d6",

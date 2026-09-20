@@ -7,9 +7,13 @@ versioning follows [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- **Drei neue Folien-Layouts `agenda`, `threads`, `closing`** aus den Folien-Spezimen von Order from Traces. Sie kommen mit `deck-core` 0.12.0 (neu vendoriert, `e62dfa8`) und wirken in jedem Theme; `kuro` und `shiro` legen auf `closing` zusätzlich einen Schleier über den Hintergrund. `agenda` liest eine nummerierte Liste mit Meta-Angabe als Inline-Code am Ende, `threads` eine nummerierte Liste mit `**Kartentitel**` und `closing` eine Aufzählung `**Schlüssel** Wert`. Doku in `docs/layouts.md`, Beispiel in `docs/themes/traces-layouts-deck.md`. Der Deck-Prompt der Generate-Ansicht bietet die drei Layouts jetzt auch dem Modell an.
+- **Drei neue Folien-Layouts `agenda`, `threads`, `closing`** aus den Folien-Spezimen von Order from Traces. Sie kommen mit `deck-core` 0.12.0 (neu vendoriert, `e62dfa8`) und wirken in jedem Theme; `kogane` und `kami` legen auf `closing` zusätzlich einen Schleier über den Hintergrund. `agenda` liest eine nummerierte Liste mit Meta-Angabe als Inline-Code am Ende, `threads` eine nummerierte Liste mit `**Kartentitel**` und `closing` eine Aufzählung `**Schlüssel** Wert`. Doku in `docs/layouts.md`, Beispiel in `docs/themes/traces-layouts-deck.md`. Der Deck-Prompt der Generate-Ansicht bietet die drei Layouts jetzt auch dem Modell an.
 
 ### Changed
+- **BREAKING: Die beiden eingebauten Order-from-Traces-Presets heißen jetzt `kogane` (dunkel, vormals `kuro`) und `kami` (hell, vormals `shiro`).** Sie tragen die Werte von Order from Traces, hießen aber nach den Modi von birds of yore; Order from Traces hat seine Modi am 2026-09-20 benannt (Entscheidung Johannes). Werte, Atmosphäre und Labels bleiben, nur die Schlüssel wechseln. Kommt mit `deck-core` 0.13.0 (neu vendoriert, `86980bb`).
+- **Rückwärts-Aliasse gibt es bewusst keine** — die alten Namen werden für die Presets von birds of yore frei. Ein Deck mit `theme: kuro` fällt deshalb still auf den Rückfall `kami` zurück, wird also hell statt dunkel. Alle Decks, Fixtures und Doku-Stellen dieses Repos sind nachgezogen; ein `theme:` in einer eigenen Notiz muss von Hand nachgezogen werden. Die Aliasse `dark` → `kogane` und `default`/`serif` → `kami` gelten weiter.
+- Der Rückfall für einen unbekannten Theme-Schlüssel heißt entsprechend `kami`; `defaultTheme` in den Einstellungen steht neu auf `kami`.
+
 - **Vorschau und Generieren teilen sich jetzt EINE Sidebar mit Tab-Leiste** (UI-STANDARD §8,
   Kit-Baustein `buildHubInto` aus `obsidian-kit`@0.35.0) statt zwei getrennter Leaves
   (`slide-deck-preview`/`slide-deck-generate`). Beide Commands und der Ribbon-Knopf öffnen

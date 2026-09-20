@@ -1,5 +1,5 @@
 ---
-theme: shiro
+theme: kami
 footer: Regressions-Deck
 paginate: true
 ---
@@ -7,7 +7,7 @@ paginate: true
 <!-- Kein Demo-Deck, sondern ein Prüfling: jede Folie hier hat einen Defekt ausgelöst,
      der am 2026-08-20 in deck-core 0.5.0 behoben wurde. Aufnahme:
 
-       node scripts/visual-smoke.mjs docs/themes/regression-deck.md shiro
+       node scripts/visual-smoke.mjs docs/themes/regression-deck.md kami
 
      Die Bilder stecken als data:-URI in der Datei, damit der Prüfling ohne Vault und
      ohne Netz läuft. SVG geht dafür NICHT: markdown-its validateLink lässt von data:

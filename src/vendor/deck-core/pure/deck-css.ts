@@ -32,10 +32,10 @@ export function builtinThemeEntries(vendor: VendorCss): ThemeEntry[] {
 }
 
 /** A user .css theme as a registry entry. Code/Mermaid scheme come from the file's optional
- *  `sd-hljs` / `sd-mermaid` directives (falling back to the shiro builtin); baseFontPx from
- *  the file's --sd-base if present, else the shiro builtin's. */
+ *  `sd-hljs` / `sd-mermaid` directives (falling back to the kami builtin); baseFontPx from
+ *  the file's --sd-base if present, else the kami builtin's. */
 export function userThemeEntry(key: string, fileCss: string, vendor: VendorCss): ThemeEntry {
-  const d = presetFor("shiro");
+  const d = presetFor("kami");
   const meta = parseThemeMeta(fileCss);
   return {
     key,
@@ -43,7 +43,7 @@ export function userThemeEntry(key: string, fileCss: string, vendor: VendorCss):
     source: "user" as const,
     themeCss: fileCss,
     // Drei Stufen, und die mittlere ist die wichtige: ein unbekanntes `sd-hljs`
-    // fällt auf das Schema des shiro-Presets zurück (`github`, hell) — nicht auf
+    // fällt auf das Schema des kami-Presets zurück (`github`, hell) — nicht auf
     // `github-dark`. Wer das verkürzt, gibt einem hellen Nutzer-Theme mit
     // vertippter Angabe dunkle Code-Blöcke.
     hljs: vendor.hljs[meta.hljs ?? ""] ?? hljsFor(vendor, d.hljs),

@@ -28,8 +28,8 @@ const ATMOSPHERE = `
 .sd-slide .sd-callout-warning{ border-left-color:#dba05c; background:rgba(219,160,92,0.08); }
 .sd-slide .sd-callout-danger{ border-left-color:#c9574a; background:rgba(201,87,74,0.09); }
 `;
-export const kuroPreset: Preset = {
-  id: "kuro", label: "Kuro · 黒 — the chamber", baseFontPx: 28,
+export const koganePreset: Preset = {
+  id: "kogane", label: "Kogane · 黄金 — the chamber", baseFontPx: 28,
   tokens: {
     "--sd-bg": "#100e0c", "--sd-fg": "#ece4d3", "--sd-accent": "#c79a4a",
     "--sd-code-bg": "#1b1712",

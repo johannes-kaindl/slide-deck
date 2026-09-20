@@ -6,16 +6,16 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 [![Release](https://img.shields.io/gitea/v/release/jkaindl/slide-deck?gitea_url=https%3A%2F%2Fgit.jkaindl.de&label=release)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
 [![Plattform: Desktop + Mobile](https://img.shields.io/badge/Plattform-Desktop%20%2B%20Mobile-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/manifest.json)
 
-<img width="820" alt="Eine Zwei-Spalten-Folie im Theme shiro: links eine Aufzählung mit Inline-Code und KaTeX-Mathe, rechts ein Balkendiagramm, das die Spalte füllt" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png">
+<img width="820" alt="Eine Zwei-Spalten-Folie im Theme kami: links eine Aufzählung mit Inline-Code und KaTeX-Mathe, rechts ein Balkendiagramm, das die Spalte füllt" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png">
 
 [English](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/README.md)
 
 ## Funktionen
 
 - **Theme-Isolation** — Folien werden in einem sandboxed iframe gerendert, sodass das aktive Obsidian-Theme niemals in die Vorschau oder die Exporte durchsickert. Ein Deck sieht unabhängig vom Vault-Theme identisch aus.
-- **Neun eingebaute Themes** — das Nordstern-Set: `shiro` 白 (hell, Standard), `kuro` 黒 (dunkel), `sumi` 墨 (echtes Schwarz, high-contrast), `kairo` 回路 (dunkel, cyan), `kurenai` 紅 (dunkel, rot); dazu die `crimson`-Familie 紅 in vier Modi (`crimson-dark`, `crimson-dark-lc`, `crimson-light`, `crimson-light-lc`) — Serifen-Display über einem Mono-Fließtext, mit einer feinen Scanline, die die kontrastarmen Modi dämpfen. Über den `theme:`-Frontmatter-Schlüssel je Deck gewählt; jedes Theme bringt ein passendes Code-Highlighting- und Mermaid-Theme mit. Alte 0.4.x-Schlüssel (`default`, `dark`, `serif`, `high-contrast`) funktionieren weiterhin — sie lösen sich still zu ihrem Nordstern-Nachfolger auf.
+- **Neun eingebaute Themes** — das Nordstern-Set: `kami` 紙 (hell, Standard), `kogane` 黄金 (dunkel), `sumi` 墨 (echtes Schwarz, high-contrast), `kairo` 回路 (dunkel, cyan), `kurenai` 紅 (dunkel, rot); dazu die `crimson`-Familie 紅 in vier Modi (`crimson-dark`, `crimson-dark-lc`, `crimson-light`, `crimson-light-lc`) — Serifen-Display über einem Mono-Fließtext, mit einer feinen Scanline, die die kontrastarmen Modi dämpfen. Über den `theme:`-Frontmatter-Schlüssel je Deck gewählt; jedes Theme bringt ein passendes Code-Highlighting- und Mermaid-Theme mit. Alte 0.4.x-Schlüssel (`default`, `dark`, `serif`, `high-contrast`) funktionieren weiterhin — sie lösen sich still zu ihrem Nordstern-Nachfolger auf.
 - **Live-Theme-Wechsler** — die Vorschau-Toolbar enthält ein Theme-Dropdown zum ephemeren Ausprobieren, eine Quell-Anzeige (`aus Frontmatter` / `aus Standard` / `● nicht gespeichert`), die zeigt, woher das aktive Theme stammt, und eine Schaltfläche **Setzen**, die `theme:` direkt in die Frontmatter der Notiz schreibt. Die Frontmatter ist die maßgebliche Quelle; der Einstellungs-Standard gilt nur für Notizen ohne `theme:`-Schlüssel.
-- **Eigene Themes** — `.css`-Dateien in einen konfigurierbaren Themes-Ordner (Standard `Slide-Deck-Themes/`) ablegen; der `theme:`-Frontmatter-Wert entspricht dem Dateinamen ohne `.css`-Erweiterung. Jede Datei enthält einen `--sd-*`-Token-Block mit optionalem zusätzlichem CSS obendrauf auf das Design-System des Plugins (Type-Scale, Abstände, Rhythmus) — ein 7-Token-Theme sieht schon fertig aus; eigene Themes erben das Code-Highlighting- und Mermaid-Theme des `shiro`-Themes, sofern nicht überschrieben. Siehe den [Theming-Guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/themes/THEMING-GUIDE.md). Der Einstellungs-Tab zeigt alle gültigen Theme-Schlüssel live an.
+- **Eigene Themes** — `.css`-Dateien in einen konfigurierbaren Themes-Ordner (Standard `Slide-Deck-Themes/`) ablegen; der `theme:`-Frontmatter-Wert entspricht dem Dateinamen ohne `.css`-Erweiterung. Jede Datei enthält einen `--sd-*`-Token-Block mit optionalem zusätzlichem CSS obendrauf auf das Design-System des Plugins (Type-Scale, Abstände, Rhythmus) — ein 7-Token-Theme sieht schon fertig aus; eigene Themes erben das Code-Highlighting- und Mermaid-Theme des `kami`-Themes, sofern nicht überschrieben. Siehe den [Theming-Guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/themes/THEMING-GUIDE.md). Der Einstellungs-Tab zeigt alle gültigen Theme-Schlüssel live an.
 - **Theme-Import/Export** — die Schaltfläche **Im Finder öffnen** zeigt den Themes-Ordner, sodass Dateien hineingezogen werden können; **Theme als .css exportieren** schreibt jedes Theme als editierbare `.css`-Ausgangsdatei; ein Schalter blendet den Themes-Ordner im Obsidian-Datei-Explorer aus.
 - **Zwölf Folien-Templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`, `agenda`, `threads`, `closing` — je Folie per Layout-Direktive (ein HTML-Kommentar) gesetzt; Spalten werden per Spalten-Direktive getrennt, und in Mehrspalten-Templates spannt die führende Überschrift über alle Spalten. Siehe den [Layout-Leitfaden](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.de.md).
 - **Kombinierbare Dichte-Modifier** — `compact` (engere Typografie) oder `code-heavy` (kleinerer Code) lassen sich in derselben Layout-Direktive an jedes Template anhängen.
@@ -46,7 +46,7 @@ Werkzeugleiste mit: Theme-Auswahl, Herkunft des aktiven Themes, die beiden Expor
 **Neun eingebaute Themes.** Dieselbe Folie in jedem — nur Farbe, Schrift und Akzent ändern
 sich; die Struktur bleibt theme-unabhängig.
 
-<img width="820" alt="Ein Drei-mal-drei-Raster mit derselben Folie in allen neun eingebauten Themes: shiro, kuro, sumi, kairo, kurenai, crimson-dark, crimson-dark-lc, crimson-light und crimson-light-lc" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/themes.png">
+<img width="820" alt="Ein Drei-mal-drei-Raster mit derselben Folie in allen neun eingebauten Themes: kami, kogane, sumi, kairo, kurenai, crimson-dark, crimson-dark-lc, crimson-light und crimson-light-lc" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/themes.png">
 
 **Zwölf Folien-Templates.** Per Layout-Direktive gesetzt — oder aus der Form der Folie
 abgeleitet. Das Raster zeigt die neun allgemeinen; `agenda`, `threads` und `closing` stehen im Layout-Leitfaden.
@@ -122,7 +122,7 @@ cp main.js manifest.json styles.css /pfad/zum/vault/.obsidian/plugins/slide-deck
 
 | Einstellung | Schlüssel | Standard | Beschreibung |
 |---|---|---|---|
-| Standard-Preset | `defaultTheme` | `shiro` | Preset, wenn eine Notiz keine `theme`-Frontmatter-Direktive hat |
+| Standard-Preset | `defaultTheme` | `kami` | Preset, wenn eine Notiz keine `theme`-Frontmatter-Direktive hat |
 | Mindest-Schriftgröße Body (px) | `minFontPx` | `24` | Lesbarkeits-Untergrenze — Folien, die kleineren Text bräuchten, werden als überlaufend markiert |
 | Bild-Export-Skalierung | `imageScale` | `2` | Pixel-Multiplikator für PNG-Export (`2` = 2×, scharf auf HiDPI) |
 | Eigenes CSS | `customCss` | *(leer)* | CSS, das in Vorschau und Exporten an die Deck-Styles angehängt wird, für Branding oder Anpassungen |
@@ -136,7 +136,7 @@ Ein YAML-Frontmatter-Block am Anfang der Notiz steuert präsentationsweite Einst
 
 ```yaml
 ---
-theme: kuro
+theme: kogane
 aspect: 16:9
 minFontPx: 24
 header: Mein Vortrag
@@ -147,7 +147,7 @@ paginate: true
 
 | Schlüssel | Werte | Beschreibung |
 |---|---|---|
-| `theme` | `shiro` · `kuro` · `sumi` · `kairo` · `kurenai` · `crimson-dark` · `crimson-dark-lc` · `crimson-light` · `crimson-light-lc` · *eigener-Theme-Schlüssel* (alte Schlüssel `default`/`dark`/`serif`/`high-contrast` funktionieren weiterhin) | Visuelles Preset; eigener Theme-Schlüssel = Dateiname der `.css`-Datei ohne Erweiterung |
+| `theme` | `kami` · `kogane` · `sumi` · `kairo` · `kurenai` · `crimson-dark` · `crimson-dark-lc` · `crimson-light` · `crimson-light-lc` · *eigener-Theme-Schlüssel* (alte Schlüssel `default`/`dark`/`serif`/`high-contrast` funktionieren weiterhin) | Visuelles Preset; eigener Theme-Schlüssel = Dateiname der `.css`-Datei ohne Erweiterung |
 | `aspect` | `16:9` (Standard), `4:3` | Canvas-Größe: 1280×720 (16:9) oder 960×720 (4:3) |
 | `minFontPx` | jede positive Zahl | Lesbarkeits-Untergrenze je Notiz; überschreibt die Plugin-Einstellung |
 | `header` | beliebiger Text | Schwebender Header-Slot auf jeder Folie |
@@ -164,7 +164,7 @@ Eine Zeile, die **nur `---`** enthält, trennt Folien:
 
 ```markdown
 ---
-theme: shiro
+theme: kami
 aspect: 16:9
 ---
 

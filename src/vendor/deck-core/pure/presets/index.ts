@@ -1,5 +1,5 @@
-import { shiroPreset } from "./shiro";
-import { kuroPreset } from "./kuro";
+import { kamiPreset } from "./kami";
+import { koganePreset } from "./kogane";
 import { sumiPreset } from "./sumi";
 import { kairoPreset } from "./kairo";
 import { kurenaiPreset } from "./kurenai";
@@ -20,7 +20,7 @@ export interface Preset {
 }
 
 export const PRESETS: Record<string, Preset> = {
-  shiro: shiroPreset, kuro: kuroPreset, sumi: sumiPreset, kairo: kairoPreset, kurenai: kurenaiPreset,
+  kami: kamiPreset, kogane: koganePreset, sumi: sumiPreset, kairo: kairoPreset, kurenai: kurenaiPreset,
   // Crimson (Marp-Import, Ebene A: Farben/Fonts/Atmosphäre — Skala/Rhythmus bleibt global).
   "crimson-dark": crimsonDark, "crimson-dark-lc": crimsonDarkLc,
   "crimson-light": crimsonLight, "crimson-light-lc": crimsonLightLc,
@@ -28,12 +28,12 @@ export const PRESETS: Record<string, Preset> = {
 
 /** Legacy 0.4.x keys resolve silently to their nordstern successor. */
 export const THEME_ALIASES: Record<string, string> = {
-  default: "shiro", dark: "kuro", serif: "shiro", "high-contrast": "sumi",
+  default: "kami", dark: "kogane", serif: "kami", "high-contrast": "sumi",
 };
 
-/** TOTAL — legacy keys alias, unknown ids fall back to shiro. Never throws. */
+/** TOTAL — legacy keys alias, unknown ids fall back to kami. Never throws. */
 export function presetFor(id: string): Preset {
-  return PRESETS[id] ?? PRESETS[THEME_ALIASES[id] ?? ""] ?? PRESETS.shiro;
+  return PRESETS[id] ?? PRESETS[THEME_ALIASES[id] ?? ""] ?? PRESETS.kami;
 }
 
 /** Emit the preset's tokens as a .sd-slide rule. --sd-base is derived from baseFontPx
@@ -136,9 +136,9 @@ export function mermaidConfig(
     : { theme: entry.mermaid };
 }
 
-/** TOTAL — exact key first (a user theme may shadow a legacy name), then alias, then shiro. */
+/** TOTAL — exact key first (a user theme may shadow a legacy name), then alias, then kami. */
 export function resolveTheme(reg: ThemeRegistry, key: string): ThemeEntry {
-  return reg.get(key) ?? reg.get(THEME_ALIASES[key] ?? "") ?? reg.get("shiro")!;
+  return reg.get(key) ?? reg.get(THEME_ALIASES[key] ?? "") ?? reg.get("kami")!;
 }
 
 /** Built-ins first (in PRESETS order), then user themes alphabetically. */

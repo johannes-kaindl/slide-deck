@@ -1,5 +1,5 @@
 ---
-theme: shiro
+theme: kami
 aspect: "16:9"
 minFontPx: 24
 header: Acme Consulting

@@ -18,7 +18,7 @@ export function binaryToDataUrl(buf: ArrayBuffer, ext: string): string {
  *  `modifier-unknown` per slide for a state that is exactly as intended.
  *
  *  Pulled out of `loadDeck` on purpose: in there a test would need an App mock, here a
- *  registry suffices. `resolveTheme` is total and falls back to shiro, so an unknown key
+ *  registry suffices. `resolveTheme` is total and falls back to kami, so an unknown key
  *  yields the fallback's declarations — not the last theme's. */
 export function knownModifiersFor(registry: ThemeRegistry, themeKey: string | undefined): readonly string[] | undefined {
   if (!themeKey) return undefined;

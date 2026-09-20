@@ -46,7 +46,7 @@ to separate regions in multi-column templates:
 
 ### `agenda`, `threads`, `closing`
 
-These three come from the Order from Traces slide specimens. Each takes a `# Title` and a `## eyebrow` (written after the title, shown above it, as in the hero layouts), and they read a list in a fixed way. The built-in `kuro` and `shiro` themes also veil the background on the right of a `closing` slide. Example deck: `docs/themes/traces-layouts-deck.md`.
+These three come from the Order from Traces slide specimens. Each takes a `# Title` and a `## eyebrow` (written after the title, shown above it, as in the hero layouts), and they read a list in a fixed way. The built-in `kogane` and `kami` themes also veil the background on the right of a `closing` slide. Example deck: `docs/themes/traces-layouts-deck.md`.
 
 | Layout | List it reads |
 |---|---|

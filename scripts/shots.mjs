@@ -18,7 +18,7 @@ const CHROME = process.env.CHROME_BIN ?? "/Applications/Google Chrome.app/Conten
 const FIXTURE = "docs/images/fixture";
 const OUT = "docs/images";
 
-const NORDSTERN = ["shiro", "kuro", "sumi", "kairo", "kurenai"];
+const NORDSTERN = ["kami", "kogane", "sumi", "kairo", "kurenai"];
 const CRIMSON = ["crimson-dark", "crimson-dark-lc", "crimson-light", "crimson-light-lc"];
 const LAYOUTS = ["title", "section", "quote", "image-focus", "two-column", "columns-3", "stat", "cover-image", "default"];
 
@@ -27,12 +27,12 @@ const LAYOUTS = ["title", "section", "quote", "image-focus", "two-column", "colu
 const SHOTS = {
   hero: {
     deck: "hero.md",
-    cells: [{ theme: "shiro", slide: 0 }],
+    cells: [{ theme: "kami", slide: 0 }],
     columns: 1, cellWidth: 1280, pad: 0, gap: 0, deviceScale: 2, bg: "#ffffff", frame: false,
   },
   callouts: {
     deck: "callouts.md",
-    cells: [{ theme: "shiro", slide: 0 }],
+    cells: [{ theme: "kami", slide: 0 }],
     columns: 1, cellWidth: 1280, pad: 0, gap: 0, deviceScale: 2, bg: "#ffffff", frame: false,
   },
   themes: {
@@ -43,12 +43,12 @@ const SHOTS = {
   // Diagnose, nicht ausgeliefert: cover-image in hellem vs. dunklem Theme.
   "_cover-check": {
     deck: "layouts.md",
-    cells: [{ theme: "shiro", slide: 7, label: "shiro (light)" }, { theme: "kuro", slide: 7, label: "kuro (dark)" }],
+    cells: [{ theme: "kami", slide: 7, label: "kami (light)" }, { theme: "kogane", slide: 7, label: "kogane (dark)" }],
     columns: 2, cellWidth: 900, pad: 40, gap: 28, deviceScale: 1, bg: "#ffffff", frame: true,
   },
   layouts: {
     deck: "layouts.md",
-    cells: LAYOUTS.map((name, i) => ({ theme: "shiro", slide: i, label: name })),
+    cells: LAYOUTS.map((name, i) => ({ theme: "kami", slide: i, label: name })),
     columns: 3, cellWidth: 720, pad: 40, gap: 28, deviceScale: 1, bg: "#ffffff", frame: true,
   },
 };

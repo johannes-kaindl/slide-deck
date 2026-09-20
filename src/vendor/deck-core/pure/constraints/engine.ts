@@ -39,7 +39,7 @@ export function collectDeckWarnings(deck: SlideDeck, registry: ThemeRegistry): W
   const out: Warning[] = [];
   const t = deck.directives.theme;
   if (!registry.has(t) && !registry.has(THEME_ALIASES[t] ?? "")) {
-    out.push({ slideIndex: 0, kind: "theme-unknown", severity: WARNING_SEVERITY["theme-unknown"], message: `Unknown theme "${t}" — using shiro.`, sourceLine: 0 });
+    out.push({ slideIndex: 0, kind: "theme-unknown", severity: WARNING_SEVERITY["theme-unknown"], message: `Unknown theme "${t}" — using kami.`, sourceLine: 0 });
   }
   return out;
 }

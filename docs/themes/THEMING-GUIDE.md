@@ -53,7 +53,7 @@ can override any theme (it applies to every deck).
 Set these on `.sd-slide` (custom properties inherit, so every element resolves
 them). This block alone is a complete, valid theme.
 
-| Token | Purpose | `kuro` (dark) | `shiro` (light) |
+| Token | Purpose | `kogane` (dark) | `kami` (light) |
 |---|---|---|---|
 | `--sd-bg` | Slide background | `#100e0c` | `#f7f2e8` |
 | `--sd-fg` | Body text colour | `#ece4d3` | `#1f1a13` |
@@ -216,13 +216,13 @@ starting point via **Export theme as .css** (Settings).
 
 | Key | Label | Voice | Base px |
 |---|---|---|---|
-| `shiro` | Shiro · 白 — rice paper | Light, warm paper, bronze accent (**default**) | `28` |
-| `kuro` | Kuro · 黒 — the chamber | Dark, warm charcoal, gold accent | `28` |
+| `kami` | Kami · 紙 — rice paper | Light, warm paper, bronze accent (**default**) | `28` |
+| `kogane` | Kogane · 黄金 — the chamber | Dark, warm charcoal, gold accent | `28` |
 | `sumi` | Sumi · 墨 — ink on void | True black, cream text, gold accent — highest contrast | `32` |
 | `kairo` | Kairo · 回路 — the circuit | Dark, cool cyan accent, circuit-board texture | `28` |
 | `kurenai` | Kurenai · 紅 — danger signal | Dark, red accent, alert texture | `28` |
 
-Dark built-ins (`kuro`, `sumi`, `kairo`, `kurenai`) use a real dark
+Dark built-ins (`kogane`, `sumi`, `kairo`, `kurenai`) use a real dark
 highlight.js scheme and Mermaid's `dark` theme, so code and diagrams stay
 legible on a dark background — see §7 for how a user theme opts into the same
 thing.
@@ -234,13 +234,13 @@ resolves silently to its successor, no note needs editing:
 
 | Legacy key | Resolves to |
 |---|---|
-| `default` | `shiro` |
-| `dark` | `kuro` |
-| `serif` | `shiro` |
+| `default` | `kami` |
+| `dark` | `kogane` |
+| `serif` | `kami` |
 | `high-contrast` | `sumi` |
 
 An unrecognized/missing key (including a user theme file that was deleted)
-also falls back to `shiro`.
+also falls back to `kami`.
 
 ---
 
@@ -288,8 +288,8 @@ Minimal skeleton to start from (or copy `example.css` directly):
 
 ## 7. Caveats (the sharp edges)
 
-- **Code-highlight and Mermaid inherit `shiro`'s scheme by default.** A user
-  theme gets `shiro`'s highlight.js scheme (`github`, light) and Mermaid theme
+- **Code-highlight and Mermaid inherit `kami`'s scheme by default.** A user
+  theme gets `kami`'s highlight.js scheme (`github`, light) and Mermaid theme
   (`default`, light) unless the `.css` file declares an optional header
   directive:
 

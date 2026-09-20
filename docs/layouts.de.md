@@ -47,7 +47,7 @@ Spalten-Kommentar, um Bereiche in Mehrspalten-Templates zu trennen:
 
 ### `agenda`, `threads`, `closing`
 
-Diese drei stammen aus den Folien-Spezimen von Order from Traces. Jedes nimmt einen `# Titel` und eine `## Eyebrow` (im Quelltext nach dem Titel, angezeigt darüber, wie bei den Hero-Layouts) und liest eine Liste auf feste Weise. Die eingebauten Themes `kuro` und `shiro` legen auf einer `closing`-Folie zusätzlich einen Schleier über die rechte Seite des Hintergrunds. Beispiel-Deck: `docs/themes/traces-layouts-deck.md`.
+Diese drei stammen aus den Folien-Spezimen von Order from Traces. Jedes nimmt einen `# Titel` und eine `## Eyebrow` (im Quelltext nach dem Titel, angezeigt darüber, wie bei den Hero-Layouts) und liest eine Liste auf feste Weise. Die eingebauten Themes `kogane` und `kami` legen auf einer `closing`-Folie zusätzlich einen Schleier über die rechte Seite des Hintergrunds. Beispiel-Deck: `docs/themes/traces-layouts-deck.md`.
 
 | Layout | Welche Liste es liest |
 |---|---|

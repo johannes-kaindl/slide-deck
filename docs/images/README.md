@@ -28,9 +28,9 @@ Export benutzen.
 
 | Datei | Klasse | referenziert von | muss zeigen |
 |---|---|---|---|
-| `hero.png` | hero | `README.md`, `README.de.md` | Eine `two-column`-Folie im Default-Theme `shiro`: Aufzählung, Inline-Code, KaTeX-Mathe und ein Bild, das seine Region füllt. Das Bild, an dem man in fünf Sekunden sieht, was das Plugin macht. |
+| `hero.png` | hero | `README.md`, `README.de.md` | Eine `two-column`-Folie im Default-Theme `kami`: Aufzählung, Inline-Code, KaTeX-Mathe und ein Bild, das seine Region füllt. Das Bild, an dem man in fünf Sekunden sieht, was das Plugin macht. |
 | `preview-pane.png` | feature | `README.md`, `README.de.md` | Obsidian mit der Notiz links und der Vorschau rechts: Theme-Dropdown, Herkunftszeile `from frontmatter`, Refresh, `Export: PDF / Images`, Kopfzeile und Paginierung `1 / 5` auf den Folien. |
-| `themes.png` | feature | `README.md`, `README.de.md` | Alle **neun** eingebauten Themes als 3×3-Raster mit Namen: `shiro`, `kuro`, `sumi`, `kairo`, `kurenai` und die vier `crimson`-Modi. Dieselbe Folie in jedem — nur Farbe, Schrift und Akzent unterscheiden sich. |
+| `themes.png` | feature | `README.md`, `README.de.md` | Alle **neun** eingebauten Themes als 3×3-Raster mit Namen: `kami`, `kogane`, `sumi`, `kairo`, `kurenai` und die vier `crimson`-Modi. Dieselbe Folie in jedem — nur Farbe, Schrift und Akzent unterscheiden sich. |
 | `layouts.png` | feature | `README.md`, `README.de.md` | Alle **neun** Templates als 3×3-Raster mit Namen: `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`, `default`. |
 | `callouts.png` | feature | `README.md`, `README.de.md` | Alle fünf Callout-Typen mit Rahmenfarbe **und** geometrischer Form **und** Label-Wort (WCAG 1.4.1 — nie Farbe allein). |
 | `overflow-warning.png` | feature | `README.md`, `README.de.md` | Fit-or-warn: die Warnzeile `#1 — Content overflows at the legibility floor — condense this slide.` über der rot markierten Folie. Der angeschnittene Text am unteren Folienrand ist **kein Zuschnittfehler**, sondern das `overflow:hidden` der Folie — genau der Zustand, den die Warnung meldet. |
@@ -108,7 +108,7 @@ wertlos"*.
 | **Settings-Tab ist höher als das Fenster** | Bild endet mitten in den Einstellungen und sieht vollständig aus | `withMetrics(1100, 1900, …)` und bis zum **letzten Kind** klippen. |
 | **Ausschnitt auf den Container statt auf den Inhalt** | Streifen Leere (schwarz) unter dem Bild | Nicht `max(Containerhöhe, Inhalt)` — im simulierten Fenster ist der Container so hoch wie die Simulation. |
 | **`pollUntil` still danebenrufen** | „null Folien" in der Ausgabe, Lauf geht trotzdem weiter | `npm run shots:obsidian` bündelt mit esbuild **ohne `tsc`** — Typfehler im Treiber fallen durch. Signatur ist `(cdp, expression, timeoutMs)`. |
-| **Weissraum-Mass ist auf `shiro` blind** | „1 % identische Zeilen" bei sichtbar halbleerer Folie | `shiro` trägt eine Papiertextur; keine zwei Zeilen sind byte-identisch. Auf texturierten Themes misst das Mass nichts — hier zählt der Blick. |
+| **Weissraum-Mass ist auf `kami` blind** | „1 % identische Zeilen" bei sichtbar halbleerer Folie | `kami` trägt eine Papiertextur; keine zwei Zeilen sind byte-identisch. Auf texturierten Themes misst das Mass nichts — hier zählt der Blick. |
 
 ## Befunde am Prüfling
 
@@ -116,7 +116,7 @@ Beim Aufnehmen gefunden, nicht beim Aufnehmen verursacht:
 
 | Befund | Beleg |
 |---|---|
-| **`cover-image` ist auf hellen Themes unlesbar.** Der Scrim ist ein fest schwarzer Verlauf (`structure.css.ts`), die Titelfarbe kommt aus `--sd-fg`. Auf `shiro`, `crimson-light` und `crimson-light-lc` steht dunkler Text auf dunklem Grund — darunter das **Default**-Theme. | Gegenprobe `npm run shots _cover-check`: identische Folie, identischer Scrim, `kuro` cremeweiss lesbar, `shiro` nicht. |
+| **`cover-image` ist auf hellen Themes unlesbar.** Der Scrim ist ein fest schwarzer Verlauf (`structure.css.ts`), die Titelfarbe kommt aus `--sd-fg`. Auf `kami`, `crimson-light` und `crimson-light-lc` steht dunkler Text auf dunklem Grund — darunter das **Default**-Theme. | Gegenprobe `npm run shots _cover-check`: identische Folie, identischer Scrim, `kogane` cremeweiss lesbar, `kami` nicht. |
 | **Zahlenwerte im Einstellungen-Tab folgen der System-Locale, nicht der UI-Sprache.** „Temperature" zeigt `0,3` mit Dezimalkomma, während die Oberfläche englisch ist. | `settings.png`, Abschnitt *AI (local)*. |
 | `note` und `info` tragen dasselbe Symbol (ℹ). Die Redundanz-Zusage (Farbe + **Form** + Label) trägt zwischen diesen beiden nur über das Label. | `callouts.png` |
 
