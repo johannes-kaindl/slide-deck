@@ -29,12 +29,14 @@ Export benutzen.
 | Datei | Klasse | referenziert von | muss zeigen |
 |---|---|---|---|
 | `hero.png` | hero | `README.md`, `README.de.md` | Eine `two-column`-Folie im Default-Theme `kami`: Aufzählung, Inline-Code, KaTeX-Mathe und ein Bild, das seine Region füllt. Das Bild, an dem man in fünf Sekunden sieht, was das Plugin macht. |
-| `preview-pane.png` | feature | `README.md`, `README.de.md` | Obsidian mit der Notiz links und der Vorschau rechts: Theme-Dropdown, Herkunftszeile `from frontmatter`, Refresh, `Export: PDF / Images`, Kopfzeile und Paginierung `1 / 5` auf den Folien. |
+| `preview-pane.png` | feature | `README.md`, `README.de.md` | Obsidian mit der Notiz links und dem Hub rechts: Tab-Leiste (Vorschau · Erzeugen), Theme-Dropdown, Herkunftszeile, Refresh, Export-Knöpfe, Kopfzeile und Paginierung `1 / 5` auf den Folien. |
 | `themes.png` | feature | `README.md`, `README.de.md` | Alle **neun** eingebauten Themes als 3×3-Raster mit Namen: `kami`, `kogane`, `sumi`, `kairo`, `kurenai` und die vier `crimson`-Modi. Dieselbe Folie in jedem — nur Farbe, Schrift und Akzent unterscheiden sich. |
 | `layouts.png` | feature | `README.md`, `README.de.md` | Alle **neun** Templates als 3×3-Raster mit Namen: `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`, `default`. |
 | `callouts.png` | feature | `README.md`, `README.de.md` | Alle fünf Callout-Typen mit Rahmenfarbe **und** geometrischer Form **und** Label-Wort (WCAG 1.4.1 — nie Farbe allein). |
 | `overflow-warning.png` | feature | `README.md`, `README.de.md` | Fit-or-warn: die Warnzeile `#1 — Content overflows at the legibility floor — condense this slide.` über der rot markierten Folie. Der angeschnittene Text am unteren Folienrand ist **kein Zuschnittfehler**, sondern das `overflow:hidden` der Folie — genau der Zustand, den die Warnung meldet. |
 | `settings.png` | detail | `README.md`, `README.de.md` | Der vollständige Einstellungen-Tab inklusive der Liste aller gültigen Theme-Schlüssel und des KI-Abschnitts. Zu hoch für die Textspalte (H/B 2.05), deshalb als Vorschaubild aus `thumbs/` mit Klick auf die Vollauflösung. |
+
+⚠️ **Die drei Weg-B-Bilder zeigen seit dem 2026-09-20 eine DEUTSCHE Oberfläche** (Entscheidung Johannes bei der Neuaufnahme nach der Theme-Umbenennung). Der Vertrag verlangte bis dahin Englisch, weil `README.md` kanonisch englisch ist; das Umstellen ist app-weit (`obsidian.json` + `localStorage["language"]`) und kostet zwei zusätzliche Neustarts der Instanz, an der der Maintainer arbeitet. Die Abweichung steht hier, damit sie eine Entscheidung bleibt und nicht als Befund wiederkehrt: wer die drei Bilder das nächste Mal gegen eine englische Oberfläche aufnimmt, streicht diesen Absatz.
 
 ## Aufnahme
 
@@ -105,7 +107,7 @@ wertlos"*.
 | **macOS-Vollbild schluckt `setSize`** | `getSize()` meldet die Bildschirmgrösse statt der angeforderten | `setWindowSize` hebt den Vollbildmodus erst auf und meldet eine abgelehnte Grösse. |
 | **Trust-Dialog: die Zustimmung hat keine Klasse** | Der Vault bleibt im eingeschränkten Modus, das Plugin lädt nicht | `mod-cancel` ist die **Ablehnung**; wer auf `mod-cta` prüft und auf „erster Button" zurückfällt, lehnt ab. Über den Text wählen. |
 | **Sprache: `obsidian.json` allein reicht nicht** | Oberfläche bleibt deutsch, obwohl `language: "en"` gesetzt ist | Zusätzlich `localStorage["language"]`, dann Neustart. Beides ist **app-weit** — nach der Aufnahme zurückstellen. |
-| **Settings-Tab ist höher als das Fenster** | Bild endet mitten in den Einstellungen und sieht vollständig aus | `withMetrics(1100, 1900, …)` und bis zum **letzten Kind** klippen. |
+| **Settings-Tab ist höher als das Fenster** | Bild endet mitten in den Einstellungen und sieht vollständig aus, oder unter dem letzten Feld steht ein schwarzer Streifen | `withMetrics(1100, <hoch genug>, …)` und bis zum **letzten Kind** klippen. Die Zahl ist ein Fenster, kein Mass: wächst der Tab (2026-09-20: Abschnitt „Bildfunktionen"), rendert alles unter der simulierten Höhe schwarz. Gegenprobe: mit einer deutlich grösseren Zahl aufnehmen — bleibt die Bildhöhe gleich, war der Ausschnitt inhaltsgebunden. |
 | **Ausschnitt auf den Container statt auf den Inhalt** | Streifen Leere (schwarz) unter dem Bild | Nicht `max(Containerhöhe, Inhalt)` — im simulierten Fenster ist der Container so hoch wie die Simulation. |
 | **`pollUntil` still danebenrufen** | „null Folien" in der Ausgabe, Lauf geht trotzdem weiter | `npm run shots:obsidian` bündelt mit esbuild **ohne `tsc`** — Typfehler im Treiber fallen durch. Signatur ist `(cdp, expression, timeoutMs)`. |
 | **Weissraum-Mass ist auf `kami` blind** | „1 % identische Zeilen" bei sichtbar halbleerer Folie | `kami` trägt eine Papiertextur; keine zwei Zeilen sind byte-identisch. Auf texturierten Themes misst das Mass nichts — hier zählt der Blick. |

@@ -45,7 +45,10 @@ import { buildVault, stagingVaultDir } from "../../tools/obsidian-cdp/vault.js";
 
 const PLUGIN_ID = "slide-deck";
 const VAULT_NAME = "slide-deck";
-const VIEW_TYPE = "slide-deck-preview";
+// Seit dem Hub-Umbau (2026-09-19) liegen Vorschau und Erzeugen als Tabs in EINER View.
+// Der alte Typ "slide-deck-preview" existiert nicht mehr; getLeavesOfType lieferte
+// darauf ein leeres Array, und der Lauf meldete "Vorschau zeigt keine Folien".
+const VIEW_TYPE = "slide-deck-hub";
 const PORT = Number(process.env.OBSIDIAN_DEBUG_PORT ?? 9222);
 const REPO = process.cwd();
 const OUT = join(REPO, "docs/images");
@@ -180,7 +183,9 @@ const SHOTS: Record<string, (cdp: Cdp) => Promise<string>> = {
     console.log(`  ${warn} Warnung(en)`);
     // Bis zum Ende des DECKS klippen, nicht bis zum Ende des Blattes: darunter liegt nur
     // leerer Panel-Grund, und der bestuende jede Formpruefung als "Teil der Oberflaeche".
-    const box = await boxAround(cdp, [".sd-toolbar", ".sd-warnings", ".sd-deck-host"], 8);
+    // Die Hub-Tableiste gehoert mit ins Bild: ohne sie beginnt der Ausschnitt mitten in
+    // ihrer Unterkante und laesst einen angeschnittenen Streifen stehen.
+    const box = await boxAround(cdp, [".okit-hub-tabs", ".sd-toolbar", ".sd-warnings", ".sd-deck-host"], 8);
     if (!box) throw new Error("Vorschau-Blatt nicht sichtbar");
     // Kein Vorschaubild: H/B 0.95 liegt unter der 1.6-Grenze, das Bild wird inline gezeigt.
     return writeShot(cdp, "overflow-warning.png", await capture(cdp, box), SHOT_OPTS);
@@ -201,7 +206,11 @@ async function settingsShot(workspace: Cdp): Promise<string> {
   // Bild mitten in den Einstellungen — vollstaendig aussehend, weil unten sauber abgesetzt,
   // und trotzdem ohne die halbe Seite (hier fehlten Themes-Ordner oeffnen, Theme
   // exportieren, Ordner ausblenden, eigenes CSS).
-  const png = await withMetrics(settings, 1100, 1900, async () => {
+  // Hoehe 1900 reichte bis 2026-09-19; mit dem Abschnitt „Bildfunktionen" ist der Tab
+  // laenger geworden und der Ausschnitt lief unter den simulierten Viewport — sichtbar
+  // als schwarzer Streifen unter dem letzten Feld. Die Zahl ist ein Fenster, kein Mass:
+  // sie muss groesser sein als der Tab, sonst rendert alles darunter leer.
+  const png = await withMetrics(settings, 1100, 3400, async () => {
     await new Promise((r) => setTimeout(r, 700));
     // Bis zum LETZTEN Kind klippen, nicht auf den Container: dessen Box endet am
     // sichtbaren Bereich, der Inhalt geht darueber hinaus.
