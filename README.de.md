@@ -196,6 +196,8 @@ konfigurierten OpenAI-kompatiblen LLM-Endpoint** (Standard `http://localhost:123
 lokales LM Studio). Kein Cloud-Dienst ist beteiligt, solange du den Endpoint nicht auf einen
 richtest.
 
+Ist das Plugin **LLM Endpoint Manager** installiert, kommen die Endpunkte (samt Schlüsseln) stattdessen von ihm: Der Einstellungs-Tab bietet dann eine Endpunkt- und Modellwahl, und deine lokale Liste bleibt als Rückfall erhalten, wenn der Manager aus ist.
+
 - **Erreichbarkeits-Pings und Modell-Listen** werden abgefragt, wenn du den Erzeugen-Dialog oder
   den Einstellungs-Tab öffnest. Das sind automatische Requests an die konfigurierten Endpoints.
 - **Notiz-Inhalte werden nur beim Klick auf „Erzeugen" gesendet.**

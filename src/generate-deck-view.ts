@@ -2,7 +2,7 @@ import { TFile } from "obsidian";
 import type SlideDeckPlugin from "./main";
 import type { DeckGenInput } from "./main";
 import { makeDeckLlmClient } from "./llm-client";
-import { resolveActiveEndpointConfig, type EndpointConfig } from "./vendor/kit/endpoint_config";
+import type { EndpointConfig } from "./vendor/kit/endpoint_config";
 import { frontmatterRange } from "./vendor/deck-core/pure/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./vendor/deck-core/pure/llm/deck-prompt";
 import { estimateTokens, contextOverflow } from "./llm/model-info";
@@ -110,7 +110,8 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     this.model = this.plugin.settings.llmModel;
     const modelInput = modelHolder.createEl("input", { type: "text" });
     modelInput.value = this.model;
-    modelInput.addEventListener("input", () => { this.model = modelInput.value.trim(); this.updateEnabled(); });
+    let modelDirty = false;
+    modelInput.addEventListener("input", () => { modelDirty = true; this.model = modelInput.value.trim(); this.updateEnabled(); });
 
     const hintRow = contentEl.createDiv({ cls: "sd-gen-row" });
     hintRow.createEl("label", { text: t("deck.modal.hint") });
@@ -137,8 +138,11 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     this.refreshSourceBits();
 
     // Resolve endpoint + ping + models (once per open).
-    this.endpoint = await resolveActiveEndpointConfig(this.plugin.settings.llmEndpoints, (ep) => makeDeckLlmClient(ep, "").ping());
+    const source = await this.plugin.resolveEndpoint();
+    this.endpoint = source.config;
     if (this.closed) return;
+    // The source decides the model too (choice → manager default → local llmModel).
+    if (!modelDirty) { this.model = source.model; modelInput.value = source.model; }
     if (!this.endpoint) {
       // No resolved endpoint → nothing left to probe() for a kind; "unknown" carries the
       // shared error visual (circle-x/is-error) while the label stays the specific,
@@ -158,7 +162,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
       if (modelFieldMode(models) === "dropdown") {
         // Keep a saved-but-absent model selectable instead of losing it (UI-STANDARD §8,
         // same rule as the settings model field).
-        const { options, initial } = initialModelSelection(models, this.plugin.settings.llmModel);
+        const { options, initial } = initialModelSelection(models, source.model);
         modelHolder.empty();
         const sel = modelHolder.createEl("select");
         for (const m of options) sel.createEl("option", { value: m, text: m });

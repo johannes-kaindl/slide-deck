@@ -5,10 +5,13 @@ import { revealFolder, writeThemeCss } from "./theme-source";
 import { THEME_ALIASES } from "./vendor/deck-core/pure/presets";
 import { endpointListStrings, renderModelField, renderThinkingRow } from "./ai-settings-ui";
 import { makeDeckLlmClient } from "./llm-client";
+import { ENDPOINT_CALLER } from "./llm/resolve-endpoint";
 import { reasoningHappened } from "./vendor/kit/reasoning";
 import { writeClipboard } from "./vendor/kit/clipboard";
 import { mergeSettings } from "./vendor/kit/settings";
-import { migrateEndpointList, resolveActiveEndpointConfig, type EndpointConfig } from "./vendor/kit/endpoint_config";
+import { migrateEndpointList, type EndpointConfig } from "./vendor/kit/endpoint_config";
+import type { EndpointChoice } from "./vendor/kit/endpoint-source";
+import { buildEndpointSourceSection, findEndpointManager } from "./vendor/kit-obsidian/endpoint-source";
 import { renderSettingDefinitions, settingBodyHost, refreshSettingsTab } from "./vendor/kit-obsidian/settings_walker";
 import { buildEndpointList } from "./vendor/kit-obsidian/endpoint-list";
 import { createModelListCache } from "./vendor/kit/model-list-cache";
@@ -26,6 +29,9 @@ export interface SlideDeckSettings {
   /** Ordered fallback chain; the first reachable one wins. Each row carries its own API key
    *  so local and hosted providers can live in ONE list. */
   llmEndpoints: EndpointConfig[];
+  /** Wahl gegenueber dem LLM Endpoint Manager (Endpunkt + Modell). Leer = automatisch. Nur
+   *  relevant, solange der Manager installiert ist; sonst gilt `llmEndpoints` + `llmModel`. */
+  choice: EndpointChoice;
   llmModel: string;
   llmMaxTokens: number;
   llmTemperature: number;
@@ -37,9 +43,19 @@ export interface SlideDeckSettings {
 export const DEFAULT_SETTINGS: SlideDeckSettings = {
   defaultTheme: "kami", minFontPx: 24, imageScale: 2, customCss: "",
   exportFolder: "Slide-Deck-Export", themesFolder: "Slide-Deck-Themes", hideThemesFolder: true,
-  llmEndpoints: [{ url: "http://localhost:1234" }], llmModel: "", llmMaxTokens: 8192, llmTemperature: 0.3, llmSuppressThinking: true,
+  llmEndpoints: [{ url: "http://localhost:1234" }], choice: {}, llmModel: "", llmMaxTokens: 8192, llmTemperature: 0.3, llmSuppressThinking: true,
   imageSuffixes: {},
 };
+
+/** `choice` kommt aus einer data.json und ist damit untrusted: nur nicht-leere Strings bleiben. */
+function sanitizeChoice(raw: unknown): EndpointChoice {
+  if (raw === null || typeof raw !== "object") return {};
+  const { endpointId, model } = raw as EndpointChoice;
+  return {
+    ...(typeof endpointId === "string" && endpointId ? { endpointId } : {}),
+    ...(typeof model === "string" && model ? { model } : {}),
+  };
+}
 
 /** Merge persisted data over defaults, then migrate `llmEndpoints`: pre-0.7 data.json files
  *  carry a bare `string[]`, current ones an `EndpointConfig[]` — mergeSettings is a shallow,
@@ -49,7 +65,7 @@ export function loadSettings(raw: unknown): SlideDeckSettings {
   const merged = mergeSettings(DEFAULT_SETTINGS, raw);
   // Shallow, type-blind merge: llmEndpoints may still be string[] from an old data.json.
   const rawList = merged.llmEndpoints as unknown as (string | EndpointConfig)[] | undefined;
-  return { ...merged, llmEndpoints: migrateEndpointList(undefined, rawList) };
+  return { ...merged, llmEndpoints: migrateEndpointList(undefined, rawList), choice: sanitizeChoice(merged.choice) };
 }
 
 /** Migrate a persisted 0.4.x `defaultTheme` (e.g. "default"/"dark") to its Nordstern successor
@@ -153,8 +169,32 @@ export class SlideDeckSettingTab extends PluginSettingTab {
   private activeUrl: string | null = null;
 
   private renderEndpoints(setting: Setting): void {
+    const host = this.hostFor(setting);
+    buildEndpointSourceSection({
+      app: this.app, containerEl: host, capability: "chat", caller: ENDPOINT_CALLER,
+      choice: () => this.plugin.settings.choice,
+      setChoice: async (c) => { this.plugin.settings.choice = c; await this.plugin.saveSettings(); await this.plugin.resolveEndpoint(); },
+      local: () => this.plugin.settings.llmEndpoints,
+      strings: {
+        managed: t("deck.settings.source.managed"), managedDesc: t("deck.settings.source.managedDesc"),
+        openManager: t("deck.settings.source.openManager"), pickEndpoint: t("deck.settings.source.pickEndpoint"),
+        automatic: t("deck.settings.source.automatic"), model: t("deck.settings.model.name"),
+        importLocal: t("deck.settings.source.importLocal"),
+        imported: (r) => t("deck.settings.source.imported", String(r.added.length), String(r.merged.length)),
+        importFailed: t("deck.settings.source.importFailed"),
+        modelHint: (key) => (key ? t(`deck.settings.model.hint.${key}`) : ""),
+        savedSuffix: t("deck.settings.model.saved"), refreshModels: t("deck.settings.model.refresh"),
+        saveFailed: t("deck.settings.endpoint.saveFailed"),
+      },
+      renderLocalList: () => this.renderLocalEndpointList(host),
+      rerender: () => this.refreshUi(),
+    });
+  }
+
+  /** The local list editor — shown only while no LLM Endpoint Manager is installed. */
+  private renderLocalEndpointList(host: HTMLElement): void {
     buildEndpointList({
-      containerEl: this.hostFor(setting),
+      containerEl: host,
       label: t("deck.settings.endpoints.name"),
       desc: t("deck.settings.endpoints.desc"),
       placeholder: ENDPOINT_PRESETS[0].url,
@@ -185,6 +225,10 @@ export class SlideDeckSettingTab extends PluginSettingTab {
   }
 
   private renderModel(setting: Setting): void {
+    // With the manager, the model is chosen inside the endpoint section (choice.model). Decided
+    // HERE, not while building the definitions: Obsidian >= 1.13 may cache that list across the
+    // manager appearing or vanishing, while render() runs on every open of the tab.
+    if (findEndpointManager(this.app)) { setting.settingEl.addClass("sd-setting-managed"); return; }
     renderModelField(this.hostFor(setting), {
       getModel: () => this.plugin.settings.llmModel,
       setModel: async (m) => { this.plugin.settings.llmModel = m.trim(); await this.plugin.saveSettings(); },
@@ -201,7 +245,7 @@ export class SlideDeckSettingTab extends PluginSettingTab {
 
   private renderThinking(setting: Setting): void {
     renderThinkingRow(this.hostFor(setting), {
-      getModel: () => this.plugin.settings.llmModel,
+      getModel: () => this.effectiveModel(),
       getSuppress: () => this.plugin.settings.llmSuppressThinking,
       setSuppress: async (v) => { this.plugin.settings.llmSuppressThinking = v; await this.plugin.saveSettings(); },
       testSuppress: (model) => this.runSuppressTest(model),
@@ -210,7 +254,13 @@ export class SlideDeckSettingTab extends PluginSettingTab {
   }
 
   private async activeEndpoint(): Promise<EndpointConfig | null> {
-    return resolveActiveEndpointConfig(this.plugin.settings.llmEndpoints, (ep) => makeDeckLlmClient(ep, "").ping());
+    return (await this.plugin.resolveEndpoint()).config;
+  }
+
+  /** Model the endpoint source resolves to — with the manager active the global `llmModel` field
+   *  is not shown, so the thinking row must follow the resolved one. */
+  private effectiveModel(): string {
+    return findEndpointManager(this.app) ? this.plugin.activeModel : this.plugin.settings.llmModel;
   }
 
   /** One real, minimal call with suppression on: did the model think anyway?

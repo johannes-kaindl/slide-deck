@@ -1026,6 +1026,103 @@ const einstellungen: Section = {
   },
 };
 
+/** E — Endpunkt-Quelle (Welle 8): ist der LLM Endpoint Manager installiert, kommen Endpunkt und
+ *  Modell von ihm; sonst gilt die lokale Liste. Der Manager wird als FAKE-API in den Plugin-Slot
+ *  gelegt (Form-Pruefung `isLlmEndpointManagerApi`), mit einer URL, die die lokale Liste nicht
+ *  traegt — zwei verschiedene Werte im Protokoll sind der Beleg, dass gemessen wurde. */
+const MGR_SLOT = "llm-endpoint-manager";
+const MGR_URL = "http://127.0.0.1:9311";
+const MGR_MODEL = "sd-fake-modell";
+const endpunktQuelle: Section = {
+  key: "quelle",
+  title: "E · Endpunkt-Quelle (LLM Endpoint Manager)",
+  async run(cdp, ctx) {
+    const installiere = (): Promise<unknown> => cdp.evaluate(`
+      const plugins = app.plugins.plugins;
+      if (!("__sdVorherMgr" in globalThis)) globalThis.__sdVorherMgr = plugins[${JSON.stringify(MGR_SLOT)}];
+      const eintrag = { id: "fake1", label: "Fake-Endpunkt", defaultModel: ${JSON.stringify(MGR_MODEL)} };
+      const aufgeloest = { id: "fake1", label: "Fake-Endpunkt", config: { url: ${JSON.stringify(MGR_URL)} }, defaultModel: ${JSON.stringify(MGR_MODEL)} };
+      plugins[${JSON.stringify(MGR_SLOT)}] = { api: {
+        version: 1, list: () => [eintrag], get: () => eintrag,
+        resolve: async () => aufgeloest, materialize: async () => aufgeloest,
+        models: async () => [${JSON.stringify(MGR_MODEL)}],
+        importEndpoints: async () => ({ added: [], merged: [], skipped: [] }), on: () => () => {},
+      } };
+      return true;
+    `);
+    const entferne = (): Promise<unknown> => cdp.evaluate(`
+      const vorher = globalThis.__sdVorherMgr;
+      if (vorher === undefined) delete app.plugins.plugins[${JSON.stringify(MGR_SLOT)}];
+      else app.plugins.plugins[${JSON.stringify(MGR_SLOT)}] = vorher;
+      delete globalThis.__sdVorherMgr;
+      return true;
+    `);
+    const aufloesung = (): Promise<{ kind: string; url: string | null; model: string }> => cdp.evaluate(`
+      const r = await app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].resolveEndpoint();
+      return { kind: r.kind, url: r.config ? r.config.url : null, model: r.model };
+    `);
+    const eigeneEndpunkte = await cdp.evaluate<{ url: string }[]>(`
+      return app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.llmEndpoints;
+    `);
+    const lokaleUrl = eigeneEndpunkte[0]?.url ?? "";
+
+    await installiere();
+    let mitManager: OffenerTab | null = null;
+    try {
+      mitManager = await oeffneTab(cdp, ctx);
+      const text = mitManager.tab.text;
+      const erwartet = [STRINGS_EN["deck.settings.source.managed"], STRINGS_DE["deck.settings.source.managed"]];
+      const zeigtBaustein = erwartet.some((e) => text.includes(e));
+      record(
+        "E1 Manager an: Settings zeigen den Manager-Baustein statt der lokalen Liste",
+        mitManager.tab.gefunden && zeigtBaustein && mitManager.tab.endpunkte === 0,
+        `Baustein ${zeigtBaustein ? "da" : "FEHLT"} · ${mitManager.tab.endpunkte} lokale Zeile(n) (.okit-ep-row) sichtbar`,
+      );
+      // Die globale Modell-Zeile darf mit Manager nicht sichtbar sein (das Modell waehlt der
+      // Baustein). Gegenprobe steht in E3: dort MUSS sie sichtbar sein.
+      const modellZeile = (ziel: Cdp): Promise<{ da: number; sichtbar: number }> => ziel.evaluate(`
+        const beschreibungen = ${JSON.stringify([STRINGS_EN["deck.settings.model.desc"], STRINGS_DE["deck.settings.model.desc"]])};
+        const zeilen = [...document.querySelectorAll(".vertical-tab-content .setting-item")]
+          .filter((z) => beschreibungen.some((b) => (z.querySelector(".setting-item-description")?.textContent ?? "").includes(b)));
+        return { da: zeilen.length, sichtbar: zeilen.filter((z) => z.offsetParent !== null).length };
+      `);
+      const m1 = await modellZeile(mitManager.ziel);
+      record(
+        "E1b Manager an: globale Modell-Zeile ist nicht sichtbar",
+        m1.da > 0 && m1.sichtbar === 0,
+        `${m1.da} Zeile(n) im DOM, ${m1.sichtbar} sichtbar`,
+      );
+      const r = await aufloesung();
+      record(
+        "E2 Manager an: die Aufloesung nimmt Manager-Endpunkt und Default-Modell",
+        r.kind === "manager" && r.url === MGR_URL && r.model === MGR_MODEL,
+        `${r.kind} · ${r.url} · Modell ${r.model} (lokal waere ${lokaleUrl})`,
+      );
+    } finally {
+      if (mitManager) await schliesseTab(cdp, mitManager);
+      await entferne();
+    }
+
+    const ohne = await oeffneTab(cdp, ctx);
+    try {
+      const m3 = await ohne.ziel.evaluate<{ sichtbar: number }>(`
+        const beschreibungen = ${JSON.stringify([STRINGS_EN["deck.settings.model.desc"], STRINGS_DE["deck.settings.model.desc"]])};
+        return { sichtbar: [...document.querySelectorAll(".vertical-tab-content .setting-item")]
+          .filter((z) => beschreibungen.some((b) => (z.querySelector(".setting-item-description")?.textContent ?? "").includes(b)) && z.offsetParent !== null).length };
+      `);
+      record("E3b Manager aus: globale Modell-Zeile ist wieder sichtbar (Gegenprobe zu E1b)", m3.sichtbar === 1, `${m3.sichtbar} sichtbar`);
+      const r = await aufloesung();
+      record(
+        "E3 Manager aus: lokale Liste in Settings und Aufloesung (Gegenprobe zu E1/E2)",
+        ohne.tab.gefunden && ohne.tab.endpunkte > 0 && r.kind === "local" && r.url !== MGR_URL,
+        `${ohne.tab.endpunkte} lokale Zeile(n) · ${r.kind} · ${r.url}`,
+      );
+    } finally {
+      await schliesseTab(cdp, ohne);
+    }
+  },
+};
+
 const ORDNER_SEL = (pfad: string): string =>
   JSON.stringify(`.nav-folder-title[data-path=${JSON.stringify(pfad)}]`);
 
@@ -1493,7 +1590,7 @@ const bildplaetze: Section = {
 /** M steht VOR dem Export, nicht dahinter: der Export-Abschnitt setzt eine Probe-Regel ins
  *  `customCss` und raeumt sie erst im `finally` des Laufs weg. Liefe M danach, faerbte diese
  *  Regel in die Messung hinein. N steht aus demselben Grund davor. */
-const SECTIONS: Section[] = [vorschau, mermaid, bildplaetze, einstellungen, explorer, exportSektion];
+const SECTIONS: Section[] = [vorschau, mermaid, bildplaetze, einstellungen, endpunktQuelle, explorer, exportSektion];
 
 // --- Lauf --------------------------------------------------------------------
 
@@ -1561,6 +1658,11 @@ async function main(): Promise<void> {
           if (globalThis.__sdEchterVorbestand === undefined) delete app.plugins.plugins["local-image-generator"];
           else app.plugins.plugins["local-image-generator"] = globalThis.__sdEchterVorbestand;
           delete globalThis.__sdEchterVorbestand;
+        }
+        if ("__sdVorherMgr" in globalThis) {
+          if (globalThis.__sdVorherMgr === undefined) delete app.plugins.plugins["llm-endpoint-manager"];
+          else app.plugins.plugins["llm-endpoint-manager"] = globalThis.__sdVorherMgr;
+          delete globalThis.__sdVorherMgr;
         }
         for (const pfad of ${JSON.stringify(erzeugtePfade)}) {
           const f = app.vault.getAbstractFileByPath(pfad);

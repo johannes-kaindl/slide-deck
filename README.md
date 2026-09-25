@@ -270,6 +270,8 @@ No cloud service is involved unless you point the endpoint at one — the settin
 **ordered list of endpoints**, tried in order, and each row can carry its own optional API key,
 so a local server and a hosted provider (e.g. OpenRouter) can sit side by side in the same list.
 
+If the **LLM Endpoint Manager** plugin is installed, the endpoints (and their keys) come from it instead: the settings tab then offers an endpoint and model choice, and your local list stays as a fallback for when the manager is off.
+
 - **Reachability pings and model lists** are requested when you open the generation dialog or
   the settings tab. These are automatic requests to the configured endpoint(s).
 - **Note contents are sent only when you press "Generate".**

@@ -105,14 +105,48 @@ relayer() { # relayer <vendored-file>
   mv "$f.tmp" "$f"
 }
 
+# uebernommen aus lingotuner/tools/sync-kit.sh, 2026-09-25
+# Zweite Fallgruppe: ein PURE_MODULE, das selbst aus obsidian-kit/src/pure/ stammt, aber einen
+# Querimport auf code-kit traegt (dessen eigene Vendor-Kopie unter obsidian-kit/src/vendor/code-kit/
+# liegt). Hier landen BEIDE Seiten flach nebeneinander in src/vendor/kit/ — der Zielpfad ist also
+# NICHT ../kit/ (das waere fuer kit-obsidian/, das eine Ebene hoeher liegt), sondern ./ (Geschwisterdatei
+# in derselben Ablage). Anlass: endpoint-source.ts importiert endpoint_config aus
+# ../vendor/code-kit/pure/ (obsidian-kit-Perspektive) — Praezedenz: llm-endpoint-manager/tools/sync-kit.sh.
+relayer_pure() { # relayer_pure <vendored-file>
+  f=$1
+  case "$f" in
+    src/vendor/kit/*) ;;
+    *) echo "sync-kit: $f liegt nicht in src/vendor/kit/ — relayer_pure gilt nur fuer die pure-Schicht" >&2; exit 1 ;;
+  esac
+
+  sed -e 's|\(["'"'"']\)\.\./vendor/code-kit/pure/|\1./|g' \
+      -e 's|\(["'"'"']\)\.\./vendor/code-kit/web/|\1./|g' "$f" > "$f.tmp"
+  if cmp -s "$f" "$f.tmp"; then rm -f "$f.tmp"; return 0; fi   # nichts zu tun, KEINE Notiz
+  mv "$f.tmp" "$f"
+
+  if grep -qE '\.\./vendor/code-kit/' "$f"; then
+    echo "sync-kit: unaufgeloester Kit-Querimport in $f — Muster pruefen" >&2; exit 1
+  fi
+
+  for dep in $(sed -n 's|.*from ["'"'"']\./\([A-Za-z0-9_/-]*\)["'"'"'].*|\1|p' "$f" | sort -u); do
+    [ -f "src/vendor/kit/$dep.ts" ] || {
+      echo "sync-kit: $f importiert ./$dep, aber src/vendor/kit/$dep.ts fehlt — mitvendorieren" >&2; exit 1
+    }
+  done
+
+  note="// ONE mechanical deviation from verbatim: kit-internal import (../vendor/code-kit/{pure,web}/) → ./ (flat vendor layout, sibling module in src/vendor/kit/); reproduce on every re-vendor, nothing else may differ."
+  printf '%s\n' "$note" | cat - "$f" > "$f.tmp"
+  mv "$f.tmp" "$f"
+}
+
 mkdir -p src/vendor/kit src/vendor/kit-obsidian
 
 # Eintraege als "lokalname" oder "lokalname=quellname", wenn der lokale Dateiname (historisch,
 # vor diesem Skript entstanden) vom Kit-Quellnamen abweicht. Einzige bekannte Abweichung:
 # think.ts (lokal) <- think-splitter.ts (Quelle) — s. AGENTS.md Gotchas, nicht mechanisch
 # angeglichen, um die bestehenden Importe (`./vendor/kit/think`) nicht anzufassen.
-PURE_MODULE="clipboard sse endpoint endpoint_config endpoint_diagnostics model-choice model-context model-list-cache reasoning think=think-splitter timeout error_body settings"
-OBSIDIAN_MODULE="endpoint-list folder-suggest hub model-picker settings_walker stream-area"
+PURE_MODULE="clipboard sse endpoint endpoint_config endpoint_diagnostics model-choice model-context model-list-cache reasoning think=think-splitter timeout error_body settings sampling-profiles endpoint-source"
+OBSIDIAN_MODULE="endpoint-list folder-suggest hub model-picker settings_walker stream-area endpoint-source"
 
 # Die "vendored"-Liste der VENDOR.json wird aus derselben Liste erzeugt, aus der kopiert wird.
 # Zwei Orte fuer dieselbe Wahrheit driften (CORE-META-16) — und zwar leise: die Datei, in der
@@ -140,6 +174,9 @@ for m in $PURE_MODULE; do
   ver=$(printf '%s' "$fund" | cut -d'|' -f5)
   hole "$repo" "$ref" "$rel" "src/vendor/kit/$lokalname.ts" || {
     echo "FEHLER: $ref:$rel nicht lesbar in $repo" >&2; exit 2; }
+  # endpoint-source.ts (obsidian-kit/src/pure/) traegt einen Querimport auf code-kit — auf die
+  # flache Ablage umschreiben (Praezedenz: lingotuner/tools/sync-kit.sh).
+  case "$lokalname" in endpoint-source) relayer_pure "src/vendor/kit/$lokalname.ts" ;; esac
   stamp "src/vendor/kit/$lokalname.ts" "$rel" "$quelle" "$ver"
   echo "vendored $quelle@$ver/$rel -> src/vendor/kit/$lokalname.ts"
 done
@@ -149,7 +186,7 @@ for m in $OBSIDIAN_MODULE; do
   quellname=${m#*=}
   hole "$KIT" "$VER" "src/obsidian/$quellname.ts" "src/vendor/kit-obsidian/$lokalname.ts" || {
     echo "FEHLER: $VER:src/obsidian/$quellname.ts nicht lesbar" >&2; exit 2; }
-  case "$lokalname" in endpoint-list|model-picker) relayer "src/vendor/kit-obsidian/$lokalname.ts" ;; esac
+  case "$lokalname" in endpoint-list|model-picker|endpoint-source) relayer "src/vendor/kit-obsidian/$lokalname.ts" ;; esac
   stamp "src/vendor/kit-obsidian/$lokalname.ts" "src/obsidian/$quellname.ts"
   echo "vendored obsidian-kit@$VER/obsidian/$quellname.ts -> src/vendor/kit-obsidian/$lokalname.ts"
 done

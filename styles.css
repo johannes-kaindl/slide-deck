@@ -355,3 +355,6 @@
   max-height: 12em; overflow-y: auto; white-space: pre-wrap;
   background: var(--background-secondary); padding: var(--size-4-2);
 }
+
+/* Globale Modell-Zeile: mit LLM Endpoint Manager waehlt der Endpunkt-Baustein das Modell. */
+.sd-setting-managed { display: none; }

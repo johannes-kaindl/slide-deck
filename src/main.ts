@@ -7,6 +7,9 @@ import { ThemeStore } from "./theme-registry";
 import { buildHideCss, normalizeFolder } from "./folder-hide";
 import { runGenerateDeck, type GenState, type GenerateResult, type GenerationHandle } from "./generate-deck";
 import { makeDeckLlmClient } from "./llm-client";
+import { resolveDeckEndpoint } from "./llm/resolve-endpoint";
+import type { EndpointSourceResult } from "./vendor/kit/endpoint-source";
+import { findEndpointManager } from "./vendor/kit-obsidian/endpoint-source";
 import type { EndpointConfig } from "./vendor/kit/endpoint_config";
 import { buildDeckPrompt } from "./vendor/deck-core/pure/llm/deck-prompt";
 import { getAuthoringContract } from "./vendor/deck-core/pure/constraints/contract";
@@ -69,6 +72,21 @@ export default class SlideDeckPlugin extends Plugin {
   }
 
   async saveSettings(): Promise<void> { await this.saveData(this.settings); }
+
+  /** Model the last resolveEndpoint() picked (choice.model → manager default → llmModel).
+   *  Read by the settings tab, which must not resolve on every paint. */
+  public activeModel = "";
+
+  /** EINZIGER Weg zum Endpunkt: Manager zuerst (bei JEDEM Aufruf frisch gefunden, nie
+   *  gecacht — das Plugin kann jederzeit deaktiviert werden), sonst die lokale Liste. */
+  async resolveEndpoint(): Promise<EndpointSourceResult> {
+    const r = await resolveDeckEndpoint(
+      this.settings, findEndpointManager(this.app),
+      (ep) => makeDeckLlmClient(ep, "").ping(),
+    );
+    this.activeModel = r.model;
+    return r;
+  }
 
   async runSlot(source: string, ctx: MarkdownPostProcessorContext, onState: (s: CardState) => void): Promise<void> {
     const api = readImageApi(this.app);

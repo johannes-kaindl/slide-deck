@@ -6,6 +6,9 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **Endpunkte kommen vom LLM Endpoint Manager, wenn er installiert ist** (Kit `endpoint-source`, `obsidian-kit` 0.41.1, `code-kit` 0.7.0 neu vendoriert). Der Manager hat Vorrang, die lokale Endpunkt-Liste bleibt als Rückfall und ist unverändert, solange der Manager fehlt oder aus ist. Sichtbare Folgen: (1) Mit Manager zeigt der Einstellungs-Tab statt der lokalen Endpunkt-Liste und der globalen Modell-Zeile den Baustein „Endpunkte kommen vom LLM Endpoint Manager“ (Endpunkt-Wahl, Modell-Wahl, Import der lokalen Endpunkte in den Manager); die lokale Liste und `llmModel` bleiben gespeichert, nur ausgeblendet. (2) Das Modell der Generate-Ansicht startet dann mit der Manager-Wahl bzw. dem Standardmodell des Endpunkts statt mit `llmModel`. (3) Neues Setting `choice` (`endpointId`, `model`) hält die Wahl gegenüber dem Manager; alte `data.json` ohne `choice` laden unverändert. (4) Meldet der Manager keinen Endpunkt, gibt es keinen lokalen Rückfall — die Generate-Ansicht zeigt „kein Endpunkt“.
+
 ## [0.10.1] — 2026-09-24
 
 ### Added
