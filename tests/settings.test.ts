@@ -28,7 +28,7 @@ function makeFakePlugin(settings: SlideDeckSettings) {
 
 function controlItems(tab: SlideDeckSettingTab) {
   const defs = tab.getSettingDefinitions() as Array<{ type: string; items: any[] }>;
-  const items = defs.flatMap((g) => { expect(g.type).toBe("group"); return g.items; });
+  const items = defs.slice(1).flatMap((g) => { expect(g.type).toBe("group"); return g.items; });
   return items.filter((i) => i && typeof i === "object" && "control" in i && i.control) as Array<{ control: { key: string; type: string } }>;
 }
 
@@ -134,5 +134,56 @@ describe("migrateLegacyThemeKeys", () => {
     const out = migrateLegacyThemeKeys(s);
     expect(s.defaultTheme).toBe("dark");
     expect(out).not.toBe(s);
+  });
+});
+
+// UI-STANDARD §8 „Hilfe-Zeile (Settings)": erstes Element, „Open documentation" auf den Doku-Index
+// und ein bug-Knopf auf die Issues. Unter Obsidian >= 1.13 zaehlt nur diese Liste — display()
+// wird nie gerufen —, deshalb ist die Reihenfolge hier zu pruefen, nicht im Fallback.
+describe("SlideDeckSettingTab — Hilfe-Zeile", () => {
+  const DOCS = "https://github.com/johannes-kaindl/slide-deck/blob/main/docs/README.md";
+  const ISSUES = "https://github.com/johannes-kaindl/slide-deck/issues";
+  const makeTab = () => new SlideDeckSettingTab({} as any, makeFakePlugin({ ...DEFAULT_SETTINGS }).plugin as any);
+
+  it("steht als ERSTES Element, vor jeder Gruppe", () => {
+    const first = makeTab().getSettingDefinitions()[0] as any;
+    expect(first.type).toBeUndefined();
+    expect(first.items).toBeUndefined();
+    expect(first.name).toBe("Help");
+    expect(typeof first.render).toBe("function");
+  });
+
+  it("oeffnet mit dem Text-Knopf den Doku-Index und mit dem bug-Knopf die Issues", () => {
+    const opened: string[] = [];
+    vi.stubGlobal("window", { open: (url: string) => { opened.push(url); } });
+    try {
+      const first = makeTab().getSettingDefinitions()[0] as any;
+      const rec: { text?: string; icon?: string; tip?: string; docsClick?: () => void; bugClick?: () => void } = {};
+      const setting: any = {
+        setName() { return setting; },
+        setDesc() { return setting; },
+        addButton(cb: (b: any) => void) {
+          const b = { setButtonText(t: string) { rec.text = t; return b; }, onClick(f: () => void) { rec.docsClick = f; return b; } };
+          cb(b); return setting;
+        },
+        addExtraButton(cb: (b: any) => void) {
+          const b = {
+            setIcon(i: string) { rec.icon = i; return b; },
+            setTooltip(t: string) { rec.tip = t; return b; },
+            onClick(f: () => void) { rec.bugClick = f; return b; },
+          };
+          cb(b); return setting;
+        },
+      };
+      first.render(setting);
+      expect(rec.text).toBe("Open documentation");
+      expect(rec.icon).toBe("bug");
+      expect(rec.tip).toBe("Report an issue");
+      rec.docsClick?.();
+      rec.bugClick?.();
+      expect(opened).toEqual([DOCS, ISSUES]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

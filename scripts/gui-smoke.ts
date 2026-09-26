@@ -44,7 +44,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   Cdp,
@@ -56,6 +56,7 @@ import {
   setPluginSetting,
 } from "../../tools/obsidian-cdp/cdp.js";
 import { requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
+import { capture } from "../../tools/obsidian-cdp/shot.js";
 // Das Woerterbuch selbst, nicht eine Kopie seiner Form: daraus kommen sowohl die exakten
 // Schluessel als auch die Praefix-Liste fuer B2. Eine im Treiber gepflegte Musterliste waere
 // beim naechsten neuen Namensraum still blind — und genau diese Sorte Blindheit misst B2.
@@ -964,6 +965,23 @@ const einstellungen: Section = {
       tab.endpunkte > 0,
       tab.endpunkte > 0 ? `${tab.endpunkte} Zeile(n) (.okit-ep-row)` : "keine .okit-ep-row im Tab",
     );
+
+    // B3b: Hilfe-Zeile (UI-STANDARD §8) ist die erste gezeichnete Zeile, mit Text-Knopf und bug-Icon.
+    // Geklickt wird nicht — ein Klick oeffnet den System-Browser; die URLs prueft der Unit-Test.
+    const hilfe = await offen.ziel.evaluate<{ name: string; knopf: boolean; bug: boolean } | null>(`
+      const c = document.querySelector(".vertical-tab-content");
+      const z = c && c.querySelector(".setting-item");
+      if (!z) return null;
+      const n = z.querySelector(".setting-item-name");
+      return { name: n ? n.textContent : "", knopf: Boolean(z.querySelector("button")), bug: Boolean(z.querySelector(".clickable-icon")) };
+    `);
+    record(
+      "B3b Hilfe-Zeile ist die erste Zeile im Einstellungs-Tab",
+      hilfe !== null && /^(Help|Hilfe)$/.test(hilfe.name) && hilfe.knopf && hilfe.bug,
+      JSON.stringify(hilfe),
+    );
+    const shotDir = process.env.SMOKE_SHOT_DIR;
+    if (shotDir) writeFileSync(`${shotDir}/hilfe-zeile.png`, await capture(offen.ziel));
 
     await schliesseTab(cdp, offen);
 

@@ -23,9 +23,14 @@ CODE_KIT="${CODE_KIT_DIR:-../../libs/code-kit}"
 # CORE-META-22: gelesen wird aus einer FESTEN REF, nicht aus dem Arbeitsstand des
 # Nachbar-Repos. Ein `cp` aus dessen Worktree koppelt dieses Repo an einen fremden HEAD.
 # Default ist die package.json-Version der Quelle; ein Upgrade ist eine BEWUSSTE Handlung.
-VER="${KIT_REF:-$(node -p "require('$KIT/package.json').version")}"
-CODE_VER="${CODE_KIT_REF:-$(node -p "require('$CODE_KIT/package.json').version")}"
-for paar in "$KIT|$VER" "$CODE_KIT|$CODE_VER"; do
+# Feste Default-Pins (Absicht, wie epub-exporter): ein Lauf ohne Variablen reproduziert den Stand,
+# statt still auf den Kit-Arbeitsstand zu heben. Heben = KIT_REF/CODE_KIT_REF setzen, danach npm run gate.
+VER="${KIT_REF:-0.41.1}"
+# Zweiter Pin, ebenfalls Absicht: help-setting.ts (Hilfe-Zeile, UI-STANDARD §8) kam mit Kit 0.43.0 und
+# haengt an keinem anderen Modul — die uebrigen Module behalten ihren Pin (Vorlage: epub-exporter 877eb2c).
+KIT_HELP_REF="${KIT_HELP_REF:-0.43.0}"
+CODE_VER="${CODE_KIT_REF:-0.7.0}"
+for paar in "$KIT|$VER" "$KIT|$KIT_HELP_REF" "$CODE_KIT|$CODE_VER"; do
   repo=${paar%%|*}; ref=${paar##*|}
   git -C "$repo" rev-parse --verify --quiet "$ref^{commit}" >/dev/null || {
     echo "FEHLER: Ref '$ref' existiert nicht in $repo." >&2
@@ -34,6 +39,7 @@ for paar in "$KIT|$VER" "$CODE_KIT|$CODE_VER"; do
   }
 done
 SHA=$(git -C "$KIT" rev-parse --short "$VER^{commit}")
+HELP_SHA=$(git -C "$KIT" rev-parse --short "$KIT_HELP_REF^{commit}")
 
 # Ein pures Modul kann in drei Schichten liegen. Statt fester Zuordnung wird gesucht — die
 # naechste Umschichtung soll dieses Skript nicht wieder toeten, sondern nur einen anderen
@@ -191,6 +197,14 @@ for m in $OBSIDIAN_MODULE; do
   echo "vendored obsidian-kit@$VER/obsidian/$quellname.ts -> src/vendor/kit-obsidian/$lokalname.ts"
 done
 
+# help-setting.ts: eigener Pin (KIT_HELP_REF), Existenz in genau dieser Ref, nicht im Arbeitsstand.
+git -C "$KIT" cat-file -e "$KIT_HELP_REF:src/obsidian/help-setting.ts" 2>/dev/null || {
+  echo "FEHLER: help-setting.ts fehlt in $KIT@$KIT_HELP_REF (kam mit Kit 0.43.0)." >&2; exit 2; }
+hole "$KIT" "$KIT_HELP_REF" "src/obsidian/help-setting.ts" "src/vendor/kit-obsidian/help-setting.ts" || {
+  echo "FEHLER: $KIT_HELP_REF:src/obsidian/help-setting.ts nicht lesbar" >&2; exit 2; }
+stamp "src/vendor/kit-obsidian/help-setting.ts" "src/obsidian/help-setting.ts" obsidian-kit "$KIT_HELP_REF"
+echo "vendored obsidian-kit@$KIT_HELP_REF/obsidian/help-setting.ts"
+
 cat > src/vendor/kit/VENDOR.json <<JSON
 {
   "source": "obsidian-kit + code-kit",
@@ -206,7 +220,7 @@ cat > src/vendor/kit-obsidian/VENDOR.json <<JSON
   "source": "obsidian-kit",
   "version": "$VER",
   "sha": "$SHA",
-  "vendored": "$(liste "$OBSIDIAN_MODULE")",
+  "vendored": "$(liste "$OBSIDIAN_MODULE"), help-setting.ts (Kit $KIT_HELP_REF, $HELP_SHA)",
   "note": "Verbatim snapshot. Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien. endpoint-list.ts und model-picker.ts tragen EINE mechanische Abweichung: kit-interne Importe von ../pure/* sind auf ../kit/* umgeschrieben (Vendor-Layout). Bei jedem Re-Vendoring reproduzieren; sonst darf nichts abweichen."
 }
 JSON

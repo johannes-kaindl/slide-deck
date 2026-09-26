@@ -7,6 +7,7 @@ import { endpointListStrings, renderModelField, renderThinkingRow } from "./ai-s
 import { makeDeckLlmClient } from "./llm-client";
 import { ENDPOINT_CALLER } from "./llm/resolve-endpoint";
 import { reasoningHappened } from "./vendor/kit/reasoning";
+import { githubHelpUrls, helpSettingDefinition } from "./vendor/kit-obsidian/help-setting";
 import { writeClipboard } from "./vendor/kit/clipboard";
 import { mergeSettings } from "./vendor/kit/settings";
 import { migrateEndpointList, type EndpointConfig } from "./vendor/kit/endpoint_config";
@@ -85,7 +86,19 @@ export class SlideDeckSettingTab extends PluginSettingTab {
   getSettingDefinitions(): SettingDefinitionItem[] {
     const themes = this.plugin.themeStore.getThemes();
     const themeOptions = Object.fromEntries(themes.map((e) => [e.key, e.label ?? e.key]));
+    // Hilfe-Zeile (UI-STANDARD §8): ERSTES Element, keine Gruppe. Unter 1.13 ruft der Host display()
+    // nie; der Walker-Fallback zeichnet sie darunter von selbst.
+    const help = helpSettingDefinition({
+      ...githubHelpUrls("slide-deck"),
+      texts: {
+        name: t("settings.help.name"),
+        desc: t("settings.help.desc"),
+        openDocs: t("settings.help.openDocs"),
+        reportIssue: t("settings.help.reportIssue"),
+      },
+    });
     return [
+      help,
       {
         type: "group",
         heading: t("settings.heading"),
