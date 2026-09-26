@@ -6,6 +6,13 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **The chat path runs through the Kit chat client** (`createChatClient` from `obsidian-kit` 0.43.0: XHR stream, `requestUrl` as the fallback without a stream) instead of the plugin's own `llm-client`/`llm-stream`. Visible consequences: (1) **A silent server now ends the generation**: after 2 minutes without data, or 10 minutes before the first byte (model loading, long prompt) — before, the request waited forever. (2) **HTTP errors carry the reason**: instead of “stream HTTP 400” the message is the server's own text (or “HTTP 502” if the body is empty), shown as “Server error: …”; new sentences for “no answer from the endpoint”, “endpoint not reachable” and “input too long for the model's context window” (English/German). (3) The CORS notice now appears whenever the answer did not arrive as a stream, including a server that ignores `stream: true` and returns a full completion. Unchanged: message form, `temperature`/`max_tokens`, suppress-thinking parameters, Stop (abort), the retry after an invalid deck, `finish_reason: length` with or without text.
+- **Kit pin `obsidian-kit` 0.43.0** (was 0.41.1): `endpoint-list` and `stream-area` CSS in `styles.css` brought to the 0.43.0 state (child selectors for the endpoint row, new classes for the key hint and extra row, hidden empty stream slots). `chat-client`, `chat-transport` and `clock` are new; `think.ts` is now `think-splitter.ts` as in the Kit.
+
+### Added
+- GUI-Smoke section G (`--with-model`): a deck generation against a real endpoint (streamed in pieces, Stop within seconds, a wrong path answered with HTTP 200 + error body becomes a message); endpoint and model via `SD_SMOKE_ENDPOINT` / `SD_SMOKE_MODEL`.
+
 ## [0.11.0] — 2026-09-26
 
 ### Added

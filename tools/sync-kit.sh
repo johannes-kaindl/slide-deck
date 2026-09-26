@@ -25,7 +25,7 @@ CODE_KIT="${CODE_KIT_DIR:-../../libs/code-kit}"
 # Default ist die package.json-Version der Quelle; ein Upgrade ist eine BEWUSSTE Handlung.
 # Feste Default-Pins (Absicht, wie epub-exporter): ein Lauf ohne Variablen reproduziert den Stand,
 # statt still auf den Kit-Arbeitsstand zu heben. Heben = KIT_REF/CODE_KIT_REF setzen, danach npm run gate.
-VER="${KIT_REF:-0.41.1}"
+VER="${KIT_REF:-0.43.0}"   # Welle 11 (2026-09-26): 0.41.1 → 0.43.0 (chat-client/chat-transport/clock, endpoint-list-CSS, stream-area-CSS)
 # Zweiter Pin, ebenfalls Absicht: help-setting.ts (Hilfe-Zeile, UI-STANDARD §8) kam mit Kit 0.43.0 und
 # haengt an keinem anderen Modul — die uebrigen Module behalten ihren Pin (Vorlage: epub-exporter 877eb2c).
 KIT_HELP_REF="${KIT_HELP_REF:-0.43.0}"
@@ -147,12 +147,11 @@ relayer_pure() { # relayer_pure <vendored-file>
 
 mkdir -p src/vendor/kit src/vendor/kit-obsidian
 
-# Eintraege als "lokalname" oder "lokalname=quellname", wenn der lokale Dateiname (historisch,
-# vor diesem Skript entstanden) vom Kit-Quellnamen abweicht. Einzige bekannte Abweichung:
-# think.ts (lokal) <- think-splitter.ts (Quelle) — s. AGENTS.md Gotchas, nicht mechanisch
-# angeglichen, um die bestehenden Importe (`./vendor/kit/think`) nicht anzufassen.
-PURE_MODULE="clipboard sse endpoint endpoint_config endpoint_diagnostics model-choice model-context model-list-cache reasoning think=think-splitter timeout error_body settings sampling-profiles endpoint-source"
-OBSIDIAN_MODULE="endpoint-list folder-suggest hub model-picker settings_walker stream-area endpoint-source"
+# Eintraege als "lokalname" oder "lokalname=quellname", wenn der lokale Dateiname vom Kit-Quellnamen
+# abweicht. Aktuell gibt es keine Abweichung mehr: think.ts (lokal) heisst seit Welle 11 wie im Kit
+# think-splitter.ts, weil chat-client `../kit/think-splitter` importiert.
+PURE_MODULE="clipboard sse endpoint endpoint_config endpoint_diagnostics model-choice model-context model-list-cache reasoning think-splitter timeout error_body settings sampling-profiles endpoint-source"
+OBSIDIAN_MODULE="chat-client chat-transport clock endpoint-list folder-suggest hub model-picker settings_walker stream-area endpoint-source"
 
 # Die "vendored"-Liste der VENDOR.json wird aus derselben Liste erzeugt, aus der kopiert wird.
 # Zwei Orte fuer dieselbe Wahrheit driften (CORE-META-16) — und zwar leise: die Datei, in der
@@ -192,7 +191,7 @@ for m in $OBSIDIAN_MODULE; do
   quellname=${m#*=}
   hole "$KIT" "$VER" "src/obsidian/$quellname.ts" "src/vendor/kit-obsidian/$lokalname.ts" || {
     echo "FEHLER: $VER:src/obsidian/$quellname.ts nicht lesbar" >&2; exit 2; }
-  case "$lokalname" in endpoint-list|model-picker|endpoint-source) relayer "src/vendor/kit-obsidian/$lokalname.ts" ;; esac
+  case "$lokalname" in chat-client|endpoint-list|model-picker|endpoint-source) relayer "src/vendor/kit-obsidian/$lokalname.ts" ;; esac
   stamp "src/vendor/kit-obsidian/$lokalname.ts" "src/obsidian/$quellname.ts"
   echo "vendored obsidian-kit@$VER/obsidian/$quellname.ts -> src/vendor/kit-obsidian/$lokalname.ts"
 done
@@ -212,7 +211,7 @@ cat > src/vendor/kit/VENDOR.json <<JSON
   "sha": "$SHA",
   "code_kit_version": "$CODE_VER",
   "vendored": "$(liste "$PURE_MODULE")",
-  "note": "Verbatim snapshot aus ZWEI Quellen (obsidian-kit + code-kit); welche Datei woher stammt, sagt ihr eigener Kopf. think.ts stammt aus think-splitter.ts (lokal umbenannt, historisch — Herkunft im Kopf der Datei). Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien."
+  "note": "Verbatim snapshot aus ZWEI Quellen (obsidian-kit + code-kit); welche Datei woher stammt, sagt ihr eigener Kopf. Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien."
 }
 JSON
 cat > src/vendor/kit-obsidian/VENDOR.json <<JSON
@@ -221,7 +220,7 @@ cat > src/vendor/kit-obsidian/VENDOR.json <<JSON
   "version": "$VER",
   "sha": "$SHA",
   "vendored": "$(liste "$OBSIDIAN_MODULE"), help-setting.ts (Kit $KIT_HELP_REF, $HELP_SHA)",
-  "note": "Verbatim snapshot. Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien. endpoint-list.ts und model-picker.ts tragen EINE mechanische Abweichung: kit-interne Importe von ../pure/* sind auf ../kit/* umgeschrieben (Vendor-Layout). Bei jedem Re-Vendoring reproduzieren; sonst darf nichts abweichen."
+  "note": "Verbatim snapshot. Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien. chat-client.ts, endpoint-list.ts, model-picker.ts und endpoint-source.ts tragen EINE mechanische Abweichung: kit-interne Importe von ../pure/* sind auf ../kit/* umgeschrieben (Vendor-Layout). Bei jedem Re-Vendoring reproduzieren; sonst darf nichts abweichen."
 }
 JSON
 echo "VENDOR.json -> $VER ($SHA)"

@@ -80,9 +80,10 @@ Each entry starts with what you see — the wording is the plugin's own English 
 > The model did not return a valid deck ({reason}).
 > Deck written but may be incomplete — token limit reached.
 > Server error: {reason}. Load the model or raise its context length, then retry.
+> Server error: no answer from the endpoint (no data for 120s). Load the model or raise its context length, then retry.
 > The note may exceed the model context (~N tokens vs M). Consider shortening it.
 
-**Cause:** the model returned something that is not a deck, hit its output limit, or the note is larger than the model's context window.
+**Cause:** the model returned something that is not a deck, hit its output limit, or the note is larger than the model's context window. The text after “Server error:” is the server's own message (for example an unknown model or a full context); “no answer from the endpoint” means the server sent nothing for two minutes during a running answer, or for ten minutes before the first byte.
 
 **Fix:** use a larger model, raise **Max output tokens** in the AI settings, or shorten the note. If the note already looks like a deck ("This note already looks like a deck.") choose **New copy** rather than replacing it.
 

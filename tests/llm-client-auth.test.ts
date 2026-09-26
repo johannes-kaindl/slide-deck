@@ -10,7 +10,7 @@ function recorder(): { http: HttpJson; seen: (Record<string, string> | undefined
   return { http, seen };
 }
 
-const noStream = (async () => ({ content: "", reasoning: "", raw: "" })) as never;
+const noStream = { transport: { postStream: async () => 200 } };
 
 describe("DeckLlmClient — API key", () => {
   it("sends the bearer on probe — the path where a missing key fails silently", () => {
