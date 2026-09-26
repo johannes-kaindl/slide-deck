@@ -1605,10 +1605,82 @@ const bildplaetze: Section = {
   },
 };
 
+/** G — der Chat-Weg gegen einen ECHTEN Endpunkt (Welle 11, Chat-Client-Tausch). Der Kernlauf ist
+ *  modellfrei; diese drei Punkte laufen nur mit `--with-model` und sind der Beleg, dass Streaming,
+ *  Abbruch und Fehlerkoerper ueber den Transport tragen. Sie fahren den echten Weg
+ *  `plugin.startDeckGeneration` (Client → Sanitizer → Notiz), nicht den Client allein.
+ *  Endpunkt/Modell per Umgebung: SD_SMOKE_ENDPOINT / SD_SMOKE_MODEL. Ohne
+ *  `--with-model` stehen die Punkte als "uebersprungen" im Protokoll — nie als gruen. */
+const MIT_MODELL = process.argv.slice(2).includes("--with-model");
+const G_ENDPOINT = process.env.SD_SMOKE_ENDPOINT ?? "http://127.0.0.1:1234";
+const G_MODEL = process.env.SD_SMOKE_MODEL ?? "google/gemma-4-e4b";
+const G_NOTE = "smoke-chat-g1.md";
+const chatSektion: Section = {
+  key: "chat",
+  title: "G · Chat-Weg gegen einen echten Endpunkt (Streaming, Abbruch, Fehlerkoerper)",
+  async run(cdp) {
+    if (!MIT_MODELL) {
+      skipped("G1 Streaming: Deck aus einer Notiz, Text kommt in mehreren Stuecken", "--with-model fehlt");
+      skipped("G2 Abbruch: Stop beendet die Generierung zuegig, es wird nichts geschrieben", "--with-model fehlt");
+      skipped("G3 Fehlerkoerper: falscher Pfad → HTTP 200 + Fehler-Body wird zur Meldung", "--with-model fehlt");
+      return;
+    }
+    const starte = (name: string, endpoint: string, quelle: string, abbrechen: boolean, ziel: string): Promise<unknown> => cdp.evaluate(`
+      const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      const st = { updates: 0, chars: 0, erstesNach: 0, abbruchNach: 0, fertig: false, ergebnis: null, dauer: 0, t0: Date.now() };
+      globalThis[${JSON.stringify(name)}] = st;
+      const h = p.startDeckGeneration({
+        sourceBody: ${JSON.stringify(quelle)}, slideTarget: ${abbrechen ? 12 : 3}, hint: "",
+        themeKey: p.settings.defaultTheme, model: ${JSON.stringify(G_MODEL)},
+        endpoint: { url: ${JSON.stringify(endpoint)} }, targetPath: ${JSON.stringify(ziel)}, replace: true, sourceLink: "[[smoke]]",
+      });
+      h.subscribe((s) => {
+        const n = (s.content ?? "").length + (s.reasoning ?? "").length;
+        if (n > 0 && n !== st.chars) {
+          st.updates++; st.chars = n;
+          if (!st.erstesNach) st.erstesNach = Date.now() - st.t0;
+          if (${abbrechen} && !st.abbruchNach) { st.abbruchNach = Date.now() - st.t0; h.abort(); }
+        }
+      });
+      h.done.then((r) => { st.ergebnis = r; st.dauer = Date.now() - st.t0; st.fertig = true; });
+      return true;
+    `);
+    const warte = async (name: string, ms: number): Promise<{ updates: number; erstesNach: number; abbruchNach: number; dauer: number; ergebnis: { status: string; error?: string; kind?: string; markdown?: string } } | null> => {
+      const roh = await pollUntil<string>(cdp, `const st = globalThis[${JSON.stringify(name)}]; return st && st.fertig ? JSON.stringify(st) : null;`, ms, 2000);
+      return roh ? JSON.parse(roh) : null;
+    };
+    const QUELLE = "# Wandern\n\nEine Tagestour braucht Wasser, feste Schuhe und eine Karte. Am Gipfel gibt es Brotzeit; abends geht es zurueck ins Tal.";
+    const LANG = "# Geschichte des Radios\n\n" + "Das Radio entstand aus den Arbeiten vieler Erfinder. ".repeat(60);
+
+    erzeugtePfade.push(G_NOTE);
+    await starte("__sdG1", G_ENDPOINT, QUELLE, false, G_NOTE);
+    const g1 = await warte("__sdG1", 300_000);
+    record("G1 Streaming: Deck aus einer Notiz, Text kommt in mehreren Stuecken",
+      g1 !== null && g1.ergebnis.status === "ok" && g1.updates > 1,
+      g1 ? `${g1.updates} Zustandsmeldung(en), erstes nach ${g1.erstesNach} ms, Ende nach ${g1.dauer} ms · ${g1.ergebnis.status}${g1.ergebnis.error ? ` (${g1.ergebnis.error})` : ""}` : "nach 300 s nicht beendet");
+
+    await starte("__sdG2", G_ENDPOINT, LANG, true, "smoke-chat-g2.md");
+    const g2 = await warte("__sdG2", 120_000);
+    const g2Datei = await cdp.evaluate<boolean>(`return app.vault.getAbstractFileByPath("smoke-chat-g2.md") !== null;`);
+    record("G2 Abbruch: Stop beendet die Generierung zuegig, es wird nichts geschrieben",
+      g2 !== null && g2.ergebnis.status === "aborted" && g2.dauer - g2.abbruchNach < 3000 && !g2Datei,
+      g2 ? `Abbruch nach ${g2.abbruchNach} ms, Ende nach ${g2.dauer} ms · ${g2.ergebnis.status} · Notiz geschrieben: ${g2Datei}` : "nach 120 s nicht beendet");
+    if (g2Datei) erzeugtePfade.push("smoke-chat-g2.md");
+
+    // Falscher Pfad: LM Studio antwortet auf unbekannte Routen mit HTTP 200 + {error:"…"} — der
+    // Fall, den nur ein Fehlerkoerper-Check als Fehler erkennt (sonst „leeres Deck").
+    await starte("__sdG3", `${G_ENDPOINT}/gibt-es-nicht`, QUELLE, false, "smoke-chat-g3.md");
+    const g3 = await warte("__sdG3", 60_000);
+    record("G3 Fehlerkoerper: falscher Pfad → HTTP 200 + Fehler-Body wird zur Meldung",
+      g3 !== null && g3.ergebnis.status === "fatal" && g3.ergebnis.kind === "server" && (g3.ergebnis.error ?? "").trim() !== "",
+      g3 ? `${g3.ergebnis.status}/${g3.ergebnis.kind} · Meldung: "${g3.ergebnis.error}"` : "nach 60 s nicht beendet");
+  },
+};
+
 /** M steht VOR dem Export, nicht dahinter: der Export-Abschnitt setzt eine Probe-Regel ins
  *  `customCss` und raeumt sie erst im `finally` des Laufs weg. Liefe M danach, faerbte diese
  *  Regel in die Messung hinein. N steht aus demselben Grund davor. */
-const SECTIONS: Section[] = [vorschau, mermaid, bildplaetze, einstellungen, endpunktQuelle, explorer, exportSektion];
+const SECTIONS: Section[] = [vorschau, mermaid, bildplaetze, einstellungen, endpunktQuelle, explorer, exportSektion, chatSektion];
 
 // --- Lauf --------------------------------------------------------------------
 
