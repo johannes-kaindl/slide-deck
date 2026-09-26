@@ -1,23 +1,25 @@
 # Slide Deck
 
+> 🇬🇧 English · [🇩🇪 Deutsch](https://github.com/johannes-kaindl/slide-deck/blob/main/README.de.md)
+
 Turn a Markdown note into a slide deck and export it to PDF or a PNG image series, with live readability checks.
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE)
-[![Release](https://img.shields.io/gitea/v/release/jkaindl/slide-deck?gitea_url=https%3A%2F%2Fgit.jkaindl.de&label=release)](https://git.jkaindl.de/jkaindl/slide-deck/releases)
-[![Platform: Desktop + Mobile](https://img.shields.io/badge/Platform-Desktop%20%2B%20Mobile-blue.svg)](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/manifest.json)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://github.com/johannes-kaindl/slide-deck/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/v/release/johannes-kaindl/slide-deck?label=release)](https://github.com/johannes-kaindl/slide-deck/releases)
+[![Docs: CC BY-SA 4.0](https://img.shields.io/badge/docs-CC%20BY--SA%204.0-lightgrey.svg)](https://github.com/johannes-kaindl/slide-deck/blob/main/LICENSE-DOCS)
+[![Platform: Desktop + Mobile](https://img.shields.io/badge/Platform-Desktop%20%2B%20Mobile-blue.svg)](https://github.com/johannes-kaindl/slide-deck/blob/main/manifest.json)
 
-<img width="820" alt="A two-column slide in the kami theme: a bullet list with inline code and KaTeX math on the left, a bar chart filling the right column" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/hero.png">
+<img width="820" alt="A two-column slide in the kami theme: a bullet list with inline code and KaTeX math on the left, a bar chart filling the right column" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/hero.png">
 
-[Deutsch](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/README.de.md)
 
 ## Features
 
 - **Theme isolation** — slides render inside a sandboxed iframe, so the active Obsidian theme never leaks into the preview or the exports. A deck looks identical regardless of the vault theme.
 - **Nine built-in themes** — the Nordstern set: `kami` 紙 (light, default), `kogane` 黄金 (dark), `sumi` 墨 (true-black, high-contrast), `kairo` 回路 (dark, cyan), `kurenai` 紅 (dark, red); plus the `crimson` 紅 family in four modes (`crimson-dark`, `crimson-dark-lc`, `crimson-light`, `crimson-light-lc`), which adds a serif display face over a mono body and a faint scanline the low-contrast modes dim. Selected per deck via the `theme:` frontmatter key; each carries a matching code-highlight and Mermaid theme. Legacy 0.4.x keys (`default`, `dark`, `serif`, `high-contrast`) still work — they resolve silently to their Nordstern successor.
 - **Live theme switcher** — the preview toolbar has a theme dropdown for ephemeral try-on, a source label (`from frontmatter` / `from default` / `● unsaved`) that shows where the active theme comes from, and a **Set** button that writes `theme:` directly into the note's frontmatter. Frontmatter is the source of truth; the Settings default applies only to notes without a `theme:` key.
-- **User themes** — drop `.css` files into a configurable themes folder (default `Slide-Deck-Themes/`); the frontmatter `theme:` value is the filename without the `.css` extension. Each file is a `--sd-*` token block with optional extra CSS on top of the plugin's design system (type scale, spacing, rhythm) — a 7-token theme already looks finished; user themes inherit the `kami` theme's code-highlight and Mermaid styles unless overridden. See the [theming guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/themes/THEMING-GUIDE.md). The Settings tab shows all valid theme keys live.
+- **User themes** — drop `.css` files into a configurable themes folder (default `Slide-Deck-Themes/`); the frontmatter `theme:` value is the filename without the `.css` extension. Each file is a `--sd-*` token block with optional extra CSS on top of the plugin's design system (type scale, spacing, rhythm) — a 7-token theme already looks finished; user themes inherit the `kami` theme's code-highlight and Mermaid styles unless overridden. See the [theming guide](https://github.com/johannes-kaindl/slide-deck/blob/main/docs/themes/THEMING-GUIDE.md). The Settings tab shows all valid theme keys live.
 - **Theme import/export** — an **Open in Finder** button reveals the themes folder so you can drop files in; **Export theme as .css** writes any theme as an editable `.css` starting point; a toggle hides the themes folder in Obsidian's file explorer.
-- **Twelve per-slide templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`, `agenda`, `threads`, `closing` — set per slide with a layout directive (an HTML comment); columns are separated by a column directive, and in multi-column templates the leading heading spans all columns. See the [layout guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.md).
+- **Twelve per-slide templates** — `default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`, `agenda`, `threads`, `closing` — set per slide with a layout directive (an HTML comment); columns are separated by a column directive, and in multi-column templates the leading heading spans all columns. See the [layout guide](https://github.com/johannes-kaindl/slide-deck/blob/main/docs/layouts.md).
 - **Combinable density modifiers** — add `compact` (tighter type) or `code-heavy` (smaller code) to any template in the same layout directive.
 - **Smart layout inference** — with no explicit directive, the layout is inferred from content shape: a lone heading becomes `section`, a lone block quote becomes `quote`, a lone image or diagram becomes `image-focus`, and column splits pick `two-column` / `columns-3`. An explicit layout directive always wins.
 - **Deck slots** — `header:`, `footer:`, and `paginate:` frontmatter keys render as floating corner slots on every slide (pagination shows `n / N`).
@@ -35,45 +37,45 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 - **Accessible callouts** — Obsidian-style `> [!note]`, `[!warning]`, `[!danger]`, `[!tip]`, `[!info]` blocks rendered with redundant coding: border color + geometric shape + visible label word (not color-only; satisfies WCAG 1.4.1).
 - **Mermaid diagrams** — fenced ` ```mermaid ``` ` blocks rendered as SVG, per-theme.
 - **EN/DE interface** — all UI strings follow Obsidian's language setting (English canonical, German supported).
-- **Image slots** (desktop, requires [local-image-generator](https://git.jkaindl.de/jkaindl/local-image-generator)) — a `slide-image` code block renders as a card with a generate button; on click it calls the neighbor plugin to produce and save an image, then replaces itself with a normal embed plus a prompt comment for re-rolling later.
+- **Image slots** (desktop, requires [local-image-generator](https://github.com/johannes-kaindl/local-image-generator)) — a `slide-image` code block renders as a card with a generate button; on click it calls the neighbor plugin to produce and save an image, then replaces itself with a normal embed plus a prompt comment for re-rolling later.
 
 ## Screenshots
 
 **The note and its projection.** The deck renders in a side panel and carries the toolbar:
 theme picker, where the active theme comes from, and the two export paths.
 
-<img width="820" alt="Obsidian with the note on the left and the Slide Deck preview on the right, showing the theme picker, the from-frontmatter source label, PDF and image export buttons, and slides with a running header and page indicator" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/preview-pane.png">
+<img width="820" alt="Obsidian with the note on the left and the Slide Deck preview on the right, showing the theme picker, the from-frontmatter source label, PDF and image export buttons, and slides with a running header and page indicator" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/preview-pane.png">
 
 **Nine built-in themes.** The same slide in each — only colour, type and accent change; the
 structure is theme-independent.
 
-<img width="820" alt="A three-by-three grid showing the same slide rendered in all nine built-in themes: kami, kogane, sumi, kairo, kurenai, crimson-dark, crimson-dark-lc, crimson-light and crimson-light-lc" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/themes.png">
+<img width="820" alt="A three-by-three grid showing the same slide rendered in all nine built-in themes: kami, kogane, sumi, kairo, kurenai, crimson-dark, crimson-dark-lc, crimson-light and crimson-light-lc" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/themes.png">
 
 **Twelve per-slide templates.** Set one with a layout directive, or let the layout be inferred
 from the slide's shape. The grid shows the nine general ones; `agenda`, `threads` and `closing` are in the layout guide.
 
-<img width="820" alt="A three-by-three grid of the nine slide templates: title, section, quote, image-focus, two-column, columns-3, stat, cover-image and default" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/layouts.png">
+<img width="820" alt="A three-by-three grid of the nine slide templates: title, section, quote, image-focus, two-column, columns-3, stat, cover-image and default" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/layouts.png">
 
 **Fit-or-warn.** A slide that would need text below the legibility floor is flagged in the
 preview instead of being silently clipped.
 
-<img width="820" alt="The preview pane showing the warning: slide 1 content overflows at the legibility floor, condense this slide, above the slide marked with a red bar" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/overflow-warning.png">
+<img width="820" alt="The preview pane showing the warning: slide 1 content overflows at the legibility floor, condense this slide, above the slide marked with a red bar" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/overflow-warning.png">
 
 **Accessible callouts.** Meaning is carried three ways at once — border colour, geometric
 shape, and a visible label word.
 
-<img width="820" alt="A slide showing all five callout types (note, tip, info, warning, danger), each with a coloured border, a distinct symbol and a label word" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/callouts.png">
+<img width="820" alt="A slide showing all five callout types (note, tip, info, warning, danger), each with a coloured border, a distinct symbol and a label word" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/callouts.png">
 
 **Settings.** The tab lists every valid `theme:` value live, including themes you drop into
 the themes folder yourself.
 
-<a href="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/settings.png"><img width="380" alt="The Slide Deck settings tab, showing the default theme picker, the list of all nine valid theme keys, the legibility floor, export and themes folders, and the local AI endpoint section" src="https://git.jkaindl.de/jkaindl/slide-deck/raw/branch/main/docs/images/thumbs/settings.png"></a>
+<a href="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/settings.png"><img width="380" alt="The Slide Deck settings tab, showing the default theme picker, the list of all nine valid theme keys, the legibility floor, export and themes folders, and the local AI endpoint section" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/thumbs/settings.png"></a>
 
 <sub>Click the preview for the full-resolution image.</sub>
 
 ## Requirements
 
-- **Obsidian ≥ 1.13.0** (the settings tab uses the declarative settings API introduced in 1.13.0)
+- **Obsidian ≥ 1.8.7** (`minAppVersion`). From 1.13.0 the settings tab uses the declarative settings API; older versions get the same settings through a classic fallback.
 - **Desktop + Mobile** (`isDesktopOnly: false`) — runs on desktop (Windows, macOS, Linux) and on mobile (iOS/iPadOS); desktop-only APIs are platform-guarded.
 - **Desktop PDF export** uses the **system print dialog** — choose "Save as PDF" in the printer dropdown. It does not produce a PDF file directly.
 - **Mobile PDF export** writes a self-contained HTML file into the export folder and opens it with the OS default app; from there you can print or share to PDF. The file name is `<export-folder>/<note-name>.html`.
@@ -81,31 +83,22 @@ the themes folder yourself.
 
 ## Install
 
-### AnySource Sideloader (intended channel)
+### Catalog (recommended)
 
-Slide Deck is **not distributed through the Obsidian Community Store.** It is published as a
-release on its own forge and listed in a subscribable catalog, so updates arrive the same way
-store updates would — without the store.
+**Via [AnySource Sideloader](https://github.com/johannes-kaindl/anysource-sideloader)**, which installs and updates plugins from any git forge. Subscribe to the Order from Traces catalog once under **Settings → AnySource Sideloader → Catalogs → Add**:
 
-1. Install [AnySource Sideloader](https://git.jkaindl.de/jkaindl/anysource-sideloader) (manual
-   install, same three files as below).
-2. In its settings, open **Browse catalogs** and add:
-   `https://git.jkaindl.de/jkaindl/obsidian-catalog/raw/branch/main/catalog.json`
-3. Install **Slide Deck** from the catalog. Version checks go live to this repository's
-   releases — the catalog only lists what exists, it never serves the files itself.
+```
+https://git.jkaindl.de/jkaindl/obsidian-catalog/raw/branch/main/catalog.json
+```
 
-### Manual install
+Slide Deck then appears in the sideloader's plugin list and updates like any other plugin. Version checks go live to this repository's releases — the catalog only lists what exists, it never serves the files itself. To install just this one plugin without the catalog, add its repository URL as a source instead: `https://github.com/johannes-kaindl/slide-deck`.
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://git.jkaindl.de/jkaindl/slide-deck/releases).
+### Manual
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/johannes-kaindl/slide-deck/releases/latest).
 2. Create the folder `.obsidian/plugins/slide-deck/` inside your vault.
 3. Copy the three files into that folder.
 4. In Obsidian: **Settings → Community plugins → Installed plugins** — enable **Slide Deck**.
-
-### BRAT (Beta Reviewers Auto-update Tool)
-
-1. Install the [BRAT plugin](https://obsidian.md/plugins?id=obsidian42-brat).
-2. In BRAT settings, add `https://git.jkaindl.de/jkaindl/slide-deck`.
-3. Reload Obsidian.
 
 ### Build from source
 
@@ -159,11 +152,11 @@ Right column content.
 ```
 
 Omit the directive and the layout is inferred from the slide's shape. The full template and
-modifier reference is in the [layout guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.md).
+modifier reference is in the [layout guide](https://github.com/johannes-kaindl/slide-deck/blob/main/docs/layouts.md).
 
 ## Image slots
 
-Requires the [local-image-generator](https://git.jkaindl.de/jkaindl/local-image-generator)
+Requires the [local-image-generator](https://github.com/johannes-kaindl/local-image-generator)
 plugin (desktop only). Run **Insert image slot** (command palette), pick one of six image
 functions (documentary, analytical, metaphorical, emotional, navigational, decorative) — each
 steers the prompt with its own style suffix — and write a prompt:
@@ -194,14 +187,14 @@ of a button.
 
 | Setting | Key | Default | Description |
 |---|---|---|---|
-| Default preset | `defaultTheme` | `kami` | Preset used when a note has no `theme` frontmatter directive |
+| Default theme | `defaultTheme` | `kami` | Preset used when a note has no `theme` frontmatter directive |
 | Minimum body font size (px) | `minFontPx` | `24` | Legibility floor — slides that would need smaller text are flagged as overflowing |
 | Image export scale | `imageScale` | `2` | Pixel multiplier for PNG export (`2` = 2×, crisp on HiDPI screens) |
 | Custom CSS | `customCss` | *(empty)* | CSS appended to the deck styles in preview and exports, for branding or tweaks |
-| Export folder | `exportFolder` | `Slide-Deck-Export` | Vault folder for the PNG image-series export |
+| Image export folder | `exportFolder` | `Slide-Deck-Export` | Vault folder for the PNG image-series export |
 | Themes folder | `themesFolder` | `Slide-Deck-Themes` | Vault folder scanned for user `.css` themes |
-| Hide themes folder | `hideThemesFolder` | `true` | Hide the themes folder in Obsidian's file explorer |
-| Image function prompts | `imageSuffixes` | *(built-in defaults)* | One editable prompt suffix per image function (blank restores the default) |
+| Hide themes folder in file explorer | `hideThemesFolder` | `true` | Hide the themes folder in Obsidian's file explorer |
+| Image functions | `imageSuffixes` | *(built-in defaults)* | One editable prompt suffix per image function (blank restores the default) |
 
 ### Per-note frontmatter
 
@@ -229,7 +222,7 @@ paginate: true
 
 ### Slide layout & syntax
 
-Twelve per-slide templates (`default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`, `agenda`, `threads`, `closing`), combinable density modifiers (`compact`, `code-heavy`), the layout and column directives, and smart layout inference are documented in the **[Slide layouts & syntax guide](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/docs/layouts.md)**.
+Twelve per-slide templates (`default`, `title`, `section`, `quote`, `image-focus`, `two-column`, `columns-3`, `stat`, `cover-image`, `agenda`, `threads`, `closing`), combinable density modifiers (`compact`, `code-heavy`), the layout and column directives, and smart layout inference are documented in the **[Slide layouts & syntax guide](https://github.com/johannes-kaindl/slide-deck/blob/main/docs/layouts.md)**.
 
 ### Slide separator
 
@@ -285,8 +278,14 @@ cross-origin requests. LM Studio's CORS toggle must be on; Ollama needs
 refuses the stream, the plugin **automatically falls back to a non-streaming request** (you lose
 the live token view, but the deck still generates).
 
+## Documentation
+
+- [Documentation index](https://github.com/johannes-kaindl/slide-deck/blob/main/docs/README.md) — all guides in one place.
+- [Getting started](https://github.com/johannes-kaindl/slide-deck/blob/main/docs/getting-started.md) — from the install to your first exported deck.
+- [Troubleshooting](https://github.com/johannes-kaindl/slide-deck/blob/main/docs/troubleshooting.md) — the exact message, its cause and the fix.
+
 ## License
 
-Code: [AGPL-3.0-or-later](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE).
-Documentation: [CC BY-SA 4.0](https://git.jkaindl.de/jkaindl/slide-deck/src/branch/main/LICENSE-DOCS).
+Code: [AGPL-3.0-or-later](https://github.com/johannes-kaindl/slide-deck/blob/main/LICENSE) — a commercial license is available on request, see [`LICENSING.md`](https://github.com/johannes-kaindl/slide-deck/blob/main/LICENSING.md).
+Documentation: [CC BY-SA 4.0](https://github.com/johannes-kaindl/slide-deck/blob/main/LICENSE-DOCS).
 Author: Johannes Kaindl — <https://jkaindl.de>

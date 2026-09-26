@@ -301,6 +301,11 @@ Minimal skeleton to start from (or copy `example.css` directly):
   `sd-mermaid` accepts `default` / `dark` / `neutral` / `forest`. On a light
   theme the inherited default is fine as-is; on a dark theme, set both — see
   any of the dark built-ins for the values they use (`github-dark` / `dark`).
+- **`/* sd-mermaid-var: <name> <value> */` sets single Mermaid `themeVariables`.**
+  The directive may appear any number of times, one variable per line, e.g.
+  `/* sd-mermaid-var: primaryColor #d81b60 */`. A declared variable outranks both
+  the `sd-mermaid` base theme and the values the plugin derives from your tokens —
+  this is the way to tune Mermaid colours, instead of fighting the diagram with CSS.
 - **An optional `/* sd-label: My Theme */` directive** sets the human-readable
   name shown in the theme dropdown and Settings' theme list; without it, the
   UI falls back to the file name (the theme key).
