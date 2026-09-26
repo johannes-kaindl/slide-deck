@@ -83,7 +83,7 @@ selbst in den Themes-Ordner legst.
 
 ### Katalog (empfohlen)
 
-**Über den [AnySource Sideloader](https://github.com/johannes-kaindl/anysource-sideloader)**, der Plugins von jeder Git-Forge installiert und aktualisiert. Den Katalog „Order from Traces“ einmal unter **Einstellungen → AnySource Sideloader → Kataloge → Hinzufügen** eintragen:
+**Über den [AnySource Sideloader](https://github.com/johannes-kaindl/anysource-sideloader)**, der Plugins von jeder Git-Forge installiert und aktualisiert. Den Plugin-Katalog einmal unter **Einstellungen → AnySource Sideloader → Kataloge → Hinzufügen** eintragen:
 
 ```
 https://git.jkaindl.de/jkaindl/obsidian-catalog/raw/branch/main/catalog.json
