@@ -6,6 +6,10 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- Runtime dependencies updated to close two advisories the Store gate scan reports: `markdown-it` 14.3.2 (GHSA-253c-mchw-3w2r, quadratic linkify paths) and, via `mermaid`, `dompurify` 3.4.16. No user-visible change.
+
 ### Added
 - The GitHub release now also carries a ready-to-unpack `slide-deck.zip` (the plugin folder with `main.js`, `manifest.json` and `styles.css`) and a `checksums.sha256` file. For a manual install, download the zip and unpack it into `.obsidian/plugins/` instead of creating the folder and saving three files by hand.
 
