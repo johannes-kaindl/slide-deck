@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-09-30
+
 ### Security
 
 - Runtime dependencies updated to close two advisories the Store gate scan reports: `markdown-it` 14.3.2 (GHSA-253c-mchw-3w2r, quadratic linkify paths) and, via `mermaid`, `dompurify` 3.4.16. No user-visible change.
