@@ -4,15 +4,23 @@ import { requestUrlTransport, xhrSseTransport } from "./vendor/kit-obsidian/chat
 import { t } from "./i18n";
 import { normalizeEndpoint } from "./vendor/kit/endpoint";
 import { authHeaders, effectiveModel, type EndpointConfig } from "./vendor/kit/endpoint_config";
-import { suppressParams } from "./vendor/kit/reasoning";
+import type { ResponseFacts } from "./vendor/kit/sampling-profiles";
 import { classifyEndpointStatus, extractModelIds, type EndpointStatus, type ProbeInput } from "./vendor/kit/endpoint_diagnostics";
 import { withTimeout } from "./vendor/kit/timeout";
-import { effectiveSuppress } from "./llm/ai-settings-model";
 import { parseLmStudioContext, parseOllamaContext, type ModelContext } from "./llm/model-info";
 import type { ChatMessage } from "./vendor/deck-core/pure/llm/deck-prompt";
 
 export interface HttpJson { (param: { url: string; method?: string; headers?: Record<string, string>; body?: string }): Promise<{ status: number; json: unknown; text: string }> }
-export interface StreamOpts { model: string; temperature: number; maxTokens: number; suppressThinking: boolean }
+/** `model` is the name as the user/list knows it, `sentModel` the one that goes on the wire (alias
+ *  resolved, Sampling-Plan § 3.1). `params` come ready from `llm/request-params.ts::buildDeckParams`
+ *  (mode creative); the client sends no sampling of its own. `onResponse` sees every server
+ *  answer, also a refused one, for `checkResponse`; network errors, timeouts and aborts have none. */
+export interface StreamOpts {
+  model: string;
+  sentModel: string;
+  params: Record<string, number | string>;
+  onResponse?: (facts: ResponseFacts) => void;
+}
 /** Transports for the chat path: the stream (XHR) and the optional non-streaming fallback. Injected so
  *  tests can supply fakes; `makeDeckLlmClient` wires the real ones. */
 export interface ChatTransports { transport: SseTransport; fallbackTransport?: SseTransport }
@@ -112,24 +120,32 @@ export class DeckLlmClient {
   /** Stream via XHR (Kit chat client); on a stream network error (CORS: ping ok but stream refused) the
    *  client repeats the request once without streaming (requestUrl) and stays there for this instance —
    *  that bounds the run budget. Throws the server's message on an HTTP error or an HTTP-200 error body.
-   *  `temperature`/`max_tokens` are plugin values and travel in `params`; the client sends no sampling
-   *  of its own. */
+   *  The sampling values travel in `opts.params`; the client sends none of its own. */
   async generate(messages: ChatMessage[], opts: StreamOpts, onContent: (t: string) => void, onReasoning: (t: string) => void, signal?: AbortSignal): Promise<DeckStreamResult> {
-    const model = opts.model || this.model;
+    const model = opts.sentModel || opts.model || this.model;
     const r = await this.chat.complete({
       endpoint: this.cfg.apiKey ? { url: this.endpoint, apiKey: this.cfg.apiKey } : { url: this.endpoint },
       model,
       messages,
-      params: { temperature: opts.temperature, max_tokens: opts.maxTokens, ...suppressParams(effectiveSuppress(model, opts.suppressThinking)) },
+      params: opts.params,
       ...(signal ? { signal } : {}),
       onToken: onContent,
       onReasoning,
     });
-    if (r.ok) return { content: r.content, reasoning: r.reasoning, finishReason: r.finishReason, usedFallback: !r.streamed };
+    if (r.ok) {
+      opts.onResponse?.({ status: 200, finishReason: r.finishReason ?? null, content: r.content, reasoning: r.reasoning, ...(r.model !== undefined ? { responseModel: r.model } : {}) });
+      return { content: r.content, reasoning: r.reasoning, finishReason: r.finishReason, usedFallback: !r.streamed };
+    }
     // Truncated WITHOUT text is an error in the Kit; here it stays what it always was — an empty result
     // with finish_reason "length" that the format check turns into the retry (reasoning models: the
     // thinking ate the budget).
-    if (r.kind === "truncated") return { content: "", reasoning: r.reasoning, finishReason: "length", usedFallback: false };
+    if (r.kind === "truncated") {
+      opts.onResponse?.({ status: 200, finishReason: "length", content: "", reasoning: r.reasoning });
+      return { content: "", reasoning: r.reasoning, finishReason: "length", usedFallback: false };
+    }
+    if (r.kind === "http" && r.status !== undefined) {
+      opts.onResponse?.({ status: r.status, errorText: r.body ?? r.detail, finishReason: null, content: "", reasoning: r.reasoning });
+    }
     throw chatError(r);
   }
 }

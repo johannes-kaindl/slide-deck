@@ -11,6 +11,13 @@ versioning follows [SemVer](https://semver.org/).
 
 ### Changed
 - Kit chat client 0.44.0 (no user-visible change).
+- **Sampling profiles for the `creative` mode.** Deck generation now sends the temperature and the family-specific sampling values (top_p, top_k, …) from the shared profile tables, and your token budget goes in as `max_tokens` — raised to the family's reserve where thinking would otherwise eat it. The model family comes from the LLM Endpoint Manager or is guessed from the model name; the backend is detected once per endpoint (cached 30 s). New section **Settings → Request** shows what is sent and what actually takes effect, lets you override single values per model family, and lists the last request and deviations seen this session (e.g. "the model thought although thinking is off"). The thinking level is chosen there too.
+- **Temperature and "Suppress model thinking" moved into that section.** Migration on first start: the old suppress switch becomes the thinking level (`on` → off, the old default; `off` → "medium"), so nothing changes for existing installs; new installs start with the profile default ("medium" for creative). An old temperature that differs from the former default 0.3 becomes an override for unknown model families, with one notice; a value equal to 0.3 is dropped. Deviation from recipe 3 of the sampling plan: the family is not resolved when settings load, hence "unknown". The old fields are removed from `data.json` on the first save. Max. output tokens stays where it was.
+- The "Thinking test" button (real, minimal request with thinking off) stays, as its own row "Thinking test" right below the Request section.
+- The request goes out under the model's resolved name (alias applied). Kit modules added: `request-section`, `request-session`, `collapsible`, `clipboard` (Obsidian layer), `capabilities` (backend probe); Kit pin unchanged at 0.43.0.
+
+### Fixed
+- German settings tab: the heading "Slide deck" is now "Foliensatz", the field "Endpoints" is "Endpunkte", and the model description no longer says "Endpoint" — the tab is German throughout. English is unchanged.
 
 ## [0.12.0] — 2026-09-26
 

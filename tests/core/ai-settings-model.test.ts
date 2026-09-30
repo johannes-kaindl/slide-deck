@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   roleKindKey, modelFieldMode, initialModelSelection,
-  thinkToggleView, effectiveSuppress, statusKindKey, warnRuleKey, statusLabelParts,
+  statusKindKey, warnRuleKey, statusLabelParts,
 } from "../../src/llm/ai-settings-model";
 
 describe("roleKindKey", () => {
@@ -37,30 +37,6 @@ describe("initialModelSelection", () => {
   });
   it("keeps the saved model as the sole option when the server list is empty", () => {
     expect(initialModelSelection([], "custom-model")).toEqual({ options: ["custom-model"], initial: "custom-model" });
-  });
-});
-
-describe("thinkToggleView", () => {
-  it("shows an always-on model as disabled", () => {
-    expect(thinkToggleView("gpt-oss-20b", true)).toEqual({ labelKey: "deck.settings.thinking.always", cls: "is-disabled", disabled: true });
-  });
-  it("shows suppressed thinking as off — no row cls, the toggle control itself carries the state", () => {
-    expect(thinkToggleView("qwen3", true)).toEqual({ labelKey: "deck.settings.thinking.off", cls: "", disabled: false });
-  });
-  it("shows unsuppressed thinking as on", () => {
-    expect(thinkToggleView("qwen3", false)).toEqual({ labelKey: "deck.settings.thinking.on", cls: "", disabled: false });
-  });
-});
-
-describe("effectiveSuppress", () => {
-  it("suppresses a normal model when asked", () => {
-    expect(effectiveSuppress("qwen3", true)).toBe(true);
-  });
-  it("never suppresses an always-on model — it rejects reasoning_effort:none", () => {
-    expect(effectiveSuppress("gpt-oss-20b", true)).toBe(false);
-  });
-  it("does not suppress when the user does not want it", () => {
-    expect(effectiveSuppress("qwen3", false)).toBe(false);
   });
 });
 

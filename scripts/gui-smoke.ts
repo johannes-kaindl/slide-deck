@@ -61,6 +61,9 @@ import { capture } from "../../tools/obsidian-cdp/shot.js";
 // Schluessel als auch die Praefix-Liste fuer B2. Eine im Treiber gepflegte Musterliste waere
 // beim naechsten neuen Namensraum still blind — und genau diese Sorte Blindheit misst B2.
 import { STRINGS_DE, STRINGS_EN } from "../src/i18n";
+import { MODES } from "../src/vendor/kit/sampling-profiles";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import type { AddressInfo } from "node:net";
 
 const PLUGIN_ID = "slide-deck";
 // Seit Welle 6 (Hub-Tab-Leiste, `src/hub-view.ts`): ein View-Typ fuer Vorschau UND Erzeugen,
@@ -1677,10 +1680,153 @@ const chatSektion: Section = {
   },
 };
 
+/** R — Sampling-Profil (Modus creative): Abschnitt „Anfrage“ in den Einstellungen, die Zeile „Denk-Test“
+ *  darunter und der GESENDETE Body. Kein echtes Modell noetig. N2 faehrt ZWEI Edits hintereinander
+ *  (setzen, zuruecksetzen): der Einklapp-Fehler des Piloten war im gruenen Smoke unsichtbar, weil kein
+ *  Punkt zwei Edits nacheinander fuhr (Plan-Nachtrag 6). */
+const ANFRAGE_KOPF = `[...wurzel.querySelectorAll(".okit-collapsible-header")].find((h) => /Anfrage|Request/.test(h.textContent || ""))`;
+
+/** Fake-Chat-Endpunkt im Node-Prozess; merkt sich jeden POST-Body. Mit CORS-Freigabe, damit der
+ *  Stream-Weg (XHR) durchkommt und der Body vom echten Transport stammt. */
+async function startFakeChat(): Promise<{ url: string; bodies: unknown[]; close(): Promise<void> }> {
+  const bodies: unknown[] = [];
+  const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
+  const server: Server = createServer((req: IncomingMessage, res: ServerResponse) => {
+    if (req.method === "OPTIONS") { res.writeHead(204, cors); res.end(); return; }
+    if (req.url?.includes("/v1/models")) { res.writeHead(200, { ...cors, "Content-Type": "application/json" }); res.end(JSON.stringify({ data: [{ id: "google/gemma-4-e4b", object: "model" }] })); return; }
+    if (req.method === "POST" && req.url?.includes("/v1/chat/completions")) {
+      let raw = "";
+      req.on("data", (c: Buffer) => { raw += c.toString("utf8"); });
+      req.on("end", () => {
+        try { bodies.push(JSON.parse(raw)); } catch { bodies.push({ kein_json: raw.slice(0, 80) }); }
+        res.writeHead(200, { ...cors, "Content-Type": "text/event-stream" });
+        res.write(`data: ${JSON.stringify({ model: "google/gemma-4-e4b", choices: [{ delta: { content: "kein Deck" } }] })}\n\n`);
+        res.write(`data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop" }] })}\n\n`);
+        res.end("data: [DONE]\n\n");
+      });
+      return;
+    }
+    res.writeHead(404, cors); res.end();
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  return {
+    url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+    bodies,
+    close: () => new Promise<void>((resolve) => { server.close(() => { resolve(); }); }),
+  };
+}
+
+const anfrage: Section = {
+  key: "anfrage",
+  title: "R · Anfrage (Sampling-Profil creative)",
+  async run(cdp, ctx) {
+    const offen = await oeffneTab(cdp, ctx);
+    try {
+      // N1 — der Wechsel in BEIDE Richtungen. Der Auf/Zu-Zustand lebt im Prozess (Kit-Fallback ohne
+      // collapsedStorage) und ueberlebt das Schliessen der Einstellungen: der Ausgangszustand ist
+      // nicht vorhersagbar, also wird der Wechsel gemessen, nicht ein fester Zielzustand.
+      const n1 = JSON.parse(await offen.ziel.evaluate<string>(`
+        const warte = (ms) => new Promise((x) => setTimeout(x, ms));
+        const wurzel = document.querySelector(".vertical-tab-content");
+        const kopf = ${ANFRAGE_KOPF};
+        if (!kopf) return JSON.stringify({ da: false });
+        const body = kopf.closest(".okit-collapsible").querySelector(".okit-collapsible-body");
+        const offenJetzt = () => !body.classList.contains("is-collapsed");
+        const s0 = offenJetzt(); kopf.click(); await warte(150);
+        const s1 = offenJetzt(); kopf.click(); await warte(150);
+        return JSON.stringify({ da: true, s0, s1, s2: offenJetzt() });
+      `)) as { da: boolean; s0: boolean; s1: boolean; s2: boolean };
+      record("R1 Abschnitt „Anfrage“ klappt auf und wieder zu", n1.da && n1.s1 === !n1.s0 && n1.s2 === n1.s0,
+        n1.da ? `offen: ${n1.s0} → ${n1.s1} → ${n1.s2}` : "kein .okit-collapsible-header mit „Anfrage“/„Request“");
+
+      // N2 — Temperatur setzen, dann zuruecksetzen; der Abschnitt bleibt offen.
+      const n2 = JSON.parse(await offen.ziel.evaluate<string>(`
+        const warte = (ms) => new Promise((x) => setTimeout(x, ms));
+        const wurzel = () => document.querySelector(".vertical-tab-content");
+        let kopf = (() => { const wurzel2 = wurzel(); return ${ANFRAGE_KOPF.replace(/wurzel\./, "wurzel2.")}; })();
+        if (!kopf) return JSON.stringify({ da: false });
+        if (kopf.closest(".okit-collapsible").querySelector(".okit-collapsible-body").classList.contains("is-collapsed")) kopf.click();
+        await warte(200);
+        const offenJetzt = () => { const k = [...wurzel().querySelectorAll(".okit-collapsible-header")].find((h) => /Anfrage|Request/.test(h.textContent || "")); return !!k && !k.closest(".okit-collapsible").querySelector(".okit-collapsible-body").classList.contains("is-collapsed"); };
+        const feld = () => wurzel().querySelector('input[data-field="temperature"]');
+        const f1 = feld();
+        if (!f1) return JSON.stringify({ da: true, feld: false });
+        f1.value = "0.9"; f1.dispatchEvent(new Event("blur")); await warte(400);
+        const nachSetzen = { eigen: !!feld() && feld().classList.contains("okit-request-own"), offen: offenJetzt(), wert: feld() ? feld().value : null };
+        const reset = feld() ? feld().closest(".setting-item").querySelector(".clickable-icon") : null;
+        if (reset) reset.click();
+        await warte(400);
+        return JSON.stringify({ da: true, feld: true, reset: !!reset, nachSetzen, nachReset: { eigen: !!feld() && feld().classList.contains("okit-request-own"), offen: offenJetzt() } });
+      `)) as { da: boolean; feld?: boolean; reset?: boolean; nachSetzen?: { eigen: boolean; offen: boolean; wert: string | null }; nachReset?: { eigen: boolean; offen: boolean } };
+      const n2ok = !!(n2.da && n2.feld && n2.reset && n2.nachSetzen?.eigen && n2.nachSetzen.offen && n2.nachSetzen.wert === "0.9" && n2.nachReset && !n2.nachReset.eigen && n2.nachReset.offen);
+      record("R2 Wert ueberschreiben, dann zuruecksetzen — der Abschnitt bleibt aufgeklappt (zwei Edits hintereinander)", n2ok,
+        n2.nachSetzen && n2.nachReset ? `nach Setzen: eigener Wert=${n2.nachSetzen.eigen}, Wert=${n2.nachSetzen.wert}, offen=${n2.nachSetzen.offen} · nach Zuruecksetzen: eigener Wert=${n2.nachReset.eigen}, offen=${n2.nachReset.offen}` : JSON.stringify(n2));
+
+      // N3 — die Zeile „Denk-Test“ steht direkt unter dem Abschnitt und traegt einen Knopf, keinen Schalter.
+      const n3 = JSON.parse(await offen.ziel.evaluate<string>(`
+        const wurzel = document.querySelector(".vertical-tab-content");
+        const kopf = ${ANFRAGE_KOPF};
+        if (!kopf) return JSON.stringify({ da: false });
+        const host = kopf.closest(".sd-settings-host") ?? kopf.closest(".setting-item") ?? kopf.parentElement.parentElement;
+        let naechste = host ? host.nextElementSibling : null;
+        const text = naechste ? naechste.textContent : "";
+        return JSON.stringify({ da: true, text: text.slice(0, 120), knopf: !!naechste && !!naechste.querySelector("button"), schalter: !!naechste && !!naechste.querySelector(".checkbox-container") });
+      `)) as { da: boolean; text?: string; knopf?: boolean; schalter?: boolean };
+      record("R3 Zeile „Denk-Test“ steht direkt unter dem Abschnitt, mit Knopf statt Schalter",
+        !!n3.da && /Denk-Test|Thinking test/.test(n3.text ?? "") && n3.knopf === true && n3.schalter === false, JSON.stringify(n3));
+
+      // N4 — Denkstufe im Abschnitt waehlen: gespeichert, Abschnitt bleibt offen.
+      const n4 = JSON.parse(await offen.ziel.evaluate<string>(`
+        const warte = (ms) => new Promise((x) => setTimeout(x, ms));
+        const wurzel = () => document.querySelector(".vertical-tab-content");
+        const zeile = () => [...wurzel().querySelectorAll(".setting-item")].find((z) => /Denkstufe|Thinking level/.test(z.querySelector(".setting-item-name")?.textContent || ""));
+        const sel = zeile() ? zeile().querySelector("select") : null;
+        if (!sel) return JSON.stringify({ da: false });
+        sel.value = "high"; sel.dispatchEvent(new Event("change")); await warte(400);
+        const k = [...wurzel().querySelectorAll(".okit-collapsible-header")].find((h) => /Anfrage|Request/.test(h.textContent || ""));
+        return JSON.stringify({ da: true, offen: !!k && !k.closest(".okit-collapsible").querySelector(".okit-collapsible-body").classList.contains("is-collapsed") });
+      `)) as { da: boolean; offen?: boolean; gespeichert?: string };
+      // `app` gibt es nur im Hauptfenster — die Settings sind ein eigenes CDP-Target.
+      n4.gespeichert = await cdp.evaluate<string>(`return app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.request.thinking.creative;`);
+      record("R4 Denkstufe waehlen wird gespeichert, der Abschnitt bleibt aufgeklappt", !!n4.da && n4.offen === true && n4.gespeichert === "high", JSON.stringify(n4));
+    } finally {
+      await schliesseTab(cdp, offen);
+    }
+
+    // N5 — der GESENDETE Body. Fake-Server im Node-Prozess; Modell google/gemma-4-e4b (Familie gemma4 aus
+    // dem Namen, Backend unbekannt). Die Antwort ist kein Deck → Format-Fehler, zwei POSTs, keine Notiz.
+    const fake = await startFakeChat();
+    try {
+      const tmp = "smoke-anfrage-n5.md";
+      erzeugtePfade.push(tmp);
+      await cdp.evaluate(`
+        const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+        p.settings.request = { overrides: {}, thinking: { creative: "off" }, lastOnLevel: {}, levelPickerInChat: false };
+        p.settings.llmEndpoints = [{ url: ${JSON.stringify(fake.url)} }]; p.settings.llmModel = "google/gemma-4-e4b";
+        await p.resolveEndpoint();
+        const h = p.startDeckGeneration({
+          sourceBody: "# Probe\\n\\nEin Satz.", slideTarget: 3, hint: "", themeKey: p.settings.defaultTheme,
+          model: "google/gemma-4-e4b", endpoint: { url: ${JSON.stringify(fake.url)} }, targetPath: ${JSON.stringify(tmp)}, replace: true, sourceLink: "[[smoke]]",
+        });
+        globalThis.__sdN5 = { fertig: false }; h.done.then((r) => { globalThis.__sdN5 = { fertig: true, status: r.status }; });
+        return true;
+      `);
+      const ende = await pollUntil<string>(cdp, `const s = globalThis.__sdN5; return s && s.fertig ? JSON.stringify(s) : null;`, 60_000, 500);
+      const body = fake.bodies[0] as Record<string, unknown> | undefined;
+      const erwartet = MODES.creative.temperature.value;
+      record("R5 Der gesendete Body traegt das Profil des Modus creative (Temperatur aus den Kit-Tabellen, Budget als max_tokens)",
+        !!body && body.temperature === erwartet && typeof body.max_tokens === "number" && body.max_tokens >= 8192 && !("chat_template_kwargs" in body),
+        body ? `Server sah temperature=${String(body.temperature)} (Erwartung aus MODES.creative: ${erwartet}), max_tokens=${String(body.max_tokens)}, Schluessel ${JSON.stringify(Object.keys(body).filter((k) => k !== "messages"))} · Lauf ${ende ?? "nicht beendet"} · POSTs: ${fake.bodies.length}` : `der Fake-Server sah keinen POST (${ende ?? "Lauf nicht beendet"})`);
+    } finally {
+      await fake.close();
+    }
+  },
+};
+
 /** M steht VOR dem Export, nicht dahinter: der Export-Abschnitt setzt eine Probe-Regel ins
  *  `customCss` und raeumt sie erst im `finally` des Laufs weg. Liefe M danach, faerbte diese
  *  Regel in die Messung hinein. N steht aus demselben Grund davor. */
-const SECTIONS: Section[] = [vorschau, mermaid, bildplaetze, einstellungen, endpunktQuelle, explorer, exportSektion, chatSektion];
+const SECTIONS: Section[] = [vorschau, mermaid, bildplaetze, einstellungen, anfrage, endpunktQuelle, explorer, exportSektion, chatSektion];
 
 // --- Lauf --------------------------------------------------------------------
 

@@ -38,7 +38,7 @@ describe("deck-generation strings", () => {
     "deck.modal.contextWarn", "deck.modal.noEndpoint", "deck.notice.done", "deck.notice.incomplete",
     "deck.notice.finishedBg", "deck.error.envelope", "deck.error.cors", "deck.error.invalid",
     "deck.settings.heading", "deck.settings.endpoints.name", "deck.settings.model.name",
-    "deck.settings.maxTokens.name", "deck.settings.temperature.name", "deck.settings.suppressThinking.name"];
+    "deck.settings.maxTokens.name", "deck.settings.thinkingTest.name", "request.title", "request.legacyTemperature"];
   it("has EN + DE for every deck key", () => {
     setLang("en"); for (const k of keys) expect(t(k), `EN ${k}`).not.toBe(k);
     setLang("de"); for (const k of keys) expect(t(k), `DE ${k}`).not.toBe(k);

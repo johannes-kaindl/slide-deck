@@ -5,7 +5,7 @@ import { Notice, Setting, setIcon } from "obsidian";
 import { t } from "./i18n";
 import {
   warnRuleKey, roleKindKey,
-  modelFieldMode, thinkToggleView, statusLabelParts,
+  modelFieldMode, statusLabelParts,
 } from "./llm/ai-settings-model";
 import type { ModelContext } from "./llm/model-info";
 import type { EndpointStatusKind } from "./vendor/kit/endpoint_diagnostics";
@@ -161,36 +161,22 @@ export function renderModelField(containerEl: HTMLElement, deps: ModelFieldDeps)
     }));
 }
 
-export interface ThinkingDeps {
+export interface ThinkingTestDeps {
   getModel: () => string;
-  getSuppress: () => boolean;
-  setSuppress: (v: boolean) => Promise<void>;
   testSuppress: (model: string) => Promise<{ thought: boolean }>;
-  rerender: () => void;
 }
 
-/** Thinking toggle + live verification. isAlwaysOnThinker only knows gpt-oss/harmony — the test
- *  button is what turns a guess into a fact. Never runs on its own: it costs a real LLM call. */
-export function renderThinkingRow(containerEl: HTMLElement, deps: ThinkingDeps): void {
-  const view = thinkToggleView(deps.getModel(), deps.getSuppress());
+/** "Thinking test": one real, minimal call with thinking off. The Thinking LEVEL itself lives in the
+ *  "Request" section; this button is what turns a name guess ("does this model think anyway?") into
+ *  a fact. Never runs on its own: it costs a real LLM call. */
+export function renderThinkingTestRow(containerEl: HTMLElement, deps: ThinkingTestDeps): void {
+  // hostFor() blanks settingEl before this block draws, so the block must restate its own
+  // name and description (Finding 2 of the earlier thinking row).
   const setting = new Setting(containerEl)
-    .setName(t("deck.settings.suppressThinking.name"))
-    // hostFor() blanks settingEl before this block draws, so unlike the plain fields this
-    // block must restate its own description — dropping it here silently removed the
-    // explanation that the five plain-text fields still show (Finding 2). Keep both: the
-    // static "what this does" plus the live on/off/always-on state.
-    .setDesc(`${t("deck.settings.suppressThinking.desc")} — ${t(view.labelKey)}`);
-  if (view.cls) setting.settingEl.addClass(view.cls);
-
-  setting.addToggle((tg) => {
-    tg.setValue(deps.getSuppress());
-    tg.setDisabled(view.disabled);
-    tg.onChange((v) => void deps.setSuppress(v).then(() => deps.rerender()));
-  });
-
+    .setName(t("deck.settings.thinkingTest.name"))
+    .setDesc(t("deck.settings.thinkingTest.desc"));
   setting.addButton((b) => b
     .setButtonText(t("deck.settings.thinking.test"))
-    .setDisabled(view.disabled)
     .onClick(async () => {
       const model = deps.getModel();
       if (!model) { new Notice(t("deck.settings.thinking.testNoModel")); return; }

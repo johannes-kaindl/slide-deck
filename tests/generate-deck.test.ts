@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { runGenerateDeck } from "../src/generate-deck";
 
-const opts = { model: "m", temperature: 0.3, maxTokens: 8192, suppressThinking: true };
+const opts = { model: "m", sentModel: "m", params: { temperature: 0.7, max_tokens: 8192 } };
 const baseMessages = [{ role: "user" as const, content: "src" }];
 function deps(client: any, over: any = {}) {
   return { client, messages: baseMessages, streamOpts: opts, themeKey: "dark", signal: new AbortController().signal, onState: () => {}, ...over };

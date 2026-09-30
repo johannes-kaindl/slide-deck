@@ -3,8 +3,12 @@ import type SlideDeckPlugin from "./main";
 import { t } from "./i18n";
 import { revealFolder, writeThemeCss } from "./theme-source";
 import { THEME_ALIASES } from "./vendor/deck-core/pure/presets";
-import { endpointListStrings, renderModelField, renderThinkingRow } from "./ai-settings-ui";
+import { endpointListStrings, renderModelField, renderThinkingTestRow } from "./ai-settings-ui";
 import { makeDeckLlmClient } from "./llm-client";
+import { BACKENDS, DEFAULT_REQUEST_SETTINGS, FAMILIES, type BackendId, type FamilyId, type FieldExplain, type RequestSettings } from "./vendor/kit/sampling-profiles";
+import { MODE, buildDeckParams, loadRequestSettings } from "./llm/request-params";
+import { deviationDetail } from "./llm/request-text";
+import { buildRequestSection } from "./vendor/kit-obsidian/request-section";
 import { ENDPOINT_CALLER } from "./llm/resolve-endpoint";
 import { reasoningHappened } from "./vendor/kit/reasoning";
 import { githubHelpUrls, helpSettingDefinition } from "./vendor/kit-obsidian/help-setting";
@@ -13,7 +17,7 @@ import { mergeSettings } from "./vendor/kit/settings";
 import { migrateEndpointList, type EndpointConfig } from "./vendor/kit/endpoint_config";
 import type { EndpointChoice } from "./vendor/kit/endpoint-source";
 import { buildEndpointSourceSection, findEndpointManager } from "./vendor/kit-obsidian/endpoint-source";
-import { renderSettingDefinitions, settingBodyHost, refreshSettingsTab } from "./vendor/kit-obsidian/settings_walker";
+import { renderSettingDefinitions, settingBodyHost, refreshSettingsTab, installTabRefreshOnOpen } from "./vendor/kit-obsidian/settings_walker";
 import { buildEndpointList } from "./vendor/kit-obsidian/endpoint-list";
 import { createModelListCache } from "./vendor/kit/model-list-cache";
 import { ENDPOINT_PRESETS } from "./vendor/kit/endpoint_diagnostics";
@@ -34,9 +38,11 @@ export interface SlideDeckSettings {
    *  relevant, solange der Manager installiert ist; sonst gilt `llmEndpoints` + `llmModel`. */
   choice: EndpointChoice;
   llmModel: string;
+  /** Plugin-Budget (`max_tokens`): geht als Budget in den Request-Bau, die Familien-Reserve kann es anheben. */
   llmMaxTokens: number;
-  llmTemperature: number;
-  llmSuppressThinking: boolean;
+  /** Anfrage-Einstellungen (Sampling-Profil, Modus `creative`): Denkstufe und Ueberschreibungen je
+   *  Familie. Ersetzt die Altfelder `llmTemperature`/`llmSuppressThinking` (migriert in `llm/request-params.ts`). */
+  request: RequestSettings;
   /** Per-Funktion editierter Baustein — ueberschreibt DEFAULT_SUFFIXES aus image/functions.ts.
    *  Leer bis Task 10 eine Bedienoberflaeche dafuer baut. */
   imageSuffixes: Partial<Record<ImageFunction, string>>;
@@ -44,7 +50,7 @@ export interface SlideDeckSettings {
 export const DEFAULT_SETTINGS: SlideDeckSettings = {
   defaultTheme: "kami", minFontPx: 24, imageScale: 2, customCss: "",
   exportFolder: "Slide-Deck-Export", themesFolder: "Slide-Deck-Themes", hideThemesFolder: true,
-  llmEndpoints: [{ url: "http://localhost:1234" }], choice: {}, llmModel: "", llmMaxTokens: 8192, llmTemperature: 0.3, llmSuppressThinking: true,
+  llmEndpoints: [{ url: "http://localhost:1234" }], choice: {}, llmModel: "", llmMaxTokens: 8192, request: structuredClone(DEFAULT_REQUEST_SETTINGS),
   imageSuffixes: {},
 };
 
@@ -63,10 +69,24 @@ function sanitizeChoice(raw: unknown): EndpointChoice {
  *  type-blind merge, so the migration has to run as a second pass right after it. Single
  *  extracted entry point so main.ts and tests share the exact same load path. */
 export function loadSettings(raw: unknown): SlideDeckSettings {
+  return loadSettingsWithReport(raw).settings;
+}
+
+/** Like `loadSettings`, plus what the caller has to tell the user: request values that were invalid
+ *  (`dropped`) and a legacy temperature that became an override (`legacyTemperature`), and whether
+ *  legacy fields were present at all (`migrated` → save once so the old fields are gone and the
+ *  notice cannot repeat). */
+export function loadSettingsWithReport(raw: unknown): { settings: SlideDeckSettings; dropped: string[]; legacyTemperature: number | null; migrated: boolean } {
   const merged = mergeSettings(DEFAULT_SETTINGS, raw);
   // Shallow, type-blind merge: llmEndpoints may still be string[] from an old data.json.
   const rawList = merged.llmEndpoints as unknown as (string | EndpointConfig)[] | undefined;
-  return { ...merged, llmEndpoints: migrateEndpointList(undefined, rawList), choice: sanitizeChoice(merged.choice) };
+  const { request, dropped, legacyTemperature } = loadRequestSettings(raw);
+  const legacy = merged as unknown as Record<string, unknown>;
+  const migrated = "llmSuppressThinking" in legacy || "llmTemperature" in legacy;
+  delete legacy.llmSuppressThinking;
+  delete legacy.llmTemperature;
+  const settings = { ...merged, llmEndpoints: migrateEndpointList(undefined, rawList), choice: sanitizeChoice(merged.choice), request };
+  return { settings, dropped, legacyTemperature, migrated };
 }
 
 /** Migrate a persisted 0.4.x `defaultTheme` (e.g. "default"/"dark") to its Nordstern successor
@@ -81,7 +101,15 @@ export function migrateLegacyThemeKeys(s: SlideDeckSettings): SlideDeckSettings 
  *  imperative display()). Plain controls bind via key ↔ get/setControlValue; the two pieces
  *  that need bespoke UI (the theme-key chip list, the export dropdown+button) use render. */
 export class SlideDeckSettingTab extends PluginSettingTab {
-  constructor(app: App, private plugin: SlideDeckPlugin) { super(app, plugin); }
+  private uninstallRefresh: () => void = () => {};
+
+  constructor(app: App, private plugin: SlideDeckPlugin) {
+    super(app, plugin);
+    // "Last request" and deviations must be current when the tab opens. The full rebuild is
+    // `renderImperative()`, NOT `refreshUi()`: that goes through the native `update()`, which calls
+    // `renderTab()` — the hook itself — and the tab would stay empty on first open.
+    this.uninstallRefresh = installTabRefreshOnOpen(this, () => this.renderImperative());
+  }
 
   getSettingDefinitions(): SettingDefinitionItem[] {
     const themes = this.plugin.themeStore.getThemes();
@@ -138,10 +166,9 @@ export class SlideDeckSettingTab extends PluginSettingTab {
             render: (setting) => this.renderModel(setting) },
           { name: t("deck.settings.maxTokens.name"), desc: t("deck.settings.maxTokens.desc"),
             control: { type: "number", key: "llmMaxTokens", min: 256 } },
-          { name: t("deck.settings.temperature.name"), desc: t("deck.settings.temperature.desc"),
-            control: { type: "number", key: "llmTemperature", min: 0, step: "any" } },
-          { name: t("deck.settings.suppressThinking.name"), desc: t("deck.settings.suppressThinking.desc"),
-            render: (setting) => this.renderThinking(setting) },
+          { name: "", render: (setting) => this.renderRequestSection(setting) },
+          { name: t("deck.settings.thinkingTest.name"), desc: t("deck.settings.thinkingTest.desc"),
+            render: (setting) => this.renderThinkingTest(setting) },
         ],
       },
       {
@@ -256,13 +283,77 @@ export class SlideDeckSettingTab extends PluginSettingTab {
     });
   }
 
-  private renderThinking(setting: Setting): void {
-    renderThinkingRow(this.hostFor(setting), {
-      getModel: () => this.effectiveModel(),
-      getSuppress: () => this.plugin.settings.llmSuppressThinking,
-      setSuppress: async (v) => { this.plugin.settings.llmSuppressThinking = v; await this.plugin.saveSettings(); },
-      testSuppress: (model) => this.runSuppressTest(model),
+  /** The "Request" section — sampling profile of mode `creative` (Kit `request-section`). The
+   *  Thinking level lives here; the plugin's own token budget (`llmMaxTokens`) is passed in so the
+   *  section shows when the family reserve raises it. Family and backend are translated by the plugin. */
+  private renderRequestSection(setting: Setting): void {
+    const host = this.hostFor(setting);
+    buildRequestSection({
+      containerEl: host,
+      modes: [MODE],
+      state: () => this.plugin.requestSectionState(),
+      settings: () => this.plugin.settings.request,
+      save: (s) => this.plugin.saveRequestSettings(s),
+      maxTokens: () => this.plugin.settings.llmMaxTokens,
+      session: this.plugin.requestSession,
       rerender: () => this.refreshUi(),
+      strings: {
+        title: t("request.title"),
+        head: (family, familySource, backend, backendSource) => {
+          const famLabel = family === "—" ? "—" : (FAMILIES[family as FamilyId]?.label ?? family);
+          const backLabel = backend === "unknown" ? t("request.backendSource.none") : (BACKENDS[backend as BackendId]?.label ?? backend);
+          return t("request.head", famLabel, t(`request.familySource.${familySource}`), backLabel, t(`request.backendSource.${backendSource}`));
+        },
+        unknownFamily: t("request.unknownFamily"),
+        jitWarning: (model, defaultModel) => t("request.jitWarning", model, defaultModel),
+        sentAs: (model) => t("request.sentAs", model),
+        modeHeading: (mode) => t(`request.mode.${mode}`),
+        fieldName: (field) => t(`request.field.${field}`),
+        fieldDesc: (e) => this.fieldStateText(e),
+        reset: t("request.reset"),
+        thinkingLevel: t("request.thinkingLevel"),
+        level: (l) => t(`request.level.${l}`),
+        levelPicker: t("request.levelPicker"),
+        levelPickerDesc: t("request.levelPickerDesc"),
+        dormant: (fam) => t("request.dormant", fam === "unknown" ? t("request.familySource.none") : (FAMILIES[fam]?.label ?? fam)),
+        deleteDormant: t("request.deleteDormant"),
+        lastRequest: t("request.lastRequest"),
+        lastRequestNone: t("request.lastRequestNone"),
+        copy: t("request.copy"),
+        copied: t("request.copied"),
+        deviationsOk: t("request.deviationsOk"),
+        deviationsWarn: (n) => t("request.deviationsWarn", String(n)),
+        deviation: (kind, count, detail) => `${deviationDetail(kind, detail)} (${count}×)`,
+      },
+    });
+  }
+
+  /** Explanation per field: state (sent / not sent and why) plus note. */
+  private fieldStateText(e: FieldExplain): string {
+    const key = {
+      "sent-effective": "request.state.sentEffective",
+      "sent-unproven": "request.state.sentUnproven",
+      "not-sent-ignored": "request.state.notSentIgnored",
+      "not-sent-unsupported": "request.state.notSentUnsupported",
+      "not-sent-unknown-family": "request.state.notSentUnknownFamily",
+      "not-sent-no-value": "request.state.notSentNoValue",
+    }[e.state];
+    let s = t(key);
+    const noteKey = e.note ? {
+      "raised-to-reserve": "request.note.raisedToReserve",
+      "raised-to-thinking-floor": "request.note.raisedToThinkingFloor",
+      "below-thinking-floor": "request.note.belowThinkingFloor",
+      "off-not-possible": "request.note.offNotPossible",
+    }[e.note] : undefined;
+    if (noteKey) s += ` ${t(noteKey)}`;
+    if (e.field === "top_p") s += t("request.top_p.hint");
+    return s;
+  }
+
+  private renderThinkingTest(setting: Setting): void {
+    renderThinkingTestRow(this.hostFor(setting), {
+      getModel: () => this.effectiveModel(),
+      testSuppress: (model) => this.runSuppressTest(model),
     });
   }
 
@@ -276,15 +367,17 @@ export class SlideDeckSettingTab extends PluginSettingTab {
     return findEndpointManager(this.app) ? this.plugin.activeModel : this.plugin.settings.llmModel;
   }
 
-  /** One real, minimal call with suppression on: did the model think anyway?
-   *  This is the only place that replaces the gpt-oss/harmony name heuristic with evidence. */
+  /** One real, minimal call with thinking off: did the model think anyway? This is the only place
+   *  that replaces a name guess with evidence. Built through `buildDeckParams` like every other request. */
   private async runSuppressTest(model: string): Promise<{ thought: boolean }> {
     const ep = await this.activeEndpoint();
     if (!ep) throw new Error(t("deck.modal.noEndpoint"));
+    const src = this.plugin.deckSource(model);
+    const { params } = buildDeckParams({ family: src.family, backend: src.backend, thinking: "off", maxTokens: 32, overrides: { temperature: 0 } });
     const client = makeDeckLlmClient(ep, model);
     const r = await client.generate(
       [{ role: "user", content: "Reply with the single word: ok" }],
-      { model, temperature: 0, maxTokens: 32, suppressThinking: true },
+      { model, sentModel: src.sentModel, params },
       () => {}, () => {},
     );
     return { thought: reasoningHappened(r.content, r.reasoning) };
@@ -301,6 +394,7 @@ export class SlideDeckSettingTab extends PluginSettingTab {
    *  starting LM Studio and reopening the settings would change nothing. */
   hide(): void {
     this.modelCache.clear();
+    this.uninstallRefresh();
     super.hide();
   }
 
@@ -337,8 +431,6 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       case "customCss": return s.customCss;
       case "llmModel": return s.llmModel;
       case "llmMaxTokens": return s.llmMaxTokens;
-      case "llmTemperature": return s.llmTemperature;
-      case "llmSuppressThinking": return s.llmSuppressThinking;
       default: return undefined;
     }
   }
@@ -354,8 +446,6 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       case "customCss": s.customCss = String(value); break;
       case "llmModel": s.llmModel = String(value).trim(); break;
       case "llmMaxTokens": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.llmMaxTokens = Math.floor(n); break; }
-      case "llmTemperature": { const n = Number(value); if (Number.isFinite(n) && n >= 0) s.llmTemperature = n; break; }
-      case "llmSuppressThinking": s.llmSuppressThinking = Boolean(value); break;
       case "themesFolder":
         s.themesFolder = String(value).trim() || DEFAULT_SETTINGS.themesFolder;
         await this.plugin.saveSettings();

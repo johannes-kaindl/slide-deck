@@ -2,6 +2,7 @@
 // die lokale Liste dieses Plugins. Kein obsidian-Import — das Finden des Managers braucht `app`
 // und bleibt beim Aufrufer (main.ts). Muster: yijing-oracle/src/core/llm/resolve-endpoint.ts.
 import type { EndpointConfig } from "../vendor/kit/endpoint_config";
+import type { BackendId } from "../vendor/kit/sampling-profiles";
 import {
   resolveEndpointSource,
   type EndpointSourceResult,
@@ -16,6 +17,7 @@ export function resolveDeckEndpoint(
   settings: Pick<SlideDeckSettings, "llmEndpoints" | "llmModel" | "choice">,
   manager: LlmEndpointManagerApi | null,
   ping: (cfg: EndpointConfig) => Promise<boolean>,
+  backendOf?: (cfg: EndpointConfig) => Promise<BackendId | null>,
 ): Promise<EndpointSourceResult> {
   return resolveEndpointSource(
     {
@@ -25,6 +27,7 @@ export function resolveDeckEndpoint(
       capability: "chat",
       choice: settings.choice,
       caller: ENDPOINT_CALLER,
+      ...(backendOf ? { backendOf } : {}),
     },
     ping,
   );

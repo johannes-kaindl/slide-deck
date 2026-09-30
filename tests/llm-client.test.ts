@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { DeckLlmClient, type HttpJson } from "../src/llm-client";
 import type { SseTransport } from "../src/vendor/kit-obsidian/chat-client";
 
-const opts = { model: "m", temperature: 0.3, maxTokens: 8192, suppressThinking: true };
+const opts = { model: "m", sentModel: "m", params: { temperature: 0.7, max_tokens: 8192 } };
 const msg = [{ role: "user" as const, content: "x" }];
 
 function fakeHttp(impl: (url: string, init?: any) => { status: number; json?: unknown; text?: string }): HttpJson {
@@ -52,10 +52,10 @@ describe("DeckLlmClient.generate", () => {
     expect(out.content).toBe("# A");
     expect(out.reasoning).toBe("hmx");
   });
-  it("sends plugin temperature/max_tokens and the model on the wire — the client adds no sampling of its own", async () => {
+  it("sends the params and the model on the wire — the client adds no sampling of its own", async () => {
     const bodies: any[] = [];
-    await new DeckLlmClient({ url: "http://x" }, "m", fakeHttp(() => ({ status: 200 })), fakeStream([sse("a"), "data: [DONE]\n\n"], 200, bodies)).generate(msg, { ...opts, model: "other" }, () => {}, () => {});
-    expect(bodies[0]).toMatchObject({ model: "other", stream: true, temperature: 0.3, max_tokens: 8192, messages: msg });
+    await new DeckLlmClient({ url: "http://x" }, "m", fakeHttp(() => ({ status: 200 })), fakeStream([sse("a"), "data: [DONE]\n\n"], 200, bodies)).generate(msg, { ...opts, model: "other", sentModel: "other" }, () => {}, () => {});
+    expect(bodies[0]).toMatchObject({ model: "other", stream: true, temperature: 0.7, max_tokens: 8192, messages: msg });
   });
   it("throws the envelope message on a 200-error body (no SSE)", async () => {
     const c = new DeckLlmClient({ url: "http://x" }, "m", fakeHttp(() => ({ status: 200 })), fakeStream(['{"error":{"message":"model not loaded"}}']));
@@ -116,17 +116,40 @@ describe("DeckLlmClient.generate", () => {
     expect(await c.generate(msg, opts, () => {}, () => {})).toMatchObject({ content: "", finishReason: "length", usedFallback: false });
   });
 
-  it("never sends suppress params to an always-on thinker", async () => {
-    const bodies: any[] = [];
-    const c = new DeckLlmClient({ url: "http://x:1" }, "gpt-oss-20b", fakeHttp(() => ({ status: 200 })), fakeStream([sse("ok"), "data: [DONE]\n\n"], 200, bodies));
-    await c.generate([{ role: "user", content: "hi" }], { model: "gpt-oss-20b", temperature: 0, maxTokens: 8, suppressThinking: true }, () => {}, () => {});
-    expect(bodies[0].reasoning_effort).toBeUndefined();
-  });
-  it("sends the suppress params for an ordinary model when asked", async () => {
+  it("puts opts.params into the body, unchanged, and sends nothing of its own", async () => {
     const bodies: any[] = [];
     const c = new DeckLlmClient({ url: "http://x:1" }, "qwen3", fakeHttp(() => ({ status: 200 })), fakeStream([sse("ok"), "data: [DONE]\n\n"], 200, bodies));
-    await c.generate(msg, { ...opts, model: "qwen3", suppressThinking: true }, () => {}, () => {});
-    expect(bodies[0].reasoning_effort).toBe("none");
+    await c.generate(msg, { model: "qwen3", sentModel: "qwen3", params: { temperature: 0.7, top_p: 0.8, reasoning_effort: "none", max_tokens: 4096 } }, () => {}, () => {});
+    expect(bodies[0]).toMatchObject({ temperature: 0.7, top_p: 0.8, reasoning_effort: "none", max_tokens: 4096, model: "qwen3" });
+    expect("chat_template_kwargs" in bodies[0]).toBe(false);
+  });
+  it("sends no sampling at all when params are empty", async () => {
+    const bodies: any[] = [];
+    const c = new DeckLlmClient({ url: "http://x:1" }, "m", fakeHttp(() => ({ status: 200 })), fakeStream([sse("ok"), "data: [DONE]\n\n"], 200, bodies));
+    await c.generate(msg, { model: "m", sentModel: "m", params: {} }, () => {}, () => {});
+    for (const k of ["temperature", "max_tokens", "reasoning_effort", "top_p"]) expect(k in bodies[0]).toBe(false);
+  });
+  it("sends the alias-resolved model on the wire (sentModel), not the listed name", async () => {
+    const bodies: any[] = [];
+    const c = new DeckLlmClient({ url: "http://x:1" }, "m", fakeHttp(() => ({ status: 200 })), fakeStream([sse("ok"), "data: [DONE]\n\n"], 200, bodies));
+    await c.generate(msg, { model: "verdigado-think", sentModel: "google/gemma-4-e4b", params: {} }, () => {}, () => {});
+    expect(bodies[0].model).toBe("google/gemma-4-e4b");
+  });
+  it("reports every server answer to onResponse (ok, truncated, HTTP error) and none for an abort", async () => {
+    const seen: any[] = [];
+    const ok = new DeckLlmClient({ url: "http://x" }, "m", fakeHttp(() => ({ status: 200 })), fakeStream([sse("# A"), "data: [DONE]\n\n"]));
+    await ok.generate(msg, { ...opts, onResponse: (f) => seen.push(f) }, () => {}, () => {});
+    expect(seen[0]).toMatchObject({ status: 200, content: "# A" });
+    const trunc = new DeckLlmClient({ url: "http://x" }, "m", fakeHttp(() => ({ status: 200 })), fakeStream(['data: {"choices":[{"delta":{"reasoning_content":"hm"},"finish_reason":"length"}]}\n\ndata: [DONE]\n\n']));
+    await trunc.generate(msg, { ...opts, onResponse: (f) => seen.push(f) }, () => {}, () => {});
+    expect(seen[1]).toMatchObject({ status: 200, finishReason: "length", content: "" });
+    const bad = new DeckLlmClient({ url: "http://x" }, "m", fakeHttp(() => ({ status: 200 })), fakeStream([], 400));
+    await expect(bad.generate(msg, { ...opts, onResponse: (f) => seen.push(f) }, () => {}, () => {})).rejects.toThrow();
+    expect(seen[2]).toMatchObject({ status: 400 });
+    const ctrl = new AbortController(); ctrl.abort();
+    const ab = new DeckLlmClient({ url: "http://x" }, "m", fakeHttp(() => ({ status: 200 })), okStream());
+    await expect(ab.generate(msg, { ...opts, onResponse: (f) => seen.push(f) }, () => {}, () => {}, ctrl.signal)).rejects.toThrow();
+    expect(seen).toHaveLength(3);
   });
   it("carries the API key on the chat path", async () => {
     const seen: Record<string, string>[] = [];

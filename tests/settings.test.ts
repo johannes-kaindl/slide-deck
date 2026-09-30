@@ -42,8 +42,13 @@ describe("SlideDeckSettingTab (declarative)", () => {
     const keys = controls.map((c) => c.control.key);
     expect(new Set(keys)).toEqual(new Set([
       "defaultTheme", "minFontPx", "imageScale", "exportFolder", "themesFolder", "hideThemesFolder", "customCss",
-      "llmMaxTokens", "llmTemperature",
+      "llmMaxTokens",
     ]));
+    // Tote Schluessel (Welle 14): Temperatur und Denk-Schalter leben im Abschnitt „Anfrage“, nicht mehr als Control.
+    expect(keys).not.toContain("llmTemperature");
+    expect(keys).not.toContain("llmSuppressThinking");
+    expect(tab.getControlValue("llmTemperature")).toBeUndefined();
+    expect(tab.getControlValue("llmSuppressThinking")).toBeUndefined();
     for (const key of keys) expect(key in DEFAULT_SETTINGS).toBe(true);
 
     for (const key of keys) {
@@ -53,7 +58,7 @@ describe("SlideDeckSettingTab (declarative)", () => {
     const newValues: Record<string, unknown> = {
       defaultTheme: "kogane", minFontPx: 30, imageScale: 3, exportFolder: "Out", themesFolder: "Themes",
       hideThemesFolder: false, customCss: "body{}",
-      llmMaxTokens: 4096, llmTemperature: 0.7,
+      llmMaxTokens: 4096,
     };
     for (const key of keys) {
       await tab.setControlValue(key, newValues[key]);
