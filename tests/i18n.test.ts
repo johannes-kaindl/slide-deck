@@ -93,3 +93,17 @@ describe("warning severity strings", () => {
     setLang("en");
   });
 });
+
+describe("Sprachmix im Settings-Tab (Welle 14)", () => {
+  it("die deutsche Oberfläche führt Überschrift, Endpunkt-Feld und Modell-Beschreibung einsprachig", () => {
+    expect(STRINGS_DE["settings.heading"]).toBe("Foliensatz");
+    expect(STRINGS_DE["deck.settings.endpoints.name"]).toBe("Endpunkte");
+    expect(STRINGS_DE["deck.settings.model.desc"]).not.toMatch(/Endpoint\b/);
+    expect(STRINGS_DE["deck.settings.model.desc"]).toContain("Endpunkt");
+  });
+  it("die englische Oberfläche bleibt unverändert", () => {
+    expect(STRINGS_EN["settings.heading"]).toBe("Slide deck");
+    expect(STRINGS_EN["deck.settings.endpoints.name"]).toBe("Endpoints");
+    expect(STRINGS_EN["deck.settings.model.desc"]).toContain("endpoint");
+  });
+});

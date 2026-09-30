@@ -614,6 +614,13 @@ keine, damit dieser Block nicht durch Zeitablauf falsch wird). Bewusste, begrün
   Obsidian 1.13+). *Grund:* Recommendation, kein Blocker; minAppVersion bleibt 1.8.7. Eigener
   Upgrade-Zyklus.
 
+## UI-Abweichungen
+
+- **strings-location** — Grund: (UI-STANDARD §10 nennt `src/i18n/strings.ts` als Ablageort)
+  Die Texte dieses Plugins liegen in `src/i18n.ts` (EN kanonisch, EN/DE); ein Umzug würde nur Dateipfade
+  ändern, keinen Text und keine Auflösung von Fachbegriffen. Entscheidung Master Welle 14, 2026-09-30.
+  — gilt-solange: `src/i18n.ts` die einzige Textquelle des Plugins ist
+
 ## Dach-Kontext (obsidian-plugins)
 
 Dieses Repo liegt unter dem Koordinations-Dach `obsidian-plugins/` (dem Elternverzeichnis dieses Repos).
