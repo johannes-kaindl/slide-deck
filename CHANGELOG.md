@@ -6,6 +6,12 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The changelog is now written entirely in English.
+- The documentation index lists the sample decks (demo, regression, layouts).
+- Internal design notes moved out of the repository; the user documentation is unchanged.
+
 ## [0.13.0] — 2026-09-30
 
 ### Security
