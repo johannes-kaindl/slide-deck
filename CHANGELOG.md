@@ -37,98 +37,56 @@ versioning follows [SemVer](https://semver.org/).
 ## [0.11.0] — 2026-09-26
 
 ### Added
-- **Hilfe-Zeile ganz oben in den Einstellungen** (UI-STANDARD §8): Text-Knopf „Open documentation“ auf den Doku-Index und Bug-Icon auf den Issue-Tracker auf GitHub (Help row at the top of the settings with links to the documentation and the issue tracker). Kit-Modul `help-setting.ts` aus obsidian-kit 0.43.0, einzeln gepinnt; die übrigen vendorten Module bleiben unverändert.
+- **Help row at the very top of the settings** (UI-STANDARD §8): a text button “Open documentation” that leads to the documentation index, and a bug icon that leads to the issue tracker on GitHub. Kit module `help-setting.ts` from obsidian-kit 0.43.0, pinned on its own; the other vendored modules stay unchanged.
 
 ### Changed
-- **Endpunkte kommen vom LLM Endpoint Manager, wenn er installiert ist** (Kit `endpoint-source`, `obsidian-kit` 0.41.1, `code-kit` 0.7.0 neu vendoriert). Der Manager hat Vorrang, die lokale Endpunkt-Liste bleibt als Rückfall und ist unverändert, solange der Manager fehlt oder aus ist. Sichtbare Folgen: (1) Mit Manager zeigt der Einstellungs-Tab statt der lokalen Endpunkt-Liste und der globalen Modell-Zeile den Baustein „Endpunkte kommen vom LLM Endpoint Manager“ (Endpunkt-Wahl, Modell-Wahl, Import der lokalen Endpunkte in den Manager); die lokale Liste und `llmModel` bleiben gespeichert, nur ausgeblendet. (2) Das Modell der Generate-Ansicht startet dann mit der Manager-Wahl bzw. dem Standardmodell des Endpunkts statt mit `llmModel`. (3) Neues Setting `choice` (`endpointId`, `model`) hält die Wahl gegenüber dem Manager; alte `data.json` ohne `choice` laden unverändert. (4) Meldet der Manager keinen Endpunkt, gibt es keinen lokalen Rückfall — die Generate-Ansicht zeigt „kein Endpunkt“.
+- **Endpoints come from the LLM Endpoint Manager when it is installed** (Kit `endpoint-source`, `obsidian-kit` 0.41.1, `code-kit` 0.7.0 re-vendored). The Manager takes precedence; the local endpoint list stays as a fallback and is unchanged while the Manager is missing or off. Visible consequences: (1) With the Manager, the settings tab shows the block “Endpoints come from the LLM Endpoint Manager” (endpoint choice, model choice, import of the local endpoints into the Manager) instead of the local endpoint list and the global model row; the local list and `llmModel` stay stored, only hidden. (2) The model in the Generate view then starts with the Manager's choice or the endpoint's default model instead of `llmModel`. (3) New setting `choice` (`endpointId`, `model`) keeps the choice against the Manager; an old `data.json` without `choice` loads unchanged. (4) If the Manager reports no endpoint, there is no local fallback — the Generate view shows “no endpoint”.
 
 ## [0.10.1] — 2026-09-24
 
 ### Added
-- **Drei neue Folien-Layouts `agenda`, `threads`, `closing`** aus den Folien-Spezimen von Order from Traces. Sie kommen mit `deck-core` 0.12.0 (neu vendoriert, `e62dfa8`) und wirken in jedem Theme; `kogane` und `kami` legen auf `closing` zusätzlich einen Schleier über den Hintergrund. `agenda` liest eine nummerierte Liste mit Meta-Angabe als Inline-Code am Ende, `threads` eine nummerierte Liste mit `**Kartentitel**` und `closing` eine Aufzählung `**Schlüssel** Wert`. Doku in `docs/layouts.md`, Beispiel in `docs/themes/traces-layouts-deck.md`. Der Deck-Prompt der Generate-Ansicht bietet die drei Layouts jetzt auch dem Modell an.
+- **Three new slide layouts `agenda`, `threads`, `closing`** from the slide specimens of Order from Traces. They come with `deck-core` 0.12.0 (re-vendored, `e62dfa8`) and work in every theme; `kogane` and `kami` additionally lay a veil over the background on `closing`. `agenda` reads a numbered list with a meta note as inline code at the end, `threads` a numbered list with `**card title**`, and `closing` a bullet list `**key** value`. Documentation in `docs/layouts.md`, example in `docs/themes/traces-layouts-deck.md`. The deck prompt of the Generate view now offers the three layouts to the model as well.
 
 ### Changed
-- **BREAKING: Die beiden eingebauten Order-from-Traces-Presets heißen jetzt `kogane` (dunkel, vormals `kuro`) und `kami` (hell, vormals `shiro`).** Sie tragen die Werte von Order from Traces, hießen aber nach den Modi von birds of yore; Order from Traces hat seine Modi am 2026-09-20 benannt (Entscheidung Johannes). Werte, Atmosphäre und Labels bleiben, nur die Schlüssel wechseln. Kommt mit `deck-core` 0.13.0 (neu vendoriert, `86980bb`).
-- **Rückwärts-Aliasse gibt es bewusst keine** — die alten Namen werden für die Presets von birds of yore frei. Ein Deck mit `theme: kuro` fällt deshalb still auf den Rückfall `kami` zurück, wird also hell statt dunkel. Alle Decks, Fixtures und Doku-Stellen dieses Repos sind nachgezogen; ein `theme:` in einer eigenen Notiz muss von Hand nachgezogen werden. Die Aliasse `dark` → `kogane` und `default`/`serif` → `kami` gelten weiter.
-- Der Rückfall für einen unbekannten Theme-Schlüssel heißt entsprechend `kami`; `defaultTheme` in den Einstellungen steht neu auf `kami`.
+- **BREAKING: The two built-in Order from Traces presets are now called `kogane` (dark, formerly `kuro`) and `kami` (light, formerly `shiro`).** They carry the values of Order from Traces but were named after the modes of birds of yore; Order from Traces named its modes on 2026-09-20 (decision by Johannes). Values, atmosphere and labels stay, only the keys change. Comes with `deck-core` 0.13.0 (re-vendored, `86980bb`).
+- **There are deliberately no backward aliases** — the old names become free for the birds of yore presets. A deck with `theme: kuro` therefore silently falls back to `kami`, so it turns light instead of dark. All decks, fixtures and documentation passages of this repo are updated; a `theme:` in your own note has to be updated by hand. The aliases `dark` → `kogane` and `default`/`serif` → `kami` still apply.
+- The fallback for an unknown theme key is called `kami` accordingly; `defaultTheme` in the settings now defaults to `kami`.
 
-- **Vorschau und Generieren teilen sich jetzt EINE Sidebar mit Tab-Leiste** (UI-STANDARD §8,
-  Kit-Baustein `buildHubInto` aus `obsidian-kit`@0.35.0) statt zwei getrennter Leaves
-  (`slide-deck-preview`/`slide-deck-generate`). Beide Commands und der Ribbon-Knopf öffnen
-  denselben Hub-View (`slide-deck-hub`) und wechseln nur noch den Tab. Sichtbare Folge: ein
-  gespeichertes Workspace-Layout mit den alten View-Typen zeigt dort ein leeres Pane, bis der
-  Hub einmal neu geöffnet wird.
-- Ordner-Einstellungen (`exportFolder`, `themesFolder`) nutzen jetzt das native
-  `type: "folder"`-Control (Obsidian-Vorschlagsliste über den Kit-Walker-Fallback
-  `src/vendor/kit-obsidian/settings_walker.ts`, unverändert seit 0.35.0) statt eines
-  reinen Textfelds.
-- **Streaming-Antwortbereich im Deck-Generieren-Panel läuft jetzt über `buildStreamArea`
-  aus `obsidian-kit` (UI-STANDARD §8) statt über einen eigenen `<details>`/`<pre>`-Bau.**
-  Zwei Verhaltensänderungen: der Gedankenblock steht während des laufenden Streams offen
-  (vorher zugeklappt bis zum ersten manuellen Aufklappen), und der Scroll folgt dem
-  laufenden Text nur, solange der Leser ohnehin unten steht (`followTail`) statt
-  bedingungslos ans Ende zu springen.
-- Kit-Pin `obsidian-kit` 0.26.0 → 0.35.0 (`code-kit` 0.6.0) — alle vendorten Module unter
-  `src/vendor/kit(-obsidian)` neu gezogen, jetzt über `tools/sync-kit.sh`
-  (übernommen aus `lingotuner`) statt von Hand.
+- **Preview and Generate now share ONE sidebar with a tab bar** (UI-STANDARD §8, Kit block `buildHubInto` from `obsidian-kit`@0.35.0) instead of two separate leaves (`slide-deck-preview`/`slide-deck-generate`). Both commands and the ribbon button open the same hub view (`slide-deck-hub`) and only switch the tab. Visible consequence: a saved workspace layout with the old view types shows an empty pane there until the hub is opened once again.
+- Folder settings (`exportFolder`, `themesFolder`) now use the native `type: "folder"` control (Obsidian suggestion list via the Kit walker fallback `src/vendor/kit-obsidian/settings_walker.ts`, unchanged since 0.35.0) instead of a plain text field.
+- **The streaming answer area in the Generate-deck panel now runs through `buildStreamArea` from `obsidian-kit` (UI-STANDARD §8) instead of its own `<details>`/`<pre>` build.** Two behavior changes: the thinking block is open while the stream is running (before, it stayed collapsed until the first manual expand), and the scroll follows the running text only while the reader is at the bottom anyway (`followTail`) instead of jumping to the end unconditionally.
+- Kit pin `obsidian-kit` 0.26.0 → 0.35.0 (`code-kit` 0.6.0) — all vendored modules under `src/vendor/kit(-obsidian)` re-pulled, now via `tools/sync-kit.sh` (taken over from `lingotuner`) instead of by hand.
 
 ## [0.10.0] — 2026-09-06
 
 ### Added
-- **Bildplätze:** ein ```slide-image```-Codeblock rendert in der Leseansicht als Karte mit
-  Generieren-Knopf, ruft für die Erzeugung das Nachbarplugin `local-image-generator` über
-  dessen API auf und ersetzt sich nach dem Speichern selbst durch ein gewöhnliches Embed samt
-  Prompt-Kommentar als Ausgangspunkt für einen späteren Re-Roll von Hand (es gibt keinen
-  automatischen Leser dieses Kommentars). Neuer Befehl „Insert image slot" fügt einen
-  Platzhalter mit Funktionsauswahl ein.
-- **Sechs Bildfunktionen** (documentary, analytical, metaphorical, emotional, navigational,
-  decorative) steuern als Prompt-Bausteine, wie ein Bildplatz formuliert wird; die
-  Bausteine sind in den Einstellungen pro Funktion redigierbar.
+- **Image slots:** a ```slide-image``` code block renders in reading view as a card with a Generate button, calls the neighbor plugin `local-image-generator` through its API to create the image, and after saving replaces itself with an ordinary embed plus the prompt as a comment, as the starting point for a later re-roll by hand (nothing reads that comment automatically). The new command “Insert image slot” inserts a placeholder with a function choice.
+- **Six image functions** (documentary, analytical, metaphorical, emotional, navigational, decorative) control, as prompt building blocks, how an image slot is worded; the building blocks are editable per function in the settings.
 
 ### Changed
-- Die §8-Status-Vokabel (`is-checking`/`is-ok`/`is-error`) bewegt sich jetzt auch am
-  Bildplatz-Knopf — dieselbe Ikonensprache wie bei den KI-Endpunkten, für einen zweiten
-  Laufzeit-Zustand statt neu erfunden.
+- The §8 status vocabulary (`is-checking`/`is-ok`/`is-error`) now also moves on the image-slot button — the same icon language as for the AI endpoints, for a second runtime state instead of a newly invented one.
 
 ## [0.9.0] — 2026-08-20
 
 ### Added
-- **Ein Deck kann zwei Theme-Varianten führen.** Jedes Token einer Folien-Direktive nach dem
-  Layoutnamen wird zur CSS-Klasse: `<!-- layout: default sand -->` erzeugt
-  `.sd-slide.sd-mod-sand`. Ein Theme kann damit beide Paletten einer Vorlage mitführen und
-  pro Folie umschalten — bisher galt `theme:` unteilbar fürs ganze Deck, und ein fremdes
-  Token wurde verworfen *und* als Fehler gemeldet.
-- **Warnungen unterscheiden drei Schweren.** Die Vorschau färbt den Streifen links nach
-  Schwere und stellt der Zeile ein Formzeichen voran (▲ Fehler · ● Warnung · ℹ Hinweis),
-  damit die Bedeutung nicht nur an der Farbe hängt (WCAG 1.4.1) — dieselbe Zusage wie bei
-  den Callouts. Neue Wörterbuch-Einträge in EN und DE.
+- **A deck can carry two theme variants.** Every token of a slide directive after the layout name becomes a CSS class: `<!-- layout: default sand -->` produces `.sd-slide.sd-mod-sand`. A theme can thereby carry both palettes of a template and switch per slide — until now `theme:` applied indivisibly to the whole deck, and a foreign token was discarded *and* reported as an error.
+- **Warnings distinguish three severities.** The preview colors the stripe on the left by severity and puts a shape character in front of the line (▲ error · ● warning · ℹ note), so the meaning does not depend on color alone (WCAG 1.4.1) — the same promise as with the callouts. New dictionary entries in EN and DE.
 
 ### Fixed
-- **Bilder auf zwei- und dreispaltigen Folien werden begrenzt.** Sie waren völlig
-  unbeschränkt, sprengten den Folienrand und schoben die Fußzeile aus dem Bild — sichtbar
-  in Vorschau *und* Export. Einspaltige Folien rendern unverändert.
-- **Ein eigener Layoutname löst keinen Alarm mehr aus.** Ein Theme darf eigene Layouts und
-  Modifier definieren; der Kern reichte den Namen bereits durch, färbte die Folie in der
-  Vorschau aber amber und meldete zusätzlich eine falsche Regionenzahl. Beides gemeldet der
-  vorgesehene Erweiterungsweg als Defekt. Die Hinweise bleiben — als `info`, ohne Streifen.
-- **Mermaid-Diagramme sitzen senkrecht mittig** statt oben angeheftet, mit dem Freiraum
-  gesammelt darunter.
+- **Images on two- and three-column slides are now bounded.** They were entirely unconstrained, broke through the slide edge and pushed the footer out of the picture — visible in the preview *and* the export. Single-column slides render unchanged.
+- **A custom layout name no longer raises an alarm.** A theme may define its own layouts and modifiers; the core already passed the name through, but the preview tinted the slide amber and additionally reported a wrong region count. Both reported the intended extension path as a defect. The notes remain — as `info`, without a stripe.
+- **Mermaid diagrams sit vertically centered** instead of pinned to the top, with the free space gathered below.
 
 ### Changed
-- **Vendorter Kern auf deck-core 0.5.0** (`4fc922d`) angehoben.
+- **Vendored core raised to deck-core 0.5.0** (`4fc922d`).
 
 ## [0.8.0] — 2026-08-14
 
 ### Added
-- **Die `crimson`-Familie als eingebautes Theme** — `crimson-dark`, `crimson-dark-lc`,
-  `crimson-light`, `crimson-light-lc`. Ein Serifen-Display über einem Mono-Fließtext,
-  dazu eine feine Scanline und ein Glow auf `h1`, die die kontrastarmen Modi dämpfen
-  bzw. abschalten. Wählbar über `theme:` wie die Nordstern-Themes; Code-Highlighting
-  und Mermaid-Theme kommen mit. Neue Fremd-CSS-Dateien braucht es nicht.
-  Kommt aus deck-core 0.4.0 (Marp-Import, Ebene A: Farben/Fonts/Atmosphäre).
+- **The `crimson` family as a built-in theme** — `crimson-dark`, `crimson-dark-lc`, `crimson-light`, `crimson-light-lc`. A serif display over a mono body text, plus a fine scanline and a glow on `h1` that the low-contrast modes dampen or switch off. Selectable via `theme:` like the Nordstern themes; code highlighting and Mermaid theme come along. No new third-party CSS files are needed. Comes from deck-core 0.4.0 (Marp import, level A: colors/fonts/atmosphere).
 
 ### Changed
-- **Vendorter Kern auf deck-core 0.4.0** (`01da676`) angehoben.
+- **Vendored core raised to deck-core 0.4.0** (`01da676`).
 
 ## [0.7.3] — 2026-08-12
 
