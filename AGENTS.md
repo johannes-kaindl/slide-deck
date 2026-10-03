@@ -577,8 +577,7 @@ Vollständigkeits-Record, den niemand typecheckt, ist keine Absicherung, sondern
   (CORE-META-14). Specs/Plans tragen Arbeitskontext (Vault-Pfade, Schwester-Repo-Interna), der in
   einem public Repo niemandem nützt. Das Repo behält die Design-Essenz in dieser Datei + `CHANGELOG.md`.
   `.superpowers/sdd/` bleibt der git-ignorierte Scratch-Ort für laufende Ledger/Reports.
-- **Alt-Bestand:** `docs/superpowers/{specs,plans}/` (bis 2026-07-16) bleibt liegen, bis ein bewusster
-  Hygiene-Sweep ihn zieht — s. `../../_docs/SEED-repo-hygiene-internals.md`. Nichts Neues dort ablegen.
+- **Specs und Pläne** liegen im Vault-Cockpit unter `_SDD/` (CORE-META-14); `docs/superpowers/` gibt es seit 2026-10-03 nicht mehr (Docs-Sweep, Block 2).
 - **Nie im Repo:** absolute Pfade außerhalb des Repos (`/Users/…`, Vault-Pfade) — Platzhalter nutzen
   (`$VAULT/…`). Herkunftsnachweise als Repo-Name + `Datei:Zeile` (`// vault-rag pattern`) sind dagegen
   erwünscht: sie begründen Design-Entscheidungen.
