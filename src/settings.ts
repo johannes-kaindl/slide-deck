@@ -1,26 +1,20 @@
 import { App, Notice, PluginSettingTab, Setting, type SettingDefinitionItem } from "obsidian";
 import type SlideDeckPlugin from "./main";
-import { t } from "./i18n";
+import { t, getLang } from "./i18n";
 import { revealFolder, writeThemeCss } from "./theme-source";
 import { THEME_ALIASES } from "./vendor/deck-core/pure/presets";
-import { endpointListStrings, renderModelField, renderThinkingTestRow } from "./ai-settings-ui";
-import { makeDeckLlmClient } from "./llm-client";
-import { BACKENDS, DEFAULT_REQUEST_SETTINGS, FAMILIES, type BackendId, type FamilyId, type FieldExplain, type RequestSettings } from "./vendor/kit/sampling-profiles";
-import { MODE, buildDeckParams, loadRequestSettings } from "./llm/request-params";
-import { deviationDetail } from "./llm/request-text";
-import { buildRequestSection } from "./vendor/kit-obsidian/request-section";
-import { ENDPOINT_CALLER } from "./llm/resolve-endpoint";
+import { renderModelField, renderThinkingTestRow } from "./ai-settings-ui";
+import { deckResultOf, fetchModelContext } from "./llm-client";
+import { DEFAULT_REQUEST_SETTINGS, type RequestSettings } from "./vendor/kit/sampling-profiles";
+import { loadRequestSettings } from "./llm/request-params";
 import { reasoningHappened } from "./vendor/kit/reasoning";
 import { githubHelpUrls, helpSettingDefinition } from "./vendor/kit-obsidian/help-setting";
 import { writeClipboard } from "./vendor/kit/clipboard";
 import { mergeSettings } from "./vendor/kit/settings";
 import { migrateEndpointList, type EndpointConfig } from "./vendor/kit/endpoint_config";
 import type { EndpointChoice } from "./vendor/kit/endpoint-source";
-import { buildEndpointSourceSection, findEndpointManager } from "./vendor/kit-obsidian/endpoint-source";
+import { findEndpointManager } from "./vendor/kit-obsidian/endpoint-source";
 import { renderSettingDefinitions, settingBodyHost, refreshSettingsTab, installTabRefreshOnOpen } from "./vendor/kit-obsidian/settings_walker";
-import { buildEndpointList } from "./vendor/kit-obsidian/endpoint-list";
-import { createModelListCache } from "./vendor/kit/model-list-cache";
-import { ENDPOINT_PRESETS } from "./vendor/kit/endpoint_diagnostics";
 import { IMAGE_FUNCTIONS, DEFAULT_SUFFIXES, type ImageFunction } from "./image/functions";
 
 export interface SlideDeckSettings {
@@ -160,13 +154,12 @@ export class SlideDeckSettingTab extends PluginSettingTab {
         type: "group",
         heading: t("deck.settings.heading"),
         items: [
-          { name: t("deck.settings.endpoints.name"), desc: t("deck.settings.endpoints.desc"),
-            render: (setting) => this.renderEndpoints(setting) },
+          // Quelle, Liste und Anfrage-Abschnitt zeichnet die Kit-Verbindung in einem Zug.
+          { name: "", render: (setting) => this.renderConnection(setting) },
           { name: t("deck.settings.model.name"), desc: t("deck.settings.model.desc"),
             render: (setting) => this.renderModel(setting) },
           { name: t("deck.settings.maxTokens.name"), desc: t("deck.settings.maxTokens.desc"),
             control: { type: "number", key: "llmMaxTokens", min: 256 } },
-          { name: "", render: (setting) => this.renderRequestSection(setting) },
           { name: t("deck.settings.thinkingTest.name"), desc: t("deck.settings.thinkingTest.desc"),
             render: (setting) => this.renderThinkingTest(setting) },
         ],
@@ -197,71 +190,11 @@ export class SlideDeckSettingTab extends PluginSettingTab {
     return host;
   }
 
-  /** Model lists per endpoint, shared by every row of the kit's endpoint editor. Owned by the
-   *  TAB, not by a render pass: it deliberately outlives the rebuilds a row edit triggers, so
-   *  three rows do not each fire their own `/v1/models`. Cleared in `hide()` — see there. */
-  private readonly modelCache = createModelListCache();
-
-  /** URL of the endpoint the resolver currently picks, or `null` while unresolved. The kit asks
-   *  for this SYNCHRONOUSLY (per row, to label it "in use" vs "reachable, position N") while the
-   *  answer is a network question — so it is resolved once per render into this field and read
-   *  from here. */
-  private activeUrl: string | null = null;
-
-  private renderEndpoints(setting: Setting): void {
+  /** The connection draws source, endpoint list and the "Request" section. It empties its container on
+   *  every redraw, so it gets a container of its own — never the host shared with other rows. */
+  private renderConnection(setting: Setting): void {
     const host = this.hostFor(setting);
-    buildEndpointSourceSection({
-      app: this.app, containerEl: host, capability: "chat", caller: ENDPOINT_CALLER,
-      choice: () => this.plugin.settings.choice,
-      setChoice: async (c) => { this.plugin.settings.choice = c; await this.plugin.saveSettings(); await this.plugin.resolveEndpoint(); },
-      local: () => this.plugin.settings.llmEndpoints,
-      strings: {
-        managed: t("deck.settings.source.managed"), managedDesc: t("deck.settings.source.managedDesc"),
-        openManager: t("deck.settings.source.openManager"), pickEndpoint: t("deck.settings.source.pickEndpoint"),
-        automatic: t("deck.settings.source.automatic"), model: t("deck.settings.model.name"),
-        importLocal: t("deck.settings.source.importLocal"),
-        imported: (r) => t("deck.settings.source.imported", String(r.added.length), String(r.merged.length)),
-        importFailed: t("deck.settings.source.importFailed"),
-        modelHint: (key) => (key ? t(`deck.settings.model.hint.${key}`) : ""),
-        savedSuffix: t("deck.settings.model.saved"), refreshModels: t("deck.settings.model.refresh"),
-        saveFailed: t("deck.settings.endpoint.saveFailed"),
-      },
-      renderLocalList: () => this.renderLocalEndpointList(host),
-      rerender: () => this.refreshUi(),
-    });
-  }
-
-  /** The local list editor — shown only while no LLM Endpoint Manager is installed. */
-  private renderLocalEndpointList(host: HTMLElement): void {
-    buildEndpointList({
-      containerEl: host,
-      label: t("deck.settings.endpoints.name"),
-      desc: t("deck.settings.endpoints.desc"),
-      placeholder: ENDPOINT_PRESETS[0].url,
-      strings: endpointListStrings(),
-      cache: this.modelCache,
-      get: () => this.plugin.settings.llmEndpoints,
-      // Synchronous in-memory mutation; the kit calls save() right after and awaits both.
-      set: (eps) => { this.plugin.settings.llmEndpoints = eps; },
-      active: () => this.activeUrl,
-      // ONE client per row carries both the reachability probe and the model list, so the
-      // status icon and the model dropdown can never describe different endpoints.
-      clientFor: (cfg) => makeDeckLlmClient(cfg, ""),
-      globalModel: () => this.plugin.settings.llmModel,
-      save: () => this.plugin.saveSettings(),
-      reconnect: () => this.syncActiveUrl().then(() => undefined),
-      rerender: () => this.refreshUi(),
-    });
-    // First resolve of this render pass. Re-renders only when the answer actually changed,
-    // which terminates: the follow-up pass resolves the same value and stops there.
-    void this.syncActiveUrl().then((changed) => { if (changed) this.refreshUi(); });
-  }
-
-  /** Resolve who is in use and report whether that changed. */
-  private async syncActiveUrl(): Promise<boolean> {
-    const before = this.activeUrl;
-    this.activeUrl = (await this.activeEndpoint())?.url ?? null;
-    return this.activeUrl !== before;
+    this.plugin.llm.renderSettings(host.createDiv({ cls: "sd-connection" }), { lang: getLang() });
   }
 
   private renderModel(setting: Setting): void {
@@ -271,115 +204,33 @@ export class SlideDeckSettingTab extends PluginSettingTab {
     if (findEndpointManager(this.app)) { setting.settingEl.addClass("sd-setting-managed"); return; }
     renderModelField(this.hostFor(setting), {
       getModel: () => this.plugin.settings.llmModel,
-      setModel: async (m) => { this.plugin.settings.llmModel = m.trim(); await this.plugin.saveSettings(); },
-      listModels: async () => {
-        const ep = await this.activeEndpoint();
-        return ep ? makeDeckLlmClient(ep, "").listModels() : [];
-      },
+      setModel: async (m) => { this.plugin.settings.llmModel = m.trim(); await this.plugin.saveSettings(); this.plugin.llm.invalidate(); },
+      listModels: async () => (await this.plugin.llm.models()).models,
       modelContext: async (m) => {
         const ep = await this.activeEndpoint();
-        return ep ? makeDeckLlmClient(ep, m).modelContext(m) : null;
+        return ep ? fetchModelContext(ep, m) : null;
       },
     });
-  }
-
-  /** The "Request" section — sampling profile of mode `creative` (Kit `request-section`). The
-   *  Thinking level lives here; the plugin's own token budget (`llmMaxTokens`) is passed in so the
-   *  section shows when the family reserve raises it. Family and backend are translated by the plugin. */
-  private renderRequestSection(setting: Setting): void {
-    const host = this.hostFor(setting);
-    buildRequestSection({
-      containerEl: host,
-      modes: [MODE],
-      state: () => this.plugin.requestSectionState(),
-      settings: () => this.plugin.settings.request,
-      save: (s) => this.plugin.saveRequestSettings(s),
-      maxTokens: () => this.plugin.settings.llmMaxTokens,
-      session: this.plugin.requestSession,
-      rerender: () => this.refreshUi(),
-      strings: {
-        title: t("request.title"),
-        head: (family, familySource, backend, backendSource) => {
-          const famLabel = family === "—" ? "—" : (FAMILIES[family as FamilyId]?.label ?? family);
-          const backLabel = backend === "unknown" ? t("request.backendSource.none") : (BACKENDS[backend as BackendId]?.label ?? backend);
-          return t("request.head", famLabel, t(`request.familySource.${familySource}`), backLabel, t(`request.backendSource.${backendSource}`));
-        },
-        unknownFamily: t("request.unknownFamily"),
-        jitWarning: (model, defaultModel) => t("request.jitWarning", model, defaultModel),
-        sentAs: (model) => t("request.sentAs", model),
-        modeHeading: (mode) => t(`request.mode.${mode}`),
-        fieldName: (field) => t(`request.field.${field}`),
-        fieldDesc: (e) => this.fieldStateText(e),
-        reset: t("request.reset"),
-        thinkingLevel: t("request.thinkingLevel"),
-        level: (l) => t(`request.level.${l}`),
-        levelPicker: t("request.levelPicker"),
-        levelPickerDesc: t("request.levelPickerDesc"),
-        dormant: (fam) => t("request.dormant", fam === "unknown" ? t("request.familySource.none") : (FAMILIES[fam]?.label ?? fam)),
-        deleteDormant: t("request.deleteDormant"),
-        lastRequest: t("request.lastRequest"),
-        lastRequestNone: t("request.lastRequestNone"),
-        copy: t("request.copy"),
-        copied: t("request.copied"),
-        deviationsOk: t("request.deviationsOk"),
-        deviationsWarn: (n) => t("request.deviationsWarn", String(n)),
-        deviation: (kind, count, detail) => `${deviationDetail(kind, detail)} (${count}×)`,
-      },
-    });
-  }
-
-  /** Explanation per field: state (sent / not sent and why) plus note. */
-  private fieldStateText(e: FieldExplain): string {
-    const key = {
-      "sent-effective": "request.state.sentEffective",
-      "sent-unproven": "request.state.sentUnproven",
-      "not-sent-ignored": "request.state.notSentIgnored",
-      "not-sent-unsupported": "request.state.notSentUnsupported",
-      "not-sent-unknown-family": "request.state.notSentUnknownFamily",
-      "not-sent-no-value": "request.state.notSentNoValue",
-    }[e.state];
-    let s = t(key);
-    const noteKey = e.note ? {
-      "raised-to-reserve": "request.note.raisedToReserve",
-      "raised-to-thinking-floor": "request.note.raisedToThinkingFloor",
-      "below-thinking-floor": "request.note.belowThinkingFloor",
-      "off-not-possible": "request.note.offNotPossible",
-    }[e.note] : undefined;
-    if (noteKey) s += ` ${t(noteKey)}`;
-    if (e.field === "top_p") s += t("request.top_p.hint");
-    return s;
   }
 
   private renderThinkingTest(setting: Setting): void {
     renderThinkingTestRow(this.hostFor(setting), {
-      getModel: () => this.effectiveModel(),
+      getModel: async () => (await this.plugin.llm.resolve()).model,
       testSuppress: (model) => this.runSuppressTest(model),
     });
   }
 
   private async activeEndpoint(): Promise<EndpointConfig | null> {
-    return (await this.plugin.resolveEndpoint()).config;
-  }
-
-  /** Model the endpoint source resolves to — with the manager active the global `llmModel` field
-   *  is not shown, so the thinking row must follow the resolved one. */
-  private effectiveModel(): string {
-    return findEndpointManager(this.app) ? this.plugin.activeModel : this.plugin.settings.llmModel;
+    return (await this.plugin.llm.resolve()).config;
   }
 
   /** One real, minimal call with thinking off: did the model think anyway? This is the only place
    *  that replaces a name guess with evidence. Built through `buildDeckParams` like every other request. */
   private async runSuppressTest(model: string): Promise<{ thought: boolean }> {
-    const ep = await this.activeEndpoint();
-    if (!ep) throw new Error(t("deck.modal.noEndpoint"));
-    const src = this.plugin.deckSource(model);
-    const { params } = buildDeckParams({ family: src.family, backend: src.backend, thinking: "off", maxTokens: 32, overrides: { temperature: 0 } });
-    const client = makeDeckLlmClient(ep, model);
-    const r = await client.generate(
-      [{ role: "user", content: "Reply with the single word: ok" }],
-      { model, sentModel: src.sentModel, params },
-      () => {}, () => {},
-    );
+    const r = deckResultOf(await this.plugin.llm.complete(
+      { messages: [{ role: "user", content: "Reply with the single word: ok" }] },
+      { model, thinking: "off", overrides: { temperature: 0, max_tokens: 32 } },
+    ));
     return { thought: reasoningHappened(r.content, r.reasoning) };
   }
 
@@ -393,7 +244,7 @@ export class SlideDeckSettingTab extends PluginSettingTab {
    *  server that was down when first probed stays "not reachable" for the rest of the session —
    *  starting LM Studio and reopening the settings would change nothing. */
   hide(): void {
-    this.modelCache.clear();
+    this.plugin.llm.hideSettings();
     this.uninstallRefresh();
     super.hide();
   }
@@ -444,7 +295,7 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       case "imageScale": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.imageScale = n; break; }
       case "exportFolder": s.exportFolder = String(value).trim() || DEFAULT_SETTINGS.exportFolder; break;
       case "customCss": s.customCss = String(value); break;
-      case "llmModel": s.llmModel = String(value).trim(); break;
+      case "llmModel": s.llmModel = String(value).trim(); this.plugin.llm.invalidate(); break;
       case "llmMaxTokens": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.llmMaxTokens = Math.floor(n); break; }
       case "themesFolder":
         s.themesFolder = String(value).trim() || DEFAULT_SETTINGS.themesFolder;

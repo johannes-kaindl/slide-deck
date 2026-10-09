@@ -6,17 +6,9 @@ import { SlideDeckSettings, SlideDeckSettingTab, migrateLegacyThemeKeys, loadSet
 import { ThemeStore } from "./theme-registry";
 import { buildHideCss, normalizeFolder } from "./folder-hide";
 import { runGenerateDeck, type GenState, type GenerateResult, type GenerationHandle } from "./generate-deck";
-import { makeDeckLlmClient } from "./llm-client";
-import { cachedProbe } from "./llm-probe";
-import { MODE, buildDeckParams } from "./llm/request-params";
-import { deviationNotice } from "./llm/request-text";
-import { createRequestSession, type RequestSession } from "./vendor/kit-obsidian/request-session";
-import type { RequestSectionState } from "./vendor/kit-obsidian/request-section";
-import { checkResponse, thinkingFor, type BackendId, type FamilyId, type RequestSettings } from "./vendor/kit/sampling-profiles";
-import { resolveDeckEndpoint } from "./llm/resolve-endpoint";
-import { describeModel, type EndpointSourceResult } from "./vendor/kit/endpoint-source";
-import { findEndpointManager } from "./vendor/kit-obsidian/endpoint-source";
-import type { EndpointConfig } from "./vendor/kit/endpoint_config";
+import { deckClient } from "./llm-client";
+import { deckConnectionOptions } from "./llm/connection";
+import { createLlmConnection, type LlmConnection } from "./vendor/kit-obsidian/llm-connection";
 import { buildDeckPrompt } from "./vendor/deck-core/pure/llm/deck-prompt";
 import { getAuthoringContract } from "./vendor/deck-core/pure/constraints/contract";
 import { registerSlotCard } from "./image/slot-card";
@@ -29,7 +21,7 @@ import { insertImageSlot } from "./image/insert-slot";
 
 export interface DeckGenInput {
   sourceBody: string; slideTarget: number | "auto"; hint: string;
-  themeKey: string; model: string; endpoint: EndpointConfig; targetPath: string; replace: boolean;
+  themeKey: string; model: string; targetPath: string; replace: boolean;
   sourceLink: string; // "[[Note]]" backlink to the origin note
 }
 
@@ -38,6 +30,8 @@ export default class SlideDeckPlugin extends Plugin {
   public themeStore!: ThemeStore;
   private hideSheet: CSSStyleSheet | null = null;
   public activeGeneration: GenerationHandle | null = null;
+  /** Die ganze LLM-Anbindung: Endpunkt-Quelle, Modellliste, Anfrage-Parameter, Client, Settings-Abschnitte. */
+  public llm!: LlmConnection;
 
   async onload(): Promise<void> {
     setLang(pickLang(getLanguage()));
@@ -50,6 +44,10 @@ export default class SlideDeckPlugin extends Plugin {
     if (loaded.legacyTemperature !== null) new Notice(t("request.legacyTemperature", String(loaded.legacyTemperature)));
     // Legacy fields were present: save once so they are gone and the notice above cannot repeat.
     if (loaded.migrated) await this.saveSettings();
+
+    this.llm = createLlmConnection(deckConnectionOptions({
+      app: this.app, pluginId: this.manifest.id, settings: () => this.settings, save: () => this.saveSettings(),
+    }));
 
     this.themeStore = new ThemeStore(this.app, () => this.settings.themesFolder);
     await this.themeStore.refresh();
@@ -86,55 +84,6 @@ export default class SlideDeckPlugin extends Plugin {
   }
 
   async saveSettings(): Promise<void> { await this.saveData(this.settings); }
-
-  /** Model the last resolveEndpoint() picked (choice.model → manager default → llmModel).
-   *  Read by the settings tab, which must not resolve on every paint. */
-  public activeModel = "";
-
-  /** Full result of the last `resolveEndpoint()` — carries family/backend/sentModel for the
-   *  "Request" section and for the request body (sampling plan § 3.1). */
-  private lastSourceState: EndpointSourceResult | null = null;
-  /** Session state for "last request" and deviations; not persisted. */
-  public requestSession: RequestSession = createRequestSession({ message: (d) => deviationNotice(d) });
-
-  /** For `buildRequestSection` in the settings tab (sampling plan § 5.1). */
-  requestSectionState(): RequestSectionState {
-    const s = this.lastSourceState;
-    return {
-      family: s?.family ?? null, familySource: s?.familySource ?? "none",
-      backend: s?.backend ?? "unknown", backendSource: s?.backendSource ?? "none",
-      model: s?.model ?? "", sentModel: s?.sentModel ?? "",
-      ...(s?.defaultModel !== undefined ? { defaultModel: s.defaultModel } : {}),
-    };
-  }
-
-  async saveRequestSettings(next: RequestSettings): Promise<void> {
-    this.settings.request = next;
-    await this.saveSettings();
-  }
-
-  /** Family, backend and wire name for `model`. The last resolution answers for ITS model; a model
-   *  typed into the generate view differs from it and is classified by its name (backend stays). */
-  deckSource(model: string): { family: FamilyId | null; backend: BackendId; sentModel: string } {
-    const s = this.lastSourceState;
-    const backend = s?.backend ?? "unknown";
-    if (s && s.model === model) return { family: s.family, backend, sentModel: s.sentModel };
-    const d = describeModel(model, undefined);
-    return { family: d.family, backend, sentModel: d.sentModel };
-  }
-
-  /** EINZIGER Weg zum Endpunkt: Manager zuerst (bei JEDEM Aufruf frisch gefunden, nie
-   *  gecacht — das Plugin kann jederzeit deaktiviert werden), sonst die lokale Liste. */
-  async resolveEndpoint(): Promise<EndpointSourceResult> {
-    const r = await resolveDeckEndpoint(
-      this.settings, findEndpointManager(this.app),
-      (ep) => makeDeckLlmClient(ep, "").ping(),
-      (cfg) => cachedProbe(cfg.url, cfg.model || this.settings.llmModel),
-    );
-    this.activeModel = r.model;
-    this.lastSourceState = r;
-    return r;
-  }
 
   async runSlot(source: string, ctx: MarkdownPostProcessorContext, onState: (s: CardState) => void): Promise<void> {
     const api = readImageApi(this.app);
@@ -310,21 +259,10 @@ export default class SlideDeckPlugin extends Plugin {
 
     const contract = getAuthoringContract({ theme: this.settings.defaultTheme, aspect: "16:9", minFontPx: this.settings.minFontPx });
     const messages = buildDeckPrompt(input.sourceBody, { slideTarget: input.slideTarget, hint: input.hint }, contract);
-    const client = makeDeckLlmClient(input.endpoint, input.model);
-    const src = this.deckSource(input.model);
-    const level = thinkingFor(this.settings.request, MODE);
-    const { params } = buildDeckParams({
-      family: src.family, backend: src.backend, thinking: level, maxTokens: this.settings.llmMaxTokens,
-      overrides: this.settings.request.overrides[MODE]?.[src.family ?? "unknown"] ?? {},
-    });
-    this.requestSession.recordRequest(params);
-    const streamOpts = {
-      model: input.model, sentModel: src.sentModel, params,
-      onResponse: (facts: Parameters<typeof checkResponse>[1]) => { this.requestSession.report(checkResponse({ family: src.family, thinking: level }, facts)); },
-    };
+    const client = deckClient(this.llm, input.model);
 
     const done: Promise<GenerateResult> = (async () => {
-      const result = await runGenerateDeck({ client, messages, streamOpts, themeKey: input.themeKey, sourceLink: input.sourceLink, model: input.model, signal: controller.signal, onState: notify });
+      const result = await runGenerateDeck({ client, messages, themeKey: input.themeKey, sourceLink: input.sourceLink, model: input.model, signal: controller.signal, onState: notify });
       if (result.status === "ok" && result.markdown != null) {
         try {
           const writtenPath = await this.writeDeckNote(input.targetPath, result.markdown, input.replace);

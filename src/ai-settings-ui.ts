@@ -3,14 +3,10 @@
 // generate-deck view so both speak the same icon vocabulary.
 import { Notice, Setting, setIcon } from "obsidian";
 import { t } from "./i18n";
-import {
-  warnRuleKey, roleKindKey,
-  modelFieldMode, statusLabelParts,
-} from "./llm/ai-settings-model";
+import { modelFieldMode } from "./llm/ai-settings-model";
 import type { ModelContext } from "./llm/model-info";
 import type { EndpointStatusKind } from "./vendor/kit/endpoint_diagnostics";
-import type { EndpointListStrings } from "./vendor/kit-obsidian/endpoint-list";
-import { resolveModelChoice, type ModelHintKey } from "./vendor/kit/model-choice";
+import { resolveModelChoice } from "./vendor/kit/model-choice";
 
 /** Status icon per UI-STANDARD §8: shape AND colour AND state class AND aria-label — colour is
  *  never the only carrier (WCAG 1.4.1). `null` kind = not probed yet. */
@@ -22,45 +18,6 @@ export function paintStatus(el: HTMLElement, kind: EndpointStatusKind | null, la
   else { el.addClass("is-error"); setIcon(el, "circle-x"); }
   el.setAttribute("aria-label", label);
   el.setAttribute("title", label);
-}
-
-/** Every user-visible string of the kit's endpoint row editor. The kit deliberately phrases
- *  nothing itself (it is German-internal, this plugin is EN-canonical), so translation happens
- *  here — the same `t()` vocabulary the rest of the tab uses. Kept beside `paintStatus` because
- *  it is render-layer glue, not state logic. */
-export function endpointListStrings(): EndpointListStrings {
-  return {
-    addPlaceholder: t("deck.settings.endpoint.addPlaceholder"),
-    apiKeyPlaceholder: t("deck.settings.endpoint.keyPlaceholder"),
-    modelPlaceholder: t("deck.settings.model.placeholder"),
-    ariaUrl: t("deck.settings.endpoint.ariaUrl"),
-    ariaAdd: t("deck.settings.endpoint.ariaAdd"),
-    ariaApiKey: (url) => t("deck.settings.endpoint.ariaKeyFor", url),
-    ariaModel: (url) => t("deck.settings.endpoint.ariaModelFor", url),
-    // The kit hands the raw global model through, empty included — spelling out "not set"
-    // instead of rendering "Global model ()" is this layer's job, in this layer's language.
-    emptyModelLabel: (globalModel) => t("deck.settings.endpoint.modelGlobal",
-      globalModel || t("deck.settings.endpoint.modelGlobalUnset")),
-    modelHint: (key: ModelHintKey) => (key ? t(`deck.settings.model.hint.${key}`) : ""),
-    savedSuffix: t("deck.settings.model.saved"),
-    refreshModels: t("deck.settings.model.refresh"),
-    moveToFront: t("deck.settings.endpoint.moveToFront"),
-    remove: t("deck.settings.endpoint.remove"),
-    thirdParty: t("deck.settings.endpoint.thirdParty"),
-    probing: t("deck.settings.endpoint.probing"),
-    // `raw` only ever reaches the user for kind "unknown" — every other kind has a fully
-    // translated message, and the kit's own `klartext` is hardcoded German (never surface it).
-    statusTooltip: (status) => {
-      const parts = statusLabelParts(status.kind, status.raw);
-      return parts.suffix ? `${t(parts.key)} — ${parts.suffix}` : t(parts.key);
-    },
-    role: (role) => t(roleKindKey(role), String(role.kind === "standby" ? role.position : "")),
-    warnings: (warnings) => warnings.map((w) => t(warnRuleKey(w.rule))).join(" · "),
-    presetLabel: (preset) => t("deck.settings.endpoint.addPreset", preset.label),
-    presetTooltip: (preset) => t("deck.settings.endpoint.presetTooltip", preset.label, preset.url),
-    checkConnection: t("deck.settings.endpoint.check"),
-    saveFailed: t("deck.settings.endpoint.saveFailed"),
-  };
 }
 
 export interface ModelFieldDeps {
@@ -162,7 +119,7 @@ export function renderModelField(containerEl: HTMLElement, deps: ModelFieldDeps)
 }
 
 export interface ThinkingTestDeps {
-  getModel: () => string;
+  getModel: () => string | Promise<string>;
   testSuppress: (model: string) => Promise<{ thought: boolean }>;
 }
 
@@ -178,7 +135,7 @@ export function renderThinkingTestRow(containerEl: HTMLElement, deps: ThinkingTe
   setting.addButton((b) => b
     .setButtonText(t("deck.settings.thinking.test"))
     .onClick(async () => {
-      const model = deps.getModel();
+      const model = await deps.getModel();
       if (!model) { new Notice(t("deck.settings.thinking.testNoModel")); return; }
       b.setButtonText(t("deck.settings.thinking.testing")).setDisabled(true);
       try {

@@ -1,17 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
-  roleKindKey, modelFieldMode, initialModelSelection,
-  statusKindKey, warnRuleKey, statusLabelParts,
+  modelFieldMode, initialModelSelection,
+  statusKindKey, statusLabelParts,
 } from "../../src/llm/ai-settings-model";
-
-describe("roleKindKey", () => {
-  it("maps every role to an i18n key", () => {
-    expect(roleKindKey({ kind: "active" })).toBe("deck.settings.endpoint.role.active");
-    expect(roleKindKey({ kind: "standby", position: 3 })).toBe("deck.settings.endpoint.role.standby");
-    expect(roleKindKey({ kind: "unreachable" })).toBe("deck.settings.endpoint.role.unreachable");
-    expect(roleKindKey({ kind: "skipped-model" })).toBe("deck.settings.endpoint.role.skipped-model");
-  });
-});
 
 describe("modelFieldMode", () => {
   it("is a dropdown once models are loaded", () => {
@@ -43,9 +34,6 @@ describe("initialModelSelection", () => {
 describe("i18n key mappers", () => {
   it("maps a status kind to its key", () => {
     expect(statusKindKey("not-an-llm-api")).toBe("deck.settings.endpoint.status.not-an-llm-api");
-  });
-  it("maps a warn rule to its key", () => {
-    expect(warnRuleKey("port")).toBe("deck.settings.endpoint.warn.port");
   });
 });
 

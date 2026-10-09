@@ -2,7 +2,7 @@
    Slide/callout/katex/hljs styles are injected per-render via deckCss(). */
 
 /* Hub-Tab-Leiste (obsidian-kit: buildHubInto). Die vier nummerierten Zutaten gehören
-   zusammen — jede einzeln ist wirkungslos, s. src/vendor/kit-obsidian/hub.ts Modulkopf. */
+   zusammen — jede einzeln ist wirkungslos, s. Modulkopf von src/obsidian/hub.ts. */
 .okit-hub-root { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 .okit-hub-tabs {
   display: flex;
@@ -394,4 +394,5 @@
 .okit-request-status { display: flex; gap: var(--size-4-2); align-items: center; margin-top: var(--size-4-2); }
 .okit-request-status.is-ok { color: var(--text-success); }
 .okit-request-status.is-warning { color: var(--text-warning); }
+.okit-request-status.is-error { color: var(--text-error); }
 .okit-request-deviation { color: var(--text-muted); font-size: var(--font-ui-small); padding-left: var(--size-4-6); }

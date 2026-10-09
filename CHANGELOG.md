@@ -6,6 +6,21 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **The whole LLM connection now comes from the Kit** (`createLlmConnection`, obsidian-kit 0.51.2 / code-kit 0.15.0): endpoint source, endpoint list, request parameters, the chat client with its deadlines, and the response check. The plugin's own resolver, client factory, backend-probe cache and deviation texts are gone. Visible consequences:
+  - **API keys move into Obsidian's secret storage.** A key you entered in the endpoint list is no longer written to `data.json`; existing plain-text keys are moved on first start (or when the endpoint is first resolved). The Keychain entries show under *Settings → Keychain*. **Obsidian 1.11.4 or newer is now required** (`minAppVersion` was 1.8.7).
+  - **Secrets in your note no longer leave your machine in clear text.** Private keys, bearer tokens and API keys in the note are replaced by placeholders before the text goes to the model; the generated deck gets the originals back. The *Request* section's "last request" shows what was actually sent.
+  - **The endpoint section, the endpoint list and the *Request* section use the Kit wording**: "Test connection", "Try this endpoint first", "Refresh models", "Timed out — network unreachable.", "Not reachable — {reason}". Order in the tab: endpoints and request, then the model, the token budget and the thinking test.
+  - **A saved choice of an endpoint or model in the LLM Endpoint Manager only counts while the manager is installed.** Without it the local list and its model always apply (a stale manager choice could override the local model before).
+  - **A model typed into the generate panel still goes out as typed**; the family and sampling profile follow that model.
+  - The deviation notice (the model thought although thinking is off, an empty answer because thinking used the token budget, …) now has the Kit wording.
+  - The generate panel shows reachable / not reachable only; the finer diagnosis (key refused, wrong path) stays on the endpoint row in the settings.
+  - Deadlines are unchanged: 10 minutes to the first chunk, 2 minutes of silence afterwards.
+  - The *Request* section shows the profile temperature even for the thinking test, which sends temperature 0 for that one request.
+- Kit pin: obsidian-kit 0.51.2, code-kit 0.15.0, all modules on that one ref.
+- Minimum Obsidian version 1.11.4 (was 1.8.7), needed for the secret storage.
+
 ## [0.13.1] — 2026-10-03
 
 ### Changed

@@ -22,6 +22,7 @@ function makeFakePlugin(settings: SlideDeckSettings) {
     saveSettings: vi.fn(() => { calls.saveSettings++; return Promise.resolve(); }),
     refreshThemes: vi.fn(() => { calls.refreshThemes++; return Promise.resolve(); }),
     applyFolderHide: vi.fn(() => { calls.applyFolderHide++; }),
+    llm: { invalidate: vi.fn() },
   };
   return { plugin, calls };
 }
@@ -80,6 +81,9 @@ describe("SlideDeckSettingTab (declarative)", () => {
     await tab.setControlValue("llmModel", "  qwen3  ");
     expect(settings.llmModel).toBe("qwen3");
     expect(tab.getControlValue("llmModel")).toBe("qwen3");
+    // Die Verbindung merkt die lokale Aufloesung samt Modell bis invalidate() — ohne den Aufruf
+    // sendete die naechste Anfrage noch das alte Modell.
+    expect(plugin.llm.invalidate).toHaveBeenCalledTimes(1);
   });
 
   it("runs the themesFolder + hideThemesFolder side effects", async () => {

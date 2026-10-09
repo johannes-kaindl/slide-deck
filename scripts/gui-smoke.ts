@@ -62,10 +62,18 @@ import { capture } from "../../tools/obsidian-cdp/shot.js";
 // beim naechsten neuen Namensraum still blind — und genau diese Sorte Blindheit misst B2.
 import { STRINGS_DE, STRINGS_EN } from "../src/i18n";
 import { MODES } from "../src/vendor/kit/sampling-profiles";
+// Die Texte des Endpunkt-Abschnitts kommen seit dem Verbindungs-Tausch aus dem Kit, nicht mehr aus i18n.ts.
+import { LLM_CONNECTION_STRINGS_DE, LLM_CONNECTION_STRINGS_EN } from "../src/vendor/kit-obsidian/llm-connection-strings";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 
 const PLUGIN_ID = "slide-deck";
+
+/** Die Verbindung merkt ihre lokale Aufloesung bis `invalidate()`. Wer die Endpunkt-Liste oder das Modell
+ *  im Renderer direkt in die Settings schreibt (`setPluginSetting`, `p.settings.… =`), muss sie vergessen
+ *  lassen — sonst misst der Punkt noch den alten Endpunkt, und zwar gruen. */
+const verbindungNeu = (cdp: Cdp): Promise<unknown> =>
+  cdp.evaluate(`app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].llm.invalidate(); return true;`);
 // Seit Welle 6 (Hub-Tab-Leiste, `src/hub-view.ts`): ein View-Typ fuer Vorschau UND Erzeugen,
 // Tabs statt getrennter Leaves. Alle Pruefpunkte unten suchen weiterhin per Klassen-Selektor
 // (`.sd-message`, `.sd-warn`, …) innerhalb `leaf.view.containerEl` — das findet sie unabhaengig
@@ -999,6 +1007,7 @@ const einstellungen: Section = {
       return app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.llmEndpoints;
     `);
     await setPluginSetting(cdp, PLUGIN_ID, "llmEndpoints", [{ url: "http://127.0.0.1:9" }]);
+    await verbindungNeu(cdp);
     let offline: OffenerTab | null = null;
     try {
       offline = await oeffneTab(cdp, ctx);
@@ -1014,6 +1023,7 @@ const einstellungen: Section = {
     } finally {
       if (offline) await schliesseTab(cdp, offline);
       await setPluginSetting(cdp, PLUGIN_ID, "llmEndpoints", endpunkteVorher);
+      await verbindungNeu(cdp);
     }
 
     // B5: die §8-Bloecke stapeln, statt in einer Flex-Row zu landen. Das Risiko aus 0.6.0:
@@ -1079,7 +1089,7 @@ const endpunktQuelle: Section = {
       return true;
     `);
     const aufloesung = (): Promise<{ kind: string; url: string | null; model: string }> => cdp.evaluate(`
-      const r = await app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].resolveEndpoint();
+      const r = await app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].llm.resolve();
       return { kind: r.kind, url: r.config ? r.config.url : null, model: r.model };
     `);
     const eigeneEndpunkte = await cdp.evaluate<{ url: string }[]>(`
@@ -1092,7 +1102,7 @@ const endpunktQuelle: Section = {
     try {
       mitManager = await oeffneTab(cdp, ctx);
       const text = mitManager.tab.text;
-      const erwartet = [STRINGS_EN["deck.settings.source.managed"], STRINGS_DE["deck.settings.source.managed"]];
+      const erwartet = [LLM_CONNECTION_STRINGS_EN.endpointSource.managed, LLM_CONNECTION_STRINGS_DE.endpointSource.managed];
       const zeigtBaustein = erwartet.some((e) => text.includes(e));
       record(
         "E1 Manager an: Settings zeigen den Manager-Baustein statt der lokalen Liste",
@@ -1122,6 +1132,10 @@ const endpunktQuelle: Section = {
     } finally {
       if (mitManager) await schliesseTab(cdp, mitManager);
       await entferne();
+      // Kit-Befund 0.51.2 (an obsidian-plugins-34 gemeldet): `resolve()` gibt nach dem Wegfall des Managers das
+      // gemerkte Manager-Ergebnis zurueck, bis etwas `invalidate()` ruft. Der Punkt prueft die lokale Liste,
+      // nicht diesen Kit-Fehler — faellt er im Kit, kommt der Aufruf hier wieder heraus.
+      await verbindungNeu(cdp);
     }
 
     const ohne = await oeffneTab(cdp, ctx);
@@ -1630,12 +1644,16 @@ const chatSektion: Section = {
     }
     const starte = (name: string, endpoint: string, quelle: string, abbrechen: boolean, ziel: string): Promise<unknown> => cdp.evaluate(`
       const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      // Die Verbindung liest den Endpunkt aus den Settings: dieser Lauf zeigt auf den Prüf-Endpunkt.
+      if (!("__sdGVorher" in globalThis)) globalThis.__sdGVorher = JSON.stringify({ e: p.settings.llmEndpoints, m: p.settings.llmModel });
+      p.settings.llmEndpoints = [{ url: ${JSON.stringify(endpoint)} }]; p.settings.llmModel = ${JSON.stringify(G_MODEL)};
+      p.llm.invalidate();
       const st = { updates: 0, chars: 0, erstesNach: 0, abbruchNach: 0, fertig: false, ergebnis: null, dauer: 0, t0: Date.now() };
       globalThis[${JSON.stringify(name)}] = st;
       const h = p.startDeckGeneration({
         sourceBody: ${JSON.stringify(quelle)}, slideTarget: ${abbrechen ? 12 : 3}, hint: "",
         themeKey: p.settings.defaultTheme, model: ${JSON.stringify(G_MODEL)},
-        endpoint: { url: ${JSON.stringify(endpoint)} }, targetPath: ${JSON.stringify(ziel)}, replace: true, sourceLink: "[[smoke]]",
+        targetPath: ${JSON.stringify(ziel)}, replace: true, sourceLink: "[[smoke]]",
       });
       h.subscribe((s) => {
         const n = (s.content ?? "").length + (s.reasoning ?? "").length;
@@ -1688,8 +1706,9 @@ const ANFRAGE_KOPF = `[...wurzel.querySelectorAll(".okit-collapsible-header")].f
 
 /** Fake-Chat-Endpunkt im Node-Prozess; merkt sich jeden POST-Body. Mit CORS-Freigabe, damit der
  *  Stream-Weg (XHR) durchkommt und der Body vom echten Transport stammt. */
-async function startFakeChat(): Promise<{ url: string; bodies: unknown[]; close(): Promise<void> }> {
+async function startFakeChat(): Promise<{ url: string; bodies: unknown[]; auth: (string | undefined)[]; close(): Promise<void> }> {
   const bodies: unknown[] = [];
+  const auth: (string | undefined)[] = [];
   const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
   const server: Server = createServer((req: IncomingMessage, res: ServerResponse) => {
     if (req.method === "OPTIONS") { res.writeHead(204, cors); res.end(); return; }
@@ -1699,8 +1718,11 @@ async function startFakeChat(): Promise<{ url: string; bodies: unknown[]; close(
       req.on("data", (c: Buffer) => { raw += c.toString("utf8"); });
       req.on("end", () => {
         try { bodies.push(JSON.parse(raw)); } catch { bodies.push({ kein_json: raw.slice(0, 80) }); }
+        auth.push(typeof req.headers.authorization === "string" ? req.headers.authorization : undefined);
+        // Spiegelt einen Platzhalter der Schwaerzung zurueck, falls die Anfrage einen enthielt (V3).
+        const echo = /\[redacted-[a-z]+-\d+\]/.exec(raw)?.[0];
         res.writeHead(200, { ...cors, "Content-Type": "text/event-stream" });
-        res.write(`data: ${JSON.stringify({ model: "google/gemma-4-e4b", choices: [{ delta: { content: "kein Deck" } }] })}\n\n`);
+        res.write(`data: ${JSON.stringify({ model: "google/gemma-4-e4b", choices: [{ delta: { content: echo ? `kein Deck ${echo}` : "kein Deck" } }] })}\n\n`);
         res.write(`data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop" }] })}\n\n`);
         res.end("data: [DONE]\n\n");
       });
@@ -1712,6 +1734,7 @@ async function startFakeChat(): Promise<{ url: string; bodies: unknown[]; close(
   return {
     url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
     bodies,
+    auth,
     close: () => new Promise<void>((resolve) => { server.close(() => { resolve(); }); }),
   };
 }
@@ -1762,18 +1785,19 @@ const anfrage: Section = {
       record("R2 Wert ueberschreiben, dann zuruecksetzen — der Abschnitt bleibt aufgeklappt (zwei Edits hintereinander)", n2ok,
         n2.nachSetzen && n2.nachReset ? `nach Setzen: eigener Wert=${n2.nachSetzen.eigen}, Wert=${n2.nachSetzen.wert}, offen=${n2.nachSetzen.offen} · nach Zuruecksetzen: eigener Wert=${n2.nachReset.eigen}, offen=${n2.nachReset.offen}` : JSON.stringify(n2));
 
-      // N3 — die Zeile „Denk-Test“ steht direkt unter dem Abschnitt und traegt einen Knopf, keinen Schalter.
+      // N3 — die Zeile „Denk-Test“ folgt dem Abschnitt und traegt einen Knopf, keinen Schalter. Seit dem
+      // Verbindungs-Tausch zeichnet das Kit Quelle, Liste und Anfrage in EINEM Block; Modell und Budget
+      // des Plugins stehen danach, der Denk-Test zuletzt (umgeschrieben: vorher „direkt darunter“).
       const n3 = JSON.parse(await offen.ziel.evaluate<string>(`
         const wurzel = document.querySelector(".vertical-tab-content");
         const kopf = ${ANFRAGE_KOPF};
         if (!kopf) return JSON.stringify({ da: false });
-        const host = kopf.closest(".sd-settings-host") ?? kopf.closest(".setting-item") ?? kopf.parentElement.parentElement;
-        let naechste = host ? host.nextElementSibling : null;
-        const text = naechste ? naechste.textContent : "";
-        return JSON.stringify({ da: true, text: text.slice(0, 120), knopf: !!naechste && !!naechste.querySelector("button"), schalter: !!naechste && !!naechste.querySelector(".checkbox-container") });
-      `)) as { da: boolean; text?: string; knopf?: boolean; schalter?: boolean };
-      record("R3 Zeile „Denk-Test“ steht direkt unter dem Abschnitt, mit Knopf statt Schalter",
-        !!n3.da && /Denk-Test|Thinking test/.test(n3.text ?? "") && n3.knopf === true && n3.schalter === false, JSON.stringify(n3));
+        const zeile = [...wurzel.querySelectorAll(".setting-item")].find((z) => /Denk-Test|Thinking test/.test(z.querySelector(".setting-item-name")?.textContent || ""));
+        const danach = !!zeile && !!(kopf.compareDocumentPosition(zeile) & Node.DOCUMENT_POSITION_FOLLOWING);
+        return JSON.stringify({ da: true, zeile: !!zeile, danach, knopf: !!zeile && !!zeile.querySelector("button"), schalter: !!zeile && !!zeile.querySelector(".checkbox-container") });
+      `)) as { da: boolean; zeile?: boolean; danach?: boolean; knopf?: boolean; schalter?: boolean };
+      record("R3 Zeile „Denk-Test“ folgt dem Anfrage-Abschnitt, mit Knopf statt Schalter (umgeschrieben)",
+        !!n3.da && n3.zeile === true && n3.danach === true && n3.knopf === true && n3.schalter === false, JSON.stringify(n3));
 
       // N4 — Denkstufe im Abschnitt waehlen: gespeichert, Abschnitt bleibt offen.
       const n4 = JSON.parse(await offen.ziel.evaluate<string>(`
@@ -1803,10 +1827,11 @@ const anfrage: Section = {
         const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
         p.settings.request = { overrides: {}, thinking: { creative: "off" }, lastOnLevel: {}, levelPickerInChat: false };
         p.settings.llmEndpoints = [{ url: ${JSON.stringify(fake.url)} }]; p.settings.llmModel = "google/gemma-4-e4b";
-        await p.resolveEndpoint();
+        p.llm.invalidate();
+        await p.llm.resolve();
         const h = p.startDeckGeneration({
           sourceBody: "# Probe\\n\\nEin Satz.", slideTarget: 3, hint: "", themeKey: p.settings.defaultTheme,
-          model: "google/gemma-4-e4b", endpoint: { url: ${JSON.stringify(fake.url)} }, targetPath: ${JSON.stringify(tmp)}, replace: true, sourceLink: "[[smoke]]",
+          model: "google/gemma-4-e4b", targetPath: ${JSON.stringify(tmp)}, replace: true, sourceLink: "[[smoke]]",
         });
         globalThis.__sdN5 = { fertig: false }; h.done.then((r) => { globalThis.__sdN5 = { fertig: true, status: r.status }; });
         return true;
@@ -1823,10 +1848,59 @@ const anfrage: Section = {
   },
 };
 
+
+/** V — was der Tausch auf die Kit-Verbindung an der Leitung und auf der Platte aendert: der Schluessel
+ *  zieht in den Schluesselbund, geht als Bearer hinaus, und ein Geheimnis im Prompt verlaesst den
+ *  Rechner als Platzhalter und kommt als Original zurueck. Neu mit dem Tausch (Welle 15), keine Baseline. */
+const verbindung: Section = {
+  key: "verbindung",
+  title: "V · Verbindung (Schluesselbund, Bearer, Schwaerzung)",
+  async run(cdp) {
+    const KEY = "sk-smoke-w15-0123456789abcdef";
+    const TOKEN = "abcdef0123456789ghijkl";
+    const fake = await startFakeChat();
+    try {
+      const r = JSON.parse(await cdp.evaluate<string>(`
+        const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+        p.settings.llmEndpoints = [{ url: ${JSON.stringify(fake.url)}, apiKey: ${JSON.stringify(KEY)} }];
+        p.settings.llmModel = "google/gemma-4-e4b";
+        p.llm.invalidate();
+        const src = await p.llm.resolve({ force: true });
+        await new Promise((x) => setTimeout(x, 800));
+        const datei = p.manifest.dir + "/data.json";
+        const roh = (await app.vault.adapter.exists(datei)) ? await app.vault.adapter.read(datei) : "";
+        const hydriert = src.config ? src.config.apiKey === ${JSON.stringify(KEY)} : false;
+        const res = await p.llm.complete({ messages: [{ role: "user", content: "Zugang: Authorization: Bearer ${TOKEN} bitte nutzen." }] });
+        return JSON.stringify({
+          datei: roh !== "", keyInDatei: roh.includes(${JSON.stringify(KEY)}), apiKeyFeld: /"apiKey"/.test(roh), hydriert,
+          ok: res.ok, content: res.ok ? res.content : null, redactions: res.redactions ?? null,
+        });
+      `)) as { datei: boolean; keyInDatei: boolean; apiKeyFeld: boolean; hydriert: boolean; ok: boolean; content: string | null; redactions: number | null };
+      record("V1 Schluesselbund: nach dem Aufloesen steht kein apiKey mehr in data.json, der Aufrufer bekommt ihn hydriert",
+        r.datei && !r.keyInDatei && !r.apiKeyFeld && r.hydriert, JSON.stringify(r));
+      const wire = JSON.stringify(fake.bodies[0] ?? {});
+      record("V2 Bearer: der Schluessel aus dem Schluesselbund geht als Authorization-Header hinaus",
+        fake.auth[0] === `Bearer ${KEY}`, `Server sah ${fake.auth[0] === undefined ? "keinen Header" : fake.auth[0]!.replace(KEY, "<Schluessel>")}`);
+      record("V3 Schwaerzung: das Token geht als Platzhalter an den Server, im Ergebnis steht das Original",
+        r.ok && !wire.includes(TOKEN) && /\[redacted-/.test(wire) && (r.content ?? "").includes(TOKEN) && (r.redactions ?? 0) > 0,
+        `Draht ohne Original: ${!wire.includes(TOKEN)} · Platzhalter da: ${/\[redacted-/.test(wire)} · Original im Ergebnis: ${(r.content ?? "").includes(TOKEN)} · redactions=${r.redactions}`);
+    } finally {
+      await fake.close();
+      // Den Klartext-Schluessel nicht im Staging-Vault liegen lassen: Liste leeren, Schluesselbund-Eintraege des Plugins loeschen.
+      await cdp.evaluate(`
+        const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+        for (const e of p.settings.llmEndpoints) { if (e.secretId) app.secretStorage.setSecret(e.secretId, ""); }
+        p.llm.invalidate();
+        return true;
+      `).catch(() => undefined);
+    }
+  },
+};
+
 /** M steht VOR dem Export, nicht dahinter: der Export-Abschnitt setzt eine Probe-Regel ins
  *  `customCss` und raeumt sie erst im `finally` des Laufs weg. Liefe M danach, faerbte diese
  *  Regel in die Messung hinein. N steht aus demselben Grund davor. */
-const SECTIONS: Section[] = [vorschau, mermaid, bildplaetze, einstellungen, anfrage, endpunktQuelle, explorer, exportSektion, chatSektion];
+const SECTIONS: Section[] = [vorschau, mermaid, bildplaetze, einstellungen, anfrage, verbindung, endpunktQuelle, explorer, exportSektion, chatSektion];
 
 // --- Lauf --------------------------------------------------------------------
 
@@ -1882,6 +1956,7 @@ async function main(): Promise<void> {
           ${vorherigeEinstellungen !== null ? `
           Object.assign(plugin.settings, JSON.parse(${JSON.stringify(vorherigeEinstellungen)}));
           await plugin.saveSettings?.();
+          plugin.llm?.invalidate();
           if (typeof plugin.applyFolderHide === "function") plugin.applyFolderHide();
           ` : ""}
         }
@@ -2004,6 +2079,7 @@ async function main(): Promise<void> {
           const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
           Object.assign(plugin.settings, JSON.parse(${JSON.stringify(vorherigeEinstellungen)}));
           await plugin.saveSettings?.();
+          plugin.llm?.invalidate();
           if (typeof plugin.applyFolderHide === "function") plugin.applyFolderHide();
           return true;
         `)

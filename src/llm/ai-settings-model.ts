@@ -1,13 +1,6 @@
 // Pure state logic of the AI settings UI: obsidian-free, DOM-free, node-testable and pinned by
 // check-core-purity. The render layer (ai-settings-ui.ts) calls these and stays thin.
 import type { EndpointStatusKind } from "../vendor/kit/endpoint_diagnostics";
-import type { EndpointRole } from "../vendor/kit/endpoint_config";
-
-/** i18n key for an endpoint role. The kit derives the role but stays language-free —
- *  this plugin is EN-canonical and renders it through t(). */
-export function roleKindKey(role: EndpointRole): string {
-  return `deck.settings.endpoint.role.${role.kind}`;
-}
 
 /** Mode of the model field: `dropdown` as soon as any models were loaded, else `freetext`
  *  (offline / not yet probed). A saved model missing from the list does NOT hide the dropdown —
@@ -44,9 +37,4 @@ export interface StatusLabelParts { key: string; suffix?: string }
 export function statusLabelParts(kind: EndpointStatusKind, raw?: string): StatusLabelParts {
   const key = statusKindKey(kind);
   return kind === "unknown" && raw ? { key, suffix: raw } : { key };
-}
-
-/** i18n key for an input warning rule (the render layer calls `t(key)`). */
-export function warnRuleKey(rule: string): string {
-  return `deck.settings.endpoint.warn.${rule}`;
 }

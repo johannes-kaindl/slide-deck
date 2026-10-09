@@ -1,15 +1,14 @@
 import { extractDeckMarkdown, setDeckTheme, setDeckSource, setDeckModel, hoistDeckSlots } from "./vendor/deck-core/pure/llm/deck-sanitize";
 import { validateDeckOutput } from "./vendor/deck-core/pure/llm/deck-validate";
 import { buildRetryFeedback, type ChatMessage } from "./vendor/deck-core/pure/llm/deck-prompt";
-import type { DeckLlmClient, StreamOpts } from "./llm-client";
+import type { DeckClient } from "./llm-client";
 
 export type GenPhase = "running" | "retrying" | "done" | "error" | "aborted";
 export interface GenState { phase: GenPhase; attempt: number; content: string; reasoning: string; error?: string }
 
 export interface GenerateDeps {
-  client: Pick<DeckLlmClient, "generate">;
+  client: DeckClient;
   messages: ChatMessage[];
-  streamOpts: StreamOpts;
   themeKey: string;
   sourceLink?: string; // optional "[[Note]]" backlink written into the deck frontmatter
   model?: string; // optional model id recorded as a `model:` frontmatter line
@@ -34,7 +33,7 @@ export async function runGenerateDeck(deps: GenerateDeps): Promise<GenerateResul
     let usedFallback = false;
     try {
       const r = await deps.client.generate(
-        messages, deps.streamOpts,
+        messages,
         (c) => { acc.content += c; deps.onState({ phase, attempt, content: acc.content, reasoning: acc.reasoning }); },
         (rs) => { acc.reasoning += rs; deps.onState({ phase, attempt, content: acc.content, reasoning: acc.reasoning }); },
         deps.signal,

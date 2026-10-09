@@ -1,7 +1,7 @@
 import { TFile } from "obsidian";
 import type SlideDeckPlugin from "./main";
 import type { DeckGenInput } from "./main";
-import { makeDeckLlmClient } from "./llm-client";
+import { fetchModelContext } from "./llm-client";
 import type { EndpointConfig } from "./vendor/kit/endpoint_config";
 import { frontmatterRange } from "./vendor/deck-core/pure/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./vendor/deck-core/pure/llm/deck-prompt";
@@ -138,7 +138,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     this.refreshSourceBits();
 
     // Resolve endpoint + ping + models (once per open).
-    const source = await this.plugin.resolveEndpoint();
+    const source = await this.plugin.llm.resolve();
     this.endpoint = source.config;
     if (this.closed) return;
     // The source decides the model too (choice → manager default → local llmModel).
@@ -151,14 +151,15 @@ export class GeneratePanel implements HubPanel<HubTabId> {
       pingLabelEl.setText(t("deck.modal.noEndpoint"));
       this.warnEl.setText(t("deck.modal.noEndpoint"));
     } else {
-      const st = await makeDeckLlmClient(this.endpoint, "").probe();
+      // One request answers both questions: the model list of the resolved endpoint, and — by its
+      // answer — whether it is reachable. The finer diagnosis (key refused, wrong path, ...) lives in
+      // the settings, next to the endpoint row.
+      const { models, reachable } = await this.plugin.llm.models();
       if (this.closed) return;
-      const parts = statusLabelParts(st.kind, st.raw);
-      const label = parts.suffix ? `${t(parts.key)} — ${parts.suffix}` : t(parts.key);
-      paintStatus(pingEl, st.kind, label);
+      const kind = reachable ? "ok" : "unknown";
+      const label = t(statusLabelParts(kind).key);
+      paintStatus(pingEl, kind, label);
       pingLabelEl.setText(`${this.endpoint.url} — ${label}`);
-      const models = await makeDeckLlmClient(this.endpoint, "").listModels();
-      if (this.closed) return;
       if (modelFieldMode(models) === "dropdown") {
         // Keep a saved-but-absent model selectable instead of losing it (UI-STANDARD §8,
         // same rule as the settings model field).
@@ -210,7 +211,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     if (this.deckHintEl && looksLikeDeck(raw)) this.deckHintEl.setText(t("deck.modal.sourceIsDeck"));
     if (!this.endpoint || !this.warnEl) return;
     const body = stripNoteFrontmatter(raw);
-    const ctx = await makeDeckLlmClient(this.endpoint, this.model).modelContext(this.model);
+    const ctx = await fetchModelContext(this.endpoint, this.model);
     if (this.currentSource !== file) return;
     const limit = ctx?.loadedContextLength ?? ctx?.maxContextLength;
     const inputTokens = estimateTokens(body.length) + 400;
@@ -237,7 +238,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
       if (!this.replace) { let n = 2; while (this.existsAt(targetPath)) { targetPath = `${this.targetBase(source)} ${n}.md`; n++; } }
       const input: DeckGenInput = {
         sourceBody: body, slideTarget, hint: this.hintInput.value, themeKey: this.themeSel.value,
-        model: this.model, endpoint: this.endpoint, targetPath, replace: this.replace,
+        model: this.model, targetPath, replace: this.replace,
         sourceLink: `[[${source.basename}]]`,
       };
       const handle = this.plugin.startDeckGeneration(input);

@@ -73,7 +73,7 @@ selbst in den Themes-Ordner legst.
 
 ## Voraussetzungen
 
-- **Obsidian ≥ 1.8.7** (`minAppVersion`). Ab 1.13.0 nutzt der Einstellungs-Tab die deklarative Settings-API; ältere Versionen bekommen dieselben Einstellungen über einen klassischen Fallback.
+- **Obsidian ≥ 1.11.4** (`minAppVersion`; API-Schlüssel liegen im Schlüsselbund von Obsidian, den es seit 1.11.4 gibt). Ab 1.13.0 nutzt der Einstellungs-Tab die deklarative Settings-API; ältere Versionen bekommen dieselben Einstellungen über einen klassischen Fallback.
 - **Desktop + Mobile** (`isDesktopOnly: false`) — läuft auf dem Desktop (Windows, macOS, Linux) und auf Mobilgeräten (iOS/iPadOS); Desktop-only-APIs sind plattformgesichert.
 - **PDF-Export auf dem Desktop** verwendet den **System-Druckdialog** — im Druckerdropdown „Als PDF speichern" wählen. Es wird keine PDF-Datei direkt erzeugt.
 - **PDF-Export auf Mobile** schreibt eine eigenständige HTML-Datei in den Export-Ordner und öffnet sie mit der Standard-App des Betriebssystems; von dort kann als PDF gedruckt oder geteilt werden. Der Dateiname lautet `<Export-Ordner>/<Notizname>.html`.
@@ -253,7 +253,7 @@ Ist das Plugin **LLM Endpoint Manager** installiert, kommen die Endpunkte (samt 
 
 - **Erreichbarkeits-Pings und Modell-Listen** werden abgefragt, wenn du den Erzeugen-Dialog oder
   den Einstellungs-Tab öffnest. Das sind automatische Requests an die konfigurierten Endpoints.
-- **Notiz-Inhalte werden nur beim Klick auf „Erzeugen" gesendet.**
+- **Notiz-Inhalte werden nur beim Klick auf „Erzeugen" gesendet.** Geheimnisse im Text (private Schlüssel, Bearer-Token, API-Schlüssel) werden auf dem Weg hinaus durch Platzhalter ersetzt; das erzeugte Deck bekommt die Originale zurück.
 - Keine Telemetrie, keine Analyse, keine Drittanbieter.
 
 ### Server-CORS

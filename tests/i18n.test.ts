@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { pickLang, setLang, t, STRINGS_EN, STRINGS_DE } from "../src/i18n";
-import { statusKindKey, warnRuleKey } from "../src/llm/ai-settings-model";
+import { statusKindKey } from "../src/llm/ai-settings-model";
 import type { EndpointStatusKind } from "../src/vendor/kit/endpoint_diagnostics";
 import type { WarningSeverity } from "../src/vendor/deck-core/pure/constraints/engine";
 
@@ -37,8 +37,8 @@ describe("deck-generation strings", () => {
     "deck.modal.slideCount", "deck.modal.hint", "deck.modal.existsReplace", "deck.modal.existsCopy",
     "deck.modal.contextWarn", "deck.modal.noEndpoint", "deck.notice.done", "deck.notice.incomplete",
     "deck.notice.finishedBg", "deck.error.envelope", "deck.error.cors", "deck.error.invalid",
-    "deck.settings.heading", "deck.settings.endpoints.name", "deck.settings.model.name",
-    "deck.settings.maxTokens.name", "deck.settings.thinkingTest.name", "request.title", "request.legacyTemperature"];
+    "deck.settings.heading", "deck.settings.model.name",
+    "deck.settings.maxTokens.name", "deck.settings.thinkingTest.name", "request.legacyTemperature", "deck.error.noEndpoint"];
   it("has EN + DE for every deck key", () => {
     setLang("en"); for (const k of keys) expect(t(k), `EN ${k}`).not.toBe(k);
     setLang("de"); for (const k of keys) expect(t(k), `DE ${k}`).not.toBe(k);
@@ -60,16 +60,9 @@ describe("AI settings i18n coverage", () => {
     "not-an-llm-api": true, "unauthorized": true, "unknown": true,
   };
   const KINDS = Object.keys(KIND_SET) as EndpointStatusKind[];
-  const RULES = ["scheme", "malformed", "port", "placeholder-ip"];
 
   it.each(KINDS)("has EN+DE for status kind %s", (kind) => {
     const key = statusKindKey(kind);
-    setLang("en"); expect(t(key)).not.toBe(key);
-    setLang("de"); expect(t(key)).not.toBe(key);
-  });
-
-  it.each(RULES)("has EN+DE for warn rule %s", (rule) => {
-    const key = warnRuleKey(rule);
     setLang("en"); expect(t(key)).not.toBe(key);
     setLang("de"); expect(t(key)).not.toBe(key);
   });
@@ -97,13 +90,11 @@ describe("warning severity strings", () => {
 describe("Sprachmix im Settings-Tab (Welle 14)", () => {
   it("die deutsche Oberfläche führt Überschrift, Endpunkt-Feld und Modell-Beschreibung einsprachig", () => {
     expect(STRINGS_DE["settings.heading"]).toBe("Foliensatz");
-    expect(STRINGS_DE["deck.settings.endpoints.name"]).toBe("Endpunkte");
     expect(STRINGS_DE["deck.settings.model.desc"]).not.toMatch(/Endpoint\b/);
     expect(STRINGS_DE["deck.settings.model.desc"]).toContain("Endpunkt");
   });
   it("die englische Oberfläche bleibt unverändert", () => {
     expect(STRINGS_EN["settings.heading"]).toBe("Slide deck");
-    expect(STRINGS_EN["deck.settings.endpoints.name"]).toBe("Endpoints");
     expect(STRINGS_EN["deck.settings.model.desc"]).toContain("endpoint");
   });
 });

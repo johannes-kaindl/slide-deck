@@ -61,11 +61,11 @@ Each entry starts with what you see — the wording is the plugin's own English 
 | Row status | Meaning |
 |---|---|
 | Connection refused — server not running or wrong port. | The server is off, or the port in the address is wrong. |
-| Timed out — network unreachable (wrong network / VPN off?). | The machine is not reachable from here. |
+| Timed out — network unreachable. | The machine is not reachable from here (wrong network, VPN off?). |
 | Access denied — API key missing or invalid. | The server wants an API key. Enter it on that row. |
-| Not reachable | Nothing answers at that address. |
+| Not reachable — {reason} | Nothing answers at that address; the reason names what went wrong. |
 
-**Fix:** start the server, load a model, press **Check connections**, and choose the model in the row's dropdown (**Refresh model list** re-reads it).
+**Fix:** start the server, load a model, press **Test connection**, and choose the model in the row's dropdown (**Refresh models** re-reads it).
 
 ## Generate: the stream is refused
 
