@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-10-09
+
 ### Security
 
 - Dependencies: `katex` 0.19.0 (advisory GHSA-238p-pmpm-9mq7, low), also forced for the copies that `mermaid` and `@vscode/markdown-it-katex` bring along. Formulas and Mermaid diagrams render as before.
