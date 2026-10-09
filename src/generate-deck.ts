@@ -1,4 +1,5 @@
 import { extractDeckMarkdown, setDeckTheme, setDeckSource, setDeckModel, hoistDeckSlots } from "./vendor/deck-core/pure/llm/deck-sanitize";
+import { neutralizeRemoteResources } from "./vendor/kit/safe-markdown";
 import { validateDeckOutput } from "./vendor/deck-core/pure/llm/deck-validate";
 import { buildRetryFeedback, type ChatMessage } from "./vendor/deck-core/pure/llm/deck-prompt";
 import type { DeckClient } from "./llm-client";
@@ -46,7 +47,10 @@ export async function runGenerateDeck(deps: GenerateDeps): Promise<GenerateResul
       return { status: "fatal", error: (e as Error).message, kind: "server" };
     }
 
-    let themed = hoistDeckSlots(setDeckTheme(extractDeckMarkdown(acc.content), deps.themeKey));
+    // Die Antwort traegt wiederhergestellte Originale (umkehrbare Schwaerzung): ein Platzhalter in einer
+    // Bild-URL, einem `<img>` oder einem `url()` liesse das Geheimnis beim Rendern hinausgehen. Nur Fernquellen
+    // und Prozessor-Fences werden entschaerft; Fences, Direktiven und lokale Embeds bleiben (text-basiert, keine Garantie).
+    let themed = hoistDeckSlots(setDeckTheme(neutralizeRemoteResources(extractDeckMarkdown(acc.content)), deps.themeKey));
     if (deps.sourceLink) themed = setDeckSource(themed, deps.sourceLink);
     if (deps.model) themed = setDeckModel(themed, deps.model);
     const validation = validateDeckOutput(themed);
