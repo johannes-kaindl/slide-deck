@@ -1634,14 +1634,8 @@ const G_MODEL = process.env.SD_SMOKE_MODEL ?? "google/gemma-4-e4b";
 const G_NOTE = "smoke-chat-g1.md";
 const chatSektion: Section = {
   key: "chat",
-  title: "G · Chat-Weg gegen einen echten Endpunkt (Streaming, Abbruch, Fehlerkoerper)",
+  title: "G · Chat-Weg (Fehlerkoerper; mit --with-model Streaming und Abbruch gegen einen echten Endpunkt)",
   async run(cdp) {
-    if (!MIT_MODELL) {
-      skipped("G1 Streaming: Deck aus einer Notiz, Text kommt in mehreren Stuecken", "--with-model fehlt");
-      skipped("G2 Abbruch: Stop beendet die Generierung zuegig, es wird nichts geschrieben", "--with-model fehlt");
-      skipped("G3 Fehlerkoerper: falscher Pfad → HTTP 200 + Fehler-Body wird zur Meldung", "--with-model fehlt");
-      return;
-    }
     const starte = (name: string, endpoint: string, quelle: string, abbrechen: boolean, ziel: string): Promise<unknown> => cdp.evaluate(`
       const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
       // Die Verbindung liest den Endpunkt aus den Settings: dieser Lauf zeigt auf den Prüf-Endpunkt.
@@ -1670,6 +1664,26 @@ const chatSektion: Section = {
       const roh = await pollUntil<string>(cdp, `const st = globalThis[${JSON.stringify(name)}]; return st && st.fertig ? JSON.stringify(st) : null;`, ms, 2000);
       return roh ? JSON.parse(roh) : null;
     };
+    // G3 braucht kein Modell: ein Fake-Server antwortet auf den Chat-POST mit HTTP 200 und einem Fehler-Body.
+    // Seit dem Verbindungs-Tausch kommt der Endpunkt aus der Aufloesung — ein "falscher Pfad" gaebe
+    // schon dort "kein Endpunkt" und erreichte den Fehlerkoerper nie (umgeschrieben, Welle 15).
+    const QUELLE_G3 = "# Wandern\n\nEine Tagestour braucht Wasser, feste Schuhe und eine Karte.";
+    const fehler = await startFakeChat(true);
+    try {
+      await starte("__sdG3", fehler.url, QUELLE_G3, false, "smoke-chat-g3.md");
+      const g3 = await warte("__sdG3", 60_000);
+      record("G3 Fehlerkoerper: HTTP 200 + Fehler-Body auf dem Chat-Weg wird zur Meldung (umgeschrieben)",
+        g3 !== null && g3.ergebnis.status === "fatal" && g3.ergebnis.kind === "server" && (g3.ergebnis.error ?? "").includes("Model has crashed"),
+        g3 ? `${g3.ergebnis.status}/${g3.ergebnis.kind} · Meldung: "${g3.ergebnis.error}" · POSTs: ${fehler.bodies.length}` : "nach 60 s nicht beendet");
+    } finally {
+      await fehler.close();
+    }
+
+    if (!MIT_MODELL) {
+      skipped("G1 Streaming: Deck aus einer Notiz, Text kommt in mehreren Stuecken", "--with-model fehlt");
+      skipped("G2 Abbruch: Stop beendet die Generierung zuegig, es wird nichts geschrieben", "--with-model fehlt");
+      return;
+    }
     const QUELLE = "# Wandern\n\nEine Tagestour braucht Wasser, feste Schuhe und eine Karte. Am Gipfel gibt es Brotzeit; abends geht es zurueck ins Tal.";
     const LANG = "# Geschichte des Radios\n\n" + "Das Radio entstand aus den Arbeiten vieler Erfinder. ".repeat(60);
 
@@ -1688,13 +1702,6 @@ const chatSektion: Section = {
       g2 ? `Abbruch nach ${g2.abbruchNach} ms, Ende nach ${g2.dauer} ms · ${g2.ergebnis.status} · Notiz geschrieben: ${g2Datei}` : "nach 120 s nicht beendet");
     if (g2Datei) erzeugtePfade.push("smoke-chat-g2.md");
 
-    // Falscher Pfad: LM Studio antwortet auf unbekannte Routen mit HTTP 200 + {error:"…"} — der
-    // Fall, den nur ein Fehlerkoerper-Check als Fehler erkennt (sonst „leeres Deck").
-    await starte("__sdG3", `${G_ENDPOINT}/gibt-es-nicht`, QUELLE, false, "smoke-chat-g3.md");
-    const g3 = await warte("__sdG3", 60_000);
-    record("G3 Fehlerkoerper: falscher Pfad → HTTP 200 + Fehler-Body wird zur Meldung",
-      g3 !== null && g3.ergebnis.status === "fatal" && g3.ergebnis.kind === "server" && (g3.ergebnis.error ?? "").trim() !== "",
-      g3 ? `${g3.ergebnis.status}/${g3.ergebnis.kind} · Meldung: "${g3.ergebnis.error}"` : "nach 60 s nicht beendet");
   },
 };
 
@@ -1706,7 +1713,7 @@ const ANFRAGE_KOPF = `[...wurzel.querySelectorAll(".okit-collapsible-header")].f
 
 /** Fake-Chat-Endpunkt im Node-Prozess; merkt sich jeden POST-Body. Mit CORS-Freigabe, damit der
  *  Stream-Weg (XHR) durchkommt und der Body vom echten Transport stammt. */
-async function startFakeChat(): Promise<{ url: string; bodies: unknown[]; auth: (string | undefined)[]; close(): Promise<void> }> {
+async function startFakeChat(fehlerKoerper = false): Promise<{ url: string; bodies: unknown[]; auth: (string | undefined)[]; close(): Promise<void> }> {
   const bodies: unknown[] = [];
   const auth: (string | undefined)[] = [];
   const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
@@ -1719,6 +1726,8 @@ async function startFakeChat(): Promise<{ url: string; bodies: unknown[]; auth: 
       req.on("end", () => {
         try { bodies.push(JSON.parse(raw)); } catch { bodies.push({ kein_json: raw.slice(0, 80) }); }
         auth.push(typeof req.headers.authorization === "string" ? req.headers.authorization : undefined);
+        // G3: HTTP 200 mit Fehler-Body statt Stream — die Form, in der LM Studio ein abgestuerztes Modell meldet.
+        if (fehlerKoerper) { res.writeHead(200, { ...cors, "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Model has crashed without additional information." })); return; }
         // Spiegelt einen Platzhalter der Schwaerzung zurueck, falls die Anfrage einen enthielt (V3).
         const echo = /\[redacted-[a-z]+-\d+\]/.exec(raw)?.[0];
         res.writeHead(200, { ...cors, "Content-Type": "text/event-stream" });
