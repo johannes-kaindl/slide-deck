@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.15.2] — 2026-10-10
+
 ### Changed
 
 - **Mermaid diagrams are now judged by the shared kit rule (`mermaidLoadsRemote`, code-kit 0.20.0)** instead of a plugin-own copy. A diagram becomes plain text (the slide is saved as text) when its code can load something. Stricter than before: HTML attributes that load (`src=`, `srcset=` and similar) anywhere in a label, and a scheme without `//` (`http:foo`) anywhere in a label. Looser than before: `img: "data:…"` of any type is local (it never touches the network); before, only `data:image/` was. Unchanged: `A@{ img: "https://…" }`, `url(…)`, `@import`, `//`, comments and backslashes still count. Diagrams the model writes with such a label are saved as text; diagrams you write yourself are not affected.
