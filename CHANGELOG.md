@@ -6,6 +6,10 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- A crafted Mermaid block in a generated deck could freeze Obsidian while the deck was being generated: the check for remote sources in Mermaid code backtracked exponentially on a long run of CSS comments. The check is now linear; a CSS comment (`/*`) in Mermaid code counts as a finding by itself (Mermaid comments with `%%`), so the slide is saved as text.
+
 ## [0.15.0] — 2026-10-10
 
 ### Security

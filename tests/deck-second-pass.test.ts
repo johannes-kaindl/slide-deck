@@ -108,6 +108,25 @@ describe("secondPassDeck", () => {
     ])("fail-closed: %s", (_n, src) => {
       expect(secondPassDeck(deck(src), deps).replaced).toEqual([1]);
     });
+    // ReDoS (0.15.1): `url` + n Kommentare ohne `(` liess die Regex exponentiell backtracken (Faktor 2 je Kommentar,
+    // n=24 gemessen 83 ms, n=40 Stunden). n=24 hier, damit die Gegenprobe mit der alten Regel rot wird und nicht haengt.
+    it.each([24, 200, 5000])("Laufzeit: `url` + %i Kommentare ohne Klammer bleibt linear (< 50 ms)", (n) => {
+      const d = deck("graph TD\n  A-->B\n  classDef f " + "url" + "/**/".repeat(n) + "x");
+      const t0 = performance.now();
+      const r = secondPassDeck(d, deps);
+      expect(performance.now() - t0).toBeLessThan(50 + n / 10);
+      expect(r.replaced).toEqual([1]); // ein `/*` im Mermaid-Quelltext ist selbst ein Fund
+    });
+    it.each([
+      ["lange Folge ohne Treffer", "A-->B\n".repeat(20000)],
+      ["viele img:-Zeilen", 'A@{ img: "x.png" }\n'.repeat(5000)],
+      ["lange url-Folge", "url ".repeat(20000)],
+      ["lange Backslash-freie Zeile ohne Klammer", "image".repeat(40000)],
+    ])("Laufzeit der uebrigen Muster: %s (< 200 ms)", (_n, src) => {
+      const t0 = performance.now();
+      secondPassDeck(deck("graph TD\n" + src), deps);
+      expect(performance.now() - t0).toBeLessThan(200);
+    });
     it("ein Mermaid-Deck ohne URL, mit data:-Bild und relativem img:, bleibt byte-gleich", () => {
       const d = deck('graph TD\n  A-->B\n  C@{ img: "data:image/png;base64,AAAA", label: "c" }\n  D@{ img: "img/a.png", label: "d" }');
       expect(secondPassDeck(d, deps).markdown).toBe(d);

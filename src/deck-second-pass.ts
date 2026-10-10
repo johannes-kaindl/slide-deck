@@ -38,9 +38,9 @@ const REMOTE_EMBED_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
  *  erzeugt CSS. Der Kern reicht den Fence nur als `<div class="sd-mermaid" data-src=base64>` durch, der Baum-Durchgang sieht den
  *  Inhalt also nie. Ein Quelltext mit `//`, `url(` oder `@import` gilt deshalb als Fund (data:-Bilder und relative `img:` haben kein `//`). */
 /** Fail-closed statt Formen aufzaehlen: ein Mermaid-Quelltext ist ein Fund, sobald er CSS-Funktionen oder -Importe (`url`, `src(`,
- *  `image-set(`, `@import`, auch mit Leerraum oder Kommentar davor), einen Backslash (CSS-Escapes, `\\host`), ein `//` oder einen
+ *  `image-set(`, `@import`), ein CSS-Kommentar `/*` (Mermaid kommentiert mit `%%`; in einem Kommentar-Skip steckte ein exponentielles Backtracking), einen Backslash (CSS-Escapes, `\\host`), ein `//` oder einen
  *  `img:`-Wert traegt, der nicht eindeutig lokal ist (nur `data:image/…` oder ein relativer Pfad ohne `:`). */
-const MERMAID_CSS_RE = /(?:url|src|image-set|image|cross-fade)\s*(?:\/\*[\s\S]*?\*\/\s*)*\(|@import|\\|\/\//i;
+const MERMAID_CSS_RE = /(?:url|src|image-set|image|cross-fade)\s*\(|\/\*|@import|\\|\/\//i;
 const MERMAID_IMG_RE = /\bimg\s*:\s*(?:"([^"]*)"|'([^']*)'|([^\s,}]+))/gi;
 
 function mermaidLoads(src: string): boolean {
