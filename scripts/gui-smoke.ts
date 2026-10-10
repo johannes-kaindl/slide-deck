@@ -1859,6 +1859,20 @@ const anfrage: Section = {
 /** V — was der Tausch auf die Kit-Verbindung an der Leitung und auf der Platte aendert: der Schluessel
  *  zieht in den Schluesselbund, geht als Bearer hinaus, und ein Geheimnis im Prompt verlaesst den
  *  Rechner als Platzhalter und kommt als Original zurueck. Neu mit dem Tausch (Welle 15), keine Baseline. */
+/** Ein Server, der nur zaehlt, WAS bei ihm anklopft (Pfade). Der Zaehler steht am Draht, nicht im DOM:
+ *  "nichts geladen" heisst hier, dass der Server nie angesprochen wurde. */
+async function startZaehler(): Promise<{ url: string; pfade: () => string[]; close: () => Promise<void> }> {
+  const pfade: string[] = [];
+  const server: Server = createServer((req: IncomingMessage, res: ServerResponse) => {
+    pfade.push(req.url ?? "");
+    res.writeHead(200, { "content-type": "image/svg+xml" });
+    res.end("<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'/>");
+  });
+  await new Promise<void>((ok) => server.listen(0, "127.0.0.1", ok));
+  const port = (server.address() as AddressInfo).port;
+  return { url: `http://127.0.0.1:${port}`, pfade: () => [...pfade], close: () => new Promise<void>((ok) => server.close(() => ok())) };
+}
+
 const verbindung: Section = {
   key: "verbindung",
   title: "V · Verbindung (Schluesselbund, Bearer, Schwaerzung)",
@@ -1938,6 +1952,48 @@ const verbindung: Section = {
       const bleibt = ["<!-- layout: two-column -->", "![[bild.png]]", "```mermaid", "![lokal](data:image/png;base64,AAAA)", "[Link](https://example.org)"];
       record("V8 Entschaerfung laesst ein normales Deck unveraendert: Direktive, Datei-Embed, Mermaid, data:-Bild und Link bleiben",
         gutNote !== "" && bleibt.every((b) => gutNote.includes(b)), `fehlend: ${JSON.stringify(bleibt.filter((b) => !gutNote.includes(b)))}`);
+
+      // V9–V11 — zweite Schicht (Welle 16): eine Fernquelle, die die Regex-Schicht stehen laesst (SVG-Attribut `filter=url(…)`,
+      // Fixture "r2 B13" aus code-kit), darf auch nach dem Rendern in echtem Chromium keinen Treffer am Draht erzeugen.
+      const zaehler = await startZaehler();
+      try {
+        const ladeImFenster = async (md: string): Promise<void> => {
+          const html = renderMarkdown({ markdown: md, resolveEmbed: () => null }).html;
+          await cdp.evaluate(`
+            const f = document.createElement("iframe");
+            f.srcdoc = ${JSON.stringify(html)};
+            document.body.appendChild(f);
+            await new Promise((x) => setTimeout(x, 2000));
+            f.remove();
+            return true;
+          `);
+        };
+        const treffer = (marke: string): number => zaehler.pfade().filter((x) => x.includes(marke)).length;
+        const svgAntwort = `---\ntheme: kami\n---\n# A\n\n<svg><rect width="10" height="10" fill="url(${zaehler.url}/v9.svg#f) red"/></svg>\n\n---\n\n# B`;
+        const svgNote = await generiere(svgAntwort, "smoke-sicher-v9.md");
+        await ladeImFenster(svgAntwort);
+        const ohne = treffer("/v9.svg");
+        await ladeImFenster(svgNote);
+        const mit = treffer("/v9.svg") - ohne;
+        record("V9 Zweite Schicht: eine Fernquelle, die die Regex-Schicht uebersieht (SVG fill=url), erzeugt keine Anfrage am Draht (Gegenprobe: die rohe Antwort schon)",
+          svgNote !== "" && ohne > 0 && mit === 0 && !svgNote.includes("<svg"), `Notiz geschrieben: ${svgNote !== ""} · Treffer ohne zweite Schicht: ${ohne} · mit: ${mit} · <svg> in der Notiz: ${svgNote.includes("<svg")}`);
+        record("V10 Zweite Schicht: nur die betroffene Folie wird Text, die Nachbarfolie bleibt",
+          svgNote.includes("# A") && svgNote.includes("# B") && /&lt;svg>/.test(svgNote), `Folie A: ${svgNote.includes("# A")} · Folie B: ${svgNote.includes("# B")} · Text statt Tag: ${/&lt;svg>/.test(svgNote)}`);
+        // V11 — Variante A: ein selbst geschriebenes Deck mit Fernbild laedt in der Vorschau weiter (die Schicht greift nur beim Erzeugen).
+        const eigen = "smoke-eigenes-deck-v11.md";
+        erzeugtePfade.push(eigen);
+        await cdp.evaluate(`
+          const p = ${JSON.stringify(eigen)};
+          const inhalt = ${JSON.stringify(`---\ntheme: kami\n---\n# Eigenes Deck\n\n![](${zaehler.url}/v11-logo.png)\n`)};
+          const f = app.vault.getAbstractFileByPath(p);
+          if (f) await app.vault.modify(f, inhalt); else await app.vault.create(p, inhalt);
+          return true;
+        `);
+        await openPreview(cdp, eigen);
+        await new Promise((x) => setTimeout(x, 2000));
+        record("V11 Eigenes Deck mit Fernbild laedt in der Vorschau weiter (Variante A: die zweite Schicht greift nur beim Erzeugen)",
+          treffer("/v11-logo.png") > 0, `Treffer am Draht: ${treffer("/v11-logo.png")}`);
+      } finally { await zaehler.close(); }
     } finally {
       await fake.close();
       // Den Klartext-Schluessel nicht im Staging-Vault liegen lassen: Liste leeren, Schluesselbund-Eintraege des Plugins loeschen.
