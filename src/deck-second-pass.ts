@@ -37,7 +37,20 @@ const REMOTE_EMBED_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 /** Mermaid laedt ausserhalb jedes DOM-Baums: `A@{ img: "https://…" }` ruft `new Image().src`, `classDef … background:url(…)`
  *  erzeugt CSS. Der Kern reicht den Fence nur als `<div class="sd-mermaid" data-src=base64>` durch, der Baum-Durchgang sieht den
  *  Inhalt also nie. Ein Quelltext mit `//`, `url(` oder `@import` gilt deshalb als Fund (data:-Bilder und relative `img:` haben kein `//`). */
-const MERMAID_LOADS_RE = /\/\/|url\s*\(|@import/i;
+/** Fail-closed statt Formen aufzaehlen: ein Mermaid-Quelltext ist ein Fund, sobald er CSS-Funktionen oder -Importe (`url`, `src(`,
+ *  `image-set(`, `@import`, auch mit Leerraum oder Kommentar davor), einen Backslash (CSS-Escapes, `\\host`), ein `//` oder einen
+ *  `img:`-Wert traegt, der nicht eindeutig lokal ist (nur `data:image/…` oder ein relativer Pfad ohne `:`). */
+const MERMAID_CSS_RE = /(?:url|src|image-set|image|cross-fade)\s*(?:\/\*[\s\S]*?\*\/\s*)*\(|@import|\\|\/\//i;
+const MERMAID_IMG_RE = /\bimg\s*:\s*(?:"([^"]*)"|'([^']*)'|([^\s,}]+))/gi;
+
+function mermaidLoads(src: string): boolean {
+  if (MERMAID_CSS_RE.test(src)) return true;
+  for (const m of src.matchAll(MERMAID_IMG_RE)) {
+    const v = (m[1] ?? m[2] ?? m[3] ?? "").trim();
+    if (!/^data:image\//i.test(v) && /^[\s\S]*:/.test(v)) return true;
+  }
+  return false;
+}
 
 function decodeBase64Utf8(b64: string): string {
   try {
@@ -56,7 +69,7 @@ function regionFindings(region: string, slide: number, deps: SecondPassDeps): Se
   const body = deps.parseHtml(html).body;
   const found: SecondPassFinding[] = neutralizeRemoteResourcesInTree(body).removed.map((r) => ({ slide, tag: r.tag, attr: r.attr }));
   for (const el of Array.from(body.querySelectorAll(".sd-mermaid"))) {
-    if (MERMAID_LOADS_RE.test(decodeBase64Utf8(el.getAttribute("data-src") ?? ""))) found.push({ slide, tag: "mermaid", attr: "source" });
+    if (mermaidLoads(decodeBase64Utf8(el.getAttribute("data-src") ?? ""))) found.push({ slide, tag: "mermaid", attr: "source" });
   }
   return found;
 }

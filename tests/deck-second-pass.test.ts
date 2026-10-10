@@ -98,6 +98,16 @@ describe("secondPassDeck", () => {
       const r = secondPassDeck(deck("graph TD\n  A-->B\n  classDef f background:url(https://evil.invalid/x.png)\n  class A f"), deps);
       expect(r.replaced).toEqual([1]);
     });
+    it.each([
+      ["url mit Leerraum", "graph TD\n  A-->B\n  classDef f background:url (https://evil.invalid/x.png)"],
+      ["url mit Kommentar", "graph TD\n  A-->B\n  classDef f background:url/**/(x.png)"],
+      ["CSS-Escape", "graph TD\n  A-->B\n  classDef f background:u\\72l(x.png)"],
+      ["img mit Schema ohne //", 'graph TD\n  A@{ img: "http:evil.invalid/x.png", label: "a" }'],
+      ["img mit Backslash-Host", 'graph TD\n  A@{ img: "\\\\evil.invalid\\x.png", label: "a" }'],
+      ["image-set", "graph TD\n  A-->B\n  classDef f background:image-set(x.png 1x)"],
+    ])("fail-closed: %s", (_n, src) => {
+      expect(secondPassDeck(deck(src), deps).replaced).toEqual([1]);
+    });
     it("ein Mermaid-Deck ohne URL, mit data:-Bild und relativem img:, bleibt byte-gleich", () => {
       const d = deck('graph TD\n  A-->B\n  C@{ img: "data:image/png;base64,AAAA", label: "c" }\n  D@{ img: "img/a.png", label: "d" }');
       expect(secondPassDeck(d, deps).markdown).toBe(d);
