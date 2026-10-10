@@ -179,8 +179,10 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
   deck-second-pass.ts  secondPassDeck(markdown, {parseHtml, neutralizeSlide?}) — zweite Schicht fuer ERZEUGTE Decks
                      (generate-deck.ts, nach der Regex-Schicht): je Folie (Grenzen aus parseDeck) und je REGION
                      wie die Vorschau rendern (renderMarkdown, einzeln geparst in einem inerten Dokument), dann
-                     neutralizeRemoteResourcesInTree (code-kit web/remote-resources). Ein `.sd-mermaid`-Slot mit
-                     `//`, `url(` oder `@import` im Quelltext gilt als Fund (Mermaid laedt ausserhalb jedes Baums).
+                     neutralizeRemoteResourcesInTree (code-kit web/remote-resources). Ein `.sd-mermaid`-Slot, dessen
+                     Quelltext das Kit (`mermaidLoadsRemote`, code-kit safe-markdown) als ladend einstuft, gilt als Fund
+                     (Mermaid laedt ausserhalb jedes Baums). Seit 0.20.0 faengt die erste Schicht dieselben Fences schon
+                     selbst ab; der Mermaid-Zweig hier ist Tiefenverteidigung.
                      Fund → NUR diese Folie wird mit neutralizeModelMarkdown Text; bleibt einer → `kind: "remote"`,
                      nichts wird geschrieben, kein Retry. Variante A (Johannes 2026-10-10): nur Modell-Ausgabe beim
                      Erzeugen, keine CSP im Vorschau-iframe, kein Eingriff in deck-core. Der Fund traegt nie die

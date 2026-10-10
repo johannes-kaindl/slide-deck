@@ -127,6 +127,20 @@ describe("secondPassDeck", () => {
       secondPassDeck(deck("graph TD\n" + src), deps);
       expect(performance.now() - t0).toBeLessThan(200);
     });
+    // Seit code-kit 0.20.0 fragt die zweite Schicht das Kit (`mermaidLoadsRemote`), nicht mehr eine eigene Regel: strenger bei
+    // HTML-Attributen und Schemata ohne `//` in beliebigen Labels, lockerer bei `img: "data:…"` (data: geht nie ans Netz).
+    it.each([
+      ["HTML-Attribut src= im Label", "graph TD\n  A[<img src=x.png>]"],
+      ["HTML-Attribut srcset= im Label", "graph TD\n  A[x srcset=y]"],
+      ["Schema ohne // im Label", "graph TD\n  A[see http:foo]"],
+      ["click href", 'graph TD\n  A-->B\n  click A href "https://evil.invalid/"'],
+    ])("Kit-Regel: %s ist ein Fund", (_n, src) => {
+      expect(secondPassDeck(deck(src), deps).replaced).toEqual([1]);
+    });
+    it("Kit-Regel: `Time: 10:30` im Label und `img: data:` sind keine Funde", () => {
+      const d = deck('graph TD\n  A[Time: 10:30]\n  B@{ img: "data:text/html,x", label: "b" }');
+      expect(secondPassDeck(d, deps).markdown).toBe(d);
+    });
     it("ein Mermaid-Deck ohne URL, mit data:-Bild und relativem img:, bleibt byte-gleich", () => {
       const d = deck('graph TD\n  A-->B\n  C@{ img: "data:image/png;base64,AAAA", label: "c" }\n  D@{ img: "img/a.png", label: "d" }');
       expect(secondPassDeck(d, deps).markdown).toBe(d);
@@ -139,7 +153,7 @@ describe("secondPassDeck", () => {
     expect(secondPassDeck(SVG, deps).replaced).toEqual([1]);
   });
 
-  describe("Fixture aus code-kit 0.18.0 (tests/fixtures/remote-sources.json, wortgleich, Tag 0.18.0)", () => {
+  describe("Fixture aus code-kit 0.20.0 (tests/fixtures/remote-sources.json, wortgleich, Tag 0.20.0)", () => {
     const cases = JSON.parse(readFileSync(new URL("./fixtures/remote-sources.json", import.meta.url), "utf8")) as { name: string; kind: string; html?: string; markdown?: string }[];
     it("jeder Fall, den die Regex-Schicht stehen laesst und der als `attack` gilt, wird von der zweiten Schicht ersetzt", () => {
       // happy-dom parst diese Faelle anders als Chromium (code-kit fuehrt sie als „happy-dom-blind"); dort misst der GUI-Smoke.
@@ -148,6 +162,18 @@ describe("secondPassDeck", () => {
       expect(missed.length).toBeGreaterThan(50);
       const notCaught = missed.filter((c) => secondPassDeck(c.html as string, deps).remaining.length > 0 || secondPassDeck(c.html as string, deps).replaced.length === 0);
       expect(notCaught.map((c) => c.name)).toEqual([]);
+    });
+    it("jeder Markdown-Fall mit `attack` liefert nach der Regex-Schicht keinen Fund der zweiten Schicht (die Erzeugung ruft beide hintereinander)", () => {
+      // Die Markdown-Faelle fuehrt nur dieser Test: der `attack`-Test oben nimmt nur Faelle mit `html`. Der Weg im Plugin ist
+      // `neutralizeRemoteResources` (erste Schicht), dann `secondPassDeck`; was die erste stehen laesst, muss die zweite fangen.
+      const md = cases.filter((c) => c.kind === "attack" && c.markdown !== undefined);
+      expect(md.length).toBeGreaterThanOrEqual(27);
+      const offen = md.filter((c) => {
+        const nach = neutralizeRemoteResources(c.markdown as string);
+        return nach !== c.markdown ? false : secondPassDeck(nach, deps).replaced.length === 0;
+      });
+      // Fälle, die die erste Schicht schon umschreibt, sind erledigt; der Rest muss von der zweiten Schicht gefunden werden.
+      expect(offen.map((c) => c.name)).toEqual([]);
     });
   });
 });

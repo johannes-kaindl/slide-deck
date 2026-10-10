@@ -1,6 +1,6 @@
 import { renderMarkdown } from "./vendor/deck-core/pure/render/md2html";
 import { parseDeck } from "./vendor/deck-core/pure/slide-model";
-import { neutralizeModelMarkdown } from "./vendor/kit/safe-markdown";
+import { mermaidLoadsRemote, neutralizeModelMarkdown } from "./vendor/kit/safe-markdown";
 import { neutralizeRemoteResourcesInTree } from "./vendor/kit/remote-resources";
 
 /** Zweite Schicht fuer erzeugte Decks (Welle 16): die erste Schicht (`neutralizeRemoteResources`) liest
@@ -34,24 +34,10 @@ export interface SecondPassResult {
 }
 
 const REMOTE_EMBED_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
-/** Mermaid laedt ausserhalb jedes DOM-Baums: `A@{ img: "https://…" }` ruft `new Image().src`, `classDef … background:url(…)`
- *  erzeugt CSS. Der Kern reicht den Fence nur als `<div class="sd-mermaid" data-src=base64>` durch, der Baum-Durchgang sieht den
- *  Inhalt also nie. Ein Quelltext mit `//`, `url(` oder `@import` gilt deshalb als Fund (data:-Bilder und relative `img:` haben kein `//`). */
-/** Fail-closed statt Formen aufzaehlen: ein Mermaid-Quelltext ist ein Fund, sobald er CSS-Funktionen oder -Importe (`url`, `src(`,
- *  `image-set(`, `@import`), ein CSS-Kommentar `/*` (Mermaid kommentiert mit `%%`; in einem Kommentar-Skip steckte ein exponentielles Backtracking), einen Backslash (CSS-Escapes, `\\host`), ein `//` oder einen
- *  `img:`-Wert traegt, der nicht eindeutig lokal ist (nur `data:image/…` oder ein relativer Pfad ohne `:`). */
-const MERMAID_CSS_RE = /(?:url|src|image-set|image|cross-fade)\s*\(|\/\*|@import|\\|\/\//i;
-const MERMAID_IMG_RE = /\bimg\s*:\s*(?:"([^"]*)"|'([^']*)'|([^\s,}]+))/gi;
-
-function mermaidLoads(src: string): boolean {
-  if (MERMAID_CSS_RE.test(src)) return true;
-  for (const m of src.matchAll(MERMAID_IMG_RE)) {
-    const v = (m[1] ?? m[2] ?? m[3] ?? "").trim();
-    if (!/^data:image\//i.test(v) && /^[\s\S]*:/.test(v)) return true;
-  }
-  return false;
-}
-
+/** Mermaid laedt ausserhalb jedes DOM-Baums (`A@{ img: … }` ruft `new Image().src`, `classDef … url(…)` erzeugt CSS); der Kern reicht den
+ *  Fence nur als `<div class="sd-mermaid" data-src=base64>` durch. Die Frage, ob der Quelltext etwas laedt, beantwortet das Kit
+ *  (`mermaidLoadsRemote`, dieselbe wie in `neutralizeRemoteResources`); hier wird nur der Quelltext aus dem Attribut geholt. */
+/** Das `data-src` des Fences zurueck in Text. */
 function decodeBase64Utf8(b64: string): string {
   try {
     const bin = atob(b64);
@@ -69,7 +55,7 @@ function regionFindings(region: string, slide: number, deps: SecondPassDeps): Se
   const body = deps.parseHtml(html).body;
   const found: SecondPassFinding[] = neutralizeRemoteResourcesInTree(body).removed.map((r) => ({ slide, tag: r.tag, attr: r.attr }));
   for (const el of Array.from(body.querySelectorAll(".sd-mermaid"))) {
-    if (mermaidLoads(decodeBase64Utf8(el.getAttribute("data-src") ?? ""))) found.push({ slide, tag: "mermaid", attr: "source" });
+    if (mermaidLoadsRemote(decodeBase64Utf8(el.getAttribute("data-src") ?? ""))) found.push({ slide, tag: "mermaid", attr: "source" });
   }
   return found;
 }

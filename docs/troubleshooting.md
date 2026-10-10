@@ -16,7 +16,7 @@ Each entry starts with what you see — the wording is the plugin's own English 
 > The deck was not saved: it contains a remote source that could not be neutralised (slide 2).
 > Slide(s) 2 contained a remote source and were saved as plain text.
 
-**Cause:** the model wrote something a browser would load from the internet without a click (a remote image, a `<style>` with `url(…)`, a Mermaid diagram with `img: "https://…"`). Because secrets in your note are put back into the answer, such a source could leak them, so the plugin checks every generated slide a second time before it saves the deck.
+**Cause:** the model wrote something a browser would load from the internet without a click (a remote image, a `<style>` with `url(…)`, a Mermaid diagram with `img: "https://…"`, a `click … href`, or an HTML attribute such as `src=` inside a label). Because secrets in your note are put back into the answer, such a source could leak them, so the plugin checks every generated slide a second time before it saves the deck.
 
 **Fix:** nothing, for the first message; the slide is readable as text and you can rewrite it. For the second, run the generation again. Decks you write yourself are not touched.
 

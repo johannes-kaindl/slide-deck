@@ -6,6 +6,15 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Mermaid diagrams are now judged by the shared kit rule (`mermaidLoadsRemote`, code-kit 0.20.0)** instead of a plugin-own copy. A diagram becomes plain text (the slide is saved as text) when its code can load something. Stricter than before: HTML attributes that load (`src=`, `srcset=` and similar) anywhere in a label, and a scheme without `//` (`http:foo`) anywhere in a label. Looser than before: `img: "data:…"` of any type is local (it never touches the network); before, only `data:image/` was. Unchanged: `A@{ img: "https://…" }`, `url(…)`, `@import`, `//`, comments and backslashes still count. Diagrams the model writes with such a label are saved as text; diagrams you write yourself are not affected.
+- Kit pin: code-kit 0.20.0 (was 0.18.0). Besides the Mermaid rule, `url(url(…))` and `image-set(image-set(…))` are removed as a whole even with a local target, and line endings are read as CommonMark reads them.
+
+### Fixed
+
+- A remote image behind a reference definition with a line break (`![x][a b]` plus `[a⏎b]: https://…`, or a target after a lone carriage return) is neutralized in a generated deck; so are Mermaid diagrams that would load remote images, already by the first check.
+
 ## [0.15.1] — 2026-10-10
 
 ### Fixed
