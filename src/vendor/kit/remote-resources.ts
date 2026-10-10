@@ -1,4 +1,4 @@
-// vendored from code-kit@0.18.0, src/ts/web/remote-resources.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.20.0, src/ts/web/remote-resources.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 /** Removes every resource from a DOM subtree that the browser would load without a click and that is not
  *  on the positive list. The tree-shaped sibling of `neutralizeRemoteResources` in `pure/safe-markdown`
  *  (the regex pass over Markdown text), and the reason it exists: that pass is a partial protection by
@@ -11,7 +11,34 @@
  *  **Run it on an inert tree, before the tree is attached to the page.** An `<img>` starts to load as
  *  soon as it exists in a document that has a browsing context, attached or not. Parse into a document
  *  that has none (`new DOMParser().parseFromString(…)`, `document.implementation.createHTMLDocument()`,
- *  or the `content` of a `<template>`), run the pass, then adopt the nodes. The pass itself uses
+ *  or the `content` of a `<template>`), run the pass, then adopt the nodes.
+ *
+ *  **If the tree has to be in the live document already** (a renderer such as Mermaid needs layout and cannot render
+ *  in an inert one), the pass is a race against the browser, and WHERE it runs decides the outcome. Measured in Chrome 154
+ *  with a logging server, 12 repetitions per form (`<img src>`, `<img srcset>`, `<video poster>`, `<iframe src>`):
+ *  - **Synchronously in the same task as the insertion, before the next microtask checkpoint:** images are called
+ *    off — `<img src>` and `<img srcset>` 0 of 12 requests with the pass, 12 of 12 without its strip-before-remove step
+ *    (`<video poster>` made no request in either build). An `<iframe>` still navigates when it is inserted into an attached
+ *    tree (12 of 12 in both); on a tree that is NOT attached yet it does not (0 of 12).
+ *  - **In a `MutationObserver` callback (a microtask) after `innerHTML` on an attached element, the outcome for `<img>`
+ *    depends on the engine — two measurements disagree and the cause is not known:**
+ *    - Chrome 154 headless (kitcc-w16, 15 repetitions): too late, the fetch is already issued — 15 of 15 requests with the
+ *      pass, 15 of 15 without the strip. Stripping first lowered the count in some shapes (strip then remove: 3 of 12
+ *      against 12 of 12 for remove alone) and not in others.
+ *    - Obsidian 1.14.4, Chromium 142 (kitok-w16, second instance, visible window, 12 repetitions per arm, a unique URL per
+ *      run, counted at the server): no guard 12 of 12; in the observer replace only 12 of 12, strip `src` then replace
+ *      0 of 12, strip `src` only 0 of 12; synchronously strip and replace 0 of 12, synchronously replace only 12 of 12.
+ *    What loads while styles are computed or while an element is created (a `style` attribute, SVG paint, `background`,
+ *    `poster`, `feImage`) escaped the observer in Obsidian anyway: 66 of 402 cases.
+ *  - A tree built in the live document but never attached still fetches its images (12 of 12), only its frames wait.
+ *  So: parse inert; failing that, run the pass in the same task as the insertion and on a tree that is not attached; a
+ *  `MutationObserver` is a net for what slipped through, not a boundary — for styles and paint in every engine measured,
+ *  for `<img>` at least in Chrome 154.
+ *
+ *  **Because of that race, the pass strips before it removes:** before an element is removed or replaced it takes every
+ *  attribute this module knows as loading (`src`, `srcset`, `imagesrcset`, `href`, `xlink:href`, `poster`, `data`,
+ *  `background`, `lowsrc`, `dynsrc`, `srcdoc`) off the element AND off its whole subtree, local ones included, whatever
+ *  the element kind (a removed `<object>`, `<picture>` or `<svg>` carries its loading children with it). The pass itself uses
  *  `root.ownerDocument` and `nodeType` / `localName` (no `instanceof`, no global `document`), so it works
  *  on nodes of such a document and on nodes from another realm (an iframe, a pop-out window).
  *
@@ -137,8 +164,25 @@ export function neutralizeRemoteResourcesInTree(root: ParentNode, opts: RemoteRe
     removed.push({ tag, attr, ref: cap(ref) });
   };
 
+  /** Takes every attribute the pass knows as loading off `el` and off its whole subtree (`template.content` is another
+   *  document and loads nothing). Run BEFORE an element leaves the tree: on a tree that is already attached, an `<img>`
+   *  or `<iframe>` has its fetch scheduled the moment the attribute is set, and taking the element out does not call it
+   *  off — removing the attribute does (measured in Obsidian 1.14.4: replace without strip 1 request, strip then replace 0).
+   *  Linear: a removed subtree is not visited by the main walk again. */
+  const defuse = (el: Element): void => {
+    const strip = (node: Element): void => {
+      for (const a of Array.from(node.attributes)) {
+        const n = a.localName.toLowerCase();
+        if (LOADING_ATTRS.has(n) || SRCSET_ATTRS.has(n) || n === "href" || n === "srcdoc" || a.name.toLowerCase() === "xlink:href") node.removeAttributeNode(a);
+      }
+    };
+    strip(el);
+    for (const d of Array.from(el.querySelectorAll("*"))) strip(d);
+  };
+
   /** Takes `el` out of the tree. A root without a parent cannot be removed: it is stripped instead. */
   const dropElement = (el: Element, tag: string, ref: string): void => {
+    defuse(el);
     const parent = el.parentNode;
     if (parent) parent.removeChild(el);
     else {
@@ -183,6 +227,7 @@ export function neutralizeRemoteResourcesInTree(root: ParentNode, opts: RemoteRe
     const source = tag === "img" && el.namespaceURI !== SVG_NS ? hits.find((h) => IMG_SOURCE_ATTRS.has(h.a.localName.toLowerCase())) : undefined;
     if (source && parent) {
       const text = el.ownerDocument.createTextNode(`${el.getAttribute("alt") ?? ""} (${source.ref})`);
+      defuse(el);
       parent.replaceChild(text, el);
       report(tag, source.a.name, source.ref);
       return true;
