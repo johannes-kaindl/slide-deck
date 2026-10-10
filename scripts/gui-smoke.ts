@@ -1979,6 +1979,35 @@ const verbindung: Section = {
           svgNote !== "" && ohne > 0 && mit === 0 && !svgNote.includes("<svg"), `Notiz geschrieben: ${svgNote !== ""} · Treffer ohne zweite Schicht: ${ohne} · mit: ${mit} · <svg> in der Notiz: ${svgNote.includes("<svg")}`);
         record("V10 Zweite Schicht: nur die betroffene Folie wird Text, die Nachbarfolie bleibt",
           svgNote.includes("# A") && svgNote.includes("# B") && /&lt;svg>/.test(svgNote), `Folie A: ${svgNote.includes("# A")} · Folie B: ${svgNote.includes("# B")} · Text statt Tag: ${/&lt;svg>/.test(svgNote)}`);
+        // V12/V13 — die Vorschau rendert JEDE REGION fuer sich (render-dom.ts): ein offenes <textarea> in Region 1 darf Region 2 nicht
+        // verschlucken, und Mermaid laedt ausserhalb jedes Baums (`A@{ img: "https://…" }`). Gemessen an der echten Vorschau:
+        // das erzeugte Deck erzeugt keinen Treffer, dieselbe Antwort als eigenes Deck (Gegenprobe) schon.
+        const vorschauTreffer = async (pfad: string, inhalt: string | null, marke: string): Promise<number> => {
+          if (inhalt !== null) {
+            erzeugtePfade.push(pfad);
+            await cdp.evaluate(`
+              const f = app.vault.getAbstractFileByPath(${JSON.stringify(pfad)});
+              if (f) await app.vault.modify(f, ${JSON.stringify(inhalt)}); else await app.vault.create(${JSON.stringify(pfad)}, ${JSON.stringify(inhalt)});
+              return true;
+            `);
+          }
+          const vorher = treffer(marke);
+          await openPreview(cdp, pfad);
+          await new Promise((x) => setTimeout(x, 3500));
+          return treffer(marke) - vorher;
+        };
+        const taAntwort = `---\ntheme: kami\n---\n# A\n\n<textarea>\n\n<!-- column -->\n\n<svg><rect width="10" height="10" fill="url(${zaehler.url}/v12.svg#f) red"/></svg>\n\n---\n\n# B`;
+        const taNote = await generiere(taAntwort, "smoke-sicher-v12.md");
+        const taMit = await vorschauTreffer("smoke-sicher-v12.md", null, "/v12.svg");
+        const taOhne = await vorschauTreffer("smoke-roh-v12.md", taAntwort, "/v12.svg");
+        record("V12 Zweite Schicht je Region: ein offenes <textarea> in Region 1 versteckt die Fernquelle in Region 2 nicht (Gegenprobe: das rohe Deck laedt in der Vorschau)",
+          taNote !== "" && taOhne > 0 && taMit === 0, `Notiz geschrieben: ${taNote !== ""} · Treffer roh: ${taOhne} · erzeugt: ${taMit}`);
+        const mmAntwort = `---\ntheme: kami\n---\n# A\n\n\`\`\`mermaid\ngraph TD\n  A@{ img: "${zaehler.url}/v13.png", label: "a" }\n\`\`\`\n\n---\n\n# B`;
+        const mmNote = await generiere(mmAntwort, "smoke-sicher-v13.md");
+        const mmMit = await vorschauTreffer("smoke-sicher-v13.md", null, "/v13.png");
+        const mmOhne = await vorschauTreffer("smoke-roh-v13.md", mmAntwort, "/v13.png");
+        record("V13 Zweite Schicht: Mermaid-Bildform `A@{ img: \"https://…\" }` erzeugt in der Vorschau keine Anfrage (Gegenprobe: das rohe Deck laedt)",
+          mmNote !== "" && mmOhne > 0 && mmMit === 0 && !/```mermaid/.test(mmNote), `Notiz geschrieben: ${mmNote !== ""} · Treffer roh: ${mmOhne} · erzeugt: ${mmMit} · Fence in der Notiz: ${/```mermaid/.test(mmNote)}`);
         // V11 — Variante A: ein selbst geschriebenes Deck mit Fernbild laedt in der Vorschau weiter (die Schicht greift nur beim Erzeugen).
         const eigen = "smoke-eigenes-deck-v11.md";
         erzeugtePfade.push(eigen);

@@ -73,6 +73,37 @@ describe("secondPassDeck", () => {
     expect(r.replaced).toEqual([]);
   });
 
+
+  it("ein offenes <textarea> in Region 1 verschluckt Region 2 nicht (die Vorschau parst jede Region fuer sich)", () => {
+    const deck = `# A\n\n<textarea>\n\n<!-- column -->\n\n${SVG}\n\n---\n\n# B`;
+    // ⚠ happy-dom kennt die Textmodi von <textarea>/<xmp>/<title> nicht (misst: das <svg> hinter einem offenen
+    // <textarea> bleibt dort ein Element), dieser Test belegt also nur den Fluss. Den Unterschied zwischen
+    // „eine Region" und „je Region" misst der GUI-Smoke V12 in Chromium, an der echten Vorschau.
+    const r = secondPassDeck(deck, deps);
+    expect(r.replaced).toEqual([1]);
+    expect(r.markdown).not.toContain("<svg>");
+    expect(r.markdown.endsWith("\n\n---\n\n# B")).toBe(true);
+  });
+
+  describe("Mermaid", () => {
+    const fence = (src: string): string => "```mermaid\n" + src + "\n```";
+    const deck = (src: string): string => `# A\n\n${fence(src)}\n\n---\n\n# B`;
+    it("Bildform `A@{ img: \"https://…\" }` ist ein Fund, die Folie wird Text", () => {
+      const r = secondPassDeck(deck('graph TD\n  A@{ img: "https://evil.invalid/x.png", label: "a" }'), deps);
+      expect(r.replaced).toEqual([1]);
+      expect(r.findings[0]).toMatchObject({ slide: 1, tag: "mermaid" });
+      expect(r.markdown).not.toContain("```mermaid");
+    });
+    it("`classDef … background:url(https://…)` ist ein Fund", () => {
+      const r = secondPassDeck(deck("graph TD\n  A-->B\n  classDef f background:url(https://evil.invalid/x.png)\n  class A f"), deps);
+      expect(r.replaced).toEqual([1]);
+    });
+    it("ein Mermaid-Deck ohne URL, mit data:-Bild und relativem img:, bleibt byte-gleich", () => {
+      const d = deck('graph TD\n  A-->B\n  C@{ img: "data:image/png;base64,AAAA", label: "c" }\n  D@{ img: "img/a.png", label: "d" }');
+      expect(secondPassDeck(d, deps).markdown).toBe(d);
+    });
+  });
+
   it("Mutationsprobe: ohne den DOM-Durchgang (Fall 2) wuerde die Fernquelle durchgehen", () => {
     // Die Gegenprobe ist die Voraussetzung in Fall 2: die Regex-Schicht laesst SVG fill=url(https://…) stehen.
     expect(neutralizeRemoteResources(SVG)).toBe(SVG);

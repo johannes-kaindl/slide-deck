@@ -1,4 +1,5 @@
 import { renderMarkdown } from "./vendor/deck-core/pure/render/md2html";
+import { parseDeck } from "./vendor/deck-core/pure/slide-model";
 import { neutralizeModelMarkdown } from "./vendor/kit/safe-markdown";
 import { neutralizeRemoteResourcesInTree } from "./vendor/kit/remote-resources";
 
@@ -32,63 +33,66 @@ export interface SecondPassResult {
   findings: SecondPassFinding[];
 }
 
-interface Chunk { lines: string[]; slide: boolean }
-
-const FENCE_RE = /^\s*(```|~~~)/;
 const REMOTE_EMBED_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
+/** Mermaid laedt ausserhalb jedes DOM-Baums: `A@{ img: "https://…" }` ruft `new Image().src`, `classDef … background:url(…)`
+ *  erzeugt CSS. Der Kern reicht den Fence nur als `<div class="sd-mermaid" data-src=base64>` durch, der Baum-Durchgang sieht den
+ *  Inhalt also nie. Ein Quelltext mit `//`, `url(` oder `@import` gilt deshalb als Fund (data:-Bilder und relative `img:` haben kein `//`). */
+const MERMAID_LOADS_RE = /\/\/|url\s*\(|@import/i;
 
-/** Wie `parseDeck` (deck-core): Frontmatter, dann Folien an `---`-Zeilen ausserhalb von Fences. Die Zeilen
- *  bleiben unveraendert (auch `\r`), damit ein Deck ohne Fund byte-gleich zurueckgeht. */
-function splitDeck(markdown: string): Chunk[] {
-  const lines = markdown.split("\n");
-  const chunks: Chunk[] = [];
-  let start = 0;
-  if (lines[0]?.trim() === "---") {
-    const close = lines.findIndex((l, i) => i > 0 && l.trim() === "---");
-    if (close > 0) { chunks.push({ lines: lines.slice(0, close + 1), slide: false }); start = close + 1; }
+function decodeBase64Utf8(b64: string): string {
+  try {
+    const bin = atob(b64);
+    return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+  } catch {
+    return "\u0000fail-closed//"; // nicht lesbar: wie ein Fund behandeln
   }
-  let buf: string[] = [];
-  let inFence = false;
-  let marker = "";
-  const flush = (): void => { chunks.push({ lines: buf, slide: buf.some((l) => l.trim() !== "") }); buf = []; };
-  for (let i = start; i < lines.length; i++) {
-    const line = lines[i];
-    const fm = FENCE_RE.exec(line);
-    if (fm) {
-      if (!inFence) { inFence = true; marker = fm[1]; }
-      else if (fm[1] === marker) { inFence = false; marker = ""; }
-      buf.push(line);
-    } else if (!inFence && line.trim() === "---") {
-      flush();
-      chunks.push({ lines: [line], slide: false });
-    } else buf.push(line);
-  }
-  flush();
-  return chunks;
 }
 
-function findingsOf(slideText: string, slide: number, deps: SecondPassDeps): SecondPassFinding[] {
-  // Ein lokaler Embed bekommt einen festen Platzhalter, eine Fern-URL keinen: die Vorschau loest sie ebenfalls nicht auf.
-  const { html } = renderMarkdown({ markdown: slideText, resolveEmbed: (ref) => (REMOTE_EMBED_RE.test(ref.trim()) ? null : "#embed") });
-  return neutralizeRemoteResourcesInTree(deps.parseHtml(html).body).removed.map((r) => ({ slide, tag: r.tag, attr: r.attr }));
+/** Jede Region wie in der Vorschau (`render-dom.ts`): einzeln rendern, einzeln parsen. Ein offenes `<textarea>` in Region 1
+ *  darf Region 2 nicht verschlucken, nur weil der Pruefling beide in einem Aufruf rendert. */
+function regionFindings(region: string, slide: number, deps: SecondPassDeps): SecondPassFinding[] {
+  // Ein lokaler Embed bekommt einen festen Platzhalter, eine Fern-URL keinen (wie `adapter.ts`: null).
+  const { html } = renderMarkdown({ markdown: region, resolveEmbed: (ref) => (REMOTE_EMBED_RE.test(ref.trim()) ? null : "#embed") });
+  const body = deps.parseHtml(html).body;
+  const found: SecondPassFinding[] = neutralizeRemoteResourcesInTree(body).removed.map((r) => ({ slide, tag: r.tag, attr: r.attr }));
+  for (const el of Array.from(body.querySelectorAll(".sd-mermaid"))) {
+    if (MERMAID_LOADS_RE.test(decodeBase64Utf8(el.getAttribute("data-src") ?? ""))) found.push({ slide, tag: "mermaid", attr: "source" });
+  }
+  return found;
+}
+
+function deckFindings(markdown: string, deps: SecondPassDeps): { slide: number; startLine: number; found: SecondPassFinding[] }[] {
+  return parseDeck(markdown).slides.map((s, i) => ({
+    slide: i + 1,
+    startLine: s.startLine,
+    found: s.regions.flatMap((region) => regionFindings(region, i + 1, deps)),
+  }));
+}
+
+/** Letzte Zeile einer Folie: von der Zeile vor der naechsten Folie rueckwaerts ueber Leerzeilen und `---`.
+ *  Zwischen zwei Folien steht nichts anderes — jede andere nichtleere Zeile beginnt in `parseDeck` eine Folie. */
+function slideEnd(lines: string[], nextStart: number | undefined): number {
+  let end = (nextStart ?? lines.length) - 1;
+  while (end > 0 && (lines[end]?.trim() === "" || lines[end]?.trim() === "---")) end--;
+  return end;
 }
 
 export function secondPassDeck(markdown: string, deps: SecondPassDeps): SecondPassResult {
-  const chunks = splitDeck(markdown);
   const neutralize = deps.neutralizeSlide ?? neutralizeModelMarkdown;
-  const findings: SecondPassFinding[] = [];
-  const replaced: number[] = [];
+  const scan = deckFindings(markdown, deps);
+  const findings = scan.flatMap((s) => s.found);
+  const hit = scan.filter((s) => s.found.length > 0);
+  if (hit.length === 0) return { markdown, replaced: [], remaining: [], findings };
+  // Die Zeilen bleiben wie sie sind (auch `\r`): `startLine` zaehlt nach `\r\n` → `\n`, die Zeilenzahl bleibt gleich.
+  const lines = markdown.split("\n");
   const remaining: SecondPassFinding[] = [];
-  let slide = 0;
-  for (const chunk of chunks) {
-    if (!chunk.slide) continue;
-    slide++;
-    const found = findingsOf(chunk.lines.join("\n"), slide, deps);
-    if (found.length === 0) continue;
-    findings.push(...found);
-    chunk.lines = neutralize(chunk.lines.join("\n")).split("\n");
-    replaced.push(slide);
-    remaining.push(...findingsOf(chunk.lines.join("\n"), slide, deps));
+  // Von hinten nach vorn, damit die Zeilenindizes der frueheren Folien gelten.
+  for (const h of [...hit].reverse()) {
+    const next = scan[h.slide]?.startLine;
+    const end = slideEnd(lines, next);
+    const text = neutralize(lines.slice(h.startLine, end + 1).join("\n"));
+    lines.splice(h.startLine, end - h.startLine + 1, ...text.split("\n"));
+    remaining.push(...deckFindings(text, deps).flatMap((s) => s.found.map((f) => ({ ...f, slide: h.slide }))));
   }
-  return { markdown: chunks.flatMap((c) => c.lines).join("\n"), replaced, remaining, findings };
+  return { markdown: lines.join("\n"), replaced: hit.map((h) => h.slide), remaining: remaining.reverse(), findings };
 }
