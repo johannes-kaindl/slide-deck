@@ -176,6 +176,17 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
                      geklebt). Beide konsumieren buildIsolatedDeck() für ein einheitliches Artefakt.
   dom-safe.ts        Popout-sichere DOM-Helfer (activeDocument, activeWindow).
   i18n.ts            t(key, ...args) · pickLang · setLang/getLang. EN kanonisch, DE übersetzt.
+  deck-second-pass.ts  secondPassDeck(markdown, {parseHtml, neutralizeSlide?}) — zweite Schicht fuer ERZEUGTE Decks
+                     (generate-deck.ts, nach der Regex-Schicht): je Folie (Grenzen aus parseDeck) und je REGION
+                     wie die Vorschau rendern (renderMarkdown, einzeln geparst in einem inerten Dokument), dann
+                     neutralizeRemoteResourcesInTree (code-kit web/remote-resources). Ein `.sd-mermaid`-Slot mit
+                     `//`, `url(` oder `@import` im Quelltext gilt als Fund (Mermaid laedt ausserhalb jedes Baums).
+                     Fund → NUR diese Folie wird mit neutralizeModelMarkdown Text; bleibt einer → `kind: "remote"`,
+                     nichts wird geschrieben, kein Retry. Variante A (Johannes 2026-10-10): nur Modell-Ausgabe beim
+                     Erzeugen, keine CSP im Vorschau-iframe, kein Eingriff in deck-core. Der Fund traegt nie die
+                     Quelle (kann ein wiederhergestelltes Geheimnis sein). ⚠ happy-dom kennt die Textmodi von
+                     `<textarea>`/`<xmp>` nicht und parst SVG-`<style>` anders (code-kit `happy-dom-blind.json`):
+                     was Chromium anders sieht, misst der GUI-Smoke (V9–V13), nicht vitest.
   llm/request-params.ts  MODE (creative) · loadRequestSettings (Legacy-Migration
                      llmSuppressThinking → Stufe, llmTemperature → Überschreibung unter "unknown"). Kein obsidian-Import.
   llm/connection.ts  deckConnectionOptions(): die Optionen für createLlmConnection — Zuordnung der Settings-Felder
@@ -270,7 +281,7 @@ Aufnahme kein Obsidian; nur Vorschau-Pane, Overflow-Warnung und Einstellungen br
 `shots:obsidian` setzt `$STAGING_VAULTS_DIR` und ein mit `--remote-debugging-port=9222`
 gestartetes Obsidian voraus.
 
-**GUI-Smoke (CORE-TEST-02 b):** `scripts/gui-smoke.ts` faehrt siebenundzwanzig Pruefpunkte per CDP gegen
+**GUI-Smoke (CORE-TEST-02 b):** `scripts/gui-smoke.ts` faehrt dreiundfuenfzig Pruefpunkte per CDP gegen
 ein laufendes Obsidian — die Naht, die `vitest` mit `environment: "node"` strukturell nicht
 sieht: iframe-Isolation, Schrift-Metriken, Explorer-Markup, Bilder-Export. Checkliste,
 Hand-Runde und Durchlauf-Vermerke in `docs/SMOKE.md`; die CDP-Bruecke kommt aus
