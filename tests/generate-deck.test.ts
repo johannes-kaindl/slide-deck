@@ -1,10 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 import { runGenerateDeck } from "../src/generate-deck";
+import { Window } from "happy-dom";
 import { renderMarkdown } from "../src/vendor/deck-core/pure/render/md2html";
 
+const win = new Window({ settings: { disableIframePageLoading: true, disableJavaScriptEvaluation: true, disableCSSFileLoading: true, disableJavaScriptFileLoading: true } });
+const parseHtml = (html: string): Document => new win.DOMParser().parseFromString(html, "text/html") as unknown as Document;
 const baseMessages = [{ role: "user" as const, content: "src" }];
 function deps(client: any, over: any = {}) {
-  return { client, messages: baseMessages, themeKey: "dark", signal: new AbortController().signal, onState: () => {}, ...over };
+  return { client, messages: baseMessages, themeKey: "dark", parseHtml, signal: new AbortController().signal, onState: () => {}, ...over };
 }
 
 describe("runGenerateDeck", () => {
@@ -104,6 +107,45 @@ describe("runGenerateDeck", () => {
       for (const stueck of ["<!-- layout: two-column -->", "![[bild.png]]", "```mermaid", "```ts", "![lokal](data:image/png;base64,AAAA)", "![rel](bilder/a.png)", "[Link](https://example.org)"]) {
         expect(md).toContain(stueck);
       }
+    });
+  });
+
+  describe("zweite Schicht", () => {
+    const SVG = '<svg><rect fill="url(https://evil.invalid/s.svg#a)"/></svg>';
+    const gen = (content: string) => ({ generate: vi.fn(async () => ({ content, reasoning: "", usedFallback: false })) });
+
+    it("eine Fernquelle, die die Regex-Schicht faengt, laeuft unveraendert durch (Bild wird Text, nichts gemeldet)", async () => {
+      const r = await runGenerateDeck(deps(gen("# A\n\n![x](https://evil.invalid/x.png)")));
+      expect(r.status).toBe("ok");
+      expect(r.markdown).toContain("x (https://evil.invalid/x.png)");
+      expect(r.sanitizedSlides).toEqual([]);
+    });
+
+    it("eine Quelle, die nur der DOM-Durchgang faengt, wird als Text gespeichert; die uebrigen Folien bleiben", async () => {
+      const r = await runGenerateDeck(deps(gen(`# A\n\n---\n\n# B\n\n${SVG}\n\n---\n\n# C`)));
+      expect(r.status).toBe("ok");
+      expect(r.sanitizedSlides).toEqual([2]);
+      expect(r.markdown).not.toContain("<svg>");
+      expect(r.markdown).toContain("# A");
+      expect(r.markdown).toContain("# C");
+    });
+
+    it("bleibt nach der Folien-Entschaerfung ein Fund: fatal/remote, kein Retry, nichts zurueckgegeben", async () => {
+      const client = gen(`# A\n\n${SVG}`);
+      const r = await runGenerateDeck(deps(client, { neutralizeSlide: (m: string) => m }));
+      expect(r.status).toBe("fatal");
+      expect(r.kind).toBe("remote");
+      expect(r.markdown).toBeUndefined();
+      expect(client.generate).toHaveBeenCalledTimes(1);
+      expect(r.error).not.toContain("evil.invalid");
+    });
+
+    it("ein Deck mit Mermaid, Direktive, Embed und relativem Bild geht byte-gleich durch (bis auf Thema)", async () => {
+      const body = "<!-- layout: columns -->\n# A\n\n![[logo.png]]\n\n![r](img/a.png)\n\n```mermaid\ngraph TD; A-->B\n```";
+      const r = await runGenerateDeck(deps(gen(body)));
+      expect(r.status).toBe("ok");
+      expect(r.sanitizedSlides).toEqual([]);
+      expect(r.markdown).toContain(body);
     });
   });
 });

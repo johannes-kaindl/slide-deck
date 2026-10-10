@@ -262,12 +262,13 @@ export default class SlideDeckPlugin extends Plugin {
     const client = deckClient(this.llm, input.model);
 
     const done: Promise<GenerateResult> = (async () => {
-      const result = await runGenerateDeck({ client, messages, themeKey: input.themeKey, sourceLink: input.sourceLink, model: input.model, signal: controller.signal, onState: notify });
+      const result = await runGenerateDeck({ client, messages, themeKey: input.themeKey, sourceLink: input.sourceLink, model: input.model, signal: controller.signal, onState: notify, parseHtml: (html) => new DOMParser().parseFromString(html, "text/html") });
       if (result.status === "ok" && result.markdown != null) {
         try {
           const writtenPath = await this.writeDeckNote(input.targetPath, result.markdown, input.replace);
           await this.openDeckNote(writtenPath);
           if (result.usedFallback) new Notice(t("deck.error.cors"));
+          if (result.sanitizedSlides?.length) new Notice(t("deck.notice.sanitized", result.sanitizedSlides.join(", ")));
           new Notice(result.incomplete ? t("deck.notice.incomplete") : t("deck.notice.done", writtenPath));
         } catch (e) {
           // A write/open failure (create race, folder collision, refresh error) must not reject `done`
@@ -279,7 +280,7 @@ export default class SlideDeckPlugin extends Plugin {
         }
       } else if (result.status === "fatal") {
         notify({ phase: "error", attempt: state.attempt, content: state.content, reasoning: state.reasoning, error: result.error });
-        new Notice(result.kind === "server" ? t("deck.error.envelope", result.error ?? "") : t("deck.error.invalid", result.error ?? ""));
+        new Notice(result.kind === "server" ? t("deck.error.envelope", result.error ?? "") : result.kind === "remote" ? t("deck.error.remote", result.error ?? "") : t("deck.error.invalid", result.error ?? ""));
       }
       return result;
     })();
