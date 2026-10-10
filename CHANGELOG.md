@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-10-10
+
 ### Security
 
 - **Decks the model generates now go through a second check before they are saved.** The first check reads the answer as text and can never be fully tight. The second one renders each slide the way the preview does (region by region, in an inert document that loads nothing) and removes everything a browser would fetch without a click. A slide where it still finds a remote source is **saved as plain text** (images become text, `<` becomes `&lt;`); the other slides stay as they are, and a notice names the slide numbers. Mermaid diagrams whose source contains `//`, `url(` or `@import` (for example `A@{ img: "https://…" }`, which Mermaid loads by itself) are treated the same way. If a remote source survives even that, the deck is **not saved** and a notice says so. Slides with styles that load images through CSS (`style="background:url(…)"`, `<style>`) are also saved as text, even when the target is a local file; put images in `![[…]]` or `![](…)` instead. Decks you write yourself are not affected: remote images in them keep loading in the preview and the reading view.
