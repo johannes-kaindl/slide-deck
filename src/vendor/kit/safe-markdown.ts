@@ -1,4 +1,4 @@
-// vendored from code-kit@0.15.5, src/ts/pure/safe-markdown.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.18.0, src/ts/pure/safe-markdown.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // uebernommen aus settings-assistant/src/core/chat-markdown.ts, 2026-10-09
 /** Neutralises Markdown from an untrusted source (a model answer) BEFORE it is handed to a
  *  Markdown renderer. Pure, no dependencies.
@@ -57,15 +57,20 @@ const PROCESSOR_FENCE = /^([ \t>]*(?:(?:[-*+]|\d+[.)])[ \t]+)?(?:`{3,}|~{3,})[ \
 const REF_DEF = /^[ \t>]*(?:(?:[-*+]|\d+[.)])[ \t]+)*\[((?:[^\]\\\n]|\\.)+)\]:[ \t]*(?:\r?\n[ \t]*)?(<[^>\n]*>|\S+)/gim;
 const ATTR = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>`]+)))?/g;
 const BRACKET_CAP = 4000;
-/** Attributes the browser loads on its own (not `href` of `<a>`: that needs a click). */
-const LOADING_ATTRS = new Set(["src", "poster", "data", "background", "lowsrc", "dynsrc"]);
-const SRCSET_ATTRS = new Set(["srcset", "imagesrcset"]);
+/** Attributes the browser loads on its own (not `href` of `<a>`: that needs a click).
+ *  Exported (0.18.0) so the DOM pass in `web/remote-resources` classifies with the same lists. */
+export const LOADING_ATTRS: ReadonlySet<string> = new Set(["src", "poster", "data", "background", "lowsrc", "dynsrc"]);
+export const SRCSET_ATTRS: ReadonlySet<string> = new Set(["srcset", "imagesrcset"]);
 /** Tags whose `href` is a link that needs a click; on every other tag (`link`, `base`, `script`, SVG `image`/`use`/
  *  `feImage`/`pattern`/gradients, ...) `href` and `xlink:href` load or apply without one. */
-const CLICK_HREF_TAGS = new Set(["a", "area"]);
+export const CLICK_HREF_TAGS: ReadonlySet<string> = new Set(["a", "area"]);
 /** Tags that run or embed a document: for them `data:` and `app:` are NOT local (a `data:text/html` frame runs
  *  script), only a plain relative path is. */
-const DOCUMENT_TAGS = new Set(["iframe", "frame", "object", "embed", "script", "link", "base", "portal"]);
+export const DOCUMENT_TAGS: ReadonlySet<string> = new Set(["iframe", "frame", "object", "embed", "script", "link", "base", "portal"]);
+
+/** The schemes that count as local for sources in Markdown text. A consumer that classifies RESOLVED urls
+ *  (the DOM pass) passes its own list, e.g. with `capacitor` for iOS. */
+export const MARKDOWN_LOCAL_SCHEMES: readonly string[] = ["data", "app"];
 
 const ENTITIES: Record<string, string> = {
   colon: ":", sol: "/", bsol: "\\", tab: "\t", newline: "\n", lpar: "(", rpar: ")", amp: "&", quot: '"', apos: "'",
@@ -87,10 +92,12 @@ function decodeEntities(s: string): string {
     d !== undefined ? codePoint(Number(d)) : h !== undefined ? codePoint(parseInt(h, 16)) : (ENTITIES[(n ?? "").toLowerCase()] ?? m));
 }
 
-/** True when `raw` is clearly local: relative, `data:` or `app:`. Everything with another scheme or a
- *  protocol-relative start counts as remote. Entities, Markdown backslash escapes, backslash-as-slash,
- *  tabs, newlines and control characters (the browser drops them inside a URL) are resolved first. */
-function isLocalRef(raw: string, markdown: boolean, relativeOnly = false): boolean {
+/** True when `raw` is clearly local: relative, or one of `localSchemes` (default `data:` and `app:`).
+ *  Everything with another scheme or a protocol-relative start counts as remote. Entities, Markdown backslash
+ *  escapes, backslash-as-slash, tabs, newlines and control characters (the browser drops them inside a URL) are
+ *  resolved first. `relativeOnly` (document tags): only a plain relative path is local. Exported in 0.18.0 for the
+ *  DOM pass, so there is one classification. */
+export function isLocalRef(raw: string, markdown: boolean, relativeOnly = false, localSchemes: readonly string[] = MARKDOWN_LOCAL_SCHEMES): boolean {
   let v = decodeEntities(raw);
   if (markdown) v = v.replace(/\\([!-/:-@[-`{-~])/g, "$1");
 
@@ -98,7 +105,7 @@ function isLocalRef(raw: string, markdown: boolean, relativeOnly = false): boole
   if (v === "") return true;
   if (v.startsWith("//")) return false;
   const scheme = /^([a-z][a-z0-9+.-]*):/.exec(v);
-  return scheme === null || (!relativeOnly && (scheme[1] === "data" || scheme[1] === "app"));
+  return scheme === null || (!relativeOnly && localSchemes.includes(scheme[1] ?? ""));
 }
 
 const normLabel = (s: string): string => s.trim().replace(/\s+/g, " ").toLowerCase();
@@ -233,27 +240,65 @@ function matchParen(s: string, from: number): number {
 
 const unquote = (v: string): string => v.trim().replace(/^(["'])([\s\S]*)\1$/, "$2");
 
+/** CSS escapes resolved in ONE pass (`u\72l(` is `url(`, a backslash before a line break is a continuation and
+ *  disappears). One pass on purpose: `\5c` becomes a backslash, and a second pass would take it for the start of the
+ *  next escape and eat it (measured 2026-10-10: `url(\5c/evil…)` read as a relative path, the browser reads `//evil…`). */
+function unescapeCss(css: string): string {
+  return css.replace(/\\(?:([0-9a-fA-F]{1,6})(?:\r\n|[ \t\r\n\f])?|(\r\n|[\n\r\f])|([\s\S]))/g, (_m, hex: string | undefined, nl: string | undefined, ch: string | undefined) =>
+    hex !== undefined ? codePoint(parseInt(hex, 16)) : nl !== undefined ? "" : (ch ?? ""));
+}
+
+// ---- a CSS gate for the DOM pass ---------------------------------------------------------------------------------
+//
+// CSS used to be judged here by what its URLs are (local or remote). Two adversarial reviews of the DOM pass, with real
+// requests in Chromium, WebKit and Firefox, broke every version of that: a text search 43 times, a hand-written token
+// scanner once more (`@function --f(){result:"https://…"}` hands its string over at computation time, so it never stands
+// at the call site). A CSS reader that has to understand CSS keeps being one feature behind CSS. So the gate does not
+// try: a value that CONTAINS anything which can name or build a resource is not read at all, it is removed.
+
+/** What can name or build a resource in CSS, or hide that: functions that take a URL or build an image, `@import`,
+ *  author-defined functions, any backslash (escapes, line continuations) and any comment. `attr()` hands over a URL from
+ *  another attribute. Case-insensitive; checked after escapes are resolved. A backslash is checked on the raw text
+ *  (`cssLoadsRemote`): after the escapes are resolved none is left. */
+const CSS_RISKY = /url\(|src\(|image-set\(|image\(|cross-fade\(|attr\(|@import|@function|@mixin|@apply|\/\*/i;
+/** For an attribute that is not CSS (a free text may say "image(s)" or carry a `\`): only what names a resource. */
+const CSS_RISKY_PLAIN = /url\(|src\(|image-set\(|@import/i;
+/** The one thing CSS may hold: a reference to an element of the same document (Mermaid's markers and filters). */
+const CSS_FRAGMENT_ONLY = /^\s*url\(\s*#[A-Za-z0-9_-]+\s*\)\s*$/i;
+
+/** For the DOM pass (0.18.0): true when `css` (a `style` attribute, an SVG presentation attribute or the text of a
+ *  `<style>`) must be removed as a whole. Fail closed and deliberately blunt: it is true for anything that contains `url(`,
+ *  `src(`, `image-set(`, `image(`, `cross-fade(`, `attr(`, `@import`, `@function`/`@mixin`/`@apply`, a backslash or a comment,
+ *  whether the target is remote or local — the only exception is a value that is exactly `url(#id)`. **The price:**
+ *  a background image or font that model output or a deck sets through CSS disappears, local or not; an image belongs in
+ *  an `<img>`. `indirect: false` is for attributes that are not CSS: only `url(`, `src(`, `image-set(` and `@import` count. */
+export function cssLoadsRemote(css: string, indirect = true): boolean {
+  const resolved = unescapeCss(css);
+  if (CSS_FRAGMENT_ONLY.test(resolved)) return false;
+  return indirect ? CSS_RISKY.test(resolved) || css.includes("\\") : CSS_RISKY_PLAIN.test(resolved);
+}
+
 /** CSS: remote `url()`, `src()`, `image-set()` and `@import` are removed. Entities are the caller's job
  *  (attribute values), CSS escapes (`u\72l(`) are resolved here. Returns the input unchanged if nothing was found.
  *  Linear in the input (no regex with a trailing optional part after an open-ended class). */
-function neutralizeCss(css: string): { css: string; changed: boolean } {
-  const unescaped = css.replace(/\\([0-9a-fA-F]{1,6})[ \t\r\n\f]?/g, (_m, h: string) => codePoint(parseInt(h, 16))).replace(/\\([^\n])/g, "$1");
+function neutralizeCss(css: string, localSchemes: readonly string[] = MARKDOWN_LOCAL_SCHEMES): { css: string; changed: boolean } {
+  const unescaped = unescapeCss(css);
   let changed = false;
   let out = unescaped.replace(/@import\b[^;{}]*;?/gi, (m) => {
     const t = /"([^"]*)"|'([^']*)'|url\(([^)]*)\)/i.exec(m);
     const target = t ? unquote(t[1] ?? t[2] ?? t[3] ?? "") : "";
-    if (isLocalRef(target, false)) return m;
+    if (isLocalRef(target, false, false, localSchemes)) return m;
     changed = true;
     return "";
   });
   out = mapCalls(out, /(?:-webkit-)?image-set\(/gi, (inner) => {
-    const remote = [...inner.matchAll(/["']([^"']*)["']/g)].some((q) => !isLocalRef(q[1] ?? "", false));
+    const remote = [...inner.matchAll(/["']([^"']*)["']/g)].some((q) => !isLocalRef(q[1] ?? "", false, false, localSchemes));
     if (!remote) return null;
     changed = true;
     return "none";
   }, true);
   out = mapCalls(out, /\b(?:url|src)\(/gi, (inner) => {
-    if (isLocalRef(unquote(inner), false)) return null;
+    if (isLocalRef(unquote(inner), false, false, localSchemes)) return null;
     changed = true;
     return "url()";
   });
@@ -375,7 +420,13 @@ function neutralizeStyleBlocks(s: string): string {
  *  a documented residual risk, not an automatic leak. (2) No fence parsing: the rules also apply inside code
  *  fences, which only changes example text. (3) Inline `$=` Dataview expressions and other plugin syntaxes
  *  are not handled. (4) A renderer quirk this list does not know (a new URL-loading attribute) is not
- *  covered; the list is deliberately about what a browser loads on its own. */
+ *  covered; the list is deliberately about what a browser loads on its own. (5) **CSS is read as text here, and
+ *  a CSS parser reads tokens.** The review of the DOM pass (2026-10-10, real requests in Chromium) found 43 places where
+ *  the two readings differ for `style` attributes and `<style>` blocks: an unclosed `url(` at the end, `)` inside a quoted
+ *  url, a comment after the string, a backslash before a line break, an escaped quote, a custom property that holds
+ *  the string, an `@import` string with `;` or `}` or a `data:` target. The DOM pass does not repair
+ *  them, it removes any CSS that names a resource (`cssLoadsRemote`); this regex pass does not. For anything that is
+ *  rendered, use `neutralizeRemoteResourcesInTree` from `web/remote-resources` on a parsed, inert tree. */
 export function neutralizeRemoteResources(markdown: string): string {
   let s = markdown.replace(PROCESSOR_FENCE, "$1text");
   const refs = remoteReferenceLabels(s);
