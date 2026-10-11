@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-10-11
+
 ### Changed
 
 - **The global *Model* setting is gone; each endpoint row carries its own model.** An existing value moves once into the rows that had none (a row you cleared yourself stays empty afterwards). The separate *Model* row of the settings tab disappears with it, and so do its *Load models* button and the max-context hint: pick the model in the endpoint row, and in the generation dialog.
