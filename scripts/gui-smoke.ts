@@ -1636,8 +1636,8 @@ const chatSektion: Section = {
     const starte = (name: string, endpoint: string, quelle: string, abbrechen: boolean, ziel: string): Promise<unknown> => cdp.evaluate(`
       const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
       // Die Verbindung liest den Endpunkt aus den Settings: dieser Lauf zeigt auf den Prüf-Endpunkt.
-      if (!("__sdGVorher" in globalThis)) globalThis.__sdGVorher = JSON.stringify({ e: p.settings.llmEndpoints, m: p.settings.llmModel });
-      p.settings.llmEndpoints = [{ url: ${JSON.stringify(endpoint)} }]; p.settings.llmModel = ${JSON.stringify(G_MODEL)};
+      if (!("__sdGVorher" in globalThis)) globalThis.__sdGVorher = JSON.stringify({ e: p.settings.llmEndpoints });
+      p.settings.llmEndpoints = [{ url: ${JSON.stringify(endpoint)}, model: ${JSON.stringify(G_MODEL)} }];
       p.llm.invalidate();
       const st = { updates: 0, chars: 0, erstesNach: 0, abbruchNach: 0, fertig: false, ergebnis: null, dauer: 0, t0: Date.now() };
       globalThis[${JSON.stringify(name)}] = st;
@@ -1833,7 +1833,7 @@ const anfrage: Section = {
       await cdp.evaluate(`
         const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
         p.settings.request = { overrides: {}, thinking: { creative: "off" }, lastOnLevel: {}, levelPickerInChat: false };
-        p.settings.llmEndpoints = [{ url: ${JSON.stringify(fake.url)} }]; p.settings.llmModel = "google/gemma-4-e4b";
+        p.settings.llmEndpoints = [{ url: ${JSON.stringify(fake.url)}, model: "google/gemma-4-e4b" }];
         p.llm.invalidate();
         await p.llm.resolve();
         const h = p.startDeckGeneration({
@@ -1883,8 +1883,7 @@ const verbindung: Section = {
     try {
       const r = JSON.parse(await cdp.evaluate<string>(`
         const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
-        p.settings.llmEndpoints = [{ url: ${JSON.stringify(fake.url)}, apiKey: ${JSON.stringify(KEY)} }];
-        p.settings.llmModel = "google/gemma-4-e4b";
+        p.settings.llmEndpoints = [{ url: ${JSON.stringify(fake.url)}, apiKey: ${JSON.stringify(KEY)}, model: "google/gemma-4-e4b" }];
         p.llm.invalidate();
         const src = await p.llm.resolve({ force: true });
         await new Promise((x) => setTimeout(x, 800));
@@ -1920,7 +1919,7 @@ const verbindung: Section = {
           erzeugtePfade.push(ziel);
           await cdp.evaluate(`
             const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
-            p.settings.llmEndpoints = [{ url: ${JSON.stringify(f.url)} }]; p.settings.llmModel = "google/gemma-4-e4b";
+            p.settings.llmEndpoints = [{ url: ${JSON.stringify(f.url)}, model: "google/gemma-4-e4b" }];
             p.llm.invalidate();
             await p.llm.resolve();
             globalThis.__sdV = { fertig: false };
