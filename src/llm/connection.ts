@@ -1,5 +1,5 @@
 // Verdrahtung der Kit-Verbindung (`createLlmConnection`) mit den Settings DIESES Plugins. Eigene Datei,
-// damit ein Test die echte Zuordnung der Felder trifft (llmEndpoints/llmModel/choice/request) statt einer Kopie.
+// damit ein Test die echte Zuordnung der Felder trifft (llmEndpoints/choice/request) statt einer Kopie.
 import type { App } from "obsidian";
 import { getLang } from "../i18n";
 import type { SlideDeckSettings } from "../settings";
@@ -29,14 +29,13 @@ export function deckConnectionOptions(o: {
     ...(o.transports ? { transports: o.transports } : {}),
     getSettings: () => {
       const s = o.settings();
-      return { endpoints: s.llmEndpoints, choice: s.choice, model: s.llmModel, request: s.request };
+      return { endpoints: s.llmEndpoints, choice: s.choice, request: s.request };
     },
     // Erst in die Settings schreiben, dann speichern: die Endpunkt-Liste liest ihre Zeilen danach zurueck.
     persist: (patch) => {
       const s = o.settings();
       if (patch.endpoints !== undefined) s.llmEndpoints = patch.endpoints;
       if (patch.choice !== undefined) s.choice = patch.choice;
-      if (patch.model !== undefined) s.llmModel = patch.model;
       if (patch.request !== undefined) s.request = patch.request;
       return o.save();
     },

@@ -107,7 +107,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     const modelRow = contentEl.createDiv({ cls: "sd-gen-row" });
     modelRow.createEl("label", { text: t("deck.modal.model") });
     const modelHolder = modelRow.createSpan();
-    this.model = this.plugin.settings.llmModel;
+    this.model = "";
     const modelInput = modelHolder.createEl("input", { type: "text" });
     modelInput.value = this.model;
     let modelDirty = false;

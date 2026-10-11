@@ -11,7 +11,7 @@ import { reasoningHappened } from "./vendor/kit/reasoning";
 import { githubHelpUrls, helpSettingDefinition } from "./vendor/kit-obsidian/help-setting";
 import { writeClipboard } from "./vendor/kit/clipboard";
 import { mergeSettings } from "./vendor/kit/settings";
-import { migrateEndpointList, type EndpointConfig } from "./vendor/kit/endpoint_config";
+import { fillMissingRowModels, migrateEndpointList, type EndpointConfig } from "./vendor/kit/endpoint_config";
 import type { EndpointChoice } from "./vendor/kit/endpoint-source";
 import { findEndpointManager } from "./vendor/kit-obsidian/endpoint-source";
 import { renderSettingDefinitions, settingBodyHost, refreshSettingsTab, installTabRefreshOnOpen } from "./vendor/kit-obsidian/settings_walker";
@@ -29,9 +29,11 @@ export interface SlideDeckSettings {
    *  so local and hosted providers can live in ONE list. */
   llmEndpoints: EndpointConfig[];
   /** Wahl gegenueber dem LLM Endpoint Manager (Endpunkt + Modell). Leer = automatisch. Nur
-   *  relevant, solange der Manager installiert ist; sonst gilt `llmEndpoints` + `llmModel`. */
+   *  relevant, solange der Manager installiert ist; sonst gilt `llmEndpoints` (das Modell steht je Zeile). */
   choice: EndpointChoice;
-  llmModel: string;
+  /** Altfeld (globales Modell, bis Welle 17): wird nicht mehr gelesen. `loadSettingsWithReport` zieht den
+   *  Wert einmal in die Zeilen ohne Modell und entfernt den Schluessel. */
+  llmModel?: string;
   /** Plugin-Budget (`max_tokens`): geht als Budget in den Request-Bau, die Familien-Reserve kann es anheben. */
   llmMaxTokens: number;
   /** Anfrage-Einstellungen (Sampling-Profil, Modus `creative`): Denkstufe und Ueberschreibungen je
@@ -44,7 +46,7 @@ export interface SlideDeckSettings {
 export const DEFAULT_SETTINGS: SlideDeckSettings = {
   defaultTheme: "kami", minFontPx: 24, imageScale: 2, customCss: "",
   exportFolder: "Slide-Deck-Export", themesFolder: "Slide-Deck-Themes", hideThemesFolder: true,
-  llmEndpoints: [{ url: "http://localhost:1234" }], choice: {}, llmModel: "", llmMaxTokens: 8192, request: structuredClone(DEFAULT_REQUEST_SETTINGS),
+  llmEndpoints: [{ url: "http://localhost:1234" }], choice: {}, llmMaxTokens: 8192, request: structuredClone(DEFAULT_REQUEST_SETTINGS),
   imageSuffixes: {},
 };
 
@@ -76,10 +78,14 @@ export function loadSettingsWithReport(raw: unknown): { settings: SlideDeckSetti
   const rawList = merged.llmEndpoints as unknown as (string | EndpointConfig)[] | undefined;
   const { request, dropped, legacyTemperature } = loadRequestSettings(raw);
   const legacy = merged as unknown as Record<string, unknown>;
-  const migrated = "llmSuppressThinking" in legacy || "llmTemperature" in legacy;
+  const migrated = "llmSuppressThinking" in legacy || "llmTemperature" in legacy || "llmModel" in legacy;
   delete legacy.llmSuppressThinking;
   delete legacy.llmTemperature;
-  const settings = { ...merged, llmEndpoints: migrateEndpointList(undefined, rawList), choice: sanitizeChoice(merged.choice), request };
+  // Globales Modell (bis Welle 17): einmal in die Zeilen ohne Modell, danach ist der Schluessel weg und ein
+  // zweiter Lauf aendert nichts — eine vom Nutzer geleerte Zeile bleibt leer.
+  const legacyModel = legacy.llmModel;
+  delete legacy.llmModel;
+  const settings = { ...merged, llmEndpoints: fillMissingRowModels(migrateEndpointList(undefined, rawList), legacyModel), choice: sanitizeChoice(merged.choice), request };
   return { settings, dropped, legacyTemperature, migrated };
 }
 
@@ -203,7 +209,7 @@ export class SlideDeckSettingTab extends PluginSettingTab {
     // manager appearing or vanishing, while render() runs on every open of the tab.
     if (findEndpointManager(this.app)) { setting.settingEl.addClass("sd-setting-managed"); return; }
     renderModelField(this.hostFor(setting), {
-      getModel: () => this.plugin.settings.llmModel,
+      getModel: () => this.plugin.settings.llmModel ?? "",
       setModel: async (m) => { this.plugin.settings.llmModel = m.trim(); await this.plugin.saveSettings(); this.plugin.llm.invalidate(); },
       listModels: async () => (await this.plugin.llm.models()).models,
       modelContext: async (m) => {

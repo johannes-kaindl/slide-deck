@@ -59,3 +59,41 @@ describe("loadSettingsWithReport — request settings (Welle 14)", () => {
     expect(loadSettings({}).request.thinking.creative).toBeUndefined();
   });
 });
+
+describe("loadSettingsWithReport — globales Modell (Welle 17)", () => {
+  const rows = (r: ReturnType<typeof loadSettingsWithReport>) => r.settings.llmEndpoints;
+
+  it("zieht den Altwert einmal in die Zeilen ohne Modell und entfernt den Schluessel", () => {
+    const r = loadSettingsWithReport({ llmModel: "  qwen/qwen3.8-27b ", llmEndpoints: [{ url: "http://a:1" }, { url: "http://b:2", model: "eigenes" }] });
+    expect(rows(r)).toEqual([{ url: "http://a:1", model: "qwen/qwen3.8-27b" }, { url: "http://b:2", model: "eigenes" }]);
+    expect("llmModel" in r.settings).toBe(false);
+    expect(r.migrated).toBe(true);
+  });
+
+  it("fuellt auch die Default-Zeile, wenn die data.json keine Liste traegt", () => {
+    const r = loadSettingsWithReport({ llmModel: "m" });
+    expect(rows(r)).toEqual([{ url: "http://localhost:1234", model: "m" }]);
+  });
+
+  it("zweiter Lauf aendert nichts; eine vom Nutzer geleerte Zeile bleibt leer", () => {
+    const first = loadSettingsWithReport({ llmModel: "m", llmEndpoints: [{ url: "http://a:1" }] });
+    const cleared = { ...first.settings, llmEndpoints: [{ url: "http://a:1", model: "" }] };
+    const second = loadSettingsWithReport(JSON.parse(JSON.stringify(cleared)));
+    expect(second.migrated).toBe(false);
+    expect(rows(second).map((e) => e.model ?? "")).toEqual([""]); // geleert bleibt geleert
+    const again = loadSettingsWithReport(JSON.parse(JSON.stringify(first.settings)));
+    expect(again.migrated).toBe(false);
+    expect(rows(again)).toEqual(rows(first));
+  });
+
+  it("ein leerer Altwert entfernt den Schluessel, ohne Zeilen zu aendern", () => {
+    const r = loadSettingsWithReport({ llmModel: "", llmEndpoints: [{ url: "http://a:1" }] });
+    expect(rows(r)).toEqual([{ url: "http://a:1" }]);
+    expect("llmModel" in r.settings).toBe(false);
+    expect(r.migrated).toBe(true);
+  });
+
+  it("frische Daten tragen kein Modell-Feld", () => {
+    expect("llmModel" in loadSettingsWithReport({}).settings).toBe(false);
+  });
+});

@@ -41,8 +41,11 @@ function fakeApp(secrets: Map<string, string> = new Map()): { app: App; secrets:
   return { app, secrets };
 }
 
-function setup(over: Partial<SlideDeckSettings> = {}, backend: BackendId = "lmstudio", app: App = fakeApp().app) {
-  const settings: SlideDeckSettings = { ...structuredClone(DEFAULT_SETTINGS), ...over };
+/** `model` steht seit Welle 17 in der Zeile, nicht mehr als globales Feld. */
+function setup(over: Partial<SlideDeckSettings> & { model?: string } = {}, backend: BackendId = "lmstudio", app: App = fakeApp().app) {
+  const { model, ...rest } = over;
+  const settings: SlideDeckSettings = { ...structuredClone(DEFAULT_SETTINGS), ...rest };
+  if (model !== undefined) settings.llmEndpoints = settings.llmEndpoints.map((e) => ({ ...e, model }));
   const saved: string[] = [];
   const { transport, sent } = fakeTransport();
   const rec = { transport, sent };
@@ -82,7 +85,7 @@ describe("goldene Requests — creative, Denkstufe aus, Budget 8192", () => {
   for (const [model, byBackend] of Object.entries(EXPECTED)) {
     for (const [backend, params] of Object.entries(byBackend)) {
       it(`${model} × ${backend}`, async () => {
-        const { llm, rec } = setup({ llmModel: model, request: thinkingOff() }, backend as BackendId);
+        const { llm, rec } = setup({ model, request: thinkingOff() }, backend as BackendId);
         const r = await llm.complete({ messages: MSG });
         expect(r.ok).toBe(true);
         const { model: wire, messages: _m, stream: _s, ...sampling } = rec.sent[0]!.body;
@@ -93,14 +96,14 @@ describe("goldene Requests — creative, Denkstufe aus, Budget 8192", () => {
   }
 
   it("nie chat_template_kwargs oder reasoning_budget", async () => {
-    const { llm, rec } = setup({ llmModel: "qwen/qwen3.8-27b", request: thinkingOff() });
+    const { llm, rec } = setup({ model: "qwen/qwen3.8-27b", request: thinkingOff() });
     await llm.complete({ messages: MSG });
     expect(rec.sent[0]!.body).not.toHaveProperty("chat_template_kwargs");
     expect(rec.sent[0]!.body).not.toHaveProperty("reasoning_budget");
   });
 
   it("das eigene Budget (llmMaxTokens) geht als max_tokens mit", async () => {
-    const { llm, rec } = setup({ llmModel: "openai/gpt-oss-20b", llmMaxTokens: 100000, request: thinkingOff() });
+    const { llm, rec } = setup({ model: "openai/gpt-oss-20b", llmMaxTokens: 100000, request: thinkingOff() });
     await llm.complete({ messages: MSG });
     expect(rec.sent[0]!.body.max_tokens).toBe(100000);
   });
@@ -108,7 +111,7 @@ describe("goldene Requests — creative, Denkstufe aus, Budget 8192", () => {
   it("eine Ueberschreibung aus den Settings gewinnt", async () => {
     const request = structuredClone(DEFAULT_SETTINGS.request);
     request.overrides.creative = { "gemma4": { temperature: 0.2 } };
-    const { llm, rec } = setup({ llmModel: "google/gemma-4-12b", request });
+    const { llm, rec } = setup({ model: "google/gemma-4-12b", request });
     await llm.complete({ messages: MSG });
     expect(rec.sent[0]!.body.temperature).toBe(0.2);
   });
@@ -116,17 +119,17 @@ describe("goldene Requests — creative, Denkstufe aus, Budget 8192", () => {
 
 describe("Aufruf-Optionen, die dieses Plugin nutzt", () => {
   it("model: ein frei getipptes Modell geht auf den Draht, die Settings bleiben unberuehrt", async () => {
-    const { llm, rec, settings } = setup({ llmModel: "qwen/qwen3.8-27b" });
+    const { llm, rec, settings } = setup({ model: "qwen/qwen3.8-27b" });
     await llm.complete({ messages: MSG }, { model: "openai/gpt-oss-20b" });
     expect(rec.sent[0]!.body.model).toBe("openai/gpt-oss-20b");
     expect(rec.sent[0]!.body.top_p).toBe(1); // Profil der Familie gpt-oss, nicht qwen
-    expect(settings.llmModel).toBe("qwen/qwen3.8-27b");
+    expect(settings.llmEndpoints[0]!.model).toBe("qwen/qwen3.8-27b");
   });
 
   it("Denk-Test: thinking off, Temperatur 0 und max_tokens 32 je Aufruf", async () => {
     const request = structuredClone(DEFAULT_SETTINGS.request);
     request.thinking.creative = "high";
-    const { llm, rec } = setup({ llmModel: "qwen/qwen3.8-27b", request });
+    const { llm, rec } = setup({ model: "qwen/qwen3.8-27b", request });
     await llm.complete({ messages: MSG }, { model: "qwen/qwen3.8-27b", thinking: "off", overrides: { temperature: 0, max_tokens: 32 } });
     expect(rec.sent[0]!.body).toMatchObject({ temperature: 0, max_tokens: 32, reasoning_effort: "none" });
   });
@@ -167,7 +170,7 @@ describe("Schluessel im Schluesselbund", () => {
 
   it("der hydrierte Schluessel geht als Bearer auf den Draht", async () => {
     const { app } = fakeApp();
-    const { llm, rec } = setup({ llmModel: "m", llmEndpoints: [{ url: "http://localhost:1234", apiKey: "sk-klartext-123456" }] }, "lmstudio", app);
+    const { llm, rec } = setup({ model: "m", llmEndpoints: [{ url: "http://localhost:1234", apiKey: "sk-klartext-123456" }] }, "lmstudio", app);
     await llm.complete({ messages: MSG });
     expect(rec.sent[0]!.headers.Authorization).toBe("Bearer sk-klartext-123456");
   });
@@ -179,11 +182,12 @@ describe("persist: Feldzuordnung", () => {
     let atSave: SlideDeckSettings | null = null;
     const opts = deckConnectionOptions({ app: fakeApp().app, pluginId: "slide-deck", settings: () => settings, save: async () => { atSave = structuredClone(settings); } });
     const p = opts.persist({ endpoints: [{ url: "http://x:1" }], choice: { endpointId: "e1" }, model: "m1" });
+    expect("llmModel" in settings).toBe(false); // Welle 17: kein globales Modell mehr
     expect(settings.llmEndpoints).toEqual([{ url: "http://x:1" }]);
     expect(settings.choice).toEqual({ endpointId: "e1" });
-    expect(settings.llmModel).toBe("m1");
     await p;
     expect(atSave).not.toBeNull();
-    expect(opts.getSettings()).toMatchObject({ endpoints: [{ url: "http://x:1" }], choice: { endpointId: "e1" }, model: "m1" });
+    expect(opts.getSettings()).toMatchObject({ endpoints: [{ url: "http://x:1" }], choice: { endpointId: "e1" } });
+    expect(opts.getSettings()).not.toHaveProperty("model");
   });
 });
