@@ -119,9 +119,6 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
                      replaceSlot() zurück — die einzige Stelle, die den Vault mutiert.
   adapter.ts         loadActiveDeck(app, defaults) — liest die aktive Notiz, löst Embeds
                      zu data-URLs auf (resolveEmbed-Closure), gibt SlideDeck zurück.
-  folder-hide.ts     normalizeFolder(raw) — kanonische Pfadform; buildHideCss(folder, hide) —
-                     CSS, das einen Vault-Ordner im Datei-Explorer ausblendet (vault-rag-Muster,
-                     data-path-Attribut, activeDocument.adoptedStyleSheets in main.applyFolderHide()).
   image/             Bildplätze — ein ```slide-image-Block, der sich selbst durch ein Embed
                      ersetzt. Redet mit `local-image-generator`, kennt es aber nur über die
                      Vertragsform (image-api.ts), nie per Import — das Nachbarplugin darf fehlen.
@@ -247,7 +244,7 @@ Wirkungskreises.
 
 Was hier blieb, kennt Obsidian, das Kit oder den Endpunkt: `adapter`,
 `theme-registry`, `export`, `main`, die Ansichten, die Einstellungen, `llm-client`,
-`folder-hide`, `llm/ai-settings-model`, `llm/model-info`, `image/**` (das Nachbarplugin
+`llm/ai-settings-model`, `llm/model-info`, `image/**` (das Nachbarplugin
 `local-image-generator` ist ein Obsidian-Plugin, keine Kern-Zuständigkeit).
 
 Dazu `vendor-css.ts`: die vier `import … from "*.css"`, die `deck-core` bewusst
@@ -431,9 +428,7 @@ Vollständigkeits-Record, den niemand typecheckt, ist keine Absicherung, sondern
   `settings.themesFolder` (`scanThemeFiles`). Frontmatter `theme:` = SoT der Notiz (Settings-`defaultTheme`
   nur für Notizen ohne `theme:`). Das Preview-Dropdown schaltet ephemer; „Setzen" schreibt via
   `setNoteTheme` (`processFrontMatter`). User-Themes erben Code-/Mermaid-Theme des `default`-Built-ins.
-- **Themes-Ordner ausblenden:** `buildHideCss` (vault-rag-Muster) via `activeDocument.adoptedStyleSheets`
-  in `main.applyFolderHide()`. `data-path` ist internes Obsidian-Markup — bricht es, taucht der Ordner
-  nur kosmetisch wieder auf.
+- **Themes-Ordner ausblenden:** liegt seit Welle 18 im Kit (`src/vendor/kit/folder-hide.ts` pur, `src/vendor/kit-obsidian/folder-hide.ts` mit `installFolderHide`); `main.applyFolderHide()` ist nur der Wrapper (`rootSplit.doc` als Ziel-Dokument, nie `activeDocument` — die Realm-Falle aus 0.4.0/0.5.0/0.6.1, bewacht vom GUI-Smoke C3 mit fokussiertem Pop-out). `data-path` ist internes Obsidian-Markup — bricht es, taucht der Ordner nur kosmetisch wieder auf. `normalizeFolder` (auch in `theme-source.ts`) kommt aus demselben Kit-Modul.
 - **iframe-Isolation:** Folien rendern in einem `sandbox="allow-same-origin"`-iframe — das
   aktive Obsidian-Theme erreicht den iframe-Inhalt nicht. Obsidians `createDiv`/`addClass`/etc.
   sind Prototype-Patches des Eltern-Realms und werfen auf iframe-Knoten. Deshalb ist der gesamte

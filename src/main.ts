@@ -4,7 +4,8 @@ import { SlideDeckHubView, VIEW_TYPE_HUB } from "./hub-view";
 import { t, pickLang, setLang } from "./i18n";
 import { SlideDeckSettings, SlideDeckSettingTab, migrateLegacyThemeKeys, loadSettingsWithReport } from "./settings";
 import { ThemeStore } from "./theme-registry";
-import { buildHideCss, normalizeFolder } from "./folder-hide";
+import { normalizeFolder } from "./vendor/kit/folder-hide";
+import { installFolderHide, type FolderHideHandle } from "./vendor/kit-obsidian/folder-hide";
 import { runGenerateDeck, type GenState, type GenerateResult, type GenerationHandle } from "./generate-deck";
 import { deckClient } from "./llm-client";
 import { deckConnectionOptions } from "./llm/connection";
@@ -28,7 +29,7 @@ export interface DeckGenInput {
 export default class SlideDeckPlugin extends Plugin {
   declare public settings: SlideDeckSettings;
   public themeStore!: ThemeStore;
-  private hideSheet: CSSStyleSheet | null = null;
+  private folderHide: FolderHideHandle | null = null;
   public activeGeneration: GenerationHandle | null = null;
   /** Die ganze LLM-Anbindung: Endpunkt-Quelle, Modellliste, Anfrage-Parameter, Client, Settings-Abschnitte. */
   public llm!: LlmConnection;
@@ -179,25 +180,23 @@ export default class SlideDeckPlugin extends Plugin {
     return this.app.workspace.rootSplit.doc;
   }
 
-  /** Apply (or clear) the explorer-hide stylesheet for the themes folder.
-   *  try/catch as last resort: the hide is cosmetic and must never break plugin load. */
+  /** Apply (or clear) the explorer-hide stylesheet for the themes folder (kit `folder-hide`).
+   *  The kit handle owns the sheet and swallows errors into `onError` — the hide is cosmetic
+   *  and must never break plugin load. */
   applyFolderHide(): void {
-    try {
-      const doc = this.mainDoc;
-      if (!this.hideSheet) {
-        this.hideSheet = new CSSStyleSheet();
-        doc.adoptedStyleSheets = [...doc.adoptedStyleSheets, this.hideSheet];
-      }
-      this.hideSheet.replaceSync(buildHideCss(this.settings.themesFolder, this.settings.hideThemesFolder));
-    } catch (err) {
-      console.error("slide-deck: applyFolderHide failed — themes folder stays visible (cosmetic)", err);
+    const { themesFolder, hideThemesFolder } = this.settings;
+    if (this.folderHide) {
+      this.folderHide.update(themesFolder, hideThemesFolder);
+      return;
     }
+    this.folderHide = installFolderHide(this.mainDoc, themesFolder, hideThemesFolder, (err) => {
+      console.error("slide-deck: applyFolderHide failed — themes folder stays visible (cosmetic)", err);
+    });
   }
 
   onunload(): void {
-    if (!this.hideSheet) return;
-    const doc = this.mainDoc;
-    doc.adoptedStyleSheets = doc.adoptedStyleSheets.filter((s) => s !== this.hideSheet);
+    this.folderHide?.remove();
+    this.folderHide = null;
   }
 
   /** Open (or reveal) the hub and switch it to the given tab. Both commands and the ribbon

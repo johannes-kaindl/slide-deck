@@ -1234,6 +1234,41 @@ const explorer: Section = {
       wiederDa.da && wiederDa.display !== "none",
       wiederDa.da ? `display: ${wiederDa.display}` : "Ordner-Eintrag nicht gefunden",
     );
+
+    // C3 — Realm-Falle (0.4.0/0.5.0/0.6.1): bei fokussiertem Pop-out muss das Blatt im
+    // Hauptfenster (`rootSplit.doc`) landen, nie im Pop-out. Pop-outs eines frueheren Laufs
+    // zuerst schliessen (ein Treiber setzt seinen Zustand VOR dem Lauf zurueck).
+    await setPluginSetting(cdp, PLUGIN_ID, "hideThemesFolder", true);
+    const popout = await cdp.evaluate<{ haupt: number; pop: number; popDa: boolean; regel: boolean }>(`
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      for (const l of app.workspace.getLeavesOfType("empty")) l.detach();
+      const alte = app.workspace.floatingSplit?.children ?? [];
+      for (const c of [...alte]) c.children?.forEach((l) => l.detach());
+      await wait(300);
+      const leaf = app.workspace.openPopoutLeaf();
+      await wait(1200);
+      const popDoc = leaf.view.containerEl.ownerDocument;
+      popDoc.defaultView.focus();
+      await wait(300);
+      const id = ${JSON.stringify(PLUGIN_ID)};
+      await app.plugins.disablePlugin(id);
+      await wait(400);
+      await app.plugins.enablePlugin(id);
+      await wait(1000);
+      const haupt = app.workspace.rootSplit.doc;
+      const regel = [...haupt.adoptedStyleSheets].some((sh) => [...sh.cssRules].some((r) => r.cssText.includes("data-path")));
+      const popHat = [...popDoc.adoptedStyleSheets].some((sh) => [...sh.cssRules].some((r) => r.cssText.includes("data-path")));
+      const out = { haupt: haupt.adoptedStyleSheets.length, pop: popDoc.adoptedStyleSheets.length, popDa: popHat, regel, istHaupt: popDoc !== haupt };
+      leaf.detach();
+      return out;
+    `);
+    record(
+      "C3 Bei fokussiertem Pop-out liegt das Blatt im Hauptfenster, nicht im Pop-out",
+      popout.regel && !popout.popDa,
+      `Hauptfenster: ${popout.haupt} Blatt, Regel ${popout.regel} · Pop-out: ${popout.pop} Blatt, Regel ${popout.popDa}`,
+    );
+    await setPluginSetting(cdp, PLUGIN_ID, "hideThemesFolder", false);
+    await cdp.evaluate(`app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].applyFolderHide(); return true;`);
   },
 };
 
