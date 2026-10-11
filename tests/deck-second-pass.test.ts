@@ -153,11 +153,11 @@ describe("secondPassDeck", () => {
     expect(secondPassDeck(SVG, deps).replaced).toEqual([1]);
   });
 
-  describe("Fixture aus code-kit 0.20.0 (tests/fixtures/remote-sources.json, wortgleich, Tag 0.20.0)", () => {
-    const cases = JSON.parse(readFileSync(new URL("./fixtures/remote-sources.json", import.meta.url), "utf8")) as { name: string; kind: string; html?: string; markdown?: string }[];
+  describe("Fixture aus code-kit (tests/vendor/kit/remote-sources.json, ueber kit-sync, Ref in VENDOR.json)", () => {
+    const cases = JSON.parse(readFileSync(new URL("./vendor/kit/remote-sources.json", import.meta.url), "utf8")) as { name: string; kind: string; html?: string; markdown?: string }[];
     it("jeder Fall, den die Regex-Schicht stehen laesst und der als `attack` gilt, wird von der zweiten Schicht ersetzt", () => {
       // happy-dom parst diese Faelle anders als Chromium (code-kit fuehrt sie als „happy-dom-blind"); dort misst der GUI-Smoke.
-      const blind = new Set(JSON.parse(readFileSync(new URL("./fixtures/happy-dom-blind.json", import.meta.url), "utf8")) as string[]);
+      const blind = new Set(JSON.parse(readFileSync(new URL("./vendor/kit/happy-dom-blind.json", import.meta.url), "utf8")) as string[]);
       const missed = cases.filter((c) => c.kind === "attack" && c.html !== undefined && !blind.has(c.name) && neutralizeRemoteResources(c.html) === c.html);
       expect(missed.length).toBeGreaterThan(50);
       const notCaught = missed.filter((c) => secondPassDeck(c.html as string, deps).remaining.length > 0 || secondPassDeck(c.html as string, deps).replaced.length === 0);
