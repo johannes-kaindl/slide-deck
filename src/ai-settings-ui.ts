@@ -3,10 +3,7 @@
 // generate-deck view so both speak the same icon vocabulary.
 import { Notice, Setting, setIcon } from "obsidian";
 import { t } from "./i18n";
-import { modelFieldMode } from "./llm/ai-settings-model";
-import type { ModelContext } from "./llm/model-info";
 import type { EndpointStatusKind } from "./vendor/kit/endpoint_diagnostics";
-import { resolveModelChoice } from "./vendor/kit/model-choice";
 
 /** Status icon per UI-STANDARD §8: shape AND colour AND state class AND aria-label — colour is
  *  never the only carrier (WCAG 1.4.1). `null` kind = not probed yet. */
@@ -18,104 +15,6 @@ export function paintStatus(el: HTMLElement, kind: EndpointStatusKind | null, la
   else { el.addClass("is-error"); setIcon(el, "circle-x"); }
   el.setAttribute("aria-label", label);
   el.setAttribute("title", label);
-}
-
-export interface ModelFieldDeps {
-  getModel: () => string;
-  setModel: (m: string) => Promise<void>;
-  listModels: () => Promise<string[]>;
-  modelContext: (m: string) => Promise<ModelContext | null>;
-}
-
-/** Model field: dropdown from the server probe, freetext fallback when offline.
- *  A saved model missing from the list is kept as an extra option — never silently dropped. */
-export function renderModelField(containerEl: HTMLElement, deps: ModelFieldDeps): void {
-  const setting = new Setting(containerEl)
-    .setName(t("deck.settings.model.name"))
-    .setDesc(t("deck.settings.model.desc"));
-  const holder = setting.controlEl.createDiv({ cls: "sd-model-holder" });
-  const info = containerEl.createDiv({ cls: "sd-model-info" });
-
-  drawFreetext(); // until the probe returns
-  void load();
-
-  function drawFreetext(): void {
-    holder.empty();
-    const input = holder.createEl("input", { type: "text", cls: "sd-model-input" });
-    input.value = deps.getModel();
-    // Model ids are lowercase (LM Studio/Ollama), so a bare "qwen3" trips the sentence-case
-    // rule — which store review does not allow us to disable. Phrasing it as a sentence keeps
-    // the id verbatim; "such as" rather than "e.g." because the rule reads the trailing dot as
-    // a sentence break and then demands "Qwen3".
-    input.placeholder = t("deck.settings.model.placeholder");
-    input.addEventListener("blur", () => void deps.setModel(input.value.trim()).then(() => showContext()));
-  }
-
-  /** Draws the dropdown and returns the model it shows as selected. Never writes to settings on
-   *  its own — only a real `change` event may persist (cross-project read-modify-write-over-
-   *  absence lesson). That rule used to make the field LIE: with nothing saved it preselected
-   *  `models[0]`, so the tab showed a model while `llmModel` was still empty — and once the
-   *  endpoint rows started spelling the global model out ("Global model (not set)"), the two
-   *  halves of the same tab visibly contradicted each other. `resolveModelChoice` fixes it at
-   *  the root: with an empty saved value it puts an explicit empty option FIRST and selects it,
-   *  so "nothing chosen yet" is what the user actually sees. A saved model missing from the
-   *  server list still survives as its own option (never silently dropped). */
-  function drawDropdown(models: string[]): string {
-    holder.empty();
-    // reachable: true — this path only runs once models came back, which proves reachability.
-    const choice = resolveModelChoice({ reachable: true, models, current: deps.getModel() });
-    const select = holder.createEl("select", { cls: "dropdown" });
-    for (const o of choice.options) {
-      const text = o.value === "" ? t("deck.settings.model.unset")
-        : o.suffix === "saved" ? `${o.label} ${t("deck.settings.model.saved")}`
-        : o.label;
-      select.createEl("option", { value: o.value, text });
-    }
-    select.value = choice.value;
-    select.addEventListener("change", () => void deps.setModel(select.value).then(() => showContext()));
-    return choice.value;
-  }
-
-  async function load(): Promise<void> {
-    const models = await deps.listModels();
-    if (modelFieldMode(models) === "dropdown") {
-      const shown = drawDropdown(models);
-      await showContext(shown);
-    } else {
-      drawFreetext();
-      info.setText(t("deck.settings.model.none"));
-    }
-  }
-
-  /** Context length is best-effort: when the server does not report it, stay silent
-   *  rather than guess. `shown` lets callers pass the model currently displayed by the
-   *  dropdown (which may differ from the persisted llmModel when nothing was saved yet)
-   *  without that display choice being written to settings. */
-  async function showContext(shown?: string): Promise<void> {
-    const model = shown ?? deps.getModel();
-    if (!model) { info.setText(""); return; }
-    const ctx = await deps.modelContext(model);
-    if (!ctx?.maxContextLength) { info.setText(""); return; }
-    const max = ctx.maxContextLength.toLocaleString();
-    info.setText(ctx.loadedContextLength
-      ? t("deck.settings.model.contextLoaded", max, ctx.loadedContextLength.toLocaleString())
-      : t("deck.settings.model.context", max));
-  }
-
-  setting.addButton((b) => b
-    .setButtonText(t("deck.settings.model.load"))
-    .onClick(async () => {
-      b.setButtonText(t("deck.settings.model.loading")).setDisabled(true);
-      const models = await deps.listModels();
-      b.setButtonText(t("deck.settings.model.load")).setDisabled(false);
-      if (modelFieldMode(models) === "dropdown") {
-        const shown = drawDropdown(models);
-        new Notice(t("deck.settings.model.loaded", String(models.length))); // make the click visible
-        await showContext(shown);
-      } else {
-        new Notice(t("deck.settings.model.none"));
-      }
-    }));
 }
 
 export interface ThinkingTestDeps {

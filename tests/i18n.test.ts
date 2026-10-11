@@ -37,7 +37,7 @@ describe("deck-generation strings", () => {
     "deck.modal.slideCount", "deck.modal.hint", "deck.modal.existsReplace", "deck.modal.existsCopy",
     "deck.modal.contextWarn", "deck.modal.noEndpoint", "deck.notice.done", "deck.notice.incomplete",
     "deck.notice.finishedBg", "deck.error.envelope", "deck.error.cors", "deck.error.invalid",
-    "deck.settings.heading", "deck.settings.model.name",
+    "deck.settings.heading",
     "deck.settings.maxTokens.name", "deck.settings.thinkingTest.name", "request.legacyTemperature", "deck.error.noEndpoint"];
   it("has EN + DE for every deck key", () => {
     setLang("en"); for (const k of keys) expect(t(k), `EN ${k}`).not.toBe(k);
@@ -88,13 +88,10 @@ describe("warning severity strings", () => {
 });
 
 describe("Sprachmix im Settings-Tab (Welle 14)", () => {
-  it("die deutsche Oberfläche führt Überschrift, Endpunkt-Feld und Modell-Beschreibung einsprachig", () => {
+  it("die deutsche Oberfläche führt die Überschrift einsprachig", () => {
     expect(STRINGS_DE["settings.heading"]).toBe("Foliensatz");
-    expect(STRINGS_DE["deck.settings.model.desc"]).not.toMatch(/Endpoint\b/);
-    expect(STRINGS_DE["deck.settings.model.desc"]).toContain("Endpunkt");
   });
   it("die englische Oberfläche bleibt unverändert", () => {
     expect(STRINGS_EN["settings.heading"]).toBe("Slide deck");
-    expect(STRINGS_EN["deck.settings.model.desc"]).toContain("endpoint");
   });
 });

@@ -3,8 +3,8 @@ import type SlideDeckPlugin from "./main";
 import { t, getLang } from "./i18n";
 import { revealFolder, writeThemeCss } from "./theme-source";
 import { THEME_ALIASES } from "./vendor/deck-core/pure/presets";
-import { renderModelField, renderThinkingTestRow } from "./ai-settings-ui";
-import { deckResultOf, fetchModelContext } from "./llm-client";
+import { renderThinkingTestRow } from "./ai-settings-ui";
+import { deckResultOf } from "./llm-client";
 import { DEFAULT_REQUEST_SETTINGS, type RequestSettings } from "./vendor/kit/sampling-profiles";
 import { loadRequestSettings } from "./llm/request-params";
 import { reasoningHappened } from "./vendor/kit/reasoning";
@@ -13,7 +13,6 @@ import { writeClipboard } from "./vendor/kit/clipboard";
 import { mergeSettings } from "./vendor/kit/settings";
 import { fillMissingRowModels, migrateEndpointList, type EndpointConfig } from "./vendor/kit/endpoint_config";
 import type { EndpointChoice } from "./vendor/kit/endpoint-source";
-import { findEndpointManager } from "./vendor/kit-obsidian/endpoint-source";
 import { renderSettingDefinitions, settingBodyHost, refreshSettingsTab, installTabRefreshOnOpen } from "./vendor/kit-obsidian/settings_walker";
 import { IMAGE_FUNCTIONS, DEFAULT_SUFFIXES, type ImageFunction } from "./image/functions";
 
@@ -162,8 +161,6 @@ export class SlideDeckSettingTab extends PluginSettingTab {
         items: [
           // Quelle, Liste und Anfrage-Abschnitt zeichnet die Kit-Verbindung in einem Zug.
           { name: "", render: (setting) => this.renderConnection(setting) },
-          { name: t("deck.settings.model.name"), desc: t("deck.settings.model.desc"),
-            render: (setting) => this.renderModel(setting) },
           { name: t("deck.settings.maxTokens.name"), desc: t("deck.settings.maxTokens.desc"),
             control: { type: "number", key: "llmMaxTokens", min: 256 } },
           { name: t("deck.settings.thinkingTest.name"), desc: t("deck.settings.thinkingTest.desc"),
@@ -203,31 +200,11 @@ export class SlideDeckSettingTab extends PluginSettingTab {
     this.plugin.llm.renderSettings(host.createDiv({ cls: "sd-connection" }), { lang: getLang() });
   }
 
-  private renderModel(setting: Setting): void {
-    // With the manager, the model is chosen inside the endpoint section (choice.model). Decided
-    // HERE, not while building the definitions: Obsidian >= 1.13 may cache that list across the
-    // manager appearing or vanishing, while render() runs on every open of the tab.
-    if (findEndpointManager(this.app)) { setting.settingEl.addClass("sd-setting-managed"); return; }
-    renderModelField(this.hostFor(setting), {
-      getModel: () => this.plugin.settings.llmModel ?? "",
-      setModel: async (m) => { this.plugin.settings.llmModel = m.trim(); await this.plugin.saveSettings(); this.plugin.llm.invalidate(); },
-      listModels: async () => (await this.plugin.llm.models()).models,
-      modelContext: async (m) => {
-        const ep = await this.activeEndpoint();
-        return ep ? fetchModelContext(ep, m) : null;
-      },
-    });
-  }
-
   private renderThinkingTest(setting: Setting): void {
     renderThinkingTestRow(this.hostFor(setting), {
       getModel: async () => (await this.plugin.llm.resolve()).model,
       testSuppress: (model) => this.runSuppressTest(model),
     });
-  }
-
-  private async activeEndpoint(): Promise<EndpointConfig | null> {
-    return (await this.plugin.llm.resolve()).config;
   }
 
   /** One real, minimal call with thinking off: did the model think anyway? This is the only place
@@ -286,7 +263,6 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       case "themesFolder": return s.themesFolder;
       case "hideThemesFolder": return s.hideThemesFolder;
       case "customCss": return s.customCss;
-      case "llmModel": return s.llmModel;
       case "llmMaxTokens": return s.llmMaxTokens;
       default: return undefined;
     }
@@ -301,7 +277,6 @@ export class SlideDeckSettingTab extends PluginSettingTab {
       case "imageScale": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.imageScale = n; break; }
       case "exportFolder": s.exportFolder = String(value).trim() || DEFAULT_SETTINGS.exportFolder; break;
       case "customCss": s.customCss = String(value); break;
-      case "llmModel": s.llmModel = String(value).trim(); this.plugin.llm.invalidate(); break;
       case "llmMaxTokens": { const n = Number(value); if (Number.isFinite(n) && n > 0) s.llmMaxTokens = Math.floor(n); break; }
       case "themesFolder":
         s.themesFolder = String(value).trim() || DEFAULT_SETTINGS.themesFolder;

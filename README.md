@@ -261,7 +261,7 @@ The **Generate presentation from note** command sends note content to an **OpenA
 LLM endpoint that you configure** (default `http://localhost:1234`, i.e. a local LM Studio).
 No cloud service is involved unless you point the endpoint at one — the settings tab holds an
 **ordered list of endpoints**, tried in order, and each row can carry its own optional API key,
-so a local server and a hosted provider (e.g. OpenRouter) can sit side by side in the same list.
+so a local server and a hosted provider (e.g. OpenRouter) can sit side by side in the same list. The model is chosen per row as well; there is no separate global model setting.
 API keys are **not** stored in the plugin's `data.json`: they go into Obsidian's secret storage (*Settings → Keychain*), and a plain-text key from an older version is moved there on first start.
 
 If the **LLM Endpoint Manager** plugin is installed, the endpoints (and their keys) come from it instead: the settings tab then offers an endpoint and model choice, and your local list stays as a fallback for when the manager is off.

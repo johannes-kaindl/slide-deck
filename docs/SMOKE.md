@@ -45,7 +45,7 @@ nehmen, sonst blockt der Guard den ersten Treiber-Aufruf.
 | B1 | Einstellungen-Tab öffnet | Modal im Hauptfenster **oder** eigenes Settings-Fenster (ab Obsidian 1.13) |
 | B2 | Kein roher i18n-Schlüssel in der Oberfläche | Tab-Text gegen `/deck\.[a-z]+\.…/` — `t()` fällt bei unbekanntem Schlüssel auf den Schlüssel zurück, nicht auf EN |
 | B3 | Endpunkt-Zeileneditor ist verdrahtet | `.okit-ep-row` im Tab (Kit-Baustein, vendoriert) |
-| B4 | Modellfeld-Placeholder ist der übersetzte Satz | ein `input[placeholder]` im Tab trägt exakt `deck.settings.model.placeholder` aus EN oder DE — „ähnlich" wäre ein Kit-Default |
+| B4 | Altwert `llmModel` zieht einmal in die Zeile ohne Modell | `data.json` mit `llmModel` schreiben, Plugin neu laden: die Zeile ohne Modell trägt den Wert, eine Zeile mit eigenem Modell bleibt, der Schlüssel ist weg (Speicher und `data.json`), im Tab gibt es keine Zeile „Model“ und keine Option „global model“ (Welle 17) |
 | B5 | KI-Settings-Blöcke stapeln, statt eine Flex-Row zu werden | `display` der `.sd-settings-host`-Elemente **und** die Geometrie ihrer Kinder (verschiedene `top`, gleiche linke Kante) — **mit** Gegenkontrolle, dass ein gewöhnliches `.setting-item` in dieser Obsidian-Version überhaupt `display:flex` ist |
 | C1 | Themes-Ordner ist im Explorer ausgeblendet | `display: none` am `.nav-folder-title[data-path=…]` — erst Existenz belegen, dann Eigenschaft |
 | C2 | Ausschalten macht ihn wieder sichtbar | dieselbe Messung, invertiert |

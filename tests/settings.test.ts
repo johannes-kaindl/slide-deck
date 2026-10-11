@@ -69,21 +69,13 @@ describe("SlideDeckSettingTab (declarative)", () => {
     expect(calls.saveSettings).toBeGreaterThanOrEqual(keys.length);
   });
 
-  // llmModel is no longer a `control` definition item (Task 7 moved the model field to the
-  // §8 render block — renderModel), but get/setControlValue("llmModel", …) stays alive for
-  // Task 8's view to read/write through the same abstraction. Cover it directly.
-  it("keeps the llmModel get/setControlValue round-trip alive for the generate view", async () => {
+  it("hat kein globales Modell mehr: weder Zeile noch get/setControlValue (Welle 17)", async () => {
     const settings: SlideDeckSettings = { ...DEFAULT_SETTINGS };
     const { plugin } = makeFakePlugin(settings);
     const tab = new SlideDeckSettingTab({} as any, plugin as any);
-
-    expect(tab.getControlValue("llmModel")).toBe(settings.llmModel);
-    await tab.setControlValue("llmModel", "  qwen3  ");
-    expect(settings.llmModel).toBe("qwen3");
-    expect(tab.getControlValue("llmModel")).toBe("qwen3");
-    // Die Verbindung merkt die lokale Aufloesung samt Modell bis invalidate() — ohne den Aufruf
-    // sendete die naechste Anfrage noch das alte Modell.
-    expect(plugin.llm.invalidate).toHaveBeenCalledTimes(1);
+    expect(tab.getControlValue("llmModel")).toBeUndefined();
+    await tab.setControlValue("llmModel", "qwen3");
+    expect("llmModel" in settings).toBe(false);
   });
 
   it("runs the themesFolder + hideThemesFolder side effects", async () => {

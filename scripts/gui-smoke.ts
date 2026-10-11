@@ -852,7 +852,9 @@ const mermaid: Section = {
   },
 };
 
-interface TabInhalt { gefunden: boolean; text: string; endpunkte: number; placeholders: string[] }
+/** Der Wortlaut der entfernten Zeile (Welle 17), von Hand festgehalten: die i18n-Schluessel gibt es nicht mehr. */
+const ALTE_MODELL_BESCHREIBUNG = ["Model id sent to the endpoint", "Modell-ID, die an den Endpunkt gesendet wird"];
+interface TabInhalt { gefunden: boolean; text: string; endpunkte: number; placeholders: string[]; namen: string[]; optionen: string[] }
 interface OffenerTab { ziel: Cdp; eigenesFenster: boolean; tab: TabInhalt }
 
 /** Den Plugin-Tab oeffnen und seinen Inhalt lesen. Erst im Hauptfenster nach dem Modal sehen,
@@ -880,12 +882,14 @@ async function oeffneTab(cdp: Cdp, ctx: Ctx): Promise<OffenerTab> {
   const tab = await ziel.evaluate<TabInhalt>(`
     const wurzel = document.querySelector(".vertical-tab-content-container .vertical-tab-content")
       ?? document.querySelector(".vertical-tab-content");
-    if (!wurzel) return { gefunden: false, text: "", endpunkte: 0, placeholders: [] };
+    if (!wurzel) return { gefunden: false, text: "", endpunkte: 0, placeholders: [], namen: [], optionen: [] };
     return {
       gefunden: true,
       text: wurzel.textContent,
       endpunkte: wurzel.querySelectorAll(".okit-ep-row").length,
       placeholders: [...wurzel.querySelectorAll("input[placeholder]")].map((i) => i.placeholder),
+      namen: [...wurzel.querySelectorAll(".setting-item-name")].map((n) => (n.textContent ?? "").trim()),
+      optionen: [...wurzel.querySelectorAll("select option")].map((o) => (o.textContent ?? "").trim()),
     };
   `);
   return { ziel, eigenesFenster, tab };
@@ -997,33 +1001,58 @@ const einstellungen: Section = {
 
     await schliesseTab(cdp, offen);
 
-    // B4: der Placeholder des Modellfelds ist ein uebersetzter Satz ("Model ID such as qwen3"),
-    // keine Kit-Vorgabe — er kommt aus i18n.ts. Er ist nur im OFFLINE-Fall sichtbar: sobald die
-    // Probe Modelle liefert, wird das Feld zum Dropdown (globales Feld wie Kit-Zeile). Der erste
-    // Lauf dieses Punkts war deshalb rot am Werkzeug, nicht am Plugin — auf dem Maintainer-
-    // Rechner antwortet LM Studio auf :1234. Der Punkt stellt den Offline-Fall selbst her:
-    // Endpunkt auf einen toten Port, Tab neu oeffnen, messen, zurueckstellen. Gemessen wird
-    // der exakte Text gegen beide Woerterbuecher; "aehnlich" waere ein Kit-Default.
-    const endpunkteVorher = await cdp.evaluate<unknown>(`
-      return app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.llmEndpoints;
+    // B4 (Welle 17, Muster settings-assistant P19): das globale Modell ist abgeschafft. Ein Altwert in der
+    // data.json zieht beim Laden EINMAL in die Zeilen ohne Modell, der Schluessel verschwindet, und der Tab
+    // hat weder eine Zeile "Model" noch eine Option "global model". Der Punkt stellt den Altzustand selbst her
+    // (data.json schreiben, Plugin neu laden) und setzt danach zurueck. Gegenprobe: mit dem Build davor
+    // bleibt der Schluessel stehen und die Zeile ist da.
+    const vorherig = await cdp.evaluate<string>(`
+      return JSON.stringify(app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings);
     `);
-    await setPluginSetting(cdp, PLUGIN_ID, "llmEndpoints", [{ url: "http://127.0.0.1:9" }]);
-    await verbindungNeu(cdp);
-    let offline: OffenerTab | null = null;
     try {
-      offline = await oeffneTab(cdp, ctx);
-      const erwartet = [STRINGS_EN["deck.settings.model.placeholder"], STRINGS_DE["deck.settings.model.placeholder"]];
-      const treffer = offline.tab.placeholders.filter((p) => erwartet.includes(p));
+      await cdp.evaluate(`
+        const id = ${JSON.stringify(PLUGIN_ID)};
+        const roh = JSON.parse(${JSON.stringify(vorherig)});
+        roh.llmModel = "smoke/altwert-b4";
+        roh.llmEndpoints = [{ url: "http://127.0.0.1:9" }, { url: "http://127.0.0.1:10", model: "eigenes/modell" }];
+        await app.plugins.plugins[id].saveData(roh);
+        await app.plugins.disablePlugin(id);
+        await new Promise((r) => setTimeout(r, 400));
+        await app.plugins.enablePlugin(id);
+        await new Promise((r) => setTimeout(r, 800));
+        return true;
+      `);
+      const nach = await cdp.evaluate<{ zeilen: Array<string | undefined>; schluessel: boolean }>(`
+        const s = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings;
+        return { zeilen: s.llmEndpoints.map((e) => e.model), schluessel: "llmModel" in s };
+      `);
+      const gespeichert = await cdp.evaluate<boolean>(`
+        return !("llmModel" in (await app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].loadData()));
+      `);
+      await verbindungNeu(cdp);
+      const offen = await oeffneTab(cdp, ctx);
+      let hatZeile: boolean, hatOption: boolean;
+      try {
+        hatZeile = offen.tab.namen.some((n) => /^(Model|Modell)$/.test(n));
+        hatOption = offen.tab.optionen.some((o) => /global model|globales Modell/i.test(o));
+      } finally {
+        await schliesseTab(cdp, offen);
+      }
       record(
-        "B4 Modellfeld-Placeholder ist der uebersetzte Satz aus i18n (Endpunkt offline)",
-        offline.tab.gefunden && treffer.length > 0,
-        treffer.length
-          ? `"${treffer[0]}" (${treffer.length}x, ${offline.tab.placeholders.length} Placeholder im Tab)`
-          : `keiner von ${JSON.stringify(erwartet)} · gesehen: ${JSON.stringify(offline.tab.placeholders.slice(0, 8))}`,
+        "B4 Altwert llmModel zieht einmal in die Zeile ohne Modell; keine Zeile \"Model\", keine Option \"global model\"",
+        nach.zeilen[0] === "smoke/altwert-b4" && nach.zeilen[1] === "eigenes/modell" && !nach.schluessel && gespeichert && !hatZeile && !hatOption,
+        `Zeilen ${JSON.stringify(nach.zeilen)} · Schluessel im Speicher ${nach.schluessel} · in data.json ${!gespeichert} · Zeile Model ${hatZeile} · Option global ${hatOption}`,
       );
     } finally {
-      if (offline) await schliesseTab(cdp, offline);
-      await setPluginSetting(cdp, PLUGIN_ID, "llmEndpoints", endpunkteVorher);
+      await cdp.evaluate(`
+        const id = ${JSON.stringify(PLUGIN_ID)};
+        await app.plugins.plugins[id].saveData(JSON.parse(${JSON.stringify(vorherig)}));
+        await app.plugins.disablePlugin(id);
+        await new Promise((r) => setTimeout(r, 400));
+        await app.plugins.enablePlugin(id);
+        await new Promise((r) => setTimeout(r, 800));
+        return true;
+      `);
       await verbindungNeu(cdp);
     }
 
@@ -1038,7 +1067,10 @@ const einstellungen: Section = {
     const gestapelt = layout.hosts.filter((h) => h.stapelt);
     record(
       "B5 KI-Settings-Bloecke stapeln, statt eine Flex-Row zu werden",
-      layout.hosts.length > 0 && kaputt.length === 0 && gestapelt.length > 0 && layout.normalIstFlex,
+      layout.hosts.length > 0 && kaputt.length === 0 && layout.normalIstFlex
+        // Seit Welle 17 hat kein Host mehr zwei Kinder (die Modell-Zeile war der letzte): ohne mehrkindrigen Host
+        // gibt es nichts zu stapeln, die Aussage tragen dann display (nicht flex) und die Gegenkontrolle.
+        && (gestapelt.length > 0 || layout.hosts.every((h) => h.kinder < 2)),
       layout.hosts.length === 0
         ? "kein .sd-settings-host im Tab — der Punkt hat keinen Gegenstand"
         : !layout.normalIstFlex
@@ -1110,19 +1142,11 @@ const endpunktQuelle: Section = {
         mitManager.tab.gefunden && zeigtBaustein && mitManager.tab.endpunkte === 0,
         `Baustein ${zeigtBaustein ? "da" : "FEHLT"} · ${mitManager.tab.endpunkte} lokale Zeile(n) (.okit-ep-row) sichtbar`,
       );
-      // Die globale Modell-Zeile darf mit Manager nicht sichtbar sein (das Modell waehlt der
-      // Baustein). Gegenprobe steht in E3: dort MUSS sie sichtbar sein.
-      const modellZeile = (ziel: Cdp): Promise<{ da: number; sichtbar: number }> => ziel.evaluate(`
-        const beschreibungen = ${JSON.stringify([STRINGS_EN["deck.settings.model.desc"], STRINGS_DE["deck.settings.model.desc"]])};
-        const zeilen = [...document.querySelectorAll(".vertical-tab-content .setting-item")]
-          .filter((z) => beschreibungen.some((b) => (z.querySelector(".setting-item-description")?.textContent ?? "").includes(b)));
-        return { da: zeilen.length, sichtbar: zeilen.filter((z) => z.offsetParent !== null).length };
-      `);
-      const m1 = await modellZeile(mitManager.ziel);
+      // Eine globale Modell-Zeile gibt es seit Welle 17 nirgends mehr; mit Manager waehlt der Baustein das Modell.
       record(
-        "E1b Manager an: globale Modell-Zeile ist nicht sichtbar",
-        m1.da > 0 && m1.sichtbar === 0,
-        `${m1.da} Zeile(n) im DOM, ${m1.sichtbar} sichtbar`,
+        "E1b Manager an: die Beschreibung der alten globalen Modell-Zeile steht nirgends im Tab",
+        mitManager.tab.gefunden && !ALTE_MODELL_BESCHREIBUNG.some((b) => text.includes(b)),
+        `Tab-Text ${mitManager.tab.text.length} Zeichen · Zeilen: ${JSON.stringify(mitManager.tab.namen.slice(0, 14))}`,
       );
       const r = await aufloesung();
       record(
@@ -1137,12 +1161,8 @@ const endpunktQuelle: Section = {
 
     const ohne = await oeffneTab(cdp, ctx);
     try {
-      const m3 = await ohne.ziel.evaluate<{ sichtbar: number }>(`
-        const beschreibungen = ${JSON.stringify([STRINGS_EN["deck.settings.model.desc"], STRINGS_DE["deck.settings.model.desc"]])};
-        return { sichtbar: [...document.querySelectorAll(".vertical-tab-content .setting-item")]
-          .filter((z) => beschreibungen.some((b) => (z.querySelector(".setting-item-description")?.textContent ?? "").includes(b)) && z.offsetParent !== null).length };
-      `);
-      record("E3b Manager aus: globale Modell-Zeile ist wieder sichtbar (Gegenprobe zu E1b)", m3.sichtbar === 1, `${m3.sichtbar} sichtbar`);
+      record("E3b Manager aus: auch ohne Manager steht die alte Modell-Zeile nirgends (das Modell steht in der Endpunkt-Zeile)",
+        ohne.tab.gefunden && !ALTE_MODELL_BESCHREIBUNG.some((b) => ohne.tab.text.includes(b)), `Tab-Text ${ohne.tab.text.length} Zeichen`);
       const r = await aufloesung();
       record(
         "E3 Manager aus: lokale Liste in Settings und Aufloesung (Gegenprobe zu E1/E2)",
