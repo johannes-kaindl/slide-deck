@@ -1,8 +1,8 @@
 {
   "source": "https://git.jkaindl.de/jkaindl/deck-core",
-  "version": "0.13.0",
-  "sha": "86980bb",
-  "vendored": "2026-09-20",
+  "version": "0.14.1",
+  "sha": "65082f5",
+  "vendored": "2026-10-11",
   "modules": [
     "pure/",
     "dom/"

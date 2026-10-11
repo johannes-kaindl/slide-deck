@@ -27,6 +27,17 @@ describe("runGenerateDeck", () => {
     expect(r.markdown).toContain("theme: dark");
   });
 
+  it("keeps only the deck's own frontmatter keys: banner/cover/og:image are gone, the deck keys stay", async () => {
+    const content = '---\nbanner: https://evil.example/x.png\ncover-image: https://evil.example/c.png\n"og:image": y\ncover:\n  - z.png\nfooter: Fuß\n---\n# A';
+    const client = { generate: vi.fn(async () => ({ content, reasoning: "", usedFallback: false })) };
+    const r = await runGenerateDeck(deps(client, { sourceLink: "[[Original]]" }));
+    expect(r.status).toBe("ok");
+    expect(r.markdown).not.toMatch(/banner|cover|og:image|evil\.example|z\.png/);
+    expect(r.markdown).toContain("footer: Fuß");
+    expect(r.markdown).toContain("theme: dark");
+    expect(r.markdown).toContain('source: "[[Original]]"');
+  });
+
   it("marks incomplete on finish_reason length", async () => {
     const client = { generate: vi.fn(async () => ({ content: "# A", reasoning: "", finishReason: "length", usedFallback: false })) };
     expect((await runGenerateDeck(deps(client))).incomplete).toBe(true);

@@ -1,8 +1,34 @@
 const FENCE_RE = /^\s*(```|~~~)/;
 // General frontmatter key grammar — mirrors slide-model.ts parseFrontmatter (`\s*` allows `theme:dark`).
 const FM_KEY_RE = /^\w+:\s*\S/;
+// Any YAML top-level key a model may put into a frontmatter block (`cover-image:`, `og:image:`, `"banner":`,
+// empty value before a list). Linear: the segments are separated by the literal `:`.
+const ANY_FM_KEY_RE = /^(?:"[^"]*"|'[^']*'|[\w-]+(?::[\w-]+)*):/;
 // Recognized deck directive keys — used ONLY to drop echoed frontmatter blocks mid-deck.
 const DIRECTIVE_KEY_RE = /^(theme|aspect|minFontPx|header|footer|paginate|sender|modifiers):\s*\S/;
+
+// The deck's own frontmatter keys — exactly what parseFrontmatter (slide-model.ts) reads. Any other
+// top-level key a model emits (banner, cover, cover-image, og:image, "banner", …) is dropped: Obsidian
+// loads such values as images in reading view through third-party plugins.
+const DECK_FM_KEY_RE = /^(theme|aspect|minFontPx|header|footer|paginate|sender|modifiers):/;
+
+/** Positive list over the frontmatter lines (without the `---` delimiters): only blank lines and
+ *  top-level lines of a deck key survive. Indented, `- ` item and comment lines are dropped too —
+ *  parseFrontmatter ignores them, and keeping them would let a continuation of a kept key carry
+ *  a foreign key past the filter in a YAML reader that folds it. */
+function keepDeckFrontmatter(lines: string[]): string[] {
+  return lines.filter((line) => line.trim() === "" || DECK_FM_KEY_RE.test(line));
+}
+
+/** Make the leading block's delimiters exactly `---` (trailing blanks, a BOM, or YAML's `...`
+ *  end marker would otherwise let parseFrontmatter and Obsidian disagree about where it ends). */
+function normalizeFrontmatterDelimiters(lines: string[]): void {
+  if (lines[0]?.trim() !== "---") return;
+  const close = lines.findIndex((l, i) => i > 0 && /^(---|\.\.\.)[ \t]*$/.test(l));
+  if (close === -1) return;
+  lines[0] = "---";
+  lines[close] = "---";
+}
 
 /** Line-0 `---` … next `---`. Returns the closing delimiter index, or null if there is no block. */
 export function frontmatterRange(lines: string[]): { end: number } | null {
@@ -53,7 +79,10 @@ function fixLeadingSeparator(md: string): string {
   const range = frontmatterRange(lines);
   if (!range) return md; // no closing delimiter → a lone leading --- yields no phantom slide
   const inner = lines.slice(1, range.end);
-  const isFrontmatter = inner.every((l) => l.trim() === "" || FM_KEY_RE.test(l.trim()));
+  const content = inner.filter((l) => l.trim() !== "");
+  // A frontmatter block opens with a key and holds only keys, indented/`- ` continuations and comments.
+  const isFrontmatter = content.length > 0 && ANY_FM_KEY_RE.test(content[0]) &&
+    content.every((l) => /^[ \t#]|^-(\s|$)/.test(l) || ANY_FM_KEY_RE.test(l));
   return isFrontmatter ? md : lines.slice(1).join("\n"); // stray leading separator before content → strip
 }
 
@@ -61,8 +90,15 @@ function fixLeadingSeparator(md: string): string {
  *  separator whitespace, and drop key:-only slides (repeated frontmatter blocks). */
 function finalPass(md: string): string {
   const lines = md.split("\n");
+  normalizeFrontmatterDelimiters(lines);
   const range = frontmatterRange(lines);
-  const fmEnd = range ? range.end : -1;
+  let fmEnd = range ? range.end : -1;
+
+  if (fmEnd !== -1) {
+    const kept = keepDeckFrontmatter(lines.slice(1, fmEnd));
+    lines.splice(1, fmEnd - 1, ...kept);
+    fmEnd = kept.length + 1;
+  }
 
   if (fmEnd !== -1) {
     for (let i = 1; i < fmEnd; i++) {

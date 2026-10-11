@@ -6,6 +6,14 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **The global *Model* setting is gone; each endpoint row carries its own model.** An existing value moves once into the rows that had none (a row you cleared yourself stays empty afterwards).
+
+### Fixed
+
+- **Generated decks keep only the deck's own frontmatter keys** (`theme`, `aspect`, `minFontPx`, `header`, `footer`, `paginate`, `sender`, `modifiers`). A model that writes `banner:`, `cover:`, `image:`, `cover-image:` or `og:image:` into the frontmatter no longer makes Obsidian load that value as an image through third-party plugins (deck-core 0.14.1).
+
 ## [0.15.2] — 2026-10-10
 
 ### Changed

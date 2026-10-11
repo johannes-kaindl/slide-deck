@@ -101,7 +101,7 @@ export const LAYOUTS_CSS = `
 .sd-cover-empty .sd-region{ text-align:center; max-width:85%; }
 .sd-cover-empty .sd-region :is(ul,ol){ text-align:start; width:fit-content; margin-inline:auto; max-width:100%; }
 
-/* ── agenda · threads · closing — the Order-from-Traces slide specimens.
+/* ── agenda · threads · closing — the Traces slide specimens.
    Markdown: a level-1 title, then a level-2 eyebrow (shown above, like the hero kicker), then
    agenda: an ordered list, a trailing inline code span is the row's meta;
    threads: an ordered list, each item \`**Card title** text\`;
