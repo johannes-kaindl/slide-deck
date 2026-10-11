@@ -1,4 +1,4 @@
-// vendored from code-kit@0.20.0, src/ts/web/remote-resources.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.21.0, src/ts/web/remote-resources.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 /** Removes every resource from a DOM subtree that the browser would load without a click and that is not
  *  on the positive list. The tree-shaped sibling of `neutralizeRemoteResources` in `pure/safe-markdown`
  *  (the regex pass over Markdown text), and the reason it exists: that pass is a partial protection by
@@ -99,7 +99,7 @@
  *  ── Vendoring ───────────────────────────────────────────────────────────────────────────
  *  This module imports `../pure/safe-markdown`. A consumer that flattens `pure/` and `web/` into one
  *  directory (e.g. slide-deck `src/vendor/kit`) rewrites the import at the web target in its kit-sync
- *  config: `rewrite: [["./", "./"]]`. */
+ *  config: `rewrite: [["../pure/", "./"]]`. */
 
 import { CLICK_HREF_TAGS, DOCUMENT_TAGS, LOADING_ATTRS, SRCSET_ATTRS, cssLoadsRemote, isLocalRef } from "./safe-markdown";
 
