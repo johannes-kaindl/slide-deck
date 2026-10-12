@@ -46,6 +46,8 @@ import {
   attachTo,
   bereiteInstanzVor,
   closeExtraLeaves,
+  entferneFakeManager,
+  installFakeManager,
   notices,
   openExisting,
   pollUntil,
@@ -54,6 +56,7 @@ import {
   setPluginSetting,
 } from "../../tools/obsidian-cdp/cdp.js";
 import { createBilanz, parseArgs, runDriver, type Bilanz } from "../../tools/obsidian-cdp/bilanz.js";
+import { startLlmStub, type StubAnfrage } from "../../tools/obsidian-cdp/llm-stub.js";
 import { requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
 import { capture } from "../../tools/obsidian-cdp/shot.js";
 // Das Woerterbuch selbst, nicht eine Kopie seiner Form: daraus kommen sowohl die exakten
@@ -1172,33 +1175,17 @@ const einstellungen: Section = {
  *  Modell von ihm; sonst gilt die lokale Liste. Der Manager wird als FAKE-API in den Plugin-Slot
  *  gelegt (Form-Pruefung `isLlmEndpointManagerApi`), mit einer URL, die die lokale Liste nicht
  *  traegt — zwei verschiedene Werte im Protokoll sind der Beleg, dass gemessen wurde. */
-const MGR_SLOT = "llm-endpoint-manager";
 const MGR_URL = "http://127.0.0.1:9311";
 const MGR_MODEL = "sd-fake-modell";
 const endpunktQuelle: Section = {
   key: "quelle",
   title: "E · Endpunkt-Quelle (LLM Endpoint Manager)",
   async run(cdp, ctx) {
-    const installiere = (): Promise<unknown> => cdp.evaluate(`
-      const plugins = app.plugins.plugins;
-      if (!("__sdVorherMgr" in globalThis)) globalThis.__sdVorherMgr = plugins[${JSON.stringify(MGR_SLOT)}];
-      const eintrag = { id: "fake1", label: "Fake-Endpunkt", defaultModel: ${JSON.stringify(MGR_MODEL)} };
-      const aufgeloest = { id: "fake1", label: "Fake-Endpunkt", config: { url: ${JSON.stringify(MGR_URL)} }, defaultModel: ${JSON.stringify(MGR_MODEL)} };
-      plugins[${JSON.stringify(MGR_SLOT)}] = { api: {
-        version: 1, list: () => [eintrag], get: () => eintrag,
-        resolve: async () => aufgeloest, materialize: async () => aufgeloest,
-        models: async () => [${JSON.stringify(MGR_MODEL)}],
-        importEndpoints: async () => ({ added: [], merged: [], skipped: [] }), on: () => () => {},
-      } };
-      return true;
-    `);
-    const entferne = (): Promise<unknown> => cdp.evaluate(`
-      const vorher = globalThis.__sdVorherMgr;
-      if (vorher === undefined) delete app.plugins.plugins[${JSON.stringify(MGR_SLOT)}];
-      else app.plugins.plugins[${JSON.stringify(MGR_SLOT)}] = vorher;
-      delete globalThis.__sdVorherMgr;
-      return true;
-    `);
+    // Der Fake-Manager ist der zentrale aus der Bruecke (`tools/obsidian-cdp/fake-manager.ts`): `configModel: "keins"`, weil die
+    // alte Fassung kein Modell in `config` trug; der Aufrufer waehlt das Modell ueber `defaultModel`.
+    const installiere = (): Promise<unknown> =>
+      installFakeManager(cdp, { endpunkte: [{ id: "fake1", label: "Fake-Endpunkt", url: MGR_URL, models: [MGR_MODEL], configModel: "keins" }], invalidiere: [PLUGIN_ID] });
+    const entferne = (): Promise<unknown> => entferneFakeManager(cdp, { invalidiere: [PLUGIN_ID] });
     const aufloesung = (): Promise<{ kind: string; url: string | null; model: string }> => cdp.evaluate(`
       const r = await app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].llm.resolve();
       return { kind: r.kind, url: r.config ? r.config.url : null, model: r.model };
@@ -1844,38 +1831,24 @@ const ANFRAGE_KOPF = `[...wurzel.querySelectorAll(".okit-collapsible-header")].f
 /** Fake-Chat-Endpunkt im Node-Prozess; merkt sich jeden POST-Body. Mit CORS-Freigabe, damit der
  *  Stream-Weg (XHR) durchkommt und der Body vom echten Transport stammt. */
 async function startFakeChat(opts: { fehlerKoerper?: boolean; antwort?: string } = {}): Promise<{ url: string; bodies: unknown[]; auth: (string | undefined)[]; close(): Promise<void> }> {
-  const fehlerKoerper = opts.fehlerKoerper === true;
-  const bodies: unknown[] = [];
-  const auth: (string | undefined)[] = [];
-  const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
-  const server: Server = createServer((req: IncomingMessage, res: ServerResponse) => {
-    if (req.method === "OPTIONS") { res.writeHead(204, cors); res.end(); return; }
-    if (req.url?.includes("/v1/models")) { res.writeHead(200, { ...cors, "Content-Type": "application/json" }); res.end(JSON.stringify({ data: [{ id: "google/gemma-4-e4b", object: "model" }] })); return; }
-    if (req.method === "POST" && req.url?.includes("/v1/chat/completions")) {
-      let raw = "";
-      req.on("data", (c: Buffer) => { raw += c.toString("utf8"); });
-      req.on("end", () => {
-        try { bodies.push(JSON.parse(raw)); } catch { bodies.push({ kein_json: raw.slice(0, 80) }); }
-        auth.push(typeof req.headers.authorization === "string" ? req.headers.authorization : undefined);
-        // G3: HTTP 200 mit Fehler-Body statt Stream — die Form, in der LM Studio ein abgestuerztes Modell meldet.
-        if (fehlerKoerper) { res.writeHead(200, { ...cors, "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Model has crashed without additional information." })); return; }
-        // Spiegelt einen Platzhalter der Schwaerzung zurueck, falls die Anfrage einen enthielt (V3).
-        const echo = /\[redacted-[a-z]+-\d+\]/.exec(raw)?.[0];
-        res.writeHead(200, { ...cors, "Content-Type": "text/event-stream" });
-        res.write(`data: ${JSON.stringify({ model: "google/gemma-4-e4b", choices: [{ delta: { content: opts.antwort ?? (echo ? `kein Deck ${echo}` : "kein Deck") } }] })}\n\n`);
-        res.write(`data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop" }] })}\n\n`);
-        res.end("data: [DONE]\n\n");
-      });
-      return;
-    }
-    res.writeHead(404, cors); res.end();
+  // Der zentrale LLM-Stub (`tools/obsidian-cdp/llm-stub.ts`): strenge Pfade, CORS, Mitschnitt jeder Anfrage samt Kopfzeilen.
+  const stub = await startLlmStub({
+    models: ["google/gemma-4-e4b"],
+    antwort: (a) => {
+      if (a.route !== "chat") return undefined;
+      // G3: HTTP 200 mit Fehler-Body statt Stream — die Form, in der LM Studio ein abgestuerztes Modell meldet.
+      if (opts.fehlerKoerper === true) return { fehler: "Model has crashed without additional information.", fehlerAls200: true, fehlerForm: "string" };
+      // Spiegelt einen Platzhalter der Schwaerzung zurueck, falls die Anfrage einen enthielt (V3).
+      const echo = /\[redacted-[a-z]+-\d+\]/.exec(a.body)?.[0];
+      return opts.antwort ?? (echo ? `kein Deck ${echo}` : "kein Deck");
+    },
   });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const chat = (): StubAnfrage[] => stub.anfragen().filter((a) => a.route === "chat");
   return {
-    url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-    bodies,
-    auth,
-    close: () => new Promise<void>((resolve) => { server.close(() => { resolve(); }); }),
+    url: stub.url,
+    get bodies() { return chat().map((a) => a.json ?? { kein_json: a.body.slice(0, 80) }); },
+    get auth() { return chat().map((a) => (typeof a.header.authorization === "string" ? a.header.authorization : undefined)); },
+    close: () => stub.stop(),
   };
 }
 
