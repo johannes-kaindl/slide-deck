@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.17.0] — 2026-10-12
+
 ### Added
 
 - **The endpoint list shows the context length of each row's model** (obsidian-kit 0.56.0): under a reachable row with a model it reads "Context: loaded N · max M tokens" (only "max M" when the model is not loaded, nothing when the server does not report a number), in English and German. It comes back after the *Model* row went away in 0.16.0; the lookup uses the row's API key and gives up after 5 seconds per attempt.
