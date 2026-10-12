@@ -11,50 +11,49 @@
  *
  * ## Voraussetzung
  *
- * ⚠️ **Zuerst pruefen, wer sonst an Obsidian haengt.** Der Quit trifft die Instanz, an der
- * moeglicherweise eine andere Session arbeitet, und zerstoert deren Zustand — der eigene
- * Lauf ist danach sauber gruen, der Schaden faellt nicht auf.
+ * Zweitinstanz mit eigenem Profil und eigenem Port, nie die regulaere Instanz (kein `quit`,
+ * kein Neustart fremder Fenster). `--port` ist Pflicht.
  *
  * ```bash
- * lsof -nP -iTCP:9222 -sTCP:LISTEN >/dev/null && echo "laeuft bereits — NICHT beenden"
- * curl -s http://127.0.0.1:9222/json/list | grep -o '"title":[^,]*'   # wen trifft ein Quit?
+ * UD=/tmp/obs-test-slide-deck; mkdir -p "$UD"
+ * lsof -nP -iTCP:<port> -sTCP:LISTEN; pgrep -f "user-data-dir=$UD"      # beides leer
+ * cp ~/Library/Application\ Support/obsidian/obsidian-*.asar "$UD"/      # aktuelle Version
+ * # $UD/obsidian.json: {"vaults":{"sd":{"path":"$STAGING_VAULTS_DIR/slide-deck","ts":1,"open":true}},"language":"en"}
+ * npm run shots:obsidian -- --setup     # baut den Staging-Vault aus docs/images/fixture/
+ * npm run build && OBSIDIAN_PLUGIN_DIR="$STAGING_VAULTS_DIR/slide-deck/.obsidian/plugins/slide-deck" npm run deploy
+ * python3 ~/.claude/hooks/obsidian-cdp-lock.py acquire --label slide-deck --intent "GUI-Smoke" --exclusive focus --port <port> --ttl 300
+ * /Applications/Obsidian.app/Contents/MacOS/Obsidian --user-data-dir="$UD" --remote-debugging-port=<port> &
+ * npm run smoke:gui -- --port <port>
+ * npm run smoke:gui -- --port <port> --section vorschau --keep
+ * python3 ~/.claude/hooks/obsidian-cdp-lock.py release
  * ```
  *
- * Hoert der Port schon, dann **mitnutzen statt neu starten** — dieser Smoke braucht keinen
- * frischen Start. Fehlt nur der Ziel-Vault, oeffnet ihn ein zusaetzliches Fenster derselben
- * Instanz:
+ * Vertrauensdialog, Restricted Mode und Aktivierung erledigt `bereiteInstanzVor` im Treiber.
+ * Je Messlauf ein frischer Prozess; der erste Lauf nach einer Profilanlage ist ein Aufwaermlauf.
+ * Flags: `--vault <name>` (Default `slide-deck`), `--section <key>`, `--keep`, `--with-model`
+ * (G1/G2 gegen einen echten Endpunkt; ohne das Flag sind sie `skipped`).
  *
- * ```bash
- * open "obsidian://open?vault=slide-deck"                    # registrierter Vault
- * open "obsidian://open?path=<datei-im-vault>"               # frisch gebauter, unbekannter
- * ```
+ * Exit 0 gruen/uebersprungen, 1 bei Rot oder „nichts gemessen", 2 bei Abbruch.
  *
- * Muss es doch eine eigene Instanz sein (Absturz reproduzieren, dutzendfach neu laden): die
- * Sperre haengt am Profil, nicht am Rechner — mit eigenem `--user-data-dir` und eigenem Port
- * laeuft eine zweite Instanz neben der regulaeren (Rezept in der `AGENTS.md` des Dachs).
- *
- * ```bash
- * npm run build && OBSIDIAN_PLUGIN_DIR=<vault>/.obsidian/plugins/slide-deck npm run deploy
- * npm run smoke:gui -- --vault slide-deck
- * npm run smoke:gui -- --section vorschau --keep
- * ```
- *
- * Der Vault entsteht aus dem getrackten Fixture: `npm run shots:obsidian -- --setup` baut ihn
- * (dieselbe Quelle, `docs/images/fixture/`), damit dieser Lauf nicht vom Arbeitsvault abhaengt.
+ * Der Vault entsteht aus dem getrackten Fixture (`docs/images/fixture/`), damit dieser Lauf nicht
+ * vom Arbeitsvault abhaengt.
  */
 
-import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   Cdp,
   attachTo,
+  bereiteInstanzVor,
   closeExtraLeaves,
   notices,
   openExisting,
   pollUntil,
+  releaseAlwaysOnTop,
+  requireVisible,
   setPluginSetting,
 } from "../../tools/obsidian-cdp/cdp.js";
+import { createBilanz, parseArgs, runDriver, type Bilanz } from "../../tools/obsidian-cdp/bilanz.js";
 import { requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
 import { capture } from "../../tools/obsidian-cdp/shot.js";
 // Das Woerterbuch selbst, nicht eine Kopie seiner Form: daraus kommen sowohl die exakten
@@ -233,24 +232,103 @@ Der Modifier steht im Theme, nicht im Kern.
 
 // --- Protokoll ---------------------------------------------------------------
 
-interface Check {
-  name: string;
-  passed: boolean;
-  detail: string;
-}
+/** Soll-Liste je Abschnitt — der Nenner der Bilanz (CORE-TEST-19). Ein Punkt, der nie aufgezeichnet
+ *  wird (Abschnitt abgebrochen), zaehlt als „nichts gemessen" und setzt Exit 1; er erscheint nie
+ *  als gruen. Bei `--section` gilt die Teilmenge der gewaehlten Abschnitte. „PDF-Export" und
+ *  G1/G2 ohne `--with-model` bleiben `skipped` (nicht anwendbar), sie zaehlen im Nenner mit. */
+const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
+  vorschau: [
+    "A1 Vorschau oeffnet in der rechten Seitenleiste",
+    `A2 Deck rendert im isolierten iframe (${DECK_SLIDES} Folien erwartet)`,
+    "A3 Vault-Theme erreicht die Folien nicht",
+    "A4 Code-Hervorhebung erreicht den iframe",
+    "A5 Overflow wird gewarnt, nicht beschnitten",
+    "A6 Overflow-Folie traegt den roten Streifen, Warnzeile den Schwere-Namen als title",
+    "A7 Theme-Dropdown wirkt sofort und laesst die Notiz in Ruhe",
+    "A8 Eigener Layoutname: Hinweiszeile (info), aber kein Streifen an der Folie",
+  ],
+  mermaid: [
+    "M1 Ordner-Theme faerbt das Diagramm ueber seine Tokens",
+    "M2 sd-mermaid-Angabe schlaegt die Token-Ableitung",
+    "M4 sender-Slot steht sichtbar im Deck (und fehlt ohne die Direktive)",
+    `M5 Theme-eigener Modifier "${THEME_MOD}" warnt nicht (ohne Deklaration schon)`,
+    "M3 sd-mermaid-var traegt bis ins PNG (pieOpacity 1 gegen Mermaids 0.7)",
+  ],
+  einstellungen: [
+    "B1 Einstellungen-Tab oeffnet",
+    "B2 Kein roher i18n-Schluessel in der Oberflaeche",
+    "B3 Endpunkt-Zeileneditor ist verdrahtet",
+    "B3b Hilfe-Zeile ist die erste Zeile im Einstellungs-Tab",
+    "B4 Altwert llmModel zieht einmal in die Zeile ohne Modell; keine Zeile \"Model\", keine Option \"global model\"",
+    "B5 KI-Settings-Bloecke stapeln, statt eine Flex-Row zu werden",
+  ],
+  quelle: [
+    "E1 Manager an: Settings zeigen den Manager-Baustein statt der lokalen Liste",
+    "E1b Manager an: die Beschreibung der alten globalen Modell-Zeile steht nirgends im Tab",
+    "E2 Manager an: die Aufloesung nimmt Manager-Endpunkt und Default-Modell",
+    "E3b Manager aus: auch ohne Manager steht die alte Modell-Zeile nirgends (das Modell steht in der Endpunkt-Zeile)",
+    "E3 Manager aus: lokale Liste in Settings und Aufloesung (Gegenprobe zu E1/E2)",
+  ],
+  explorer: [
+    "C1 Themes-Ordner ist im Explorer ausgeblendet",
+    "C2 Ausschalten macht ihn wieder sichtbar",
+    "C3 Bei fokussiertem Pop-out liegt das Blatt im Hauptfenster, nicht im Pop-out",
+  ],
+  export: [
+    "PDF-Export",
+    `D1 Bilder-Export schreibt ${DECK_SLIDES} PNG in den Export-Ordner`,
+    `D2 Modifier-Klasse ueberlebt den Export (Folie ${REGRESSION_MOD_SLIDE + 1} traegt die Probe-Farbe im PNG)`,
+  ],
+  bild: [
+    "N1 Bildplatz rendert als .sd-image-slot",
+    "N2 Nach Klick: Knopf bleibt bedienbar (heilbarer Grund) + Klassen da mit API, Empty-State (keine Klassen) ohne",
+    "N2b Rueckschreib-Mechanik: Objektidentitaet gewahrt (mit Waechter) und Slot leer (ohne)",
+    "N3 is-checking bewegt sich, is-ok steht",
+    "N4 Zurueckschreiben trifft, und unterbleibt bei geaendertem Block",
+  ],
+  chat: [
+    "G3 Fehlerkoerper: HTTP 200 + Fehler-Body auf dem Chat-Weg wird zur Meldung (umgeschrieben)",
+    "G1 Streaming: Deck aus einer Notiz, Text kommt in mehreren Stuecken",
+    "G2 Abbruch: Stop beendet die Generierung zuegig, es wird nichts geschrieben",
+  ],
+  anfrage: [
+    "R1 Abschnitt „Anfrage“ klappt auf und wieder zu",
+    "R2 Wert ueberschreiben, dann zuruecksetzen — der Abschnitt bleibt aufgeklappt (zwei Edits hintereinander)",
+    "R3 Zeile „Denk-Test“ folgt dem Anfrage-Abschnitt, mit Knopf statt Schalter (umgeschrieben)",
+    "R4 Denkstufe waehlen wird gespeichert, der Abschnitt bleibt aufgeklappt",
+    "R5 Der gesendete Body traegt das Profil des Modus creative (Temperatur aus den Kit-Tabellen, Budget als max_tokens)",
+  ],
+  verbindung: [
+    "V1 Schluesselbund: nach dem Aufloesen steht kein apiKey mehr in data.json, der Aufrufer bekommt ihn hydriert",
+    "V2 Bearer: der Schluessel aus dem Schluesselbund geht als Authorization-Header hinaus",
+    "V3 Schwaerzung: das Token geht als Platzhalter an den Server, im Ergebnis steht das Original",
+    "V4 Entschaerfung: Markdown-Bild in der erzeugten Notiz laedt nichts von aussen (Gegenprobe: ohne sie laedt es)",
+    "V5 Entschaerfung: rohes <img> in der erzeugten Notiz laedt nichts von aussen (Gegenprobe: ohne sie laedt es)",
+    "V6 Entschaerfung: url() in style in der erzeugten Notiz laedt nichts von aussen (Gegenprobe: ohne sie laedt es)",
+    "V7 Entschaerfung: ein dataviewjs-Block steht in der erzeugten Notiz nicht mehr als Prozessor-Fence (Gegenprobe: die Antwort hatte ihn)",
+    "V8 Entschaerfung laesst ein normales Deck unveraendert: Direktive, Datei-Embed, Mermaid, data:-Bild und Link bleiben",
+    "V9 Zweite Schicht: eine Fernquelle, die die Regex-Schicht uebersieht (SVG fill=url), erzeugt keine Anfrage am Draht (Gegenprobe: die rohe Antwort schon)",
+    "V10 Zweite Schicht: nur die betroffene Folie wird Text, die Nachbarfolie bleibt",
+    "V12 Zweite Schicht je Region: ein offenes <textarea> in Region 1 versteckt die Fernquelle in Region 2 nicht (Gegenprobe: das rohe Deck laedt in der Vorschau)",
+    "V13 Zweite Schicht: Mermaid-Bildform `A@{ img: \"https://…\" }` erzeugt in der Vorschau keine Anfrage (Gegenprobe: das rohe Deck laedt)",
+    "V11 Eigenes Deck mit Fernbild laedt in der Vorschau weiter (Variante A: die zweite Schicht greift nur beim Erzeugen)",
+  ],
+};
 
-const results: Check[] = [];
+const C0 = "0. Kein liegen gebliebener local-image-generator-Stub aus einem abgebrochenen Vorlauf";
+
+/** Wird in `main()` mit der Soll-Liste der gewaehlten Abschnitte angelegt. */
+let bilanz: Bilanz;
 
 function record(name: string, passed: boolean, detail: string): void {
-  results.push({ name, passed, detail });
-  console.log(`${passed ? "  ✓" : "  ✗"} ${name}${detail ? ` — ${detail}` : ""}`);
+  bilanz.record(name, passed, detail);
 }
 
-/** Was der Lauf bewusst NICHT misst. Steht im Protokoll, damit eine Luecke nicht wie
- *  Abdeckung aussieht — ein stillschweigend ausgelassener Punkt liest sich hinterher
- *  wie ein gruener. */
+/** Was der Lauf bewusst NICHT misst, weil es hier nicht anwendbar ist (Systemdialog, Flag
+ *  `--with-model` fehlt). Fehlt dagegen der Gegenstand (Abschnitt abgebrochen), ist es
+ *  „nichts gemessen" — das setzt der Abschnittsfang in `main()`. */
 function skipped(name: string, reason: string): void {
-  console.log(`  – ${name} — uebersprungen: ${reason}`);
+  bilanz.skipped(name, reason);
 }
 
 // --- Helfer ------------------------------------------------------------------
@@ -1211,10 +1289,10 @@ const explorer: Section = {
       return { da: Boolean(el), display: el ? getComputedStyle(el).display : "" };
     `);
     record(
-      `C1 Themes-Ordner "${ordner}" ist im Explorer ausgeblendet`,
+      "C1 Themes-Ordner ist im Explorer ausgeblendet",
       versteckt.da && versteckt.display === "none",
       versteckt.da
-        ? `display: ${versteckt.display}`
+        ? `Ordner "${ordner}", display: ${versteckt.display}`
         : "kein .nav-folder-title[data-path] fuer den Ordner — Markup geaendert oder Explorer zu",
     );
 
@@ -1339,10 +1417,10 @@ const exportSektion: Section = {
     const meldung = await notices(cdp);
     if (bilder && !erzeugtePfade.includes(zielOrdner)) erzeugtePfade.push(zielOrdner);
     record(
-      `D1 Bilder-Export schreibt ${DECK_SLIDES} PNG nach "${bildOrdner}"`,
+      `D1 Bilder-Export schreibt ${DECK_SLIDES} PNG in den Export-Ordner`,
       bilder === DECK_SLIDES,
       bilder
-        ? `${bilder} PNG > 1 KB${meldung ? ` · Meldung: ${meldung}` : ""}`
+        ? `${bilder} PNG > 1 KB in "${bildOrdner}"${meldung ? ` · Meldung: ${meldung}` : ""}`
         : `keine vollstaendige Serie${meldung ? ` · Meldung: ${meldung}` : " · keine Meldung des Pruflings"}` +
           ` · ${await diagnose(cdp)}`,
     );
@@ -1680,7 +1758,7 @@ const bildplaetze: Section = {
  *  `plugin.startDeckGeneration` (Client → Sanitizer → Notiz), nicht den Client allein.
  *  Endpunkt/Modell per Umgebung: SD_SMOKE_ENDPOINT / SD_SMOKE_MODEL. Ohne
  *  `--with-model` stehen die Punkte als "uebersprungen" im Protokoll — nie als gruen. */
-const MIT_MODELL = process.argv.slice(2).includes("--with-model");
+const MIT_MODELL = parseArgs(process.argv.slice(2)).has("with-model");
 const G_ENDPOINT = process.env.SD_SMOKE_ENDPOINT ?? "http://127.0.0.1:1234";
 const G_MODEL = process.env.SD_SMOKE_MODEL ?? "google/gemma-4-e4b";
 const G_NOTE = "smoke-chat-g1.md";
@@ -2098,27 +2176,28 @@ const SECTIONS: Section[] = [vorschau, mermaid, bildplaetze, einstellungen, anfr
 // --- Lauf --------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const argv = process.argv.slice(2);
-  const flag = (name: string): string | undefined => {
-    const index = argv.indexOf(`--${name}`);
-    return index === -1 ? undefined : argv[index + 1];
-  };
-  const port = Number(flag("port") ?? 9222);
-  const vault = flag("vault");
-  const keep = argv.includes("--keep");
-  const sectionArg = flag("section");
+  const args = parseArgs(process.argv.slice(2));
+  const port = Number(args.value("port") ?? "");
+  if (!Number.isInteger(port) || port <= 0) {
+    throw new Error("--port <port> ist Pflicht (Zweitinstanz, siehe Kopf dieser Datei); kein Standardport.");
+  }
+  const vault = args.value("vault") ?? PLUGIN_ID;
+  const keep = args.has("keep");
+  const sectionArg = args.value("section");
 
   const sections = sectionArg ? SECTIONS.filter((s) => s.key === sectionArg) : SECTIONS;
   if (sections.length === 0) {
     throw new Error(`Unbekannter --section ${sectionArg}. Bekannt: ${SECTIONS.map((s) => s.key).join(", ")}`);
   }
 
+  bilanz = createBilanz({ punkte: [C0, ...sections.flatMap((x) => ABSCHNITT_PUNKTE[x.key] ?? [])] });
+
   console.log(`GUI-Smoke — Obsidian auf Port ${port}`);
   const cdp = await attachTo("workspace", port, vault);
   if (!cdp) {
     throw new Error(
-      `Kein Obsidian-Fenster auf Port ${port}${vault ? ` fuer Vault "${vault}"` : ""}.\n` +
-      "Laeuft Obsidian mit --remote-debugging-port? Bei mehreren Fenstern --vault <name> angeben.",
+      `Kein Obsidian-Fenster auf Port ${port} fuer Vault "${vault}".\n` +
+      "Zweitinstanz starten (Rezept im Kopf dieser Datei), nicht die regulaere Instanz neu starten.",
     );
   }
 
@@ -2182,30 +2261,17 @@ async function main(): Promise<void> {
   process.on("SIGTERM", onAbortSignal);
 
   try {
-    // Ohne Fokus drosselt Chromium den Renderer, das Deck rendert nicht und JEDER Punkt
-    // waere rot — die Suche begaenne dann am Plugin statt am Fenster.
-    await cdp.send("Page.bringToFront");
-    if (process.platform === "darwin") {
-      try {
-        execFileSync("osascript", ["-e", 'tell application "Obsidian" to activate']);
-        await new Promise((r) => setTimeout(r, 1500));
-      } catch {
-        console.log("  (Hinweis: `osascript activate` schlug fehl — Fenster ggf. von Hand nach vorn holen)");
-      }
-      await cdp.send("Page.bringToFront");
-      await new Promise((r) => setTimeout(r, 800));
-    }
+    // Ohne Sichtbarkeit drosselt Chromium den Renderer, das Deck rendert nicht und JEDER Punkt
+    // waere rot. `requireVisible` zielt auf das VERBUNDENE Fenster; ein `osascript … activate`
+    // holte stattdessen die reguelaere Instanz nach vorn (Befund kl-w19).
+    await requireVisible(cdp);
     await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true }).catch(() => undefined);
     await new Promise((r) => setTimeout(r, 300));
-    const fokus = await cdp.evaluate<boolean>(
-      `return document.hasFocus() && document.visibilityState === "visible";`,
-    );
-    if (!fokus) {
-      throw new Error(
-        "Das Obsidian-Fenster hat keinen Fokus — Chromium drosselt dann den Renderer und jeder " +
-        "Pruefpunkt waere rot, ohne dass am Plugin etwas fehlt. Fenster nach vorn holen und erneut fahren.",
-      );
-    }
+
+    // Vertrauensdialog, Restricted Mode und Aktivierung: zentrale Fassung. `pluginIds` sind
+    // `manifest.id`s, `nurVault` der Name des Staging-Vaults.
+    const vorbereitung = await bereiteInstanzVor(cdp, { pluginIds: [PLUGIN_ID], nurVault: vault, sprache: "en" });
+    console.log(`Instanz: ${vorbereitung.hinweis}`);
 
     const vaultInfo = await cdp.evaluate<{ name: string; basePath: string; configDir: string }>(`
       return { name: app.vault.getName(), basePath: app.vault.adapter.basePath, configDir: app.vault.configDir };
@@ -2249,7 +2315,7 @@ async function main(): Promise<void> {
       return false;
     `);
     record(
-      "0. Kein liegen gebliebener local-image-generator-Stub aus einem abgebrochenen Vorlauf",
+      C0,
       !staleStub,
       staleStub ? "Stub aus einem Vorlauf gefunden und entfernt" : "kein Rest gefunden",
     );
@@ -2260,7 +2326,15 @@ async function main(): Promise<void> {
 
     for (const section of sections) {
       console.log(`── ${section.title}`);
-      await section.run(cdp, { port, vault });
+      try {
+        await section.run(cdp, { port, vault });
+      } catch (fehler) {
+        // Ein Abschnittsfehler ist kein Befund am Prueflings, sondern eine Messung, die nicht
+        // stattgefunden hat: die noch offenen Punkte des Abschnitts zaehlen als „nichts gemessen".
+        const grund = fehler instanceof Error ? fehler.message.split("\n")[0] : String(fehler);
+        const da = new Set(bilanz.eintraege().map((x) => x.name));
+        for (const n of ABSCHNITT_PUNKTE[section.key] ?? []) if (!da.has(n)) bilanz.unmeasured(n, `Abschnitt „${section.key}" abgebrochen: ${grund}`);
+      }
       console.log("");
     }
   } finally {
@@ -2299,6 +2373,7 @@ async function main(): Promise<void> {
         .catch(() => undefined);
     }
     await closeExtraLeaves(cdp).catch(() => 0);
+    await releaseAlwaysOnTop(cdp).catch(() => undefined);
     cdp.close();
     // Abmelden, sonst haengt ein SPAETES Signal (nach normalem Abschluss, cdp schon zu) den
     // Prozess in onAbortSignal an einer toten Verbindung auf.
@@ -2306,16 +2381,8 @@ async function main(): Promise<void> {
     process.off("SIGTERM", onAbortSignal);
   }
 
-  const rot = results.filter((c) => !c.passed);
-  console.log(`${results.length - rot.length}/${results.length} gruen`);
-  if (rot.length > 0) {
-    console.log("Rot:");
-    for (const c of rot) console.log(`  - ${c.name}: ${c.detail}`);
-    process.exitCode = 1;
-  }
+  // Die Soll-Liste ist der Nenner; `abschluss()` setzt Exit 1 bei Rot oder „nichts gemessen".
+  bilanz.abschluss();
 }
 
-main().catch((error: unknown) => {
-  console.error(`\nAbbruch: ${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 1;
-});
+runDriver(main);

@@ -3,38 +3,27 @@
  * Einstellungen. Alles, was nur die Folien zeigt, nimmt `scripts/shots.mjs` ohne Obsidian
  * auf; hier steht ausschliesslich, was Obsidians eigene Oberflaeche im Bild braucht.
  *
+ * ## Ablauf (Zweitinstanz, eigener Port, Lock je Port — Dach-AGENTS.md § Staging-Vaults)
+ *
+ * Kein Quit und kein Neustart der regulaeren Instanz. `--port` ist Pflicht (oder
+ * `OBSIDIAN_DEBUG_PORT`), ein Standardport existiert nicht. Das Aufnahme-Vault entsteht aus dem
+ * getrackten Fixture (`--setup`).
+ *
  * ```bash
  * export STAGING_VAULTS_DIR=<verzeichnis ausserhalb der Repos>
- * npm run build && npm run shots:obsidian -- --setup   # Vault bauen, dann Obsidian NEU STARTEN
- * npm run shots:obsidian                               # aufnehmen
- * npm run shots:obsidian -- --only preview-pane        # ein einzelnes Bild
+ * npm run build && npm run shots:obsidian -- --setup   # Vault bauen
+ * UD=/tmp/obs-test-slide-deck; mkdir -p "$UD"
+ * lsof -nP -iTCP:<port> -sTCP:LISTEN; pgrep -f "user-data-dir=$UD"      # beides leer
+ * cp ~/Library/Application\ Support/obsidian/obsidian-*.asar "$UD"/
+ * # $UD/obsidian.json: {"vaults":{"sd":{"path":"$STAGING_VAULTS_DIR/slide-deck","ts":1,"open":true}},"language":"en"}
+ * python3 ~/.claude/hooks/obsidian-cdp-lock.py acquire --label slide-deck --intent "README-Bilder" --exclusive focus --port <port> --ttl 600
+ * /Applications/Obsidian.app/Contents/MacOS/Obsidian --user-data-dir="$UD" --remote-debugging-port=<port> &
+ * npm run shots:obsidian -- --port <port>                          # aufnehmen
+ * npm run shots:obsidian -- --port <port> --only preview-pane      # ein einzelnes Bild
+ * python3 ~/.claude/hooks/obsidian-cdp-lock.py release
  * ```
  *
- * ⚠️ **Vor dem Quit koordinieren — Obsidian ist geteilte Infrastruktur.** Dieses Rezept
- * braucht den frischen Start (ein Bild pro Start, jeder Lauf hinterlaesst Zustand); Mitnutzen ist
- * hier keine Alternative. Der Quit trifft aber die Instanz, an der moeglicherweise eine andere
- * Session arbeitet, und zerstoert deren Zustand. Der eigene Lauf ist danach sauber gruen; der
- * Schaden faellt nicht auf.
- *
- * ```bash
- * lsof -nP -iTCP:9222 -sTCP:LISTEN >/dev/null && echo "belegt — erst fragen, wem"
- * ```
- *
- * Hoert der Port, haengt jemand dran: **erst fragen, dann quitten.** ⚠️ Und die Pruefung ersetzt die
- * Frage nicht — sie zeigt aktive CDP-Treiber, aber nicht, wer ein Fenster offen haelt oder auf den
- * Port wartet; am 2026-08-30 haette sie einen zwei Stunden alten Reindex nicht gezeigt, denn der
- * hing an Ollama, nicht am Port.
- *
- * ⓘ Hier stand bis 2026-09-02 "Obsidian ist Single-Instance" — das stimmt nicht. Die Sperre haengt
- * am Profil, nicht am Rechner: mit eigenem `--user-data-dir` und eigenem Debug-Port laeuft eine
- * zweite Instanz neben der regulaeren (gemessen 2026-09-02, Rezept in der AGENTS.md des Dachs).
- * Dieses Rezept nimmt ohnehin gegen ein eigenes Staging-Vault auf (`--setup` baut es aus dem
- * getrackten Fixture), der dortige Vorbehalt gegen Zweitinstanzen bei README-Bildern trifft es
- * also nicht. Gefahren wurde der Weg hier noch nicht; wer den Quit vermeiden will, probiert ihn.
- *
- * Obsidian muss mit offenem Debug-Port laufen:
- *   kill <pid>   # Electron behandelt SIGTERM als Quit; `osascript quit` scheiterte mit -128
- *   open -a Obsidian --args --remote-debugging-port=9222
+ * Ein Bild pro Start ist der sichere Weg: jeder Lauf hinterlaesst Zustand.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
@@ -49,7 +38,8 @@ const VAULT_NAME = "slide-deck";
 // Der alte Typ "slide-deck-preview" existiert nicht mehr; getLeavesOfType lieferte
 // darauf ein leeres Array, und der Lauf meldete "Vorschau zeigt keine Folien".
 const VIEW_TYPE = "slide-deck-hub";
-const PORT = Number(process.env.OBSIDIAN_DEBUG_PORT ?? 9222);
+const portFlag = process.argv.indexOf("--port");
+const PORT = Number((portFlag >= 0 ? process.argv[portFlag + 1] : undefined) ?? process.env.OBSIDIAN_DEBUG_PORT ?? "");
 const REPO = process.cwd();
 const OUT = join(REPO, "docs/images");
 const SHOT_OPTS = { outDir: OUT, captureWidth: 1200, thumbWidth: 380 };
@@ -83,7 +73,7 @@ if (args.includes("--setup")) {
     repoRoot: REPO, vaultDir, fixtureDir: join(REPO, "docs/images/fixture"), pluginId: PLUGIN_ID,
   })) console.log("· " + zeile);
   console.log(`\nVault: ${vaultDir}`);
-  console.log("Jetzt Obsidian NEU STARTEN — der Vault wird erst beim Start gelesen.");
+  console.log("Jetzt die Zweitinstanz (neu) starten — der Vault wird erst beim Start gelesen (Rezept im Kopf dieser Datei).");
   process.exit(0);
 }
 
@@ -256,6 +246,7 @@ async function settingsShot(workspace: Cdp): Promise<string> {
 const vaultDir = stagingVaultDir(VAULT_NAME);
 if (!existsSync(vaultDir)) throw new Error(`Aufnahme-Vault fehlt: ${vaultDir}\nErst: npm run shots:obsidian -- --setup`);
 
+if (!Number.isInteger(PORT) || PORT <= 0) throw new Error("--port <port> ist Pflicht (Zweitinstanz, siehe Kopf dieser Datei); kein Standardport.");
 const cdp = await Cdp.attach(PORT, VAULT_NAME);
 // Anders als gui-smoke.ts schreibt dieses Rezept nie in `settings`/`saveSettings` und stubt
 // keinen fremden Plugin-Slot — es oeffnet Panes und macht Screenshots gegen die dedizierte
