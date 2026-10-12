@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.17.1] — 2026-10-12
+
 ### Fixed
 
 - **Generate panel, streamed answer:** the answer now follows to the end past paragraph breaks and other multi-line pieces, as long as you are at the bottom. Before, the area stopped following at the first blank line of the streamed deck (measured: with blank lines in the answer the distance to the end grew to 1,385 px; without them the area followed). If you scroll up while the answer streams, it still does not pull you back down. (obsidian-kit 0.59.0.)
