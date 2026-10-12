@@ -6,9 +6,15 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Generate panel, streamed answer:** the answer now follows to the end past paragraph breaks and other multi-line pieces, as long as you are at the bottom. Before, the area stopped following at the first blank line of the streamed deck (measured: with blank lines in the answer the distance to the end grew to 1,385 px; without them the area followed). If you scroll up while the answer streams, it still does not pull you back down. (obsidian-kit 0.59.0.)
+
 ### Changed
 
-- Kit pins raised to obsidian-kit 0.57.0 / code-kit 0.24.0. The stored endpoint choice in `data.json` is cleaned by the kit's shared `sanitizeChoice` instead of a local copy (identical result: only non-empty strings survive), so nothing changes for you.
+- **Settings, endpoint list:** the "move up" and "remove endpoint" buttons stay together, the address and the model ID stay fully visible at normal widths; in a narrow window the block of model and buttons moves as a whole to a second row (obsidian-kit 0.59.0 and 0.59.1).
+- **Settings, section "Request":** for an endpoint whose model family is not known yet, it now says "not detected yet" with a note that this is normal for a freshly entered endpoint (and that the LLM Endpoint Manager keeps family and backend) instead of "unknown" (obsidian-kit 0.59.0).
+- Kit pins raised to obsidian-kit 0.59.1 / code-kit 0.24.0 (from 0.56.0 / 0.23.0 at the last release); the stream-area CSS copy in `styles.css` is unchanged since 0.43.0. The other kit changes since 0.56.0 (`fetchEndpointContext`, `pruefeLinearFuzz`, embedding rows without "server picks", `classifyShortcutFailure`) touch modules this plugin does not use or only tests. The stored endpoint choice in `data.json` is cleaned by the kit's shared `sanitizeChoice` instead of a local copy (identical result: only non-empty strings survive), so nothing changes for you.
 - The plugin's test double for the Obsidian API is now the kit's shared mock (tests only; no effect on the plugin).
 
 ## [0.17.0] — 2026-10-12
