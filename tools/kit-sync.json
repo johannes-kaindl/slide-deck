@@ -35,7 +35,7 @@
       "dir": "tests/vendor/kit",
       "source": "obsidian-kit",
       "from": "src/testing",
-      "modules": ["kit-css", "obsidian-mock", "window-timers"]
+      "modules": ["kit-css", "obsidian-mock", "window-timers", "linear-probe"]
     },
     {
       "dir": "tests/vendor/kit",

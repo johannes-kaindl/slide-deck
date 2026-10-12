@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { Window } from "happy-dom";
 import { secondPassDeck } from "../src/deck-second-pass";
 import { neutralizeRemoteResources } from "../src/vendor/kit/safe-markdown";
+import { pruefeLinear } from "./vendor/kit/linear-probe";
 
 // Ohne Seitenladen: das Dokument ist inert, happy-dom darf auch fuer iframes nichts holen.
 const win = new Window({ settings: { disableIframePageLoading: true, disableJavaScriptEvaluation: true, disableCSSFileLoading: true, disableJavaScriptFileLoading: true } });
@@ -109,23 +110,25 @@ describe("secondPassDeck", () => {
       expect(secondPassDeck(deck(src), deps).replaced).toEqual([1]);
     });
     // ReDoS (0.15.1): `url` + n Kommentare ohne `(` liess die Regex exponentiell backtracken (Faktor 2 je Kommentar,
-    // n=24 gemessen 83 ms, n=40 Stunden). n=24 hier, damit die Gegenprobe mit der alten Regel rot wird und nicht haengt.
-    it.each([24, 200, 5000])("Laufzeit: `url` + %i Kommentare ohne Klammer bleibt linear (< 50 ms)", (n) => {
+    // gemessen mit der alten Regel am 2026-10-12: n=24 316 ms, n=28 1 202 ms, n=30 5 082 ms; n=40 Stunden). Das ist ein
+    // Exponential-Waechter, kein Linearitaetsbeleg: `pruefeLinear` hat keine Frist und haengte bei einer Regression. n=28 statt 24,
+    // damit die Gegenprobe mit der alten Regel deutlich ueber der Grenze liegt (3x) und nicht haengt. Die Grenze von 400 ms
+    // ist so grosszuegig, dass zwoelf parallele Sessions (Load ~300) die linearen Faelle (wenige ms) nicht kippen.
+    it.each([28, 200, 5000])("Laufzeit: `url` + %i Kommentare ohne Klammer bleibt linear (< 400 ms)", (n) => {
       const d = deck("graph TD\n  A-->B\n  classDef f " + "url" + "/**/".repeat(n) + "x");
       const t0 = performance.now();
       const r = secondPassDeck(d, deps);
-      expect(performance.now() - t0).toBeLessThan(50 + n / 10);
+      expect(performance.now() - t0).toBeLessThan(400 + n / 10);
       expect(r.replaced).toEqual([1]); // ein `/*` im Mermaid-Quelltext ist selbst ein Fund
     });
     it.each([
-      ["lange Folge ohne Treffer", "A-->B\n".repeat(20000)],
-      ["viele img:-Zeilen", 'A@{ img: "x.png" }\n'.repeat(5000)],
-      ["lange url-Folge", "url ".repeat(20000)],
-      ["lange Backslash-freie Zeile ohne Klammer", "image".repeat(40000)],
-    ])("Laufzeit der uebrigen Muster: %s (< 200 ms)", (_n, src) => {
-      const t0 = performance.now();
-      secondPassDeck(deck("graph TD\n" + src), deps);
-      expect(performance.now() - t0).toBeLessThan(200);
+      ["lange Folge ohne Treffer", "A-->B\n"],
+      ["viele img:-Zeilen", 'A@{ img: "x.png" }\n'],
+      ["lange url-Folge", "url "],
+      ["lange Backslash-freie Zeile ohne Klammer", "image"],
+    ])("Laufzeit der uebrigen Muster: %s waechst linear", (_n, einheit) => {
+      const r = pruefeLinear((src: string) => secondPassDeck(deck("graph TD\n" + src), deps), einheit);
+      expect(r.linear, r.message).toBe(true);
     });
     // Seit code-kit 0.20.0 fragt die zweite Schicht das Kit (`mermaidLoadsRemote`), nicht mehr eine eigene Regel: strenger bei
     // HTML-Attributen und Schemata ohne `//` in beliebigen Labels, lockerer bei `img: "data:…"` (data: geht nie ans Netz).
