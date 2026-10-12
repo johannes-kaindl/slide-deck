@@ -1,11 +1,11 @@
 import { TFile } from "obsidian";
 import type SlideDeckPlugin from "./main";
 import type { DeckGenInput } from "./main";
-import { fetchModelContext } from "./llm-client";
+import { fetchEndpointContext } from "./vendor/kit-obsidian/backend-probe";
 import type { EndpointConfig } from "./vendor/kit/endpoint_config";
 import { frontmatterRange } from "./vendor/deck-core/pure/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./vendor/deck-core/pure/llm/deck-prompt";
-import { estimateTokens, contextOverflow } from "./llm/model-info";
+import { estimateTokens, contextOverflow, effectiveContext } from "./llm/model-info";
 import { modelFieldMode, initialModelSelection } from "./llm/ai-settings-model";
 import { paintStatus } from "./ai-settings-ui";
 import type { GenState, GenerationHandle } from "./generate-deck";
@@ -212,9 +212,9 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     if (this.deckHintEl && looksLikeDeck(raw)) this.deckHintEl.setText(t("deck.modal.sourceIsDeck"));
     if (!this.endpoint || !this.warnEl) return;
     const body = stripNoteFrontmatter(raw);
-    const ctx = await fetchModelContext(this.endpoint, this.model);
+    const ctx = await fetchEndpointContext(this.endpoint.url, this.model, this.endpoint.apiKey);
     if (this.currentSource !== file) return;
-    const limit = ctx?.loadedContextLength ?? ctx?.maxContextLength;
+    const limit = effectiveContext(ctx) ?? undefined;
     const inputTokens = estimateTokens(body.length) + 400;
     if (contextOverflow(inputTokens, this.plugin.settings.llmMaxTokens, limit) || (limit == null && body.length > 30000)) {
       this.warnEl.setText(t("deck.modal.contextWarn", inputTokens, limit != null ? String(limit) : "?"));

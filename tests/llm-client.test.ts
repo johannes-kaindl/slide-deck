@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { setLang } from "../src/i18n";
-import { deckClient, deckResultOf, fetchModelContext, type HttpJson } from "../src/llm-client";
+import { deckClient, deckResultOf } from "../src/llm-client";
+import { fetchEndpointContext } from "../src/vendor/kit-obsidian/backend-probe";
+import type { CapabilityFetch } from "../src/vendor/kit/capabilities";
 import type { LlmResult } from "../src/vendor/kit-obsidian/llm-connection";
 
 // Chat, Fristen, Abbruch und Fallback sind Kit-Code (chat-client, llm-connection) und dort getestet.
@@ -67,38 +69,51 @@ describe("deckClient", () => {
   });
 });
 
-describe("fetchModelContext", () => {
-  const http = (seen: (Record<string, string> | undefined)[], lm: number, oll: unknown): HttpJson => async (p) => {
+describe("Kontext-Abruf der Generate-Ansicht (fetchEndpointContext aus dem Kit)", () => {
+  // Der Abruf gehoert dem Kit (Tests dort); hier: dass die gevendorte Fassung in DIESEM Buendel mit Schluessel,
+  // /v1-Normalisierung und Zeitgrenze arbeitet, wie es die Ansicht verlangt.
+  const timers = { setTimeout: (fn: () => void, ms: number) => globalThis.setTimeout(fn, ms) as unknown as number, clearTimeout: (id: number) => globalThis.clearTimeout(id) };
+  const http = (seen: (Record<string, string> | undefined)[], lm: boolean, oll: unknown): CapabilityFetch => async (p) => {
     seen.push(p.headers);
-    if (p.url.includes("/api/v0/models")) return { status: lm, json: { data: [{ id: "m1", loaded_context_length: 4096, max_context_length: 32768 }] }, text: "{}" };
-    return { status: 200, json: oll, text: "{}" };
+    if (p.url.includes("/api/v0/models")) return lm ? { json: { data: [{ id: "m1", loaded_context_length: 4096, max_context_length: 32768 }] } } : null;
+    return { json: oll };
   };
 
   it("liest die Kontextlaenge von LM Studio", async () => {
-    expect(await fetchModelContext({ url: "http://localhost:1234" }, "m1", http([], 200, {}))).toMatchObject({ loadedContextLength: 4096, maxContextLength: 32768 });
+    expect(await fetchEndpointContext("http://localhost:1234", "m1", undefined, { fetch: http([], true, {}), timers })).toMatchObject({ loadedContextLength: 4096, maxContextLength: 32768 });
   });
 
   it("normalisiert einen /v1-Endpunkt", async () => {
     const urls: string[] = [];
-    await fetchModelContext({ url: "http://localhost:1234/v1" }, "m1", async (p) => { urls.push(p.url); return { status: 404, json: {}, text: "" }; });
+    await fetchEndpointContext("http://localhost:1234/v1", "m1", undefined, { fetch: async (p) => { urls.push(p.url); return null; }, timers });
     expect(urls[0]).toBe("http://localhost:1234/api/v0/models");
   });
 
   it("sendet den Schluessel auf BEIDEN Wegen — LM Studio muss scheitern, damit der Ollama-Weg mitgemessen wird", async () => {
     const seen: (Record<string, string> | undefined)[] = [];
-    await fetchModelContext({ url: "https://openrouter.ai/api", apiKey: "sk-x" }, "m1", http(seen, 404, { model_info: { context_length: 1234 } }));
+    await fetchEndpointContext("https://openrouter.ai/api", "m1", "sk-x", { fetch: http(seen, false, { model_info: { context_length: 1234 } }), timers });
     expect(seen.length).toBe(2);
     expect(seen[0]).toMatchObject({ Authorization: "Bearer sk-x" });
-    expect(seen[1]).toMatchObject({ Authorization: "Bearer sk-x" });
+    expect(seen[1]).toMatchObject({ Authorization: "Bearer sk-x", "Content-Type": "application/json" });
   });
 
   it("ohne Schluessel kein Authorization-Header — lokale Server bleiben unberuehrt", async () => {
     const seen: (Record<string, string> | undefined)[] = [];
-    await fetchModelContext({ url: "http://localhost:1234" }, "m1", http(seen, 200, {}));
+    await fetchEndpointContext("http://localhost:1234", "m1", undefined, { fetch: http(seen, true, {}), timers });
     expect(seen[0]).not.toHaveProperty("Authorization");
   });
 
   it("null, wenn nichts antwortet — wirft nie", async () => {
-    expect(await fetchModelContext({ url: "http://x" }, "m1", async () => { throw new Error("down"); })).toBeNull();
+    expect(await fetchEndpointContext("http://x", "m1", undefined, { fetch: async () => { throw new Error("down"); }, timers })).toBeNull();
+  });
+
+  it("ein Server, der die Verbindung annimmt und nie antwortet, haelt nicht auf: 5 s je Versuch (Welle 18)", async () => {
+    const calls: string[] = [];
+    const fired: number[] = [];
+    const instant = { setTimeout: (fn: () => void, ms: number) => { fired.push(ms); queueMicrotask(fn); return 1; }, clearTimeout: () => {} };
+    const hanging: CapabilityFetch = (p) => { calls.push(p.url); return new Promise(() => {}); };
+    expect(await fetchEndpointContext("http://x", "m1", undefined, { fetch: hanging, timers: instant })).toBeNull();
+    expect(calls).toEqual(["http://x/api/v0/models", "http://x/api/show"]);
+    expect(fired).toEqual([5000, 5000]);
   });
 });
