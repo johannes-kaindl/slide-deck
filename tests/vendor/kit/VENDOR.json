@@ -1,9 +1,9 @@
 {
   "source": "obsidian-kit",
-  "version": "0.53.0",
-  "sha": "792d3f8",
+  "version": "0.56.0",
+  "sha": "8c1be18",
   "vendored": "kit-css.ts",
-  "code_kit_version": "0.21.0",
-  "code_kit_sha": "914e925",
+  "code_kit_version": "0.23.0",
+  "code_kit_sha": "5d9c0d6",
   "code_kit_vendored": "remote-sources.json, happy-dom-blind.json"
 }

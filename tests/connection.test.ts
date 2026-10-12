@@ -145,7 +145,7 @@ describe("Schwaerzung (Verhaltenswechsel mit dem Kit-Chat-Client)", () => {
       return `Folie: ${/\[redacted-[a-z]+-\d+\]/.exec(content)?.[0] ?? "KEIN-PLATZHALTER"}`;
     });
     const opts = deckConnectionOptions({ app: fakeApp().app, pluginId: "slide-deck", settings: () => ({ ...structuredClone(DEFAULT_SETTINGS) }), save: async () => {}, transports: { http: transport, fallback: "none" } });
-    const llm = createLlmConnection({ ...opts, probe: async () => true, backendOf: async () => "lmstudio" });
+    const llm = createLlmConnection({ ...opts, probe: async () => true, backendOf: async () => "lmstudio" as const });
     const r = await llm.complete({ messages: [{ role: "user", content: SOURCE }] });
     const wire = JSON.stringify(sent[0]!.body);
     expect(wire).not.toContain(TOKEN);
@@ -181,7 +181,9 @@ describe("persist: Feldzuordnung", () => {
     const settings: SlideDeckSettings = structuredClone(DEFAULT_SETTINGS);
     let atSave: SlideDeckSettings | null = null;
     const opts = deckConnectionOptions({ app: fakeApp().app, pluginId: "slide-deck", settings: () => settings, save: async () => { atSave = structuredClone(settings); } });
-    const p = opts.persist({ endpoints: [{ url: "http://x:1" }], choice: { endpointId: "e1" }, model: "m1" });
+    // `model` ist seit obsidian-kit 0.54.0 kein Feld von persist mehr; ueber eine Variable uebergeben, damit der Test weiter belegt, dass ein Altwert nichts schreibt.
+    const withModel = { endpoints: [{ url: "http://x:1" }], choice: { endpointId: "e1" }, model: "m1" };
+    const p = opts.persist(withModel);
     expect("llmModel" in settings).toBe(false); // Welle 17: kein globales Modell mehr
     expect(settings.llmEndpoints).toEqual([{ url: "http://x:1" }]);
     expect(settings.choice).toEqual({ endpointId: "e1" });
