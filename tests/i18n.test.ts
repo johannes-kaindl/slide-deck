@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { pickLang, setLang, t, STRINGS_EN, STRINGS_DE } from "../src/i18n";
-import { statusKindKey } from "../src/llm/ai-settings-model";
+import { endpointStatusText } from "../src/vendor/kit-obsidian/endpoint-status-text";
 import type { EndpointStatusKind } from "../src/vendor/kit/endpoint_diagnostics";
 import type { WarningSeverity } from "../src/vendor/deck-core/pure/constraints/engine";
 
@@ -61,10 +61,12 @@ describe("AI settings i18n coverage", () => {
   };
   const KINDS = Object.keys(KIND_SET) as EndpointStatusKind[];
 
-  it.each(KINDS)("has EN+DE for status kind %s", (kind) => {
-    const key = statusKindKey(kind);
-    setLang("en"); expect(t(key)).not.toBe(key);
-    setLang("de"); expect(t(key)).not.toBe(key);
+  it.each(KINDS)("the kit has a text in EN and DE for status kind %s", (kind) => {
+    const en = endpointStatusText(kind, { lang: "en" });
+    const de = endpointStatusText(kind, { lang: "de" });
+    expect(en.length).toBeGreaterThan(0);
+    expect(de.length).toBeGreaterThan(0);
+    if (kind !== "ok" && kind !== "unknown") expect(de).not.toBe(en);
   });
 });
 

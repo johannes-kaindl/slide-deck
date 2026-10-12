@@ -6,10 +6,11 @@ import type { EndpointConfig } from "./vendor/kit/endpoint_config";
 import { frontmatterRange } from "./vendor/deck-core/pure/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./vendor/deck-core/pure/llm/deck-prompt";
 import { estimateTokens, contextOverflow } from "./llm/model-info";
-import { modelFieldMode, statusLabelParts, initialModelSelection } from "./llm/ai-settings-model";
+import { modelFieldMode, initialModelSelection } from "./llm/ai-settings-model";
 import { paintStatus } from "./ai-settings-ui";
 import type { GenState, GenerationHandle } from "./generate-deck";
-import { t } from "./i18n";
+import { getLang, t } from "./i18n";
+import { endpointStatusText } from "./vendor/kit-obsidian/endpoint-status-text";
 import { buildStreamArea, type StreamArea } from "./vendor/kit-obsidian/stream-area";
 import type { HubPanel } from "./vendor/kit-obsidian/hub";
 import type { HubTabId } from "./hub-view";
@@ -157,7 +158,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
       const { models, reachable } = await this.plugin.llm.models();
       if (this.closed) return;
       const kind = reachable ? "ok" : "unknown";
-      const label = t(statusLabelParts(kind).key);
+      const label = endpointStatusText(kind, { lang: getLang() });
       paintStatus(pingEl, kind, label);
       pingLabelEl.setText(`${this.endpoint.url} — ${label}`);
       if (modelFieldMode(models) === "dropdown") {

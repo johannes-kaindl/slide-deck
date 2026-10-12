@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   modelFieldMode, initialModelSelection,
-  statusKindKey, statusLabelParts,
 } from "../../src/llm/ai-settings-model";
 
 describe("modelFieldMode", () => {
@@ -29,26 +28,4 @@ describe("initialModelSelection", () => {
   it("keeps the saved model as the sole option when the server list is empty", () => {
     expect(initialModelSelection([], "custom-model")).toEqual({ options: ["custom-model"], initial: "custom-model" });
   });
-});
-
-describe("i18n key mappers", () => {
-  it("maps a status kind to its key", () => {
-    expect(statusKindKey("not-an-llm-api")).toBe("deck.settings.endpoint.status.not-an-llm-api");
-  });
-});
-
-describe("statusLabelParts", () => {
-  it("adds the raw detail as a suffix only for unknown WITH raw", () => {
-    expect(statusLabelParts("unknown", "weird failure")).toEqual({
-      key: "deck.settings.endpoint.status.unknown", suffix: "weird failure",
-    });
-  });
-  it("drops the suffix for unknown WITHOUT raw", () => {
-    expect(statusLabelParts("unknown", undefined)).toEqual({ key: "deck.settings.endpoint.status.unknown" });
-  });
-  it.each(["ok", "refused", "unknown-host", "timeout", "not-an-llm-api"] as const)(
-    "never carries a suffix for kind %s, even when raw is set", (kind) => {
-      expect(statusLabelParts(kind, "should be ignored")).toEqual({ key: statusKindKey(kind) });
-    },
-  );
 });

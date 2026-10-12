@@ -1,6 +1,5 @@
 // Pure state logic of the AI settings UI: obsidian-free, DOM-free, node-testable and pinned by
 // check-core-purity. The render layer (ai-settings-ui.ts) calls these and stays thin.
-import type { EndpointStatusKind } from "../vendor/kit/endpoint_diagnostics";
 
 /** Mode of the model field: `dropdown` as soon as any models were loaded, else `freetext`
  *  (offline / not yet probed). A saved model missing from the list does NOT hide the dropdown —
@@ -19,22 +18,4 @@ export function initialModelSelection(models: string[], saved: string): ModelSel
   const options = saved && !models.includes(saved) ? [saved, ...models] : models;
   const initial = saved && options.includes(saved) ? saved : (options[0] ?? "");
   return { options, initial };
-}
-
-/** i18n key for an endpoint status kind (the render layer calls `t(key)`).
- *  Kit's own `klartext` is hardcoded German — never surface it; map via `kind`. */
-export function statusKindKey(kind: EndpointStatusKind): string {
-  return `deck.settings.endpoint.status.${kind}`;
-}
-
-export interface StatusLabelParts { key: string; suffix?: string }
-
-/** Decomposes a probed status into the i18n key + optional raw-detail suffix, so both the
- *  settings endpoint editor and the generate-deck modal render the identical rule instead of
- *  duplicating it. `raw` (the kit's untranslated detail message) is only ever appended for
- *  `kind === "unknown"` — every other kind has a stable, fully translated message and must
- *  never leak kit-internal text, even if a caller happened to pass a `raw` along with it. */
-export function statusLabelParts(kind: EndpointStatusKind, raw?: string): StatusLabelParts {
-  const key = statusKindKey(kind);
-  return kind === "unknown" && raw ? { key, suffix: raw } : { key };
 }
