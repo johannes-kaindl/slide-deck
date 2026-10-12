@@ -293,6 +293,10 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "G3 Fehlerkoerper: HTTP 200 + Fehler-Body auf dem Chat-Weg wird zur Meldung (umgeschrieben)",
     "G1 Streaming: Deck aus einer Notiz, Text kommt in mehreren Stuecken",
     "G2 Abbruch: Stop beendet die Generierung zuegig, es wird nichts geschrieben",
+    "G4 Folge-Regel: Hochscrollen mitten im Strom des Erzeugen-Panels wird respektiert",
+    "G5 Kontrolle: ohne Stoerung folgt der Strom des Erzeugen-Panels bis zum Ende",
+    "G6 Denkblock live: der Denk-Text steht waehrend des Stroms offen und waechst",
+    "G7 Kontrolle mit Absatzwechseln: der Strom folgt auch, wenn ein Stueck mehrere Zeilen auf einmal bringt",
   ],
   anfrage: [
     "R1 Abschnitt „Anfrage“ klappt auf und wieder zu",
@@ -1749,6 +1753,113 @@ const MIT_MODELL = parseArgs(process.argv.slice(2)).has("with-model");
 const G_ENDPOINT = process.env.SD_SMOKE_ENDPOINT ?? "http://127.0.0.1:1234";
 const G_MODEL = process.env.SD_SMOKE_MODEL ?? "google/gemma-4-e4b";
 const G_NOTE = "smoke-chat-g1.md";
+
+/** Strom-Probe im Erzeugen-Panel (G4–G6). Der Weg ist der des Nutzers: Quellnotiz aktiv, Befehl `generate-deck` (Hub-Tab „generate“),
+ *  Klick auf „Erzeugen“, Antwort aus dem zentralen LLM-Stub in tokengrossen Stuecken (8 Zeichen, 20 ms). Der scrollende Rumpf ist
+ *  `.okit-stream-body`, begrenzt durch `.sd-gen-stream { max-height: 320px }`. Das Panel setzt je Schnappschuss
+ *  `setReasoning(reasoning.slice(-4000))` und `setTail(content.slice(-1200))`: der Tail waechst also nur bis 1 200 Zeichen, danach
+ *  wandert das Fenster — deshalb zaehlt hier jeder geaenderte Tail-Text als Stand, nicht das Wachstum. */
+const STREAM_QUELLE = "smoke-stream-quelle.md";
+const STREAM_REASONING = "Ich plane die Folien: Titel, Ablauf, Ausruestung, Abschluss. ".repeat(7);
+/** `leerzeilen: false` — nur einfache Zeilenumbrueche: ein 8-Zeichen-Stueck waechst um hoechstens eine Zeile (< 40 px), der Massstab
+ *  fuer „folgt“ ohne Stueckgroesse. `leerzeilen: true` — Absatzwechsel (`\n\n`, `\n\n---\n\n`) wie in jedem echten Deck; ein
+ *  Stueck mit zwei Zeilenumbruechen waechst um mehr als die Folge-Schwelle von 40 px. */
+const streamAntwort = (leerzeilen: boolean): string => {
+  const kopf = (i: number): string => (leerzeilen ? `# Folie ${i + 1}\n\n` : `# Folie ${i + 1}\n`);
+  const folien = Array.from({ length: 12 }, (_, i) => `${kopf(i)}- Erster Punkt der Folie ${i + 1}\n- Zweiter Punkt der Folie ${i + 1}\n- Dritter Punkt der Folie ${i + 1}`);
+  return `---\ntheme: kami\n---\n${folien.join(leerzeilen ? "\n\n---\n\n" : "\n---\n")}\n`;
+};
+interface StreamZeile { tail: string; rl: number; st: number; overflow: number; gap: number; open: boolean; vis: boolean; gestoert: boolean }
+interface StreamLauf { zeilen: StreamZeile[]; gestoert: { overflow: number; st0: number; idx: number } | null; maxOverflow: number; ende: string }
+
+async function streamLauf(cdp: Cdp, stoere: boolean, mitDenken: boolean, leerzeilen = false): Promise<StreamLauf | null> {
+  erzeugtePfade.push(STREAM_QUELLE, "smoke-stream-quelle — Deck.md");
+  const stub = await startLlmStub({ models: ["google/gemma-4-e4b"], takt: 20, laenge: 8, nachlaufMs: 160 });
+  stub.antworten([{ text: streamAntwort(leerzeilen), ...(mitDenken ? { reasoning: STREAM_REASONING } : {}) }]);
+  const vorher = await cdp.evaluate<string>(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; return JSON.stringify(p.settings.llmEndpoints);`);
+  try {
+    await cdp.evaluate(`
+      const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      p.settings.llmEndpoints = [{ url: ${JSON.stringify(stub.url)}, model: "google/gemma-4-e4b" }];
+      p.llm.invalidate();
+      const alt = app.vault.getAbstractFileByPath("smoke-stream-quelle — Deck.md");
+      if (alt) await app.vault.delete(alt);
+      const q = app.vault.getAbstractFileByPath(${JSON.stringify(STREAM_QUELLE)});
+      const text = "# Wandern\\n\\nEine Tagestour braucht Wasser, feste Schuhe und eine Karte.";
+      if (q) await app.vault.modify(q, text); else await app.vault.create(${JSON.stringify(STREAM_QUELLE)}, text);
+      return true;
+    `);
+    if (!(await openExisting(cdp, STREAM_QUELLE, "source"))) return null;
+    await cdp.evaluate(`
+      await app.commands.executeCommandById("${PLUGIN_ID}:generate-deck");
+      const rechts = app.workspace.rightSplit;
+      if (rechts) { if (rechts.collapsed) rechts.expand(); if (typeof rechts.setSize === "function") rechts.setSize(640); }
+      return true;
+    `);
+    const bereit = await pollUntil<boolean>(cdp, `
+      const b = document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta");
+      return b && !b.disabled ? true : null;
+    `, 20_000, 300);
+    if (!bereit) return null;
+    const armed = await cdp.evaluate<boolean>(`
+      const view = document.querySelector(".sd-gen-view");
+      view.querySelector(".sd-gen-cta button.mod-cta").click();
+      return true;
+    `);
+    if (!armed) return null;
+    const da = await pollUntil<boolean>(cdp, `return document.querySelector(".sd-gen-view .sd-gen-stream .okit-stream-body") ? true : null;`, 15_000, 50);
+    if (!da) return null;
+    await cdp.evaluate(`
+      const area = document.querySelector(".sd-gen-view .sd-gen-stream");
+      const body = area.querySelector(".okit-stream-body");
+      const tail = area.querySelector(".okit-stream-tail");
+      const S = { zeilen: [], gestoert: null, maxOverflow: 0 };
+      window.__sdStream = S;
+      window.__sdStreamObs?.disconnect();
+      let prevTail = null;
+      let prevRl = -1;
+      window.__sdStreamObs = new MutationObserver(() => {
+        const t = tail.textContent ?? "";
+        const pre = area.querySelector(".okit-stream-reasoning > pre");
+        const det = area.querySelector(".okit-stream-reasoning");
+        const rl = pre ? (pre.textContent ?? "").length : 0;
+        if (t === prevTail && rl === prevRl) return;
+        const tailNeu = t !== prevTail;
+        prevTail = t; prevRl = rl;
+        const overflow = body.scrollHeight - body.clientHeight;
+        S.maxOverflow = Math.max(S.maxOverflow, overflow);
+        const z = { tail: tailNeu ? t.slice(-20) : "", rl, st: body.scrollTop, overflow, gap: body.scrollHeight - body.scrollTop - body.clientHeight,
+          open: det ? det.open : false, vis: pre ? pre.getBoundingClientRect().height > 0 : false, gestoert: false };
+        if (${stoere ? "true" : "false"} && !S.gestoert && tailNeu && overflow >= 80) {
+          body.scrollTop = 0;
+          S.gestoert = { overflow, st0: body.scrollTop, idx: S.zeilen.length };
+          z.gestoert = true; z.st = body.scrollTop;
+        }
+        S.zeilen.push(z);
+      });
+      window.__sdStreamObs.observe(area, { childList: true, characterData: true, subtree: true });
+      return true;
+    `);
+    const ende = await pollUntil<string>(cdp, `
+      const l = app.workspace.getLeavesOfType(${JSON.stringify(VIEW_TYPE)})[0];
+      const running = document.querySelector(".sd-gen-view .sd-gen-running");
+      return running ? null : "fertig";
+    `, 90_000, 400);
+    const out = await cdp.evaluate<{ zeilen: StreamZeile[]; gestoert: StreamLauf["gestoert"]; maxOverflow: number }>(
+      `window.__sdStreamObs?.disconnect(); return window.__sdStream ?? { zeilen: [], gestoert: null, maxOverflow: 0 };`,
+    );
+    return { ...out, ende: ende ?? "nicht beendet" };
+  } finally {
+    await cdp.evaluate(`
+      const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      p.settings.llmEndpoints = JSON.parse(${JSON.stringify(vorher)});
+      p.llm.invalidate();
+      return true;
+    `).catch(() => undefined);
+    await stub.stop();
+  }
+}
+
 const chatSektion: Section = {
   key: "chat",
   title: "G · Chat-Weg (Fehlerkoerper; mit --with-model Streaming und Abbruch gegen einen echten Endpunkt)",
@@ -1794,6 +1905,58 @@ const chatSektion: Section = {
         g3 ? `${g3.ergebnis.status}/${g3.ergebnis.kind} · Meldung: "${g3.ergebnis.error}" · POSTs: ${fehler.bodies.length}` : "nach 60 s nicht beendet");
     } finally {
       await fehler.close();
+    }
+
+
+    // G4–G6: der Strom im Erzeugen-Panel (kein Modell noetig: der zentrale Stub). Gueltigkeit je Punkt: Ueberlauf >= 80 px zur
+    // Stoerungszeit (Folge-Schwelle 40 px, `stream-area.ts`, plus 40 px Spielraum), mindestens zwei geaenderte Staende danach.
+    const G5 = "G5 Kontrolle: ohne Stoerung folgt der Strom des Erzeugen-Panels bis zum Ende";
+    const G6 = "G6 Denkblock live: der Denk-Text steht waehrend des Stroms offen und waechst";
+    const G7 = "G7 Kontrolle mit Absatzwechseln: der Strom folgt auch, wenn ein Stueck mehrere Zeilen auf einmal bringt";
+    const folgt = (name: string, lauf: StreamLauf | null): void => {
+      if (lauf === null) { bilanz.unmeasured(name, "das Erzeugen-Panel kam nicht zustande (Quellnotiz, Befehl generate-deck oder Klick)"); return; }
+      const g = lauf.zeilen.filter((z) => z.tail !== "" && z.overflow >= 80);
+      if (g.length < 2) {
+        bilanz.unmeasured(name, `der Ueberlauf erreichte 80 px nicht oft genug (hoechstens ${Math.round(lauf.maxOverflow)} px, ${g.length} Staende, Ende: ${lauf.ende})`);
+        return;
+      }
+      const worst = Math.max(...g.map((z) => z.gap));
+      record(name, worst < 40, `${g.length} Staende mit Ueberlauf >= 80 px (hoechstens ${Math.round(lauf.maxOverflow)} px) · groesster Abstand zum Ende ${Math.round(worst)} px (erwartet < 40)`);
+    };
+    // G5: tokengrosse Stuecke, nur einfache Zeilenumbrueche — der Massstab fuer „folgt“, ohne dass ein Stueck die Folge-Schwelle springt.
+    folgt(G5, await streamLauf(cdp, false, false));
+    // G6: derselbe Strom MIT Denk-Text: der Denk-Text steht offen, ist sichtbar und waechst.
+    const mitDenken = await streamLauf(cdp, false, true);
+    if (mitDenken === null) {
+      bilanz.unmeasured(G6, "das Erzeugen-Panel kam nicht zustande (Quellnotiz, Befehl generate-deck oder Klick)");
+    } else {
+      const rz = mitDenken.zeilen.filter((z) => z.rl > 0);
+      const verschieden = new Set(rz.map((z) => z.rl)).size;
+      if (verschieden < 2) {
+        bilanz.unmeasured(G6, `der Denk-Text wuchs hoechstens ${verschieden}-mal`);
+      } else {
+        const offen = rz.every((z) => z.open);
+        const sichtbar = rz.every((z) => z.vis);
+        record(G6, offen && sichtbar, `${verschieden} Staende (${rz[0]?.rl}→${rz[rz.length - 1]?.rl} Zeichen) · offen: ${offen} · sichtbar: ${sichtbar}`);
+      }
+    }
+    // G7: Absatzwechsel wie in einem echten Deck (`\\n\\n` in einem Stueck, ueber 40 px Zuwachs). Mit obsidian-kit < 0.59.0 misst `followTail` „unten?“
+    // erst NACH dem Wachsen: der erste Absatzwechsel beendet das Folgen. Rot auf altem Pin, gruen ab 0.59.0.
+    folgt(G7, await streamLauf(cdp, false, false, true));
+    const gestoert = await streamLauf(cdp, true, false);
+    if (gestoert === null) {
+      bilanz.unmeasured("G4 Folge-Regel: Hochscrollen mitten im Strom des Erzeugen-Panels wird respektiert", "das Erzeugen-Panel kam nicht zustande");
+    } else if (gestoert.gestoert === null) {
+      bilanz.unmeasured("G4 Folge-Regel: Hochscrollen mitten im Strom des Erzeugen-Panels wird respektiert", `der Ueberlauf erreichte nie 80 px (hoechstens ${Math.round(gestoert.maxOverflow)} px) — keine Stoerung ausgeloest`);
+    } else {
+      const danach = gestoert.zeilen.slice(gestoert.gestoert.idx + 1).filter((z) => z.tail !== "");
+      if (danach.length < 2) {
+        bilanz.unmeasured("G4 Folge-Regel: Hochscrollen mitten im Strom des Erzeugen-Panels wird respektiert", `nach der Stoerung kamen nur ${danach.length} geaenderte Staende (mindestens 2 noetig)`);
+      } else {
+        const worst = Math.max(...danach.map((z) => z.st - gestoert.gestoert!.st0));
+        record("G4 Folge-Regel: Hochscrollen mitten im Strom des Erzeugen-Panels wird respektiert", worst <= 4,
+          `Stoerung bei Ueberlauf ${Math.round(gestoert.gestoert.overflow)} px, scrollTop ${gestoert.gestoert.st0} · ${danach.length} Staende danach, groesste Abweichung des scrollTop ${Math.round(worst)} px (erwartet <= 4)`);
+      }
     }
 
     if (!MIT_MODELL) {
