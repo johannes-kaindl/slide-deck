@@ -6,6 +6,18 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **The endpoint list shows the context length of each row's model** (obsidian-kit 0.56.0): under a reachable row with a model it reads "Context: loaded N · max M tokens" (only "max M" when the model is not loaded, nothing when the server does not report a number), in English and German. It comes back after the *Model* row went away in 0.16.0; the lookup uses the row's API key and gives up after 5 seconds per attempt.
+- **The empty option in the model dropdown of an endpoint row reads "— (server picks)"** (German: "— (Server wählt)") instead of "global model (none set)", which was a leftover of the global model removed in 0.16.0. Choosing it clears the row's model and the server uses the one it has loaded.
+
+### Changed
+
+- **The context-length check in the generation dialog times out after 5 seconds per attempt** (code-kit 0.23.0). Before, a server that accepted the connection and never answered held the warning line open indefinitely. A 2xx answer counts now, not only exactly 200.
+- **Status tooltips of an endpoint use the kit's wording** (obsidian-kit 0.56.0). English: "Timeout — network unreachable …" instead of "Timed out — …", and "Responds, but is not an OpenAI-compatible endpoint — wrong path/service?" instead of "Answers, but … wrong path or service?". German is unchanged.
+- **Long or degenerate answers no longer slow the streaming area down** (obsidian-kit 0.54.0/0.55.0): the guard that keeps remote images out of the answer checks only what changed instead of the whole answer on every update (100 KB of streamed text: 3.2 s → 1.3 s), and a few more loading cases (`video poster`, SVG `feImage`) are caught; closing the area while a block is still rendering no longer cuts off its last pass.
+- **A model answer made of tens of thousands of unclosed `<think>` tags no longer freezes the plugin** (code-kit 0.22.0): the removal of thinking blocks in the response check is linear now (50 000 tags: 5.0 s → under 1 ms).
+
 ## [0.16.0] — 2026-10-11
 
 ### Changed

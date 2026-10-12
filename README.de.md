@@ -251,8 +251,7 @@ richtest.
 
 Ist das Plugin **LLM Endpoint Manager** installiert, kommen die Endpunkte (samt Schlüsseln) stattdessen von ihm: Der Einstellungs-Tab bietet dann eine Endpunkt- und Modellwahl, und deine lokale Liste bleibt als Rückfall erhalten, wenn der Manager aus ist.
 
-- **Erreichbarkeits-Pings und Modell-Listen** werden abgefragt, wenn du den Erzeugen-Dialog oder
-  den Einstellungs-Tab öffnest. Das sind automatische Requests an die konfigurierten Endpoints.
+- **Erreichbarkeits-Pings, Modell-Listen und die Kontextlänge des Modells** werden abgefragt, wenn du den Erzeugen-Dialog oder den Einstellungs-Tab öffnest (der Einstellungs-Tab zeigt die Kontextlänge unter jeder Endpunkt-Zeile mit Modell). Das sind automatische Requests an die konfigurierten Endpoints.
 - **Notiz-Inhalte werden nur beim Klick auf „Erzeugen" gesendet.** Geheimnisse im Text (private Schlüssel, Bearer-Token, API-Schlüssel) werden auf dem Weg hinaus durch Platzhalter ersetzt; das erzeugte Deck bekommt die Originale zurück.
 - Keine Telemetrie, keine Analyse, keine Drittanbieter.
 

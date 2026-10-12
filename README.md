@@ -266,8 +266,7 @@ API keys are **not** stored in the plugin's `data.json`: they go into Obsidian's
 
 If the **LLM Endpoint Manager** plugin is installed, the endpoints (and their keys) come from it instead: the settings tab then offers an endpoint and model choice, and your local list stays as a fallback for when the manager is off.
 
-- **Reachability pings and model lists** are requested when you open the generation dialog or
-  the settings tab. These are automatic requests to the configured endpoint(s).
+- **Reachability pings, model lists and the model's context length** are requested when you open the generation dialog or the settings tab (the settings tab shows the context length under each endpoint row that has a model). These are automatic requests to the configured endpoint(s).
 - **Note contents are sent only when you press "Generate".** Secrets in the text (private keys, bearer tokens, API keys) are replaced by placeholders on the way out; the generated deck gets the originals back.
 - No telemetry, no analytics, no third-party services.
 

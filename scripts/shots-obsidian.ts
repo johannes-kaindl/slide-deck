@@ -196,6 +196,28 @@ const SHOTS: Record<string, (cdp: Cdp) => Promise<string>> = {
 // lokalisiert) — deshalb ueber die Sache waehlen, nicht ueber den Titel: das Fenster
 // OHNE Workspace ist das Einstellungsfenster.
 async function settingsShot(workspace: Cdp): Promise<string> {
+  // Die Kontextzeile (obsidian-kit 0.56.0) steht nur unter einer Zeile MIT Modell. Fuer die Aufnahme bekommt die
+  // erste Zeile ohne Modell das erste GELADENE Modell ihres Servers; danach wird der Vorzustand zurueckgeschrieben
+  // (ein Rezept setzt seinen Zustand VOR und NACH dem Lauf zurueck). Ohne geladenes Modell bleibt das Bild ohne Zeile.
+  // Ein offenes Einstellungsfenster (Rest eines abgebrochenen Laufs) haelt seinen alten Aufbau — erst schliessen.
+  await workspace.evaluate("app.setting.close(); return true;");
+  await new Promise((r) => setTimeout(r, 500));
+  const vorher = await workspace.evaluate<string | null>(`
+    const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+    const rows = plugin.settings.llmEndpoints;
+    const vorher = JSON.stringify(rows);
+    const row = rows.find((r) => r && r.url && !r.model);
+    if (!row) return null;
+    try {
+      const base = row.url.replace(new RegExp("/v1/?$"), "").replace(new RegExp("/$"), "");
+      const res = await fetch(base + "/api/v0/models");
+      const geladen = (await res.json()).data.find((m) => m.state === "loaded");
+      if (!geladen) return null;
+      row.model = geladen.id;
+    } catch { return null; }
+    plugin.llm.invalidate();
+    return vorher;
+  `);
   await workspace.evaluate(`
     app.setting.open();
     app.setting.openTabById(${JSON.stringify(PLUGIN_ID)});
@@ -220,6 +242,14 @@ async function settingsShot(workspace: Cdp): Promise<string> {
   const hinweis = await writeShot(settings, "settings.png", png, { ...SHOT_OPTS, thumb: true });
   if (settings !== workspace) settings.close();
   await workspace.evaluate("app.setting.close();");
+  if (vorher !== null) {
+    await workspace.evaluate(`
+      const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      plugin.settings.llmEndpoints = JSON.parse(${JSON.stringify(vorher)});
+      plugin.llm.invalidate();
+      return true;
+    `);
+  }
   return hinweis;
 }
 

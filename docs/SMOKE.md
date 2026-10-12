@@ -49,6 +49,7 @@ nehmen, sonst blockt der Guard den ersten Treiber-Aufruf.
 | B5 | KI-Settings-Blöcke stapeln, statt eine Flex-Row zu werden | `display` der `.sd-settings-host`-Elemente **und** die Geometrie ihrer Kinder (verschiedene `top`, gleiche linke Kante) — **mit** Gegenkontrolle, dass ein gewöhnliches `.setting-item` in dieser Obsidian-Version überhaupt `display:flex` ist |
 | C1 | Themes-Ordner ist im Explorer ausgeblendet | `display: none` am `.nav-folder-title[data-path=…]` — erst Existenz belegen, dann Eigenschaft |
 | C2 | Ausschalten macht ihn wieder sichtbar | dieselbe Messung, invertiert |
+| C3 | Bei fokussiertem Pop-out liegt das Blatt im Hauptfenster (`rootSplit.doc`), nicht im Pop-out | Pop-out öffnen und fokussieren, Plugin aus und ein; Gegenprobe mit `activeDocument` → rot (Hauptfenster 0 Blatt, Pop-out 1 Blatt) |
 | R1 | Abschnitt „Anfrage“ klappt auf und wieder zu | Wechsel des `is-collapsed`-Zustands in beide Richtungen — der Ausgangszustand lebt im Prozess und ist nicht vorhersagbar |
 | R2 | Wert überschreiben, dann zurücksetzen — der Abschnitt bleibt aufgeklappt | **zwei** Edits hintereinander (Kit-Einklapp-Fehler des Piloten war mit einem Edit unsichtbar) |
 | R3 | Zeile „Denk-Test“ folgt dem Anfrage-Abschnitt | Reihenfolge im Dokument, Knopf, **kein** Schalter (umgeschrieben mit dem Verbindungs-Tausch: das Kit zeichnet Quelle, Liste und Anfrage in einem Block, Modell und Budget stehen davor) |
@@ -340,3 +341,4 @@ Der praktische Merksatz für den nächsten Ausbau: **eine neue Zusage von `deck-
 fertig, wenn sie einen Prüfpunkt hat, dessen Gegenprobe im selben Punkt sitzt.** Zwei
 verschiedene Zahlen im Protokoll — nicht eine grüne — sind der Beleg dafür, dass gemessen
 wurde.
+| 2026-10-12 | 1.14.4 | **54/54 grün** nach Welle 18 (obsidian-kit 0.56.1, code-kit 0.23.0; C3 neu); Baseline davor 53/53, 3 übersprungen (PDF modal, G1/G2 ohne `--with-model`). Mit `--with-model` und geladenem Modell (`SD_SMOKE_MODEL=qwen/qwen3.6-27b`): G1 und G2 grün; mit einem nicht geladenen Modell scheiterten beide, auch am Stand 0.16.0 (LM Studio: „Failed to load model … Operation canceled“) — Umgebung, keine Regression | Mutation C3: `activeDocument` statt `rootSplit.doc` → C3 rot, zurück → grün. Zweitinstanz Port 9385, frischer Prozess je Lauf |
