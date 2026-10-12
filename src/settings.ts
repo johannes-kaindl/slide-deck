@@ -12,7 +12,7 @@ import { githubHelpUrls, helpSettingDefinition } from "./vendor/kit-obsidian/hel
 import { writeClipboard } from "./vendor/kit/clipboard";
 import { mergeSettings } from "./vendor/kit/settings";
 import { fillMissingRowModels, migrateEndpointList, type EndpointConfig } from "./vendor/kit/endpoint_config";
-import type { EndpointChoice } from "./vendor/kit/endpoint-source";
+import { sanitizeChoice, type EndpointChoice } from "./vendor/kit/endpoint-source";
 import { renderSettingDefinitions, settingBodyHost, refreshSettingsTab, installTabRefreshOnOpen } from "./vendor/kit-obsidian/settings_walker";
 import { IMAGE_FUNCTIONS, DEFAULT_SUFFIXES, type ImageFunction } from "./image/functions";
 
@@ -48,16 +48,6 @@ export const DEFAULT_SETTINGS: SlideDeckSettings = {
   llmEndpoints: [{ url: "http://localhost:1234" }], choice: {}, llmMaxTokens: 8192, request: structuredClone(DEFAULT_REQUEST_SETTINGS),
   imageSuffixes: {},
 };
-
-/** `choice` kommt aus einer data.json und ist damit untrusted: nur nicht-leere Strings bleiben. */
-function sanitizeChoice(raw: unknown): EndpointChoice {
-  if (raw === null || typeof raw !== "object") return {};
-  const { endpointId, model } = raw as EndpointChoice;
-  return {
-    ...(typeof endpointId === "string" && endpointId ? { endpointId } : {}),
-    ...(typeof model === "string" && model ? { model } : {}),
-  };
-}
 
 /** Merge persisted data over defaults, then migrate `llmEndpoints`: pre-0.7 data.json files
  *  carry a bare `string[]`, current ones an `EndpointConfig[]` — mergeSettings is a shallow,

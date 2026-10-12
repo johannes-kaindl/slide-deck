@@ -27,9 +27,7 @@ Contributions of all sizes are welcome: bug reports, fixes, docs, and features. 
 
 - Releases are tagged with [SemVer](https://semver.org/) **without** a `v` prefix — e.g. `0.1.0`, not `v0.1.0`.
 - [Forgejo](https://git.jkaindl.de/jkaindl/slide-deck) is the canonical, primary remote (`origin`).
-- **There is no GitHub mirror any more** (removed 2026-09-06, along with the release CI that
-  ran there). Forgejo is the only remote — open your contributions there. Releases are
-  published as Forgejo releases and listed in a subscribable catalog; see the README.
+- GitHub carries the releases again (since 2026-09-24): the release script pushes the branch and the tag to `github` (`git@github.com:johannes-kaindl/slide-deck.git`), and the tag triggers the release workflow. It is not a place for contributions — open those on Forgejo.
 
 ## Quality gate
 
@@ -50,7 +48,7 @@ All user-facing strings (UI labels, commands, notices) go through the i18n modul
 
 ## Where to work
 
-- File issues and open pull requests on **Forgejo**: <https://git.jkaindl.de/jkaindl/slide-deck>. (GitHub is a mirror, not the place for contributions.)
+- File issues and open pull requests on **Forgejo**: <https://git.jkaindl.de/jkaindl/slide-deck>. (GitHub only carries the releases, not the place for contributions.)
 - For larger features, work through **brainstorm → spec → plan → TDD**, and keep the resulting artefacts out of the repository (the maintainer keeps them in a private project folder; for a contribution, put the design in the pull request description). Smaller fixes can go straight to a `feat/<name>` branch with tests.
 - The detailed conventions, architecture, and module layout live in [`AGENTS.md`](AGENTS.md).
 

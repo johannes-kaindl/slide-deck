@@ -317,7 +317,7 @@ Chromes `--dump-dom` gegen denselben Entry (`scripts/visual-smoke-entry.ts`).
 
 - **TS strict + `noImplicitAny`** — keine `any`-Casts für neue Typen.
 - **Tests:** vitest läuft mit `environment: "node"` — **kein DOM, kein happy-dom**.
-  Obsidian-Mock unter `tests/__mocks__/obsidian.ts` für reine Logik-Tests.
+  Obsidian-Mock für reine Logik-Tests: `tests/__mocks__/obsidian.ts` re-exportiert das gevendorte Kit-Mock (`tests/vendor/kit/obsidian-mock.ts`), `tests/setup.ts` stellt `window` über `installWindowTimers({ full: true })` bereit.
   DOM/iframe/Layout-Verhalten wird durch `bundle-smoke.mjs` + manuellen Pallas-Smoke abgedeckt.
   Nach jeder Änderung müssen alle vitest-Tests grün bleiben. `npx tsc --noEmit` separat laufen
   (vitest ≠ tsc).
@@ -571,26 +571,8 @@ Stand: siehe `CHANGELOG.md` / `manifest.json` (dort steht die maßgebliche Versi
 keine, damit dieser Block nicht durch Zeitablauf falsch wird). Bewusste, begründete Abweichungen
 (comply-or-explain):
 
-- **Kein GitHub mehr: `npm run release` fährt fest mit `--no-github`, das `github`-Remote
-  ist entfernt** (seit 2026-09-06). Anlass war das 0.10.0-Release: Tag und Branch liefen per
-  SSH noch in den Mirror, die Action aber nicht — es entstand **kein GitHub-Release**, und die
-  REST-API antwortete mit einer vorgeschobenen Rate-Limit-Meldung (403, „exceeded for user
-  ID …", während gar kein Kontingent erschöpft war). Ein Store-Rescan hätte damit ins Leere
-  gegriffen und das Plugin binnen 24 h aus der Suche genommen.
-  ⚠️ **Beides gehört zusammen und darf nie einzeln passieren:** ohne das Flag ist ein
-  fehlendes `github`-Remote ein **harter Abbruch** im Release-Skript — wer nur das Remote
-  löscht, zerstört die Releases. Form übernommen aus `anysource-sideloader` (2026-09-03).
-  Verteilung läuft über den Forgejo-Release (Assets + `checksums.sha256`) und den
-  AnySource-Sideloader-Katalog. `.github/workflows/release.yml` bleibt liegen: sie schadet
-  nicht und trüge wieder, falls das Konto je entsperrt wird.
-- **`authorUrl` zeigt auf `https://jkaindl.de`** (seit 2026-09-06, vorher GitHub).
-  ⚠️ **Die alte Regel ist damit aufgehoben, nicht vergessen** — sie lautete „nie auf die eigene
-  Domain", weil der Store-Review das Feld auf Erreichbarkeit prüft und dreimal „Manifest URL
-  field is not reachable" gemeldet hatte, während die Domain in jeder Gegenprobe antwortete.
-  Ihre Begründung war der **Store-Review**, und der findet für dieses Plugin nicht mehr statt
-  (s. Zeile darüber). Es bleibt der Nachteil: `authorUrl` ist in Obsidians Plugin-Liste
-  anklickbar und zeigte nutzersichtbar auf ein aufgegebenes Profil. Gemessen am 2026-09-06:
-  `jkaindl.de` antwortet mit 200.
+- **GitHub ist wieder Teil des Release-Wegs (Rückkehr seit 2026-09-24, Dach-AGENTS § Store-Einreichung).** `npm run release` fährt ohne `--no-github`, das `github`-Remote steht wieder (`git@github.com:johannes-kaindl/slide-deck.git`), `release.mjs` pusht Branch und Tag per Dual-Push, der Tag löst `.github/workflows/release.yml` aus. Der Ausstieg vom 2026-09-06 (Anlass: 0.10.0 ohne GitHub-Release) ist aufgehoben; nachgemessen 2026-10-12: Remote vorhanden, kein `--no-github` in `package.json`. Der Forgejo-Push-Mirror ist gelöscht, GitHub bekommt Branch und Tag nur über `release.mjs`.
+- **`authorUrl` zeigt auf `https://github.com/johannes-kaindl`.** Die Fassung `https://jkaindl.de` galt vom 2026-09-06 bis 2026-09-24 (Chronik); nachgemessen 2026-10-12 im `manifest.json`.
 - **`isDesktopOnly: false`** — das Plugin läuft auf Mobile. Alle Desktop-only-APIs sind
   bewacht: PDF-Export verzweigt auf `Platform.isDesktopApp` (Desktop: `contentWindow.print()`;
   Mobile: HTML-Datei schreiben + `openWithDefaultApp`); „Im Finder anzeigen" prüft
