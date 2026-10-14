@@ -46,6 +46,12 @@ const SHOTS = {
     cells: [{ theme: "kami", slide: 7, label: "kami (light)" }, { theme: "kogane", slide: 7, label: "kogane (dark)" }],
     columns: 2, cellWidth: 900, pad: 40, gap: 28, deviceScale: 1, bg: "#ffffff", frame: true,
   },
+  // Die drei Traces-Layouts aus dem Leitfaden-Deck (docs/themes/): eine Quelle, kein Fixture-Duplikat.
+  "layouts-traces": {
+    deck: "../../themes/traces-layouts-deck.md",
+    cells: ["agenda", "threads", "closing"].map((name, i) => ({ theme: "kogane", slide: i, label: name })),
+    columns: 3, cellWidth: 720, pad: 40, gap: 28, deviceScale: 1, bg: "#ffffff", frame: true,
+  },
   layouts: {
     deck: "layouts.md",
     cells: LAYOUTS.map((name, i) => ({ theme: "kami", slide: i, label: name })),

@@ -50,9 +50,11 @@ sich; die Struktur bleibt theme-unabhängig.
 <img width="820" alt="Ein Drei-mal-drei-Raster mit derselben Folie in allen neun eingebauten Themes: kami, kogane, sumi, kairo, kurenai, crimson-dark, crimson-dark-lc, crimson-light und crimson-light-lc" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/themes.png">
 
 **Zwölf Folien-Templates.** Per Layout-Direktive gesetzt — oder aus der Form der Folie
-abgeleitet. Das Raster zeigt die neun allgemeinen; `agenda`, `threads` und `closing` stehen im Layout-Leitfaden.
+abgeleitet. Das Raster zeigt die neun allgemeinen; `agenda`, `threads` und `closing` folgen darunter und stehen im Layout-Leitfaden.
 
 <img width="820" alt="Ein Drei-mal-drei-Raster der neun Folien-Templates: title, section, quote, image-focus, two-column, columns-3, stat, cover-image und default" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/layouts.png">
+
+<img width="820" alt="Die drei Traces-Layouts nebeneinander: agenda mit nummerierten Punkten und Dauer, threads mit vier Karten, closing mit Schlusszeile und zwei Links" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/layouts-traces.png">
 
 **Fit-or-warn.** Eine Folie, die Text unterhalb der Lesbarkeitsgrenze bräuchte, wird in der
 Vorschau markiert statt stumm beschnitten.

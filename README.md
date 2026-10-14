@@ -52,9 +52,11 @@ structure is theme-independent.
 <img width="820" alt="A three-by-three grid showing the same slide rendered in all nine built-in themes: kami, kogane, sumi, kairo, kurenai, crimson-dark, crimson-dark-lc, crimson-light and crimson-light-lc" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/themes.png">
 
 **Twelve per-slide templates.** Set one with a layout directive, or let the layout be inferred
-from the slide's shape. The grid shows the nine general ones; `agenda`, `threads` and `closing` are in the layout guide.
+from the slide's shape. The grid shows the nine general ones; `agenda`, `threads` and `closing` follow below and are described in the layout guide.
 
 <img width="820" alt="A three-by-three grid of the nine slide templates: title, section, quote, image-focus, two-column, columns-3, stat, cover-image and default" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/layouts.png">
+
+<img width="820" alt="The three Traces layouts side by side: agenda with numbered items and durations, threads with four cards, closing with a headline and two links" src="https://raw.githubusercontent.com/johannes-kaindl/slide-deck/main/docs/images/layouts-traces.png">
 
 **Fit-or-warn.** A slide that would need text below the legibility floor is flagged in the
 preview instead of being silently clipped.

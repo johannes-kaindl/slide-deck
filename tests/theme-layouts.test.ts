@@ -5,7 +5,7 @@ import { mergeThemes, resolveTheme } from "../src/vendor/deck-core/pure/presets"
 import { parseDeck } from "../src/vendor/deck-core/pure/slide-model";
 import { collectWarnings } from "../src/vendor/deck-core/pure/constraints/engine";
 
-// agenda/threads/closing (Order from Traces) sind seit deck-core 0.12.0 eingebaute Layouts.
+// agenda/threads/closing (Traces) sind seit deck-core 0.12.0 eingebaute Layouts.
 // Geprueft wird die Naht zum Consumer: das Beispiel-Deck parst auf die drei Namen, sie gelten
 // nicht mehr als unbekannt, und das Deck-CSS, das dieses Plugin ausliefert, traegt ihre Regeln.
 const LAYOUTS = ["agenda", "threads", "closing"] as const;
