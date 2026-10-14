@@ -149,7 +149,7 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
                        `paintStatus` aus ai-settings-ui: ein Bildlauf ist kein Endpunkt, geteilt
                        wird die Sprache, nicht die Funktion.
   llm/
-                          (die frühere error-envelope.ts ist seit dem Kit-0.27.0-Vendoring
+                          (die frühere eigene Fehlerhülle ist seit dem Kit-0.27.0-Vendoring
                           `src/vendor/kit/error_body.ts` → errorMessageFromText, beide
                           Aufrufstellen in llm-client.ts mit `bodyMayBeSuccess: true`.)
     model-info.ts         Re-Export von Kits effectiveContext/ModelContext (model-context.ts) + eigene estimateTokens(chars), contextOverflow(...). Der Abruf der Kontextlänge selbst ist `fetchEndpointContext` (obsidian-kit, in `generate-deck-view.ts` direkt gerufen).
