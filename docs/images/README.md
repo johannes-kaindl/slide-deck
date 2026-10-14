@@ -84,10 +84,9 @@ unverändert.
 export STAGING_VAULTS_DIR=<verzeichnis ausserhalb der Repos>
 npm run build
 npm run shots:obsidian -- --setup     # Aufnahme-Vault bauen
-# Obsidian NEU STARTEN:
-#   pkill -x Obsidian
-#   open -a Obsidian --args --remote-debugging-port=9222
-npm run shots:obsidian                # aufnehmen
+# Obsidian als Zweitinstanz starten (eigenes Profil, eigener Port; die regulaere Instanz wird nie beendet).
+# Rezept: Kopf von tools/obsidian-cdp/cdp.ts und obsidian-plugins/AGENTS.md (Staging-Vaults).
+npm run shots:obsidian -- --port <port>   # aufnehmen
 npm run shots:obsidian -- --only settings
 ```
 

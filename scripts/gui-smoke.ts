@@ -42,12 +42,17 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  AbbruchAusnahme,
   Cdp,
   attachTo,
+  beimAbbruch,
   bereiteInstanzVor,
+  clearNotices,
   closeExtraLeaves,
   entferneFakeManager,
   installFakeManager,
+  istAbgebrochen,
+  ladePluginNeu,
   notices,
   openExisting,
   pollUntil,
@@ -55,9 +60,9 @@ import {
   requireVisible,
   setPluginSetting,
 } from "../../tools/obsidian-cdp/cdp.js";
+import { messeFolge, zeichneFolge } from "../../tools/obsidian-cdp/folge.js";
 import { createBilanz, parseArgs, runDriver, type Bilanz } from "../../tools/obsidian-cdp/bilanz.js";
 import { startLlmStub, type StubAnfrage } from "../../tools/obsidian-cdp/llm-stub.js";
-import { requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
 import { capture } from "../../tools/obsidian-cdp/shot.js";
 // Das Woerterbuch selbst, nicht eine Kopie seiner Form: daraus kommen sowohl die exakten
 // Schluessel als auch die Praefix-Liste fuer B2. Eine im Treiber gepflegte Musterliste waere
@@ -297,6 +302,7 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "G5 Kontrolle: ohne Stoerung folgt der Strom des Erzeugen-Panels bis zum Ende",
     "G6 Denkblock live: der Denk-Text steht waehrend des Stroms offen und waechst",
     "G7 Kontrolle mit Absatzwechseln: der Strom folgt auch, wenn ein Stueck mehrere Zeilen auf einmal bringt",
+    "G8 Wiederaufnahme: steht der Nutzer nach dem Hochscrollen wieder unten, folgt der Strom wieder",
   ],
   anfrage: [
     "R1 Abschnitt „Anfrage“ klappt auf und wieder zu",
@@ -877,9 +883,9 @@ const mermaid: Section = {
       await cdp.evaluate(`
         const adapter = app.vault.adapter;
         if (await adapter.exists(${JSON.stringify(pieOrdner)})) await adapter.rmdir(${JSON.stringify(pieOrdner)}, true);
-        for (const n of document.querySelectorAll(".notice")) n.remove();
         return true;
       `);
+      await clearNotices(cdp);
       await openPreview(cdp, PIE_NOTE);
       await cdp.evaluate(`
         await app.commands.executeCommandById("${PLUGIN_ID}:export-images");
@@ -1376,9 +1382,9 @@ const exportSektion: Section = {
         const adapter = app.vault.adapter;
         const ordner = ${JSON.stringify(ordner)};
         if (await adapter.exists(ordner)) await adapter.rmdir(ordner, true);
-        for (const n of document.querySelectorAll(".notice")) n.remove();
         return true;
       `);
+      await clearNotices(cdp);
     };
 
     await openPreview(cdp, DECK_NOTE);
@@ -1754,34 +1760,41 @@ const G_ENDPOINT = process.env.SD_SMOKE_ENDPOINT ?? "http://127.0.0.1:1234";
 const G_MODEL = process.env.SD_SMOKE_MODEL ?? "google/gemma-4-e4b";
 const G_NOTE = "smoke-chat-g1.md";
 
-/** Strom-Probe im Erzeugen-Panel (G4–G6). Der Weg ist der des Nutzers: Quellnotiz aktiv, Befehl `generate-deck` (Hub-Tab „generate“),
+/** Strom-Probe im Erzeugen-Panel (G4–G8). Der Weg ist der des Nutzers: Quellnotiz aktiv, Befehl `generate-deck` (Hub-Tab „generate“),
  *  Klick auf „Erzeugen“, Antwort aus dem zentralen LLM-Stub in tokengrossen Stuecken (8 Zeichen, 20 ms). Der scrollende Rumpf ist
  *  `.okit-stream-body`, begrenzt durch `.sd-gen-stream { max-height: 320px }`. Das Panel setzt je Schnappschuss
  *  `setReasoning(reasoning.slice(-4000))` und `setTail(content.slice(-1200))`: der Tail waechst also nur bis 1 200 Zeichen, danach
- *  wandert das Fenster — deshalb zaehlt hier jeder geaenderte Tail-Text als Stand, nicht das Wachstum. */
+ *  wandert das Fenster — deshalb zaehlt jeder geaenderte Tail-Text als Stand, nicht das Wachstum (so zaehlt auch `messeFolge`).
+ *  Die Folge-Regel misst `messeFolge` der Bruecke (README § Folge-Messung); hier bleiben das Panel starten und der Denk-Text (G6). */
 const STREAM_QUELLE = "smoke-stream-quelle.md";
 const STREAM_REASONING = "Ich plane die Folien: Titel, Ablauf, Ausruestung, Abschluss. ".repeat(7);
+const STREAM_BODY = ".sd-gen-view .sd-gen-stream .okit-stream-body";
 /** `leerzeilen: false` — nur einfache Zeilenumbrueche: ein 8-Zeichen-Stueck waechst um hoechstens eine Zeile (< 40 px), der Massstab
  *  fuer „folgt“ ohne Stueckgroesse. `leerzeilen: true` — Absatzwechsel (`\n\n`, `\n\n---\n\n`) wie in jedem echten Deck; ein
- *  Stueck mit zwei Zeilenumbruechen waechst um mehr als die Folge-Schwelle von 40 px. */
-const streamAntwort = (leerzeilen: boolean): string => {
+ *  Stueck mit zwei Zeilenumbruechen waechst um mehr als die Folge-Schwelle von 40 px. `folien`: die dritte Phase der Messung
+ *  (Wiederaufnahme) braucht einen laengeren Strom; der Hebel ist die Antwortlaenge, nie die Schwelle. */
+const streamAntwort = (leerzeilen: boolean, folien = 12): string => {
   const kopf = (i: number): string => (leerzeilen ? `# Folie ${i + 1}\n\n` : `# Folie ${i + 1}\n`);
-  const folien = Array.from({ length: 12 }, (_, i) => `${kopf(i)}- Erster Punkt der Folie ${i + 1}\n- Zweiter Punkt der Folie ${i + 1}\n- Dritter Punkt der Folie ${i + 1}`);
-  return `---\ntheme: kami\n---\n${folien.join(leerzeilen ? "\n\n---\n\n" : "\n---\n")}\n`;
+  const alle = Array.from({ length: folien }, (_, i) => `${kopf(i)}- Erster Punkt der Folie ${i + 1}\n- Zweiter Punkt der Folie ${i + 1}\n- Dritter Punkt der Folie ${i + 1}`);
+  return `---\ntheme: kami\n---\n${alle.join(leerzeilen ? "\n\n---\n\n" : "\n---\n")}\n`;
 };
-interface StreamZeile { tail: string; rl: number; st: number; overflow: number; gap: number; open: boolean; vis: boolean; gestoert: boolean }
-interface StreamLauf { zeilen: StreamZeile[]; gestoert: { overflow: number; st0: number; idx: number } | null; maxOverflow: number; ende: string }
+interface StreamOptionen { kontrolle: boolean; stoerung: boolean; wiederaufnahme: boolean; mitDenken?: boolean; leerzeilen?: boolean; folien?: number }
+interface StreamZeile { rl: number; open: boolean; vis: boolean }
+interface StreamLauf { ergebnis: Awaited<ReturnType<typeof messeFolge>>; denken: StreamZeile[] }
 
-async function streamLauf(cdp: Cdp, stoere: boolean, mitDenken: boolean, leerzeilen = false): Promise<StreamLauf | null> {
+/** `string`: der Grund, warum das Erzeugen-Panel nicht zustande kam (Umgebung, kein Befund). */
+async function stromMessen(cdp: Cdp, opt: StreamOptionen): Promise<StreamLauf | string> {
   erzeugtePfade.push(STREAM_QUELLE, "smoke-stream-quelle — Deck.md");
   const stub = await startLlmStub({ models: ["google/gemma-4-e4b"], takt: 20, laenge: 8, nachlaufMs: 160 });
-  stub.antworten([{ text: streamAntwort(leerzeilen), ...(mitDenken ? { reasoning: STREAM_REASONING } : {}) }]);
+  stub.antworten([{ text: streamAntwort(opt.leerzeilen ?? false, opt.folien), ...(opt.mitDenken ? { reasoning: STREAM_REASONING } : {}) }]);
   const vorher = await cdp.evaluate<string>(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; return JSON.stringify(p.settings.llmEndpoints);`);
   try {
     await cdp.evaluate(`
       const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
       p.settings.llmEndpoints = [{ url: ${JSON.stringify(stub.url)}, model: "google/gemma-4-e4b" }];
       p.llm.invalidate();
+      // Die Aufloesung jetzt erzwingen und merken: das Panel liest sie beim Oeffnen aus dem Zwischenspeicher der Verbindung.
+      await p.llm.resolve({ force: true });
       const alt = app.vault.getAbstractFileByPath("smoke-stream-quelle — Deck.md");
       if (alt) await app.vault.delete(alt);
       const q = app.vault.getAbstractFileByPath(${JSON.stringify(STREAM_QUELLE)});
@@ -1789,7 +1802,7 @@ async function streamLauf(cdp: Cdp, stoere: boolean, mitDenken: boolean, leerzei
       if (q) await app.vault.modify(q, text); else await app.vault.create(${JSON.stringify(STREAM_QUELLE)}, text);
       return true;
     `);
-    if (!(await openExisting(cdp, STREAM_QUELLE, "source"))) return null;
+    if (!(await openExisting(cdp, STREAM_QUELLE, "source"))) return `Quellnotiz ${STREAM_QUELLE} liess sich nicht oeffnen`;
     await cdp.evaluate(`
       await app.commands.executeCommandById("${PLUGIN_ID}:generate-deck");
       const rechts = app.workspace.rightSplit;
@@ -1800,55 +1813,45 @@ async function streamLauf(cdp: Cdp, stoere: boolean, mitDenken: boolean, leerzei
       const b = document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta");
       return b && !b.disabled ? true : null;
     `, 20_000, 300);
-    if (!bereit) return null;
-    const armed = await cdp.evaluate<boolean>(`
-      const view = document.querySelector(".sd-gen-view");
-      view.querySelector(".sd-gen-cta button.mod-cta").click();
-      return true;
-    `);
-    if (!armed) return null;
-    const da = await pollUntil<boolean>(cdp, `return document.querySelector(".sd-gen-view .sd-gen-stream .okit-stream-body") ? true : null;`, 15_000, 50);
-    if (!da) return null;
+    if (!bereit) {
+      const zustand = await cdp.evaluate<string>(`
+        const b = document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta");
+        return JSON.stringify({ view: !!document.querySelector(".sd-gen-view"), knopf: b ? { disabled: b.disabled, text: b.textContent } : null,
+          aktiv: app.workspace.getActiveFile()?.path ?? null, text: (document.querySelector(".sd-gen-view")?.textContent ?? "").slice(0, 120),
+          endpoints: app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]?.settings?.llmEndpoints, choice: app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]?.settings?.choice,
+          mgr: !!app.plugins.plugins["llm-endpoint-manager"], lig: !!app.plugins.plugins["local-image-generator"] });
+      `);
+      return `Knopf „Erzeugen“ wurde in 20 s nicht aktiv: ${zustand} · Stub: ${JSON.stringify(stub.zaehler())} (Stub-URL ${stub.url})`;
+    }
+    // Beobachter fuer den Denk-Text (G6): die Bruecke kennt ihn nicht. Haengt vor dem Klick auf „Erzeugen“; der Rumpf selbst
+    // entsteht erst mit dem Klick, `messeFolge` wartet darauf (`bereitFristMs`).
     await cdp.evaluate(`
-      const area = document.querySelector(".sd-gen-view .sd-gen-stream");
-      const body = area.querySelector(".okit-stream-body");
-      const tail = area.querySelector(".okit-stream-tail");
-      const S = { zeilen: [], gestoert: null, maxOverflow: 0 };
-      window.__sdStream = S;
-      window.__sdStreamObs?.disconnect();
-      let prevTail = null;
-      let prevRl = -1;
-      window.__sdStreamObs = new MutationObserver(() => {
-        const t = tail.textContent ?? "";
-        const pre = area.querySelector(".okit-stream-reasoning > pre");
-        const det = area.querySelector(".okit-stream-reasoning");
+      window.__sdDenken = [];
+      window.__sdDenkenObs?.disconnect();
+      let prevRl = 0;
+      window.__sdDenkenObs = new MutationObserver(() => {
+        const area = document.querySelector(".sd-gen-view .sd-gen-stream");
+        const pre = area?.querySelector(".okit-stream-reasoning > pre");
+        const det = area?.querySelector(".okit-stream-reasoning");
         const rl = pre ? (pre.textContent ?? "").length : 0;
-        if (t === prevTail && rl === prevRl) return;
-        const tailNeu = t !== prevTail;
-        prevTail = t; prevRl = rl;
-        const overflow = body.scrollHeight - body.clientHeight;
-        S.maxOverflow = Math.max(S.maxOverflow, overflow);
-        const z = { tail: tailNeu ? t.slice(-20) : "", rl, st: body.scrollTop, overflow, gap: body.scrollHeight - body.scrollTop - body.clientHeight,
-          open: det ? det.open : false, vis: pre ? pre.getBoundingClientRect().height > 0 : false, gestoert: false };
-        if (${stoere ? "true" : "false"} && !S.gestoert && tailNeu && overflow >= 80) {
-          body.scrollTop = 0;
-          S.gestoert = { overflow, st0: body.scrollTop, idx: S.zeilen.length };
-          z.gestoert = true; z.st = body.scrollTop;
-        }
-        S.zeilen.push(z);
+        if (rl <= prevRl) return;
+        prevRl = rl;
+        window.__sdDenken.push({ rl, open: det ? det.open : false, vis: pre ? pre.getBoundingClientRect().height > 0 : false });
       });
-      window.__sdStreamObs.observe(area, { childList: true, characterData: true, subtree: true });
+      window.__sdDenkenObs.observe(document.querySelector(".sd-gen-view"), { childList: true, characterData: true, subtree: true });
       return true;
     `);
-    const ende = await pollUntil<string>(cdp, `
-      const l = app.workspace.getLeavesOfType(${JSON.stringify(VIEW_TYPE)})[0];
-      const running = document.querySelector(".sd-gen-view .sd-gen-running");
-      return running ? null : "fertig";
-    `, 90_000, 400);
-    const out = await cdp.evaluate<{ zeilen: StreamZeile[]; gestoert: StreamLauf["gestoert"]; maxOverflow: number }>(
-      `window.__sdStreamObs?.disconnect(); return window.__sdStream ?? { zeilen: [], gestoert: null, maxOverflow: 0 };`,
-    );
-    return { ...out, ende: ende ?? "nicht beendet" };
+    const ergebnis = await messeFolge(cdp, {
+      selector: STREAM_BODY,
+      laeuft: () => stub.zaehler().unterwegs > 0,
+      starte: () => cdp.evaluate(`document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta").click(); return true;`),
+      kontrolle: opt.kontrolle,
+      stoerung: opt.stoerung,
+      wiederaufnahme: opt.wiederaufnahme,
+    });
+    await pollUntil<string>(cdp, `return document.querySelector(".sd-gen-view .sd-gen-running") ? null : "fertig";`, 90_000, 400);
+    const denken = await cdp.evaluate<StreamZeile[]>(`window.__sdDenkenObs?.disconnect(); return window.__sdDenken ?? [];`);
+    return { ergebnis, denken };
   } finally {
     await cdp.evaluate(`
       const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
@@ -1908,55 +1911,43 @@ const chatSektion: Section = {
     }
 
 
-    // G4–G6: der Strom im Erzeugen-Panel (kein Modell noetig: der zentrale Stub). Gueltigkeit je Punkt: Ueberlauf >= 80 px zur
-    // Stoerungszeit (Folge-Schwelle 40 px, `stream-area.ts`, plus 40 px Spielraum), mindestens zwei geaenderte Staende danach.
+    // G4–G8: der Strom im Erzeugen-Panel (kein Modell noetig: der zentrale Stub), gemessen mit `messeFolge` der Bruecke. Die Gueltigkeit
+    // steht im Urteil (Ueberlauf >= 80 px, mindestens 3 Staende, Vorbedingung „der Bereich folgte vor der Stoerung“); sonst „nichts gemessen“.
+    const G4 = "G4 Folge-Regel: Hochscrollen mitten im Strom des Erzeugen-Panels wird respektiert";
     const G5 = "G5 Kontrolle: ohne Stoerung folgt der Strom des Erzeugen-Panels bis zum Ende";
     const G6 = "G6 Denkblock live: der Denk-Text steht waehrend des Stroms offen und waechst";
     const G7 = "G7 Kontrolle mit Absatzwechseln: der Strom folgt auch, wenn ein Stueck mehrere Zeilen auf einmal bringt";
-    const folgt = (name: string, lauf: StreamLauf | null): void => {
-      if (lauf === null) { bilanz.unmeasured(name, "das Erzeugen-Panel kam nicht zustande (Quellnotiz, Befehl generate-deck oder Klick)"); return; }
-      const g = lauf.zeilen.filter((z) => z.tail !== "" && z.overflow >= 80);
-      if (g.length < 2) {
-        bilanz.unmeasured(name, `der Ueberlauf erreichte 80 px nicht oft genug (hoechstens ${Math.round(lauf.maxOverflow)} px, ${g.length} Staende, Ende: ${lauf.ende})`);
-        return;
-      }
-      const worst = Math.max(...g.map((z) => z.gap));
-      record(name, worst < 40, `${g.length} Staende mit Ueberlauf >= 80 px (hoechstens ${Math.round(lauf.maxOverflow)} px) · groesster Abstand zum Ende ${Math.round(worst)} px (erwartet < 40)`);
-    };
-    // G5: tokengrosse Stuecke, nur einfache Zeilenumbrueche — der Massstab fuer „folgt“, ohne dass ein Stueck die Folge-Schwelle springt.
-    folgt(G5, await streamLauf(cdp, false, false));
+    const G8 = "G8 Wiederaufnahme: steht der Nutzer nach dem Hochscrollen wieder unten, folgt der Strom wieder";
+        // G5: tokengrosse Stuecke, nur einfache Zeilenumbrueche — der Massstab fuer „folgt“, ohne dass ein Stueck die Folge-Schwelle springt.
     // G6: derselbe Strom MIT Denk-Text: der Denk-Text steht offen, ist sichtbar und waechst.
-    const mitDenken = await streamLauf(cdp, false, true);
-    if (mitDenken === null) {
-      bilanz.unmeasured(G6, "das Erzeugen-Panel kam nicht zustande (Quellnotiz, Befehl generate-deck oder Klick)");
+    const mitDenken = await stromMessen(cdp, { kontrolle: true, stoerung: false, wiederaufnahme: false, mitDenken: true });
+    if (typeof mitDenken === "string") {
+      bilanz.unmeasured(G5, mitDenken);
+      bilanz.unmeasured(G6, mitDenken);
     } else {
-      const rz = mitDenken.zeilen.filter((z) => z.rl > 0);
-      const verschieden = new Set(rz.map((z) => z.rl)).size;
+      zeichneFolge(bilanz, { kontrolle: G5 }, mitDenken.ergebnis);
+      const verschieden = new Set(mitDenken.denken.map((z) => z.rl)).size;
       if (verschieden < 2) {
         bilanz.unmeasured(G6, `der Denk-Text wuchs hoechstens ${verschieden}-mal`);
       } else {
-        const offen = rz.every((z) => z.open);
-        const sichtbar = rz.every((z) => z.vis);
-        record(G6, offen && sichtbar, `${verschieden} Staende (${rz[0]?.rl}→${rz[rz.length - 1]?.rl} Zeichen) · offen: ${offen} · sichtbar: ${sichtbar}`);
+        const offen = mitDenken.denken.every((z) => z.open);
+        const sichtbar = mitDenken.denken.every((z) => z.vis);
+        record(G6, offen && sichtbar, `${verschieden} Staende (${mitDenken.denken[0]?.rl}→${mitDenken.denken[mitDenken.denken.length - 1]?.rl} Zeichen) · offen: ${offen} · sichtbar: ${sichtbar}`);
       }
     }
     // G7: Absatzwechsel wie in einem echten Deck (`\\n\\n` in einem Stueck, ueber 40 px Zuwachs). Mit obsidian-kit < 0.59.0 misst `followTail` „unten?“
     // erst NACH dem Wachsen: der erste Absatzwechsel beendet das Folgen. Rot auf altem Pin, gruen ab 0.59.0.
-    folgt(G7, await streamLauf(cdp, false, false, true));
-    const gestoert = await streamLauf(cdp, true, false);
-    if (gestoert === null) {
-      bilanz.unmeasured("G4 Folge-Regel: Hochscrollen mitten im Strom des Erzeugen-Panels wird respektiert", "das Erzeugen-Panel kam nicht zustande");
-    } else if (gestoert.gestoert === null) {
-      bilanz.unmeasured("G4 Folge-Regel: Hochscrollen mitten im Strom des Erzeugen-Panels wird respektiert", `der Ueberlauf erreichte nie 80 px (hoechstens ${Math.round(gestoert.maxOverflow)} px) — keine Stoerung ausgeloest`);
+    const absaetze = await stromMessen(cdp, { kontrolle: true, stoerung: false, wiederaufnahme: false, leerzeilen: true });
+    if (typeof absaetze === "string") bilanz.unmeasured(G7, absaetze);
+    else zeichneFolge(bilanz, { kontrolle: G7 }, absaetze.ergebnis);
+    // G4 + G8: Stoerung (scrollTop = 0), danach darf der Bereich nicht zum Ende springen; steht der Nutzer wieder unten, folgt er wieder.
+    // Laengerer Strom (36 Folien), weil die dritte Phase Staende braucht.
+    const gestoert = await stromMessen(cdp, { kontrolle: false, stoerung: true, wiederaufnahme: true, folien: 36 });
+    if (typeof gestoert === "string") {
+      bilanz.unmeasured(G4, gestoert);
+      bilanz.unmeasured(G8, gestoert);
     } else {
-      const danach = gestoert.zeilen.slice(gestoert.gestoert.idx + 1).filter((z) => z.tail !== "");
-      if (danach.length < 2) {
-        bilanz.unmeasured("G4 Folge-Regel: Hochscrollen mitten im Strom des Erzeugen-Panels wird respektiert", `nach der Stoerung kamen nur ${danach.length} geaenderte Staende (mindestens 2 noetig)`);
-      } else {
-        const worst = Math.max(...danach.map((z) => z.st - gestoert.gestoert!.st0));
-        record("G4 Folge-Regel: Hochscrollen mitten im Strom des Erzeugen-Panels wird respektiert", worst <= 4,
-          `Stoerung bei Ueberlauf ${Math.round(gestoert.gestoert.overflow)} px, scrollTop ${gestoert.gestoert.st0} · ${danach.length} Staende danach, groesste Abweichung des scrollTop ${Math.round(worst)} px (erwartet <= 4)`);
-      }
+      zeichneFolge(bilanz, { folge: G4, wiederaufnahme: G8 }, gestoert.ergebnis);
     }
 
     if (!MIT_MODELL) {
@@ -2352,13 +2343,11 @@ async function main(): Promise<void> {
   //    erreicht sie ein Handler, der unabhaengig davon feuert, WELCHER Abschnitt gerade laeuft.
   //    Ohne Rueckbau bliebe ein Stub stehen, der die Live-Registrierung eines echt
   //    installierten LIG ueberschreibt (dieselbe Gefahrenklasse wie vault-rag/llm-lab).
-  let signalCleanupRunning = false;
-  const onAbortSignal = (signal: NodeJS.Signals): void => {
-    if (signalCleanupRunning) return;
-    signalCleanupRunning = true;
-    void (async () => {
-      console.log(`\n\nAbbruch durch ${signal} — raeume Vault-Zustand auf...`);
-      await cdp.evaluate(`
+  // Abbruch-Modul der Bruecke (README § Abbruch): bei Ctrl-C laeuft dieser Schritt, dann druckt das Modul die Bilanz und endet mit
+  // Exit 130. Derselbe Schritt laeuft im Normalweg ueber `zustand.schliesse()`; er ist idempotent und wartet im Abbruch nicht.
+  const zustandZurueck = async (): Promise<void> => {
+    await cdp
+      .evaluate(`
         const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
         if (plugin) {
           ${vorherigeEinstellungen !== null ? `
@@ -2383,63 +2372,54 @@ async function main(): Promise<void> {
           else app.plugins.plugins["llm-endpoint-manager"] = globalThis.__sdVorherMgr;
           delete globalThis.__sdVorherMgr;
         }
-        for (const pfad of ${JSON.stringify(erzeugtePfade)}) {
-          const f = app.vault.getAbstractFileByPath(pfad);
-          if (f) await app.fileManager.trashFile(f);
-        }
         return true;
-      `).catch(() => { console.log("  ! Aufraeumen im Renderer fehlgeschlagen — Vault von Hand pruefen"); });
-      cdp.close();
-      process.exit(130);
-    })();
+      `)
+      .catch(() => { console.log("  ! Aufraeumen im Renderer fehlgeschlagen — Vault von Hand pruefen"); });
+    if (!keep && erzeugtePfade.length) {
+      await cdp
+        .evaluate(`
+          for (const pfad of ${JSON.stringify(erzeugtePfade)}) {
+            // Papierkorb, nicht Hard-Delete: was ein Werkzeug im Vault des Maintainers
+            // anfasst, muss zurueckholbar bleiben. Kennt der Index den frisch geschriebenen
+            // Ordner noch nicht, erst indizieren lassen (im Normalweg) — und nur wenn das nichts bringt,
+            // ueber den Adapter raeumen (dann ohne Papierkorb, deshalb die Meldung).
+            let f = app.vault.getAbstractFileByPath(pfad);
+            if (!f && ${istAbgebrochen() ? "false" : "true"}) { await new Promise((r) => setTimeout(r, 1500)); f = app.vault.getAbstractFileByPath(pfad); }
+            if (f) await app.fileManager.trashFile(f);
+            else if (await app.vault.adapter.exists(pfad)) {
+              await app.vault.adapter.rmdir(pfad, true);
+              console.log("gui-smoke: " + pfad + " ueber den Adapter entfernt (nicht im Papierkorb)");
+            }
+          }
+          return true;
+        `)
+        .catch(() => undefined);
+    }
   };
-  process.on("SIGINT", onAbortSignal);
-  process.on("SIGTERM", onAbortSignal);
+  const zustand = beimAbbruch(zustandZurueck, "Vault-Zustand zurücksetzen");
 
   try {
     // Ohne Sichtbarkeit drosselt Chromium den Renderer, das Deck rendert nicht und JEDER Punkt
     // waere rot. `requireVisible` zielt auf das VERBUNDENE Fenster; ein `osascript … activate`
     // holte stattdessen die reguelaere Instanz nach vorn (Befund kl-w19).
     await requireVisible(cdp);
-    await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true }).catch(() => undefined);
-    await new Promise((r) => setTimeout(r, 300));
 
     // Vertrauensdialog, Restricted Mode und Aktivierung: zentrale Fassung. `pluginIds` sind
     // `manifest.id`s, `nurVault` der Name des Staging-Vaults.
     const vorbereitung = await bereiteInstanzVor(cdp, { pluginIds: [PLUGIN_ID], nurVault: vault, sprache: "en" });
     console.log(`Instanz: ${vorbereitung.hinweis}`);
 
-    const vaultInfo = await cdp.evaluate<{ name: string; basePath: string; configDir: string }>(`
-      return { name: app.vault.getName(), basePath: app.vault.adapter.basePath, configDir: app.vault.configDir };
-    `);
-    console.log(`Vault: ${vaultInfo.name}`);
+    const vaultName = await cdp.evaluate<string>(`return app.vault.getName();`);
+    console.log(`Vault: ${vaultName}`);
 
-    // Gegen WELCHEN Build laeuft das hier? `manifest.version` ist dafuer strukturell blind
-    // (Store- und Repo-Build tragen dieselbe Nummer). Der Pfad kommt aus der LAUFENDEN
-    // Instanz, nicht aus stagingVaultDir() — ein Treiber kann per --vault an jedes Fenster
-    // andocken, und ein Check am konfigurierten Ort pruefte dann eine Datei, die mit dem
-    // Lauf nichts zu tun hat (Lesson 2026-09-02, kuro-gamification).
-    requireEigenerBuild(
-      join(vaultInfo.basePath, vaultInfo.configDir, "plugins", PLUGIN_ID, "main.js"),
-      join(process.cwd(), "main.js"),
-    );
-
-    // Neu laden, bevor irgendetwas gemessen wird: `npm run deploy` ersetzt nur Dateien, die
-    // laufende Instanz behaelt den alten Code im Speicher. Ohne das misst der Smoke den
-    // zuletzt geladenen Stand und meldet ihn als Ergebnis fuer den gerade gebauten.
-    const plugin = await cdp.evaluate<{ an: boolean; version: string }>(`
-      const id = ${JSON.stringify(PLUGIN_ID)};
-      if (app.plugins.plugins[id]) {
-        await app.plugins.disablePlugin(id);
-        await new Promise((r) => setTimeout(r, 400));
-      }
-      await app.plugins.enablePlugin(id);
-      await new Promise((r) => setTimeout(r, 800));
-      const p = app.plugins.plugins[id];
-      return { an: Boolean(p), version: p ? p.manifest.version : "" };
-    `);
-    if (!plugin.an) throw new Error(`Plugin ${PLUGIN_ID} liess sich nicht aktivieren.`);
-    console.log(`Plugin: ${PLUGIN_ID} ${plugin.version} (frisch geladen)\n`);
+    // Neu laden, bevor irgendetwas gemessen wird: `npm run deploy` ersetzt nur Dateien, die laufende Instanz behaelt den alten Code im
+    // Speicher. `ladePluginNeu` prueft vorher die Herkunft (`repoMainJs` → `requireEigenerBuild`: Store-Build oder fremder Stand
+    // wird abgelehnt — `manifest.version` ist dafuer strukturell blind, Lesson 2026-09-02 kuro-gamification) und stellt danach die
+    // Version auf der Platte neben die im Speicher; der Pfad kommt aus der LAUFENDEN Instanz, nicht aus stagingVaultDir().
+    const neu = await ladePluginNeu(cdp, PLUGIN_ID, { repoMainJs: join(process.cwd(), "main.js"), melde: console.error });
+    if (!neu.geladen) throw new Error(`Plugin ${PLUGIN_ID} liess sich nicht aktivieren — ${neu.hinweis}`);
+    if (!neu.aktuell) throw new Error(neu.hinweis);
+    console.log(`Plugin: ${neu.hinweis}\n`);
 
     // 0 — ein liegen gebliebener local-image-generator-Stub aus einem per Ctrl-C
     // abgebrochenen Vorlauf (vor diesem Handler bzw. bei einem SIGKILL) waere sonst still UND
@@ -2465,6 +2445,8 @@ async function main(): Promise<void> {
       try {
         await section.run(cdp, { port, vault });
       } catch (fehler) {
+        // Ein Abbruch (Ctrl-C) ist kein Abschnittsfehler: weiterwerfen, das Abbruch-Modul druckt die Bilanz.
+        if (fehler instanceof AbbruchAusnahme) throw fehler;
         // Ein Abschnittsfehler ist kein Befund am Prueflings, sondern eine Messung, die nicht
         // stattgefunden hat: die noch offenen Punkte des Abschnitts zaehlen als „nichts gemessen".
         const grund = fehler instanceof Error ? fehler.message.split("\n")[0] : String(fehler);
@@ -2474,47 +2456,14 @@ async function main(): Promise<void> {
       console.log("");
     }
   } finally {
-    // Aufraeumen haengt nie am Ergebnis: auch ein abgebrochener Lauf gibt den Vault so
-    // zurueck, wie er ihn vorgefunden hat.
-    if (vorherigeEinstellungen !== null) {
-      await cdp
-        .evaluate(`
-          const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
-          Object.assign(plugin.settings, JSON.parse(${JSON.stringify(vorherigeEinstellungen)}));
-          await plugin.saveSettings?.();
-          plugin.llm?.invalidate();
-          if (typeof plugin.applyFolderHide === "function") plugin.applyFolderHide();
-          return true;
-        `)
-        .catch(() => undefined);
-    }
-    if (!keep && erzeugtePfade.length) {
-      await cdp
-        .evaluate(`
-          for (const pfad of ${JSON.stringify(erzeugtePfade)}) {
-            // Papierkorb, nicht Hard-Delete: was ein Werkzeug im Vault des Maintainers
-            // anfasst, muss zurueckholbar bleiben. Kennt der Index den frisch geschriebenen
-            // Ordner noch nicht, erst indizieren lassen — und nur wenn das nichts bringt,
-            // ueber den Adapter raeumen (dann ohne Papierkorb, deshalb die Meldung).
-            let f = app.vault.getAbstractFileByPath(pfad);
-            if (!f) { await new Promise((r) => setTimeout(r, 1500)); f = app.vault.getAbstractFileByPath(pfad); }
-            if (f) await app.fileManager.trashFile(f);
-            else if (await app.vault.adapter.exists(pfad)) {
-              await app.vault.adapter.rmdir(pfad, true);
-              console.log("gui-smoke: " + pfad + " ueber den Adapter entfernt (nicht im Papierkorb)");
-            }
-          }
-          return true;
-        `)
-        .catch(() => undefined);
-    }
+    // Aufraeumen haengt nie am Ergebnis: auch ein abgebrochener Lauf gibt den Vault so zurueck, wie er ihn vorgefunden hat.
+    // `schliesse` raeumt im Normalweg auf und meldet den Schritt ab; nach Ctrl-C hat das Abbruch-Modul ihn schon gefahren und
+    // beendet den Prozess selbst.
+    await zustand.schliesse();
+    if (istAbgebrochen()) return;
     await closeExtraLeaves(cdp).catch(() => 0);
     await releaseAlwaysOnTop(cdp).catch(() => undefined);
     cdp.close();
-    // Abmelden, sonst haengt ein SPAETES Signal (nach normalem Abschluss, cdp schon zu) den
-    // Prozess in onAbortSignal an einer toten Verbindung auf.
-    process.off("SIGINT", onAbortSignal);
-    process.off("SIGTERM", onAbortSignal);
   }
 
   // Die Soll-Liste ist der Nenner; `abschluss()` setzt Exit 1 bei Rot oder „nichts gemessen".
