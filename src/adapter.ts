@@ -1,17 +1,7 @@
 import { type App, TFile } from "obsidian";
 import { parseDeck, type DeckDirectives, type SlideDeck } from "./vendor/deck-core/pure/slide-model";
 import { resolveTheme, type ThemeRegistry } from "./vendor/deck-core/pure/presets";
-
-const MIME: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml" };
-
-export function binaryToDataUrl(buf: ArrayBuffer, ext: string): string {
-  const bytes = new Uint8Array(buf);
-  let bin = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  const mime = MIME[ext.toLowerCase()] ?? "application/octet-stream";
-  return `data:${mime};base64,${btoa(bin)}`;
-}
+import { binaryToDataUrl, mimeForExtension } from "./vendor/kit/data-url";
 
 /** The modifier names a theme declares for itself (`/* sd-modifiers: … *\/`), for handing to
  *  `parseDeck` as `knownModifiers`. Without them a theme with its own variants reports one
@@ -54,7 +44,7 @@ export async function loadDeck(
   for (const s of deck.slides) for (const m of s.markdown.matchAll(/!\[\[([^\]]+?)\]\]/g)) refs.add(m[1].trim());
   for (const ref of refs) {
     const dest = app.metadataCache.getFirstLinkpathDest(ref, file.path);
-    if (dest instanceof TFile && dest.extension in MIME) {
+    if (dest instanceof TFile && mimeForExtension(dest.extension) !== null) {
       try { cache.set(ref, binaryToDataUrl(await app.vault.readBinary(dest), dest.extension)); } catch { /* missing -> warning later */ }
     }
   }

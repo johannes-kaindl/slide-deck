@@ -1,6 +1,7 @@
 import { Notice, Platform, type App, type TFile } from "obsidian";
 import { domToCanvas } from "modern-screenshot";
 import { loadDeck } from "./adapter";
+import { dataUrlToBytes } from "./vendor/kit/data-url";
 import { buildIsolatedDeck } from "./vendor/deck-core/dom/render-dom";
 import { createIsolatedDeckIframe, isolatedDeckHtml } from "./vendor/deck-core/dom/iframe-host";
 import { PRINT_CSS } from "./vendor/deck-core/dom/chrome-css";
@@ -85,10 +86,9 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
       const slideBg = view ? view.getComputedStyle(slides[i]).backgroundColor : "";
       const backgroundColor = slideBg && slideBg !== "rgba(0, 0, 0, 0)" && slideBg !== "transparent" ? slideBg : "#fff";
       const canvas = await domToCanvas(slides[i], { width: geo.width, height: geo.height, scale, backgroundColor });
-      const b64 = canvas.toDataURL("image/png").split(",")[1];
-      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const bytes = dataUrlToBytes(canvas.toDataURL("image/png"));
       const path = `${folder}/${String(i + 1).padStart(2, "0")}-${base}.png`;
-      await adapter.writeBinary(path, bytes.buffer);
+      await adapter.writeBinary(path, bytes.buffer as ArrayBuffer);
     }
     new Notice(t("export.done", slides.length));
   } finally { host.dispose(); }

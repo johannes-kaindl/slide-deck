@@ -2,6 +2,7 @@ import { renderMarkdown } from "./vendor/deck-core/pure/render/md2html";
 import { parseDeck } from "./vendor/deck-core/pure/slide-model";
 import { mermaidLoadsRemote, neutralizeModelMarkdown } from "./vendor/kit/safe-markdown";
 import { neutralizeRemoteResourcesInTree } from "./vendor/kit/remote-resources";
+import { base64ToBytes } from "./vendor/kit/data-url";
 
 /** Zweite Schicht fuer erzeugte Decks (Welle 16): die erste Schicht (`neutralizeRemoteResources`) liest
  *  Markdown als Text und ist nie ganz dicht. Diese hier rendert jede Folie INERT (Dokument ohne
@@ -40,8 +41,7 @@ const REMOTE_EMBED_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 /** Das `data-src` des Fences zurueck in Text. */
 function decodeBase64Utf8(b64: string): string {
   try {
-    const bin = atob(b64);
-    return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+    return new TextDecoder().decode(base64ToBytes(b64));
   } catch {
     return "\u0000fail-closed//"; // nicht lesbar: wie ein Fund behandeln
   }

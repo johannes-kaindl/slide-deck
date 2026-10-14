@@ -1,15 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { binaryToDataUrl, knownModifiersFor } from "../src/adapter";
+import { knownModifiersFor } from "../src/adapter";
 import { mergeThemes, type ThemeEntry, type ThemeRegistry } from "../src/vendor/deck-core/pure/presets";
 import { builtinThemeEntries, userThemeEntry } from "../src/vendor/deck-core/pure/deck-css";
 import { parseDeck } from "../src/vendor/deck-core/pure/slide-model";
-
-describe("binaryToDataUrl", () => {
-  it("builds a data url from bytes + extension", () => {
-    const bytes = new Uint8Array([1, 2, 3]).buffer;
-    expect(binaryToDataUrl(bytes, "png")).toMatch(/^data:image\/png;base64,/);
-  });
-});
 
 // Die Modifier-Auflösung ist bewusst aus `loadDeck` herausgezogen: dort bräuchte ein Test
 // einen App-Mock, hier reicht eine Registry. Dieselbe Naht wie `mermaidConfig` im Kern.
