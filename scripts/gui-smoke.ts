@@ -1344,6 +1344,12 @@ const explorer: Section = {
     );
     await setPluginSetting(cdp, PLUGIN_ID, "hideThemesFolder", false);
     await cdp.evaluate(`app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].applyFolderHide(); return true;`);
+    // Das Wiederaktivieren stellt das Hub-Blatt aus dem Layout wieder her; sein Erzeugen-Panel loest den Endpunkt EINMAL beim
+    // Oeffnen auf — also mit dem, was das Plugin beim Neuladen aus data.json las — und merkt sich das Ergebnis. Ein spaeterer
+    // Abschnitt, der Endpunkte setzt (G), schaltet danach nur den Tab um und sieht „No endpoint reachable“ (gemessen 2026-10-14:
+    // verbindung + explorer + chat → G4–G8 nichts gemessen; ohne das Wiederaktivieren oder ohne den Hub-oeffnenden Abschnitt
+    // gruen). Der Abschnitt, der den Zustand verursacht, raeumt ihn auch ab (CORE-TEST-21).
+    await cdp.evaluate(`app.workspace.detachLeavesOfType("slide-deck-hub"); await new Promise((r) => setTimeout(r, 300)); return true;`);
   },
 };
 
@@ -1795,6 +1801,9 @@ async function stromMessen(cdp: Cdp, opt: StreamOptionen): Promise<StreamLauf | 
       p.llm.invalidate();
       // Die Aufloesung jetzt erzwingen und merken: das Panel liest sie beim Oeffnen aus dem Zwischenspeicher der Verbindung.
       await p.llm.resolve({ force: true });
+      // Ein Hub-Blatt aus einem frueheren Abschnitt hat seinen Endpunkt schon aufgeloest (einmal je Oeffnen): zu, damit der Befehl
+      // unten ein frisches Panel gegen den Stub oeffnet.
+      app.workspace.detachLeavesOfType("slide-deck-hub");
       const alt = app.vault.getAbstractFileByPath("smoke-stream-quelle — Deck.md");
       if (alt) await app.vault.delete(alt);
       const q = app.vault.getAbstractFileByPath(${JSON.stringify(STREAM_QUELLE)});
@@ -1821,7 +1830,7 @@ async function stromMessen(cdp: Cdp, opt: StreamOptionen): Promise<StreamLauf | 
           endpoints: app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]?.settings?.llmEndpoints, choice: app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]?.settings?.choice,
           mgr: !!app.plugins.plugins["llm-endpoint-manager"], lig: !!app.plugins.plugins["local-image-generator"] });
       `);
-      return `Knopf „Erzeugen“ wurde in 20 s nicht aktiv: ${zustand} · Stub: ${JSON.stringify(stub.zaehler())} (Stub-URL ${stub.url})`;
+      return `Knopf „Erzeugen“ wurde in 20 s nicht aktiv: ${zustand} · Stub: ${JSON.stringify(stub.zaehler())} (Stub-URL ${stub.url}) · Anfragen: ${stub.alleAnfragen().map((r) => `${r.methode} ${r.url}`).join(", ") || "keine"}`;
     }
     // Beobachter fuer den Denk-Text (G6): die Bruecke kennt ihn nicht. Haengt vor dem Klick auf „Erzeugen“; der Rumpf selbst
     // entsteht erst mit dem Klick, `messeFolge` wartet darauf (`bereitFristMs`).
@@ -2312,8 +2321,10 @@ async function main(): Promise<void> {
   const keep = args.has("keep");
   const sectionArg = args.value("section");
 
-  const sections = sectionArg ? SECTIONS.filter((s) => s.key === sectionArg) : SECTIONS;
-  if (sections.length === 0) {
+  // `--section a,b` fährt mehrere Abschnitte in der Reihenfolge von SECTIONS (Bisektion von Zustandslecks, CORE-TEST-21).
+  const wanted = sectionArg ? sectionArg.split(",").map((k) => k.trim()) : null;
+  const sections = wanted ? SECTIONS.filter((s) => wanted.includes(s.key)) : SECTIONS;
+  if (sections.length === 0 || (wanted && sections.length !== new Set(wanted).size)) {
     throw new Error(`Unbekannter --section ${sectionArg}. Bekannt: ${SECTIONS.map((s) => s.key).join(", ")}`);
   }
 
