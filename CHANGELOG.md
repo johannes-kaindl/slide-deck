@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.17.2] — 2026-10-16
+
 ### Fixed
 
 - **The Generate tab notices an endpoint you set up later.** Before, the tab looked up the endpoint once when it opened, so after you added or changed an endpoint it kept saying "No endpoint reachable" with the Generate button disabled until you closed and reopened the Slide Deck pane. It now looks again each time you switch back to the tab.
