@@ -6,6 +6,10 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Generate tab notices an endpoint you set up later.** Before, the tab looked up the endpoint once when it opened, so after you added or changed an endpoint it kept saying "No endpoint reachable" with the Generate button disabled until you closed and reopened the Slide Deck pane. It now looks again each time you switch back to the tab.
+
 ### Changed
 
 - **README:** a new picture shows the three Traces layouts `agenda`, `threads` and `closing` side by side (taken with `npm run shots -- layouts-traces`, embedded in the English and German README).

@@ -56,6 +56,13 @@ export class GeneratePanel implements HubPanel<HubTabId> {
   private countSel?: HTMLSelectElement;
   private hintInput?: HTMLInputElement;
   private themeSel?: HTMLSelectElement;
+  // Statuszeile und Modellfeld, damit `resolveEndpoint()` sie bei jedem Tab-Wechsel neu malen kann.
+  private pingEl?: HTMLElement;
+  private pingLabelEl?: HTMLElement;
+  private modelHolder?: HTMLElement;
+  private modelInput?: HTMLInputElement;
+  private modelDirty = false;
+  private resolving = false;
 
   constructor(private plugin: SlideDeckPlugin) {}
 
@@ -70,6 +77,10 @@ export class GeneratePanel implements HubPanel<HubTabId> {
   /** Der Hub dispatcht Datei-Wechsel zentral (ein `active-leaf-change`-Listener im Host-View
    *  statt je einem pro Panel) — nur im Eingabemodus relevant, eine laufende Generierung
    *  haengt nicht an der aktiven Notiz. */
+  /** Tab „generate“ wird sichtbar: den Endpunkt neu aufloesen, damit ein inzwischen eingerichteter
+   *  Endpunkt ohne Schliessen des Hub-Blatts greift. Der erste Aufbau loest selbst auf (`resolving`). */
+  onShow(): void { if (this.mode === "input" && this.sourceLabel) void this.resolveEndpoint(); }
+
   onFileOpen(): void { if (this.mode === "input") this.refreshSourceBits(); }
 
   destroy(): void {
@@ -93,8 +104,8 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     contentEl.empty();
 
     const status = contentEl.createDiv({ cls: "sd-gen-status" });
-    const pingEl = status.createSpan({ cls: "sd-gen-ping" });
-    const pingLabelEl = status.createSpan({ cls: "sd-gen-ping-label" });
+    const pingEl = this.pingEl = status.createSpan({ cls: "sd-gen-ping" });
+    this.pingLabelEl = status.createSpan({ cls: "sd-gen-ping-label" });
     paintStatus(pingEl, null, t("deck.settings.endpoint.probing"));
 
     this.sourceLabel = contentEl.createDiv({ cls: "sd-gen-source-label" });
@@ -107,12 +118,12 @@ export class GeneratePanel implements HubPanel<HubTabId> {
 
     const modelRow = contentEl.createDiv({ cls: "sd-gen-row" });
     modelRow.createEl("label", { text: t("deck.modal.model") });
-    const modelHolder = modelRow.createSpan();
+    const modelHolder = this.modelHolder = modelRow.createSpan();
     this.model = "";
-    const modelInput = modelHolder.createEl("input", { type: "text" });
+    const modelInput = this.modelInput = modelHolder.createEl("input", { type: "text" });
     modelInput.value = this.model;
-    let modelDirty = false;
-    modelInput.addEventListener("input", () => { modelDirty = true; this.model = modelInput.value.trim(); this.updateEnabled(); });
+    this.modelDirty = false;
+    modelInput.addEventListener("input", () => { this.modelDirty = true; this.model = modelInput.value.trim(); this.updateEnabled(); });
 
     const hintRow = contentEl.createDiv({ cls: "sd-gen-row" });
     hintRow.createEl("label", { text: t("deck.modal.hint") });
@@ -138,45 +149,56 @@ export class GeneratePanel implements HubPanel<HubTabId> {
 
     this.refreshSourceBits();
 
-    // Resolve endpoint + ping + models (once per open).
-    const source = await this.plugin.llm.resolve();
-    this.endpoint = source.config;
-    if (this.closed) return;
-    // The source decides the model too (choice → manager default → local llmModel).
-    if (!modelDirty) { this.model = source.model; modelInput.value = source.model; }
-    if (!this.endpoint) {
-      // No resolved endpoint → nothing left to probe() for a kind; "unknown" carries the
-      // shared error visual (circle-x/is-error) while the label stays the specific,
-      // actionable message instead of the generic "not reachable" klartext.
-      paintStatus(pingEl, "unknown", t("deck.modal.noEndpoint"));
-      pingLabelEl.setText(t("deck.modal.noEndpoint"));
-      this.warnEl.setText(t("deck.modal.noEndpoint"));
-    } else {
-      // One request answers both questions: the model list of the resolved endpoint, and — by its
-      // answer — whether it is reachable. The finer diagnosis (key refused, wrong path, ...) lives in
-      // the settings, next to the endpoint row.
-      const { models, reachable } = await this.plugin.llm.models();
+    await this.resolveEndpoint();
+  }
+
+  /** Resolve endpoint + ping + models. Laeuft beim Aufbau und bei jedem Sichtbarwerden des Tabs
+   *  (ein im Hintergrund eingerichteter Endpunkt soll ohne Neuoeffnen greifen). */
+  private async resolveEndpoint(): Promise<void> {
+    const { pingEl, pingLabelEl, modelHolder, modelInput } = this;
+    if (this.resolving || !pingEl || !pingLabelEl || !modelHolder || !modelInput) return;
+    this.resolving = true;
+    try {
+      const source = await this.plugin.llm.resolve();
+      this.endpoint = source.config;
       if (this.closed) return;
-      const kind = reachable ? "ok" : "unknown";
-      const label = endpointStatusText(kind, { lang: getLang() });
-      paintStatus(pingEl, kind, label);
-      pingLabelEl.setText(`${this.endpoint.url} — ${label}`);
-      if (modelFieldMode(models) === "dropdown") {
-        // Keep a saved-but-absent model selectable instead of losing it (UI-STANDARD §8,
-        // same rule as the settings model field).
-        const { options, initial } = initialModelSelection(models, source.model);
-        modelHolder.empty();
-        const sel = modelHolder.createEl("select");
-        for (const m of options) sel.createEl("option", { value: m, text: m });
-        this.model = initial;
-        sel.value = this.model;
-        sel.addEventListener("change", () => { this.model = sel.value; this.updateEnabled(); });
+      // The source decides the model too (choice → manager default → local llmModel).
+      if (!this.modelDirty) { this.model = source.model; modelInput.value = source.model; }
+      if (!this.endpoint) {
+        // No resolved endpoint → nothing left to probe() for a kind; "unknown" carries the
+        // shared error visual (circle-x/is-error) while the label stays the specific,
+        // actionable message instead of the generic "not reachable" klartext.
+        paintStatus(pingEl, "unknown", t("deck.modal.noEndpoint"));
+        pingLabelEl.setText(t("deck.modal.noEndpoint"));
+        this.warnEl?.setText(t("deck.modal.noEndpoint"));
+      } else {
+        if (this.warnEl?.textContent === t("deck.modal.noEndpoint")) this.warnEl.setText("");
+        // One request answers both questions: the model list of the resolved endpoint, and — by its
+        // answer — whether it is reachable. The finer diagnosis (key refused, wrong path, ...) lives in
+        // the settings, next to the endpoint row.
+        const { models, reachable } = await this.plugin.llm.models();
+        if (this.closed) return;
+        const kind = reachable ? "ok" : "unknown";
+        const label = endpointStatusText(kind, { lang: getLang() });
+        paintStatus(pingEl, kind, label);
+        pingLabelEl.setText(`${this.endpoint.url} — ${label}`);
+        if (modelFieldMode(models) === "dropdown") {
+          // Keep a saved-but-absent model selectable instead of losing it (UI-STANDARD §8,
+          // same rule as the settings model field).
+          const { options, initial } = initialModelSelection(models, source.model);
+          modelHolder.empty();
+          const sel = modelHolder.createEl("select");
+          for (const m of options) sel.createEl("option", { value: m, text: m });
+          this.model = initial;
+          sel.value = this.model;
+          sel.addEventListener("change", () => { this.model = sel.value; this.updateEnabled(); });
+        }
       }
-    }
-    this.updateEnabled();
-    // Endpoint is only known now → re-run the source check so the context-overflow warning
-    // can actually fire on first open (F3: the earlier refreshSourceBits ran with endpoint null).
-    if (this.currentSource) void this.checkSourceAsync(this.currentSource);
+      this.updateEnabled();
+      // Endpoint is only known now → re-run the source check so the context-overflow warning
+      // can actually fire on first open (F3: the earlier refreshSourceBits ran with endpoint null).
+      if (this.currentSource) void this.checkSourceAsync(this.currentSource);
+    } finally { this.resolving = false; }
   }
 
   /** Update the source-note-dependent widgets (label, replace choice, deck hint, context warn). */

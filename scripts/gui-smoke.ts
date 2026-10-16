@@ -303,6 +303,7 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "G6 Denkblock live: der Denk-Text steht waehrend des Stroms offen und waechst",
     "G7 Kontrolle mit Absatzwechseln: der Strom folgt auch, wenn ein Stueck mehrere Zeilen auf einmal bringt",
     "G8 Wiederaufnahme: steht der Nutzer nach dem Hochscrollen wieder unten, folgt der Strom wieder",
+    "G9 Ein nachtraeglich eingerichteter Endpunkt wird beim Zurueckschalten auf den Tab erkannt (Knopf wird aktiv)",
   ],
   anfrage: [
     "R1 Abschnitt „Anfrage“ klappt auf und wieder zu",
@@ -1957,6 +1958,63 @@ const chatSektion: Section = {
       bilanz.unmeasured(G8, gestoert);
     } else {
       zeichneFolge(bilanz, { folge: G4, wiederaufnahme: G8 }, gestoert.ergebnis);
+    }
+
+    // G9: Erzeugen-Panel offen ohne Endpunkt (Knopf gesperrt), Endpunkt wird nachtraeglich gesetzt, der Nutzer schaltet den Tab weg und zurueck.
+    // Gegenprobe: ohne die Neuaufloesung in `GeneratePanel.onShow` bleibt der Knopf gesperrt (Task Welle 23, Erzeugen-Panel).
+    const G9 = "G9 Ein nachtraeglich eingerichteter Endpunkt wird beim Zurueckschalten auf den Tab erkannt (Knopf wird aktiv)";
+    {
+      const stub9 = await startLlmStub({ models: ["google/gemma-4-e4b"], takt: 20, laenge: 8, nachlaufMs: 160 });
+      const vorher9 = await cdp.evaluate<string>(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; return JSON.stringify(p.settings.llmEndpoints);`);
+      try {
+        erzeugtePfade.push(STREAM_QUELLE);
+        await cdp.evaluate(`
+          const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+          p.settings.llmEndpoints = [];
+          p.llm.invalidate();
+          app.workspace.detachLeavesOfType("slide-deck-hub");
+          const q = app.vault.getAbstractFileByPath(${JSON.stringify(STREAM_QUELLE)});
+          const text = "# Wandern\\n\\nEine Tagestour braucht Wasser.";
+          if (q) await app.vault.modify(q, text); else await app.vault.create(${JSON.stringify(STREAM_QUELLE)}, text);
+          return true;
+        `);
+        if (!(await openExisting(cdp, STREAM_QUELLE, "source"))) {
+          bilanz.unmeasured(G9, `Quellnotiz ${STREAM_QUELLE} liess sich nicht oeffnen`);
+        } else {
+          await cdp.evaluate(`await app.commands.executeCommandById("${PLUGIN_ID}:generate-deck"); return true;`);
+          const KNOPF = `document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta")`;
+          const gesperrt = await pollUntil<boolean>(cdp, `const b = ${KNOPF}; return b && b.disabled && (document.querySelector(".sd-gen-view")?.textContent ?? "").length > 0 ? true : null;`, 15_000, 300);
+          if (!gesperrt) {
+            bilanz.unmeasured(G9, "Vorbedingung verfehlt: das Panel zeigte ohne Endpunkt keinen gesperrten Knopf");
+          } else {
+            await cdp.evaluate(`
+              const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+              p.settings.llmEndpoints = [{ url: ${JSON.stringify(stub9.url)}, model: "google/gemma-4-e4b" }];
+              p.llm.invalidate();
+              await p.llm.resolve({ force: true });
+              return true;
+            `);
+            // Vorbedingung: ohne Tab-Wechsel bleibt der Knopf gesperrt (so ist der Zustand des Befunds hergestellt).
+            await new Promise((r) => setTimeout(r, 600));
+            const nochGesperrt = await cdp.evaluate<boolean>(`const b = ${KNOPF}; return !!b && b.disabled;`);
+            // Tab weg und zurueck: der Nutzer geht in einen anderen Tab des Hubs und kehrt zurueck.
+            await cdp.evaluate(`
+              const tabs = [...document.querySelectorAll(".okit-hub-tab")];
+              const weg = tabs.find((t) => t.getAttribute("data-tab") !== "generate");
+              const hin = tabs.find((t) => t.getAttribute("data-tab") === "generate");
+              if (!weg || !hin) return false;
+              weg.click(); await new Promise((r) => setTimeout(r, 300)); hin.click();
+              return true;
+            `);
+            const aktiv = await pollUntil<boolean>(cdp, `const b = ${KNOPF}; return b && !b.disabled ? true : null;`, 15_000, 300);
+            if (!nochGesperrt) bilanz.unmeasured(G9, "Vorbedingung verfehlt: der Knopf war schon vor dem Tab-Wechsel aktiv");
+            else record(G9, aktiv === true, aktiv ? "Knopf gesperrt → nach Tab-Wechsel aktiv" : "Knopf blieb nach Tab-Wechsel gesperrt (Endpunkt nicht neu aufgeloest)");
+          }
+        }
+      } finally {
+        await cdp.evaluate(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; p.settings.llmEndpoints = JSON.parse(${JSON.stringify(vorher9)}); p.llm.invalidate(); app.workspace.detachLeavesOfType("slide-deck-hub"); return true;`);
+        await stub9.stop();
+      }
     }
 
     if (!MIT_MODELL) {
