@@ -45,6 +45,8 @@ export async function runGenerateDeck(deps: GenerateDeps): Promise<GenerateResul
         (c) => { acc.content += c; deps.onState({ phase, attempt, content: acc.content, reasoning: acc.reasoning }); },
         (rs) => { acc.reasoning += rs; deps.onState({ phase, attempt, content: acc.content, reasoning: acc.reasoning }); },
         deps.signal,
+        // Gemma 4 ohne Oeffner: der bisher gezeigte Text war Denken (es steht im Ergebnis unter `reasoning`).
+        () => { acc.content = ""; deps.onState({ phase, attempt, content: "", reasoning: acc.reasoning }); },
       );
       finishReason = r.finishReason;
       usedFallback = r.usedFallback;

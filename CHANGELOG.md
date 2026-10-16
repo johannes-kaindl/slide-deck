@@ -12,6 +12,9 @@ versioning follows [SemVer](https://semver.org/).
 
 ### Changed
 
+- **Gemma 4 no longer shows its thinking as the deck text.** With Gemma 4 in LM Studio the thinking used to appear in the Generate tab's answer area; it now goes into the collapsible thinking block and the answer area shows only the deck being written.
+- **Gemma 4 on LM Studio cannot be switched off completely.** "Thinking: off" sends the lowest level there, because LM Studio ignores "none" for this model; the model still thinks a little (a few tokens, a little time).
+- **A model backend or family this version does not know yet** no longer breaks the request; it is sent as unknown.
 - **README:** a new picture shows the three Traces layouts `agenda`, `threads` and `closing` side by side (taken with `npm run shots -- layouts-traces`, embedded in the English and German README).
 - **Embedded images:** a file whose extension is not one of png, jpg, jpeg, gif, webp or svg is no longer read as an image (before, an extension such as `constructor` passed the check by accident). Behaviour of the shared kit pins taken with the update: obsidian-kit 0.60.1 and code-kit 0.27.1 (from 0.59.1 and 0.24.0); the data-URL and Base64 code now comes from the kit (`data-url`), and a broken Base64 value in a Mermaid fence or an exported slide now fails with an error instead of decoding garbage. The other changes in 0.60.0, 0.60.1, 0.25.0, 0.26.0, 0.27.0 and 0.27.1 (tool-provider contract, share export, plugin-id check, local time stamps, slugs, sizes, secret value, byte tokens, Lua-port exports) do not change what this plugin shows; the list of dropped request settings (`sanitizeRequestSettings`) is now sorted, which only changes the order of that hint.
 

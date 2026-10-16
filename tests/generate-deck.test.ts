@@ -11,6 +11,26 @@ function deps(client: any, over: any = {}) {
 }
 
 describe("runGenerateDeck", () => {
+  it("onContentReset leert den gezeigten Text, das Denken bleibt (Gemma 4 ohne Oeffner)", async () => {
+    const states: { content: string; reasoning: string }[] = [];
+    const client = {
+      generate: vi.fn(async (_m: unknown, onContent: (t: string) => void, onReasoning: (t: string) => void, _s: unknown, onContentReset: () => void) => {
+        onReasoning("zuerst ueberlegt");
+        onContent("Ich waege ab<channel|>");
+        onContentReset();
+        onContent("# A");
+        return { content: "# A", reasoning: "Ich waege ab", usedFallback: false };
+      }),
+    };
+    await runGenerateDeck(deps(client, { onState: (s: { content: string; reasoning: string }) => states.push({ content: s.content, reasoning: s.reasoning }) }));
+    const mitDenken = states.findIndex((x) => x.content.includes("<channel|>"));
+    expect(mitDenken).toBeGreaterThan(0);
+    const nachReset = mitDenken + 1;
+    expect(states[nachReset]).toEqual({ content: "", reasoning: "zuerst ueberlegt" });
+    expect(states[nachReset + 1]?.content).toBe("# A");
+    expect(states.slice(nachReset).some((x) => x.content.includes("waege"))).toBe(false);
+  });
+
   it("happy path: returns a themed deck, not incomplete, no fallback", async () => {
     const client = { generate: vi.fn(async () => ({ content: "# A\n\n---\n\n# B", reasoning: "", usedFallback: false })) };
     const r = await runGenerateDeck(deps(client));

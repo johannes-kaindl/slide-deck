@@ -8,7 +8,9 @@ export interface DeckStreamResult { content: string; reasoning: string; finishRe
  *  connection (`plugin.llm`) owns endpoint, request parameters, transport, deadlines and checking;
  *  this is the thin adapter between it and the generation flow. */
 export interface DeckClient {
-  generate(messages: ChatMessage[], onContent: (t: string) => void, onReasoning: (t: string) => void, signal?: AbortSignal): Promise<DeckStreamResult>;
+  /** `onContentReset`: the text delivered so far through `onContent` was thinking (Gemma 4 writes it into the content without an
+   *  opener and ends it with `<channel|>`); the caller drops what it collected. */
+  generate(messages: ChatMessage[], onContent: (t: string) => void, onReasoning: (t: string) => void, signal?: AbortSignal, onContentReset?: () => void): Promise<DeckStreamResult>;
 }
 
 /** Maps a failed connection result to the error the callers show. The Kit only knows `kind` and the
@@ -37,9 +39,10 @@ export function deckResultOf(r: LlmResult): DeckStreamResult {
  *  connection resolves alias and family for it. Empty = the resolved model. */
 export function deckClient(llm: Pick<LlmConnection, "complete">, model: string): DeckClient {
   return {
-    async generate(messages, onContent, onReasoning, signal) {
+    async generate(messages, onContent, onReasoning, signal, onContentReset) {
       const r = await llm.complete({ messages }, {
         onToken: onContent, onReasoning,
+        ...(onContentReset ? { onContentReset } : {}),
         ...(model ? { model } : {}),
         ...(signal ? { signal } : {}),
       });

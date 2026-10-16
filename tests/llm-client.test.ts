@@ -62,6 +62,13 @@ describe("deckClient", () => {
     expect(complete.mock.calls[0]![1]).toMatchObject({ model: "mein-modell", signal: ac.signal });
   });
 
+  it("reicht onContentReset an die Verbindung (Gemma 4 ohne Oeffner)", async () => {
+    const reset = vi.fn();
+    const complete = vi.fn(async (_req: unknown, h?: { onContentReset?: () => void }) => { h?.onContentReset?.(); return ok(); });
+    await deckClient({ complete } as never, "").generate([], () => {}, () => {}, undefined, reset);
+    expect(reset).toHaveBeenCalledTimes(1);
+  });
+
   it("ohne Modell sendet es kein 'model' mit — dann gilt das aufgeloeste", async () => {
     const complete = vi.fn(async (_req: unknown, _h?: object) => ok());
     await deckClient({ complete } as never, "").generate([], () => {}, () => {});
