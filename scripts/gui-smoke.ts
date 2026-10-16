@@ -39,7 +39,7 @@
  * vom Arbeitsvault abhaengt.
  */
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   AbbruchAusnahme,
@@ -62,7 +62,7 @@ import {
 } from "../../tools/obsidian-cdp/cdp.js";
 import { messeFolge, zeichneFolge } from "../../tools/obsidian-cdp/folge.js";
 import { createBilanz, parseArgs, runDriver, type Bilanz } from "../../tools/obsidian-cdp/bilanz.js";
-import { startLlmStub, type StubAnfrage } from "../../tools/obsidian-cdp/llm-stub.js";
+import { startLlmStub, type LlmStub, type StubAnfrage } from "../../tools/obsidian-cdp/llm-stub.js";
 import { capture } from "../../tools/obsidian-cdp/shot.js";
 // Das Woerterbuch selbst, nicht eine Kopie seiner Form: daraus kommen sowohl die exakten
 // Schluessel als auch die Praefix-Liste fuer B2. Eine im Treiber gepflegte Musterliste waere
@@ -304,6 +304,7 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "G7 Kontrolle mit Absatzwechseln: der Strom folgt auch, wenn ein Stueck mehrere Zeilen auf einmal bringt",
     "G8 Wiederaufnahme: steht der Nutzer nach dem Hochscrollen wieder unten, folgt der Strom wieder",
     "G9 Ein nachtraeglich eingerichteter Endpunkt wird beim Zurueckschalten auf den Tab erkannt (Knopf wird aktiv)",
+    "G10 Gemma 4 ohne Oeffner: der Denktext steht im Denkblock, nicht im Antwortbereich",
   ],
   anfrage: [
     "R1 Abschnitt „Anfrage“ klappt auf und wieder zu",
@@ -1790,49 +1791,57 @@ interface StreamZeile { rl: number; open: boolean; vis: boolean }
 interface StreamLauf { ergebnis: Awaited<ReturnType<typeof messeFolge>>; denken: StreamZeile[] }
 
 /** `string`: der Grund, warum das Erzeugen-Panel nicht zustande kam (Umgebung, kein Befund). */
+/** Quellnotiz anlegen, Endpunkt auf den Stub setzen und das Erzeugen-Panel oeffnen. `string`: der Grund, warum es nicht zustande kam
+ *  (Umgebung, kein Befund); `null`: der Knopf „Erzeugen“ ist aktiv. Der Aufrufer stellt die Endpunkte danach wieder her. */
+async function oeffneErzeugenPanel(cdp: Cdp, stub: LlmStub): Promise<string | null> {
+  await cdp.evaluate(`
+    const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+    p.settings.llmEndpoints = [{ url: ${JSON.stringify(stub.url)}, model: "google/gemma-4-e4b" }];
+    p.llm.invalidate();
+    // Die Aufloesung jetzt erzwingen und merken: das Panel liest sie beim Oeffnen aus dem Zwischenspeicher der Verbindung.
+    await p.llm.resolve({ force: true });
+    // Ein Hub-Blatt aus einem frueheren Abschnitt hat seinen Endpunkt schon aufgeloest (einmal je Oeffnen): zu, damit der Befehl
+    // unten ein frisches Panel gegen den Stub oeffnet.
+    app.workspace.detachLeavesOfType("slide-deck-hub");
+    const alt = app.vault.getAbstractFileByPath("smoke-stream-quelle — Deck.md");
+    if (alt) await app.vault.delete(alt);
+    const q = app.vault.getAbstractFileByPath(${JSON.stringify(STREAM_QUELLE)});
+    const text = "# Wandern\\n\\nEine Tagestour braucht Wasser, feste Schuhe und eine Karte.";
+    if (q) await app.vault.modify(q, text); else await app.vault.create(${JSON.stringify(STREAM_QUELLE)}, text);
+    return true;
+  `);
+  if (!(await openExisting(cdp, STREAM_QUELLE, "source"))) return `Quellnotiz ${STREAM_QUELLE} liess sich nicht oeffnen`;
+  await cdp.evaluate(`
+    await app.commands.executeCommandById("${PLUGIN_ID}:generate-deck");
+    const rechts = app.workspace.rightSplit;
+    if (rechts) { if (rechts.collapsed) rechts.expand(); if (typeof rechts.setSize === "function") rechts.setSize(640); }
+    return true;
+  `);
+  const bereit = await pollUntil<boolean>(cdp, `
+    const b = document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta");
+    return b && !b.disabled ? true : null;
+  `, 20_000, 300);
+  if (!bereit) {
+    const zustand = await cdp.evaluate<string>(`
+      const b = document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta");
+      return JSON.stringify({ view: !!document.querySelector(".sd-gen-view"), knopf: b ? { disabled: b.disabled, text: b.textContent } : null,
+        aktiv: app.workspace.getActiveFile()?.path ?? null, text: (document.querySelector(".sd-gen-view")?.textContent ?? "").slice(0, 120),
+        endpoints: app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]?.settings?.llmEndpoints, choice: app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]?.settings?.choice,
+        mgr: !!app.plugins.plugins["llm-endpoint-manager"], lig: !!app.plugins.plugins["local-image-generator"] });
+    `);
+    return `Knopf „Erzeugen“ wurde in 20 s nicht aktiv: ${zustand} · Stub: ${JSON.stringify(stub.zaehler())} (Stub-URL ${stub.url}) · Anfragen: ${stub.alleAnfragen().map((r) => `${r.methode} ${r.url}`).join(", ") || "keine"}`;
+  }
+  return null;
+}
+
 async function stromMessen(cdp: Cdp, opt: StreamOptionen): Promise<StreamLauf | string> {
   erzeugtePfade.push(STREAM_QUELLE, "smoke-stream-quelle — Deck.md");
   const stub = await startLlmStub({ models: ["google/gemma-4-e4b"], takt: 20, laenge: 8, nachlaufMs: 160 });
   stub.antworten([{ text: streamAntwort(opt.leerzeilen ?? false, opt.folien), ...(opt.mitDenken ? { reasoning: STREAM_REASONING } : {}) }]);
   const vorher = await cdp.evaluate<string>(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; return JSON.stringify(p.settings.llmEndpoints);`);
   try {
-    await cdp.evaluate(`
-      const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
-      p.settings.llmEndpoints = [{ url: ${JSON.stringify(stub.url)}, model: "google/gemma-4-e4b" }];
-      p.llm.invalidate();
-      // Die Aufloesung jetzt erzwingen und merken: das Panel liest sie beim Oeffnen aus dem Zwischenspeicher der Verbindung.
-      await p.llm.resolve({ force: true });
-      // Ein Hub-Blatt aus einem frueheren Abschnitt hat seinen Endpunkt schon aufgeloest (einmal je Oeffnen): zu, damit der Befehl
-      // unten ein frisches Panel gegen den Stub oeffnet.
-      app.workspace.detachLeavesOfType("slide-deck-hub");
-      const alt = app.vault.getAbstractFileByPath("smoke-stream-quelle — Deck.md");
-      if (alt) await app.vault.delete(alt);
-      const q = app.vault.getAbstractFileByPath(${JSON.stringify(STREAM_QUELLE)});
-      const text = "# Wandern\\n\\nEine Tagestour braucht Wasser, feste Schuhe und eine Karte.";
-      if (q) await app.vault.modify(q, text); else await app.vault.create(${JSON.stringify(STREAM_QUELLE)}, text);
-      return true;
-    `);
-    if (!(await openExisting(cdp, STREAM_QUELLE, "source"))) return `Quellnotiz ${STREAM_QUELLE} liess sich nicht oeffnen`;
-    await cdp.evaluate(`
-      await app.commands.executeCommandById("${PLUGIN_ID}:generate-deck");
-      const rechts = app.workspace.rightSplit;
-      if (rechts) { if (rechts.collapsed) rechts.expand(); if (typeof rechts.setSize === "function") rechts.setSize(640); }
-      return true;
-    `);
-    const bereit = await pollUntil<boolean>(cdp, `
-      const b = document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta");
-      return b && !b.disabled ? true : null;
-    `, 20_000, 300);
-    if (!bereit) {
-      const zustand = await cdp.evaluate<string>(`
-        const b = document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta");
-        return JSON.stringify({ view: !!document.querySelector(".sd-gen-view"), knopf: b ? { disabled: b.disabled, text: b.textContent } : null,
-          aktiv: app.workspace.getActiveFile()?.path ?? null, text: (document.querySelector(".sd-gen-view")?.textContent ?? "").slice(0, 120),
-          endpoints: app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]?.settings?.llmEndpoints, choice: app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]?.settings?.choice,
-          mgr: !!app.plugins.plugins["llm-endpoint-manager"], lig: !!app.plugins.plugins["local-image-generator"] });
-      `);
-      return `Knopf „Erzeugen“ wurde in 20 s nicht aktiv: ${zustand} · Stub: ${JSON.stringify(stub.zaehler())} (Stub-URL ${stub.url}) · Anfragen: ${stub.alleAnfragen().map((r) => `${r.methode} ${r.url}`).join(", ") || "keine"}`;
-    }
+    const grund = await oeffneErzeugenPanel(cdp, stub);
+    if (grund !== null) return grund;
     // Beobachter fuer den Denk-Text (G6): die Bruecke kennt ihn nicht. Haengt vor dem Klick auf „Erzeugen“; der Rumpf selbst
     // entsteht erst mit dem Klick, `messeFolge` wartet darauf (`bereitFristMs`).
     await cdp.evaluate(`
@@ -1862,6 +1871,47 @@ async function stromMessen(cdp: Cdp, opt: StreamOptionen): Promise<StreamLauf | 
     await pollUntil<string>(cdp, `return document.querySelector(".sd-gen-view .sd-gen-running") ? null : "fertig";`, 90_000, 400);
     const denken = await cdp.evaluate<StreamZeile[]>(`window.__sdDenkenObs?.disconnect(); return window.__sdDenken ?? [];`);
     return { ergebnis, denken };
+  } finally {
+    await cdp.evaluate(`
+      const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      p.settings.llmEndpoints = JSON.parse(${JSON.stringify(vorher)});
+      p.llm.invalidate();
+      return true;
+    `).catch(() => undefined);
+    await stub.stop();
+  }
+}
+
+/** G10: Gemma 4 auf LM Studio schreibt sein Denken OHNE Oeffner in den Inhalt und beendet es mit `<channel|>`. Der Stub streamt genau das.
+ *  Gemessen wird der Antwortbereich MITTEN im Strom (am Ende setzt das Ergebnis den Text neu): der Denktext gehoert in den Denkblock.
+ *  Auf dem alten Pin (code-kit 0.27.1) kennt der Trenner das Kanalende nicht; mit 0.27.2 ohne `onContentReset` bliebe der Denktext im
+ *  Antwortbereich stehen. `string`: Grund, warum nichts zu messen war. */
+async function gemmaMessen(cdp: Cdp): Promise<{ mid: string; denken: string; ende: string } | string> {
+  erzeugtePfade.push(STREAM_QUELLE, "smoke-stream-quelle — Deck.md");
+  const GEDANKE = "Ich waege erst die Folienfolge ab und ordne dann die Punkte.";
+  const antwort = streamAntwort(false, 3);
+  const dritt = Math.ceil(antwort.length / 3);
+  const stub = await startLlmStub({ models: ["google/gemma-4-e4b"], takt: 700 });
+  stub.antworten([{ stuecke: [GEDANKE.slice(0, 20), GEDANKE.slice(20) + "<channel|>", antwort.slice(0, dritt), antwort.slice(dritt, 2 * dritt), antwort.slice(2 * dritt)], takt: 700, nachlaufMs: 300 }]);
+  const vorher = await cdp.evaluate<string>(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; return JSON.stringify(p.settings.llmEndpoints);`);
+  try {
+    const grund = await oeffneErzeugenPanel(cdp, stub);
+    if (grund !== null) return grund;
+    await cdp.evaluate(`document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta").click(); return true;`);
+    const mid = await pollUntil<string>(cdp, `
+      const t = document.querySelector(".sd-gen-view .okit-stream-tail")?.textContent ?? "";
+      return t.includes("Folie 1") ? t : null;`, 30_000, 50);
+    if (mid === null) return "der Antwortbereich zeigte nie den Beginn der Antwort";
+    const denken = await cdp.evaluate<string>(`return document.querySelector(".sd-gen-view .okit-stream-reasoning > pre")?.textContent ?? "";`);
+    const shotDir = process.env.SMOKE_SHOT_DIR;
+    if (shotDir) {
+      const { boxOf, capture } = await import("../../tools/obsidian-cdp/shot.js");
+      const box = await boxOf(cdp, ".sd-gen-view .sd-gen-stream", 12);
+      if (box) { mkdirSync(shotDir, { recursive: true }); writeFileSync(join(shotDir, "g10-gemma-denkblock.png"), await capture(cdp, box, 2)); }
+    }
+    await pollUntil<string>(cdp, `return document.querySelector(".sd-gen-view .sd-gen-running") ? null : "fertig";`, 60_000, 400);
+    const ende = await cdp.evaluate<string>(`return (document.querySelector(".sd-gen-view")?.textContent ?? "").slice(0, 160);`);
+    return { mid, denken, ende };
   } finally {
     await cdp.evaluate(`
       const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
@@ -2015,6 +2065,14 @@ const chatSektion: Section = {
         await cdp.evaluate(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; p.settings.llmEndpoints = JSON.parse(${JSON.stringify(vorher9)}); p.llm.invalidate(); app.workspace.detachLeavesOfType("slide-deck-hub"); return true;`);
         await stub9.stop();
       }
+    }
+
+    {
+      const G10 = "G10 Gemma 4 ohne Oeffner: der Denktext steht im Denkblock, nicht im Antwortbereich";
+      const g10 = await gemmaMessen(cdp);
+      if (typeof g10 === "string") bilanz.unmeasured(G10, g10);
+      else record(G10, !g10.mid.includes("waege") && !g10.mid.includes("channel") && g10.denken.includes("waege"),
+        `mitten im Strom „${g10.mid.slice(0, 40)}“ · Denkblock „${g10.denken.slice(0, 40)}“ · Ende: „${g10.ende.slice(0, 60)}“`);
     }
 
     if (!MIT_MODELL) {
