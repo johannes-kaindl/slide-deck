@@ -61,6 +61,7 @@ import {
   setPluginSetting,
 } from "../../tools/obsidian-cdp/cdp.js";
 import { messeFolge, zeichneFolge } from "../../tools/obsidian-cdp/folge.js";
+import { gegenprobeErreichbarkeit, gegenprobeFokus, messeErreichbarkeit, messeFokusErhalt, mitHoehe, type PflichtTeilurteil } from "../../tools/obsidian-cdp/pflichtpunkte.js";
 import { createBilanz, parseArgs, runDriver, type Bilanz } from "../../tools/obsidian-cdp/bilanz.js";
 import { startLlmStub, type LlmStub, type StubAnfrage } from "../../tools/obsidian-cdp/llm-stub.js";
 import { capture } from "../../tools/obsidian-cdp/shot.js";
@@ -306,6 +307,11 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "G9 Ein nachtraeglich eingerichteter Endpunkt wird beim Zurueckschalten auf den Tab erkannt (Knopf wird aktiv)",
     "G10 Gemma 4 ohne Oeffner: der Denktext steht im Denkblock, nicht im Antwortbereich",
     "G11 Denkblock kopierbar: der Kopier-Knopf erscheint erst mit Denk-Text, kopiert ihn in die Zwischenablage, quittiert am Knopf und klappt den Block nicht um",
+    "G12 Pflicht (a): das Eingabefeld des Erzeugen-Panels behaelt den Fokus, wenn ein Neuzeichnen ausgeloest wird",
+    "G13 Pflicht (a), Gegenprobe: ein Neuzeichnen mit Fokusverlust macht G12 rot",
+    "G14 Pflicht (b): im laufenden Strom ist jedes Bedienelement erreichbar (natuerliche Hoehe, Strom ueber der Obergrenze)",
+    "G15 Pflicht (b): auch im kurzen Panel (420 px) ist jedes Bedienelement erreichbar",
+    "G16 Pflicht (b), Gegenprobe: ohne Rollbalken wird etwas unerreichbar",
   ],
   anfrage: [
     "R1 Abschnitt „Anfrage“ klappt auf und wieder zu",
@@ -1973,6 +1979,41 @@ async function kopierMessen(cdp: Cdp): Promise<string | { vorher: number; label:
   }
 }
 
+/** G12–G16: die Pflichtpunkte § 3a (Baustein `pflichtpunkte` der Bruecke, Vorbild lingotuner). (a) im Eingabezustand: das Hinweisfeld
+ *  ist der einzige Tipp-Ort mit eigener Beschriftung. (b) im LAUFENDEN Zustand, in dem der Strom waechst: der Stop-Knopf. Der Stub haelt
+ *  den Strom nach dem letzten Stueck offen (`nachlaufMs`), damit der Zustand lange genug steht; am Ende bricht der Stop-Knopf ab. */
+const FELD_HINWEIS = ".sd-gen-view .sd-gen-row input[placeholder]";
+async function pflichtMessen(cdp: Cdp): Promise<string | { fokus: PflichtTeilurteil; gegenFokus: PflichtTeilurteil; hoch: PflichtTeilurteil; kurz: PflichtTeilurteil; gegen: PflichtTeilurteil }> {
+  erzeugtePfade.push(STREAM_QUELLE, "smoke-stream-quelle — Deck.md");
+  const stub = await startLlmStub({ models: ["google/gemma-4-e4b"], takt: 20, laenge: 8, nachlaufMs: 60_000 });
+  stub.antworten([{ text: streamAntwort(true, 60), reasoning: STREAM_REASONING }]);
+  const vorher = await cdp.evaluate<string>(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; return JSON.stringify(p.settings.llmEndpoints);`);
+  try {
+    const grund = await oeffneErzeugenPanel(cdp, stub);
+    if (grund !== null) return grund;
+    const fokus = await messeFokusErhalt(cdp, { selector: FELD_HINWEIS });
+    const gegenFokus = await gegenprobeFokus(cdp, { selector: FELD_HINWEIS });
+    await cdp.evaluate(`document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta").click(); return true;`);
+    const lang = await pollUntil<boolean>(cdp, `const b = document.querySelector(${JSON.stringify(STREAM_BODY)}); return b && b.scrollHeight > b.clientHeight + 40 && document.querySelector(".sd-gen-view .sd-gen-cta button") ? true : null;`, 30_000, 100);
+    if (!lang) return "der Strom erreichte die Obergrenze des Antwortbereichs nicht (Vorbedingung fuer (b))";
+    const opts = { selektoren: [".sd-gen-view .sd-gen-cta button"], erforderlich: [".sd-gen-view .sd-gen-cta button"], fuelle: { in: STREAM_BODY }, ueberlauf: STREAM_BODY };
+    const hoch = await messeErreichbarkeit(cdp, opts);
+    const kurz = await mitHoehe<PflichtTeilurteil>(cdp, { element: ".workspace-leaf", enthaelt: ".sd-gen-view", hoehe: 420 }, () => messeErreichbarkeit(cdp, opts));
+    const gegen = await gegenprobeErreichbarkeit(cdp, { selektoren: opts.selektoren, rollbereich: STREAM_BODY, fuelle: opts.fuelle });
+    await cdp.evaluate(`document.querySelector(".sd-gen-view .sd-gen-cta button.mod-warning")?.click(); return true;`);
+    await pollUntil<string>(cdp, `return document.querySelector(".sd-gen-view .sd-gen-running") ? null : "fertig";`, 30_000, 300);
+    return { fokus, gegenFokus, hoch, kurz, gegen };
+  } finally {
+    await cdp.evaluate(`
+      const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      p.settings.llmEndpoints = JSON.parse(${JSON.stringify(vorher)});
+      p.llm.invalidate();
+      return true;
+    `).catch(() => undefined);
+    await stub.stop();
+  }
+}
+
 const chatSektion: Section = {
   key: "chat",
   title: "G · Chat-Weg (Fehlerkoerper; mit --with-model Streaming und Abbruch gegen einen echten Endpunkt)",
@@ -2131,6 +2172,23 @@ const chatSektion: Section = {
       if (typeof g11 === "string") bilanz.unmeasured(G11, g11);
       else record(G11, g11.vorher === 0 && g11.label !== null && g11.label !== "" && g11.kopiert && g11.quittiert && g11.unveraendert,
         `Knoepfe vor dem Denken: ${g11.vorher} (erwartet 0) · aria-label ${g11.label === null ? "FEHLT" : `„${g11.label}“`} · Zwischenablage traegt die Marke: ${g11.kopiert} („${g11.danach.slice(0, 40)}“) · Quittung is-copied: ${g11.quittiert} · Block unveraendert offen/zu: ${g11.unveraendert}`);
+    }
+
+    {
+      const NAMEN = ["G12 Pflicht (a): das Eingabefeld des Erzeugen-Panels behaelt den Fokus, wenn ein Neuzeichnen ausgeloest wird", "G13 Pflicht (a), Gegenprobe: ein Neuzeichnen mit Fokusverlust macht G12 rot", "G14 Pflicht (b): im laufenden Strom ist jedes Bedienelement erreichbar (natuerliche Hoehe, Strom ueber der Obergrenze)", "G15 Pflicht (b): auch im kurzen Panel (420 px) ist jedes Bedienelement erreichbar", "G16 Pflicht (b), Gegenprobe: ohne Rollbalken wird etwas unerreichbar"] as const;
+      const pf = await pflichtMessen(cdp);
+      if (typeof pf === "string") for (const n of NAMEN) bilanz.unmeasured(n, pf);
+      else {
+        const zeichne = (name: string, u: PflichtTeilurteil): void => { if (u.urteil === "nichts-gemessen") bilanz.unmeasured(name, `Messung ungueltig: ${u.detail}`); else record(name, u.urteil === "gruen", u.detail); };
+        zeichne(NAMEN[0], pf.fokus);
+        zeichne(NAMEN[1], pf.gegenFokus);
+        zeichne(NAMEN[2], pf.hoch);
+        zeichne(NAMEN[3], pf.kurz);
+        // Gemessen (Welle 24): Stop sitzt UNTER dem Antwortbereich, der Antwortbereich rollt in sich (max-height 320 px). Dem Bereich den Rollbalken
+        // zu nehmen veraendert nichts an der Lage des Knopfs — die Gegenprobe kann hier nie rot werden: nicht anwendbar, nicht gruen.
+        if (pf.gegen.urteil === "rot" && pf.gegen.detail.startsWith("overflow:hidden, aber alle")) bilanz.skipped(NAMEN[4], `in dieser Lage nicht anwendbar: der Stop-Knopf steht ausserhalb des Rollbereichs (${pf.gegen.detail})`);
+        else zeichne(NAMEN[4], pf.gegen);
+      }
     }
 
     if (!MIT_MODELL) {
