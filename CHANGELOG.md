@@ -6,6 +6,14 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **The thinking block in the Generate tab has a copy button.** It copies the model's thinking as plain text; it appears once the block has text, stays usable after the answer ends, and clicking it does not fold the block. Long unbroken lines in the streaming answer now wrap instead of being cut off at the right edge.
+- **With LM Studio, whether a model thinks or reads images now comes from the model's own metadata instead of only its name.**  A model whose name gave no hint is no longer treated as text-only.
+- **The request section of the settings warns before a request would load another model in LM Studio.** If the model you send is not loaded but others are, a line names the loaded ones: the request loads it on demand and can unload a running one ("Model unloaded.").
+- **At the note "Model family recognized", a button "Set family in the manager" opens the LLM Endpoint Manager settings.**
+- **A connection type the plugin does not support (for example the manager's Claude API endpoint) is now reported as such**, instead of as a general configuration error.
+
 ## [0.17.2] — 2026-10-16
 
 ### Fixed
