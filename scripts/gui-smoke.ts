@@ -305,6 +305,7 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "G8 Wiederaufnahme: steht der Nutzer nach dem Hochscrollen wieder unten, folgt der Strom wieder",
     "G9 Ein nachtraeglich eingerichteter Endpunkt wird beim Zurueckschalten auf den Tab erkannt (Knopf wird aktiv)",
     "G10 Gemma 4 ohne Oeffner: der Denktext steht im Denkblock, nicht im Antwortbereich",
+    "G11 Denkblock kopierbar: der Kopier-Knopf erscheint erst mit Denk-Text, kopiert ihn in die Zwischenablage, quittiert am Knopf und klappt den Block nicht um",
   ],
   anfrage: [
     "R1 Abschnitt „Anfrage“ klappt auf und wieder zu",
@@ -1923,6 +1924,55 @@ async function gemmaMessen(cdp: Cdp): Promise<{ mid: string; denken: string; end
   }
 }
 
+/** G11: Der Denkblock traegt seit obsidian-kit 0.63.0 einen Kopier-Knopf. Gegenprobe VOR dem Denken: ohne Denk-Text gibt es keinen Knopf.
+ *  Danach streamt der Stub einen Denk-Text mit Marke; gemessen werden Knopf (aria-label), Zwischenablage (Electron-Clipboard, der vorherige
+ *  Inhalt wird zurueckgeschrieben), Quittung am Knopf (`is-copied`) und der Zustand des `<details>` vor und nach dem Klick. Fehlt der Knopf,
+ *  obwohl der Denk-Text im Block steht, ist das der Befund (rot). `string`: Grund, warum nichts zu messen war. */
+const KOPIER_MARKE = "Kopierprobe-W24";
+async function kopierMessen(cdp: Cdp): Promise<string | { vorher: number; label: string | null; kopiert: boolean; quittiert: boolean; unveraendert: boolean; danach: string }> {
+  erzeugtePfade.push(STREAM_QUELLE, "smoke-stream-quelle — Deck.md");
+  const stub = await startLlmStub({ models: ["google/gemma-4-e4b"], takt: 40, laenge: 8, nachlaufMs: 200 });
+  stub.antworten([{ text: streamAntwort(false, 6), reasoning: `${KOPIER_MARKE}: erst die Folienfolge, dann die Punkte je Folie.` }]);
+  const vorher = await cdp.evaluate<string>(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; return JSON.stringify(p.settings.llmEndpoints);`);
+  try {
+    const grund = await oeffneErzeugenPanel(cdp, stub);
+    if (grund !== null) return grund;
+    const knoepfeVorher = await cdp.evaluate<number>(`return document.querySelectorAll(".sd-gen-view .okit-stream-reasoning-copy").length;`);
+    await cdp.evaluate(`document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta").click(); return true;`);
+    const da = await pollUntil<{ label: string | null }>(cdp, `
+      const d = document.querySelector(".sd-gen-view .okit-stream-reasoning");
+      if (!d || !(d.querySelector("pre")?.textContent ?? "").includes(${JSON.stringify(KOPIER_MARKE)})) return null;
+      const b = d.querySelector(".okit-stream-reasoning-copy");
+      return { label: b ? (b.getAttribute("aria-label") ?? "") : null };`, 30_000, 50);
+    if (da === null) return "der Denk-Text erschien nie im Block";
+    if (da.label === null) return { vorher: knoepfeVorher, label: null, kopiert: false, quittiert: false, unveraendert: true, danach: "" };
+    const g = await cdp.evaluate<{ davor: string; danach: string; quittiert: boolean; unveraendert: boolean }>(`
+      const cb = window.require("electron").clipboard;
+      const davor = cb.readText();
+      cb.writeText("");
+      const b = document.querySelector(".sd-gen-view .okit-stream-reasoning-copy");
+      const d = document.querySelector(".sd-gen-view .okit-stream-reasoning");
+      const offenVorher = d.open;
+      b.click();
+      let danach = "";
+      for (let i = 0; i < 40 && danach === ""; i++) { await new Promise((r) => setTimeout(r, 50)); danach = cb.readText(); }
+      await new Promise((r) => setTimeout(r, 100));
+      const quittiert = b.classList.contains("is-copied");
+      cb.writeText(davor);
+      return { davor, danach, quittiert, unveraendert: d.open === offenVorher };`);
+    await pollUntil<string>(cdp, `return document.querySelector(".sd-gen-view .sd-gen-running") ? null : "fertig";`, 60_000, 400);
+    return { vorher: knoepfeVorher, label: da.label, kopiert: g.danach.includes(KOPIER_MARKE), quittiert: g.quittiert, unveraendert: g.unveraendert, danach: g.danach };
+  } finally {
+    await cdp.evaluate(`
+      const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      p.settings.llmEndpoints = JSON.parse(${JSON.stringify(vorher)});
+      p.llm.invalidate();
+      return true;
+    `).catch(() => undefined);
+    await stub.stop();
+  }
+}
+
 const chatSektion: Section = {
   key: "chat",
   title: "G · Chat-Weg (Fehlerkoerper; mit --with-model Streaming und Abbruch gegen einen echten Endpunkt)",
@@ -2073,6 +2123,14 @@ const chatSektion: Section = {
       if (typeof g10 === "string") bilanz.unmeasured(G10, g10);
       else record(G10, !g10.mid.includes("waege") && !g10.mid.includes("channel") && g10.denken.includes("waege"),
         `mitten im Strom „${g10.mid.slice(0, 40)}“ · Denkblock „${g10.denken.slice(0, 40)}“ · Ende: „${g10.ende.slice(0, 60)}“`);
+    }
+
+    {
+      const G11 = "G11 Denkblock kopierbar: der Kopier-Knopf erscheint erst mit Denk-Text, kopiert ihn in die Zwischenablage, quittiert am Knopf und klappt den Block nicht um";
+      const g11 = await kopierMessen(cdp);
+      if (typeof g11 === "string") bilanz.unmeasured(G11, g11);
+      else record(G11, g11.vorher === 0 && g11.label !== null && g11.label !== "" && g11.kopiert && g11.quittiert && g11.unveraendert,
+        `Knoepfe vor dem Denken: ${g11.vorher} (erwartet 0) · aria-label ${g11.label === null ? "FEHLT" : `„${g11.label}“`} · Zwischenablage traegt die Marke: ${g11.kopiert} („${g11.danach.slice(0, 40)}“) · Quittung is-copied: ${g11.quittiert} · Block unveraendert offen/zu: ${g11.unveraendert}`);
     }
 
     if (!MIT_MODELL) {
