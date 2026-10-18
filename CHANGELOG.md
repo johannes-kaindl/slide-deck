@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.18.0] — 2026-10-18
+
 ### Changed
 
 - **The thinking block in the Generate tab has a copy button.** It copies the model's thinking as plain text; it appears once the block has text, stays usable after the answer ends, and clicking it does not fold the block. Long unbroken lines in the streaming answer now wrap instead of being cut off at the right edge.
