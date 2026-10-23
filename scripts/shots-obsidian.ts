@@ -28,7 +28,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { Cdp, attachTo, closeExtraLeaves, openExisting, pollUntil } from "../../tools/obsidian-cdp/cdp.js";
+import { Cdp, attachTo, closeExtraLeaves, openExisting, pollUntil, schliesseEinstellungen } from "../../tools/obsidian-cdp/cdp.js";
 import { boxAround, boxOf, capture, setWindowSize, withMetrics, writeShot } from "../../tools/obsidian-cdp/shot.js";
 import { buildVault, stagingVaultDir } from "../../tools/obsidian-cdp/vault.js";
 
@@ -190,7 +190,7 @@ async function settingsShot(workspace: Cdp): Promise<string> {
   // erste Zeile ohne Modell das erste GELADENE Modell ihres Servers; danach wird der Vorzustand zurueckgeschrieben
   // (ein Rezept setzt seinen Zustand VOR und NACH dem Lauf zurueck). Ohne geladenes Modell bleibt das Bild ohne Zeile.
   // Ein offenes Einstellungsfenster (Rest eines abgebrochenen Laufs) haelt seinen alten Aufbau — erst schliessen.
-  await workspace.evaluate("app.setting.close(); return true;");
+  await schliesseEinstellungen(workspace);
   await new Promise((r) => setTimeout(r, 500));
   const vorher = await workspace.evaluate<string | null>(`
     const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
@@ -231,7 +231,7 @@ async function settingsShot(workspace: Cdp): Promise<string> {
   });
   const hinweis = await writeShot(settings, "settings.png", png, { ...SHOT_OPTS, thumb: true });
   if (settings !== workspace) settings.close();
-  await workspace.evaluate("app.setting.close();");
+  await schliesseEinstellungen(workspace);
   if (vorher !== null) {
     await workspace.evaluate(`
       const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
