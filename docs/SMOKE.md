@@ -4,7 +4,7 @@ Was gegen ein **laufendes** Obsidian geprüft wird, weil die vitest-Suite es str
 kann: sie läuft mit `environment: "node"` — kein DOM, kein iframe, keine Schrift-Metriken.
 Alles zwischen „das Deck ist geparst" und „die Folie steht im Fenster" ist dort unsichtbar.
 
-**Automatisiert:** `npm run smoke:gui -- --vault slide-deck` (`scripts/gui-smoke.ts`).
+**Automatisiert:** `npm run smoke:gui -- --port <port>` (`scripts/gui-smoke.ts`; `--port` ist Pflicht, `--vault` hat die Plugin-Id als Standard).
 **Von Hand bleibt**, was ein Treiber nicht entscheiden kann — unten in § Hand-Runde.
 
 ## Vorbereitung
@@ -19,11 +19,21 @@ heißt neu gebaut. Ein Lauf gegen den Arbeitsvault ist **kein** Ersatz — dort 
 Store-Build statt des Repo-Stands, und `manifest.version` sieht den Unterschied nicht (beide
 tragen dieselbe Nummer). Der Treiber prüft die Herkunft deshalb per sha1, bevor er misst.
 
-⚠️ **Vor dem Lauf: wer hängt sonst an Obsidian?** Dieser Smoke braucht keinen Neustart — läuft
-schon eine Instanz mit Debug-Port, wird sie mitgenutzt. Fehlt nur der Vault, öffnet ihn ein
-zusätzliches Fenster derselben Instanz (`open "obsidian://open?vault=slide-deck"`; kennt Obsidian
-den frisch gebauten Vault noch nicht, `…?path=<datei im vault>` nehmen). Und: den CDP-Lock
-nehmen, sonst blockt der Guard den ersten Treiber-Aufruf.
+⚠️ **Vor dem Lauf: eine eigene Zweitinstanz, nie die reguläre.** Der Treiber verlangt `--port <port>` (kein Standardport; 9222 gehört der regulären Instanz) und nutzt **keine** laufende Instanz mit: ein eigenes Profil `UD`, ein eigener Port, der CDP-Lock. Das Rezept steht im Kopf von `scripts/gui-smoke.ts`; in Kurzform:
+
+```bash
+UD=/tmp/obs-test-<name>; mkdir -p "$UD"
+lsof -nP -iTCP:<port> -sTCP:LISTEN; pgrep -f "user-data-dir=$UD"        # beides leer, sonst anderen Port/Profil nehmen
+cp ~/Library/Application\ Support/obsidian/obsidian-*.asar "$UD"/        # aktuelle Version statt gebündelter
+# $UD/obsidian.json: {"vaults":{"sd":{"path":"$STAGING_VAULTS_DIR/slide-deck","ts":1,"open":true}},"language":"en"}
+OBSIDIAN_PLUGIN_DIR="$STAGING_VAULTS_DIR/slide-deck/.obsidian/plugins/slide-deck" npm run deploy
+python3 ~/.claude/hooks/obsidian-cdp-lock.py acquire --label slide-deck --intent "GUI-Smoke" --exclusive focus --port <port> --ttl 300
+/Applications/Obsidian.app/Contents/MacOS/Obsidian --user-data-dir="$UD" --remote-debugging-port=<port> &   # je Messlauf ein frischer Prozess, PID merken
+npm run smoke:gui -- --port <port>
+python3 ~/.claude/hooks/obsidian-cdp-lock.py release                      # danach nur die eigene PID beenden
+```
+
+Der erste Lauf nach der Profilanlage ist ein Aufwärmlauf. Verbindliche Regeln zu Instanz und Lock: `../.claude/rules/obsidian-instanz.md` und `../.claude/rules/cdp-lock.md` des Dachs.
 
 ## Automatisierte Prüfpunkte
 
@@ -65,6 +75,9 @@ nehmen, sonst blockt der Guard den ersten Treiber-Aufruf.
 | V11 | Eigenes Deck mit Fernbild | lädt in der Vorschau weiter (Variante A: die Schicht greift nur beim Erzeugen) |
 | V12 | Zweite Schicht je Region | offenes `<textarea>` in Region 1 versteckt die Fernquelle in Region 2 nicht — gemessen an der echten Vorschau; Gegenprobe: das rohe Deck lädt; **Mutation** (Regionen in einem Aufruf rendern) → V12 rot |
 | V13 | Mermaid `A@{ img: "https://…" }` | erzeugtes Deck: 0 Treffer in der Vorschau; Gegenprobe: das rohe Deck lädt (3 Treffer, gemessen — Mermaid lädt das Bild selbst, ohne DOM-Baum). Seit code-kit 0.20.0 macht schon die erste Schicht (`neutralizeRemoteResources`) den Fence zu `text`; die zweite (`mermaidLoadsRemote`) ist Tiefenverteidigung und wird von den Unit-Tests in `tests/deck-second-pass.test.ts` direkt geprüft |
+| CL1 | Claude im Manager: der Endpunkt kommt nur mit Opt-in (`transports.anthropic`), das Plugin wählt ihn | Kontrolle am Fake-Manager (`list()` ohne Transporte: 0, mit `["http","anthropic"]`: 1); danach `plugin.llm.source()`: Backend `anthropic`, Familie `claude`. Ohne den Opt-in sieht das Plugin den Endpunkt nie |
+| CL2 | Erzeugen gegen den Claude-Stub (Messages-API) | `startDeckGeneration` ohne DOM, Stub im Anthropic-Modus (prüft Pfad, `x-api-key`, `anthropic-version`, Pflichtfelder): Pfad `/v1/messages`, Schlüssel, Browser-Header, `max_tokens` = Budget, kein `temperature`/`top_p`; das Deck kommt an; das Denken landet im Zustand `reasoning` (der Denkblock im Panel, G6, ist an `llmEndpoints` und einen OpenAI-Stub gebunden und ignoriert den Fake-Manager) |
+| CL3 | Fehler der API (529) | die Erzeugung endet `fatal` mit „Overloaded“, Phase `error`, keine Notiz geschrieben |
 | G3 | Fehlerkörper: HTTP 200 mit Fehler-Body auf dem Chat-Weg wird zur Meldung | der zentrale LLM-Stub antwortet mit `fehlerAls200` im LM-Studio-Format; `startDeckGeneration` liefert `fatal`/`server` mit dem Text des Fehlers |
 | G4 | Folge-Regel im Erzeugen-Panel: Hochscrollen mitten im Strom wird respektiert | Weg des Nutzers (Quellnotiz, Befehl `generate-deck`, Klick auf „Generate“), Strom in 8-Zeichen-Stücken (20 ms). Der Treiber setzt `scrollTop = 0`, sobald der Überlauf des Rumpfs (`.okit-stream-body`, begrenzt durch `.sd-gen-stream { max-height: 320px }`) ≥ 80 px ist; danach darf der `scrollTop` in mindestens zwei weiteren Ständen nicht über den Stand der Störung steigen (≤ 4 px). Sonst „nichts gemessen“ |
 | G5 | Kontrolle: ohne Störung folgt der Strom bis zum Ende | derselbe Strom ohne Leerzeilen; bei jedem Stand mit Überlauf ≥ 80 px liegt der Abstand zum Ende unter der Folge-Schwelle von 40 px |
@@ -245,7 +258,10 @@ ab, damit kein nachfolgender Punkt auf einem beschädigten Nachbarplugin-Slot au
 | 2026-10-10 | 1.14.4 | **53/53 grün** nach der zweiten Schicht (code-kit 0.18.0; V9–V13 neu); Baseline davor 48/48 grün, 3 übersprungen (PDF modal, G1/G2 ohne `--with-model`) | Mutation: Regionen zusammen rendern → V12 rot (erzeugt: 1 Treffer), V9/V10/V13 grün; Mermaid-Regel aus → Unit-Tests rot; nach Rückbau wieder grün. Zweitinstanz Port 9385, frischer Prozess je Lauf |
 | 2026-10-12 (Welle 20) | 1.14.4 | **69 grün · 0 rot · 3 übersprungen von 72** (PDF modal, G1/G2 ohne `--with-model`) nach Stub-Umstieg, Pin 0.59.1 und G4–G7 (neu); Baseline davor 63 grün, 3 übersprungen von 66. Zwischenstand auf Pin 0.57.0 mit den neuen Punkten: G7 rot | Mutation am gebauten `main.js`: `followTail` folgt immer → G4 rot (Abweichung 889 px), G5/G7 grün; `followTail` leer → G5 und G7 rot (889 und 1 533 px), G4 grün; Original wieder eingesetzt (`cmp`). Pin 0.57.0 → 0.59.1: G7 rot → grün. Zweitinstanz Port 9391, frischer Prozess je Sektion |
 | 2026-10-12 | 1.14.4 | **54/54 grün** nach Welle 18 (obsidian-kit 0.56.1, code-kit 0.23.0; C3 neu); Baseline davor 53/53, 3 übersprungen (PDF modal, G1/G2 ohne `--with-model`). Mit `--with-model` und geladenem Modell (`SD_SMOKE_MODEL=qwen/qwen3.6-27b`): G1 und G2 grün; mit einem nicht geladenen Modell scheiterten beide, auch am Stand 0.16.0 (LM Studio: „Failed to load model … Operation canceled“) — Umgebung, keine Regression | Mutation C3: `activeDocument` statt `rootSplit.doc` → C3 rot, zurück → grün. Zweitinstanz Port 9385, frischer Prozess je Lauf |
+| 2026-10-25 (Welle 26) | 1.14.5 | **70 grün · 0 rot · 4 übersprungen · 0 nichts gemessen von 74** (PDF modal, G1/G2 ohne `--with-model`, G16 in dieser Lage nicht anwendbar) nach Pin-Hebung (obsidian-kit 0.69.1 / code-kit 0.36.0) und Claude-Opt-in; CL1–CL3 neu. Baseline davor 67 grün · 0 rot · 4 übersprungen · 0 nichts gemessen von 71 (Gate 251 Tests; danach 253) | Opt-in aus `deckConnectionOptions` entfernt → genau CL1–CL3 rot (14 grün, 3 rot im Abschnitt `verbindung`), alle anderen unverändert; die zwei neuen Unit-Tests werden mit demselben Eingriff rot |
 | 2026-10-09 | 1.14.4 | **48/48 grün** nach dem Verbindungs-Tausch (obsidian-kit 0.51.3 / code-kit 0.15.5; V1–V8 neu, R3 und G3 umgeschrieben); Baseline davor 39/39 grün, 4 übersprungen (G1–G3 ohne `--with-model`, PDF modal); G1/G2 mit `--with-model` (geladenes `qwen2.5-coder-7b`) zusätzlich grün | Mutationen: `redact: false` → V3 rot, sonst nichts; Entschärfung aus `generate-deck.ts` → V4–V7 rot, V1–V3 und V8 grün; nach Rückbau wieder 48/48. Zweitinstanz Port 9375, frischer Prozess je Lauf |
+
+Der Nenner einer Zeile ist die Bilanzzeile des Treibers am Ende eines Laufs (`N grün · N rot · N übersprungen · N nichts gemessen · von N Prüfpunkten`), nicht eine Zahl, die diese Datei von Hand mitführt; ältere Zeilen nennen den Nenner ihrer Zeit (die Zeile von Welle 20 zählt 72 und bleibt als Messbeleg unverändert).
 
 ### Warum M überhaupt gebraucht wurde — und was der erste Anlauf kostete (2026-09-03)
 

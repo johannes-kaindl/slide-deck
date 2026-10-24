@@ -336,6 +336,9 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "V12 Zweite Schicht je Region: ein offenes <textarea> in Region 1 versteckt die Fernquelle in Region 2 nicht (Gegenprobe: das rohe Deck laedt in der Vorschau)",
     "V13 Zweite Schicht: Mermaid-Bildform `A@{ img: \"https://…\" }` erzeugt in der Vorschau keine Anfrage (Gegenprobe: das rohe Deck laedt)",
     "V11 Eigenes Deck mit Fernbild laedt in der Vorschau weiter (Variante A: die zweite Schicht greift nur beim Erzeugen)",
+    "CL1 Claude im Manager: der Endpunkt kommt nur mit Opt-in, das Plugin waehlt ihn (Backend anthropic, Familie claude)",
+    "CL2 Erzeugen gegen den Claude-Stub: Messages-API mit Schluessel und Browser-Header, ohne temperature, das Deck kommt an, das Denken laeuft in den Zustand",
+    "CL3 Fehler der API (529): die Erzeugung endet mit dem Fehler, keine Notiz wird geschrieben",
   ],
 };
 
@@ -2368,6 +2371,101 @@ async function startZaehler(): Promise<{ url: string; pfade: () => string[]; clo
   return { url: `http://127.0.0.1:${port}`, pfade: () => [...pfade], close: () => new Promise<void>((ok) => server.close(() => ok())) };
 }
 
+/** CL1–CL3 — Claude (Anthropic API) ueber den LLM Endpoint Manager (Kit 0.62.0, Opt-in `transports.anthropic` in `deckConnectionOptions`).
+ *  Gegenstelle: der zentrale LLM-Stub im Anthropic-Modus (Messages-API: Pfad, `x-api-key`, `anthropic-version`, Pflichtfelder geprueft); kein
+ *  Aufruf an api.anthropic.com. Wie V4–V13 laeuft `startDeckGeneration` ohne DOM des Erzeugen-Panels; der Denkblock im Panel (Abschnitt
+ *  `chat`, `stromMessen`) ist auf `llmEndpoints` und einen OpenAI-Stub verdrahtet und ignoriert den Fake-Manager — gemessen wird deshalb
+ *  der Zustand `reasoning`, aus dem das Panel den Block baut, nicht der Block selbst. Der Fake-Manager liefert den Endpunkt nur, wenn der
+ *  Aufrufer `anthropic` unter den Transporten verlangt (Kontrolle in CL1). */
+async function pruefeClaudeVerbindung(cdp: Cdp): Promise<void> {
+  const [CL1, CL2, CL3] = ABSCHNITT_PUNKTE.verbindung!.filter((n) => n.startsWith("CL"));
+  const MODELL = "claude-haiku-5-5";
+  const SCHLUESSEL = "sk-ant-smoke-slide-deck";
+  const DECK = "---\ntheme: kami\n---\n# Claude-Deck\n\nErste Folie.\n\n---\n\n# Zweite Folie\n\n- Punkt";
+  const ZIEL_OK = "smoke-claude-cl2.md";
+  const ZIEL_FEHLER = "smoke-claude-cl3.md";
+  let fehlerModus = false;
+  let manager = false;
+  const stub = await startLlmStub({
+    anbieter: "anthropic",
+    schluessel: SCHLUESSEL,
+    models: [{ id: MODELL, capabilities: { effort: { supported: true }, thinking: { types: { adaptive: { supported: true } } } } }],
+    takt: 20,
+    antwort: () => (fehlerModus ? { status: 529, fehler: "Overloaded", model: MODELL } : { reasoning: "Ich plane zuerst die Folien. ", text: DECK, laenge: 24, model: MODELL }),
+  });
+  const vorherChoice = await cdp.evaluate<string>(`return JSON.stringify(app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.choice ?? {});`);
+  try {
+    await installFakeManager(cdp, {
+      endpunkte: [{
+        id: "fake-claude", label: "Claude API", url: stub.url, models: [MODELL], defaultModel: MODELL, configModel: "default",
+        provider: "anthropic", backend: "anthropic", apiKey: SCHLUESSEL, hasSecret: true, transport: "anthropic",
+      }],
+      invalidiere: [PLUGIN_ID],
+    });
+    manager = true;
+    const sicht = await cdp.evaluate<{ ohne: number; mit: number; quelle: string; modell: string; familie: string | null; backend: string }>(`
+      const api = app.plugins.plugins["llm-endpoint-manager"].api;
+      const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      p.settings.choice = {};
+      p.llm.invalidate();
+      await p.llm.resolve({ force: true });
+      const src = p.llm.source();
+      return {
+        ohne: api.list({ capability: "chat" }).length,
+        mit: api.list({ capability: "chat", transports: ["http", "anthropic"] }).length,
+        quelle: src.backendSource, modell: src.model, familie: src.family, backend: src.backend,
+      };
+    `);
+    record(CL1!,
+      sicht.ohne === 0 && sicht.mit === 1 && sicht.quelle === "manager" && sicht.modell === MODELL && sicht.backend === "anthropic" && sicht.familie === "claude",
+      `Kontrolle am Fake: list() ohne transports ${sicht.ohne}, mit ["http","anthropic"] ${sicht.mit}; Plugin: Backend ${sicht.backend} (Quelle ${sicht.quelle}), Familie ${String(sicht.familie)}, Modell ${sicht.modell}`);
+
+    const laufe = (ziel: string): Promise<{ status: string; error: string | null; phase: string; denken: string }> => cdp.evaluate(`
+      const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      let denken = "";
+      const h = p.startDeckGeneration({ sourceBody: "# Probe\\n\\nEin Satz.", slideTarget: 3, hint: "", themeKey: p.settings.defaultTheme,
+        model: ${JSON.stringify(MODELL)}, targetPath: ${JSON.stringify(ziel)}, replace: true, sourceLink: "[[smoke]]" });
+      h.subscribe((s) => { if (s.reasoning && s.reasoning.length > denken.length) denken = s.reasoning; });
+      const r = await h.done;
+      return { status: r.status, error: r.error ?? null, phase: h.snapshot().phase, denken };
+    `);
+
+    // CL2 — ein Lauf
+    erzeugtePfade.push(ZIEL_OK);
+    stub.loescheMitschnitt();
+    const ok = await laufe(ZIEL_OK);
+    const notiz = await cdp.evaluate<string>(`const f = app.vault.getAbstractFileByPath(${JSON.stringify(ZIEL_OK)}); return f ? await app.vault.read(f) : "";`);
+    const budget = await cdp.evaluate<number>(`return app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.llmMaxTokens;`);
+    const anfragen = stub.anfragen().filter((a) => a.route === "messages");
+    const letzte = anfragen.at(-1);
+    const body = (letzte?.json ?? {}) as Record<string, unknown>;
+    const kopf = letzte?.header ?? {};
+    const verbotene = ["temperature", "top_p", "top_k", "min_p", "presence_penalty"].filter((k) => k in body);
+    const drahtOk = anfragen.length > 0 && body.model === MODELL && kopf["x-api-key"] === SCHLUESSEL && typeof kopf["anthropic-version"] === "string"
+      && kopf["anthropic-dangerous-direct-browser-access"] === "true" && body.max_tokens === budget && body.stream === true && verbotene.length === 0
+      && stub.anfragen().every((a) => a.route !== "chat");
+    record(CL2!,
+      drahtOk && ok.status === "ok" && notiz.includes("# Claude-Deck") && ok.denken.includes("Ich plane zuerst"),
+      `Status ${ok.status}, Notiz ${notiz.includes("# Claude-Deck") ? "mit Deck" : "OHNE Deck"}, Denken im Zustand ${JSON.stringify(ok.denken.slice(0, 30))}; Anfragen ${anfragen.length}, x-api-key ${kopf["x-api-key"] === SCHLUESSEL ? "ok" : "FALSCH"}, anthropic-version ${String(kopf["anthropic-version"])}, Browser-Header ${String(kopf["anthropic-dangerous-direct-browser-access"])}, max_tokens ${String(body.max_tokens)} (Budget ${String(budget)}), stream ${String(body.stream)}, verbotene Felder: ${verbotene.length === 0 ? "keine" : verbotene.join(",")}`);
+
+    // CL3 — die API antwortet 529
+    fehlerModus = true;
+    erzeugtePfade.push(ZIEL_FEHLER);
+    const fehler = await laufe(ZIEL_FEHLER);
+    const da = await cdp.evaluate<boolean>(`return Boolean(app.vault.getAbstractFileByPath(${JSON.stringify(ZIEL_FEHLER)}));`);
+    record(CL3!,
+      fehler.status === "fatal" && fehler.phase === "error" && /529|overload/i.test(fehler.error ?? "") && !da,
+      `Status ${fehler.status}, Phase ${fehler.phase}, Fehler ${JSON.stringify((fehler.error ?? "").slice(0, 90))}, Notiz ${da ? "GESCHRIEBEN" : "nicht geschrieben"}`);
+  } catch (e) {
+    const schon = new Set(bilanz.eintraege().map((x) => x.name));
+    for (const n of [CL1, CL2, CL3]) if (n !== undefined && !schon.has(n)) bilanz.unmeasured(n, `Messung abgebrochen: ${(e as Error).message}`);
+  } finally {
+    if (manager) await entferneFakeManager(cdp, { invalidiere: [PLUGIN_ID] }).catch(() => undefined);
+    await cdp.evaluate(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; p.settings.choice = ${vorherChoice}; p.llm.invalidate(); return true;`).catch(() => undefined);
+    await stub.stop();
+  }
+}
+
 const verbindung: Section = {
   key: "verbindung",
   title: "V · Verbindung (Schluesselbund, Bearer, Schwaerzung)",
@@ -2517,6 +2615,7 @@ const verbindung: Section = {
         record("V11 Eigenes Deck mit Fernbild laedt in der Vorschau weiter (Variante A: die zweite Schicht greift nur beim Erzeugen)",
           treffer("/v11-logo.png") > 0, `Treffer am Draht: ${treffer("/v11-logo.png")}`);
       } finally { await zaehler.close(); }
+      await pruefeClaudeVerbindung(cdp);
     } finally {
       await fake.close();
       // Den Klartext-Schluessel nicht im Staging-Vault liegen lassen: Liste leeren, Schluesselbund-Eintraege des Plugins loeschen.
