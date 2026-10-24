@@ -6,6 +6,10 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- **Two libraries that render the slides are updated to close published advisories:** DOMPurify 3.4.16 → 3.4.17 (the sanitiser; advisories on `SAFE_FOR_TEMPLATES`, `IN_PLACE` hooks and SMIL `href` handling) and markdown-it to the current 14.x release (quadratic-time rendering of inline HTML and of a multi-line link reference definition, which a crafted note could use to stall Obsidian). The slides look the same; the unit, smoke and bundle checks pass with the new versions.
+
 ### Added
 
 - **Claude can be used as an endpoint of the LLM Endpoint Manager for "Generate presentation from note".** With the manager installed and a Claude API endpoint set up there, the generation works with it like with any other endpoint (native Messages API). Claude takes no temperature, so none is sent, and "thinking off" means the lowest effort. The content of the note then goes to Anthropic instead of a local server.
