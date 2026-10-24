@@ -17,7 +17,7 @@ und der Deck-Prompt leben in [`deck-core`](https://git.jkaindl.de/jkaindl/deck-c
 und liegen hier als gepinnte Kopie unter `src/vendor/deck-core/`.
 
 **Dort nicht bearbeiten.** Änderungen gehören nach `deck-core`, danach neu
-vendorieren und `VENDOR.json` (`version`, `sha`, `vendored`) nachziehen.
+vendorieren und die `VENDOR.json` in `src/vendor/deck-core/` (`version`, `sha`, `vendored`) nachziehen.
 
 ⚠️ **Beim Auflösen eines deck-core-Tags immer `<tag>^{}` nehmen, nie den Tag allein.**
 Die Tags dort sind gemischt — `git rev-parse 0.10.0` liefert bei einem **annotated** Tag das
