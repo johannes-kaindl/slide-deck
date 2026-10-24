@@ -58,7 +58,7 @@ In the preview toolbar, open the **Theme** dropdown and pick another one, for ex
 
 ## 6. Optional: let a local model draft the deck
 
-Click the wand icon in the ribbon, or run **Generate presentation from note**. Pick the endpoint and model, set the target slide count if you like, and press **Generate**. This needs an OpenAI-compatible server such as [LM Studio](https://lmstudio.ai) (default `http://localhost:1234`) with CORS enabled; the [local LLM setup guide](https://uplink.jkaindl.de/llm-setup) covers server and model. Note contents are sent to the endpoint only when you press **Generate**.
+Click the wand icon in the ribbon, or run **Generate presentation from note**. Pick the endpoint and model, set the target slide count if you like, and press **Generate**. This needs an OpenAI-compatible server such as [LM Studio](https://lmstudio.ai) (default `http://localhost:1234`) with CORS enabled; the [local LLM setup guide](https://uplink.jkaindl.de/llm-setup) covers server and model. With the LLM Endpoint Manager installed, Claude (Anthropic) works as an endpoint too; then the note content goes to Anthropic. Note contents are sent to the endpoint only when you press **Generate**.
 
 ## Where to go next
 

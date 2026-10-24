@@ -261,12 +261,12 @@ Note: the `---` in the YAML frontmatter block is the standard YAML delimiter and
 
 The **Generate presentation from note** command sends note content to an **OpenAI-compatible
 LLM endpoint that you configure** (default `http://localhost:1234`, i.e. a local LM Studio).
-No cloud service is involved unless you point the endpoint at one — the settings tab holds an
+No cloud service is involved unless you point the endpoint at one (or the LLM Endpoint Manager hands you a **Claude** endpoint: then the note's content goes to Anthropic) — the settings tab holds an
 **ordered list of endpoints**, tried in order, and each row can carry its own optional API key,
 so a local server and a hosted provider (e.g. OpenRouter) can sit side by side in the same list. The model is chosen per row as well; there is no separate global model setting.
 API keys are **not** stored in the plugin's `data.json`: they go into Obsidian's secret storage (*Settings → Keychain*), and a plain-text key from an older version is moved there on first start.
 
-If the **LLM Endpoint Manager** plugin is installed, the endpoints (and their keys) come from it instead: the settings tab then offers an endpoint and model choice, and your local list stays as a fallback for when the manager is off.
+If the **LLM Endpoint Manager** plugin is installed, the endpoints (and their keys) come from it instead: the settings tab then offers an endpoint and model choice, and your local list stays as a fallback for when the manager is off. The manager can also provide **Claude** (native Messages API) as an endpoint; it takes no temperature, so the plugin sends none, and "thinking off" means the lowest effort. With a Claude endpoint the content of the note you generate from is sent to Anthropic.
 
 - **Reachability pings, model lists and the model's context length** are requested when you open the generation dialog or the settings tab (the settings tab shows the context length under each endpoint row that has a model). These are automatic requests to the configured endpoint(s).
 - **Note contents are sent only when you press "Generate".** Secrets in the text (private keys, bearer tokens, API keys) are replaced by placeholders on the way out; the generated deck gets the originals back.

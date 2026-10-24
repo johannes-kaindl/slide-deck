@@ -16,12 +16,13 @@ Instead, report them privately by email to **code@jkaindl.de** (PGP-encrypted ma
 
 ## Data Handling / Scope
 
-Slide Deck is a fully local, offline plugin — this is its core security property:
+Slide Deck renders and exports entirely locally; its one network use is the optional AI generation — this is its core security property:
 
-- **No network access.** The plugin does not make any outbound network requests. All rendering (markdown-it, KaTeX, highlight.js, Mermaid) runs locally in the Obsidian process.
+- **Rendering makes no network requests.** All rendering (markdown-it, KaTeX, highlight.js, Mermaid) runs locally in the Obsidian process.
+- **One optional network use: "Generate presentation from note".** Only when you press *Generate* does the plugin send the note's text (secrets such as private keys, bearer tokens and API keys replaced by placeholders) to the LLM endpoint you configured. That endpoint is a local server by default; it can also be a hosted provider you entered or, through the LLM Endpoint Manager, Claude at Anthropic. For the last two the note's content leaves your device. Opening the generation dialog or the settings tab additionally asks the configured endpoints for reachability, model lists and the model's context length. Nothing is sent in the background otherwise.
 - **No telemetry.** The plugin does not collect usage data or phone home.
-- **No external services, no analytics, no remote logging.**
-- **Export stays local.** PDF export uses the system print dialog; PNG export writes files into your vault's configured attachment folder. No data leaves your device.
+- **No analytics, no remote logging.**
+- **Export stays local.** PDF export uses the system print dialog; PNG export writes files into your vault's configured attachment folder. The export itself transmits nothing.
 - **Embedded images are resolved locally.** The plugin reads image files from your vault and embeds them as data-URLs in the export HTML. No image data is transmitted anywhere.
 
 If you have questions about the plugin's data handling beyond what is described here, the same private contact above applies.

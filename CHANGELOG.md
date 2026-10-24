@@ -6,7 +6,13 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Claude can be used as an endpoint of the LLM Endpoint Manager for "Generate presentation from note".** With the manager installed and a Claude API endpoint set up there, the generation works with it like with any other endpoint (native Messages API). Claude takes no temperature, so none is sent, and "thinking off" means the lowest effort. The content of the note then goes to Anthropic instead of a local server.
+
 ### Changed
+
+- **README, SECURITY.md and the German README now say what "no network access" left out:** rendering and export are local, but "Generate presentation from note" sends the note's text to the endpoint you configured (a hosted provider or Claude included).
 
 - **Claude models count as image-capable and as thinking models without an off switch** wherever the plugin guesses a model's abilities from its name (code-kit 0.33.0); where "off" is not possible the thinking button reads "Thinking: lowest level" (obsidian-kit 0.63.0, already in 0.18.0).
 - Kit pin `obsidian-kit` 0.63.0 → 0.69.1 and `code-kit` 0.31.0 → 0.36.0. Nothing else changes for this plugin: the new endpoint role "search only" (code-kit 0.36.0) and the new Kit modules (model bar, chat window, crop, text socket, redline) are not used here; the thinking block is built through a shared routine without a visible difference (obsidian-kit 0.65.0).

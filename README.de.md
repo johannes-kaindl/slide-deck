@@ -249,9 +249,9 @@ Hinweis: Das `---` im YAML-Frontmatter-Block ist der Standard-YAML-Begrenzer und
 Der Befehl **Präsentation aus Notiz erzeugen** sendet Notiz-Inhalte an einen **von dir
 konfigurierten OpenAI-kompatiblen LLM-Endpoint** (Standard `http://localhost:1234`, also ein
 lokales LM Studio). Kein Cloud-Dienst ist beteiligt, solange du den Endpoint nicht auf einen
-richtest.
+richtest (oder der LLM Endpoint Manager dir einen **Claude**-Endpunkt liefert: dann geht der Notiz-Inhalt an Anthropic).
 
-Ist das Plugin **LLM Endpoint Manager** installiert, kommen die Endpunkte (samt Schlüsseln) stattdessen von ihm: Der Einstellungs-Tab bietet dann eine Endpunkt- und Modellwahl, und deine lokale Liste bleibt als Rückfall erhalten, wenn der Manager aus ist.
+Ist das Plugin **LLM Endpoint Manager** installiert, kommen die Endpunkte (samt Schlüsseln) stattdessen von ihm: Der Einstellungs-Tab bietet dann eine Endpunkt- und Modellwahl, und deine lokale Liste bleibt als Rückfall erhalten, wenn der Manager aus ist. Der Manager kann auch **Claude** (native Messages-API) als Endpunkt liefern; Claude nimmt keine Temperatur, das Plugin sendet deshalb keine, und „Denken aus“ heißt dort die niedrigste Denkstufe. Mit einem Claude-Endpunkt geht der Inhalt der Notiz, aus der du erzeugst, an Anthropic.
 
 - **Erreichbarkeits-Pings, Modell-Listen und die Kontextlänge des Modells** werden abgefragt, wenn du den Erzeugen-Dialog oder den Einstellungs-Tab öffnest (der Einstellungs-Tab zeigt die Kontextlänge unter jeder Endpunkt-Zeile mit Modell). Das sind automatische Requests an die konfigurierten Endpoints.
 - **Notiz-Inhalte werden nur beim Klick auf „Erzeugen" gesendet.** Geheimnisse im Text (private Schlüssel, Bearer-Token, API-Schlüssel) werden auf dem Weg hinaus durch Platzhalter ersetzt; das erzeugte Deck bekommt die Originale zurück.

@@ -26,7 +26,8 @@ export function deckConnectionOptions(o: {
     // Plugin-Budget (`max_tokens`); die Familien-Reserve kann es anheben.
     maxTokens: () => o.settings().llmMaxTokens,
     lang: () => getLang(),
-    ...(o.transports ? { transports: o.transports } : {}),
+    // `anthropic: true`: Claude als Endpunkt des Managers. Ohne den Opt-in sieht die Verbindung ihn nie (sie fragt dann nur nach `http`).
+    transports: { ...(o.transports ?? {}), anthropic: true },
     getSettings: () => {
       const s = o.settings();
       return { endpoints: s.llmEndpoints, choice: s.choice, request: s.request };
