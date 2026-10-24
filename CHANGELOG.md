@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-10-24
+
 ### Security
 
 - **Two libraries that render the slides are updated to close published advisories:** DOMPurify 3.4.16 → 3.4.17 (the sanitiser; advisories on `SAFE_FOR_TEMPLATES`, `IN_PLACE` hooks and SMIL `href` handling) and markdown-it to the current 14.x release (quadratic-time rendering of inline HTML and of a multi-line link reference definition, which a crafted note could use to stall Obsidian). The slides look the same; the unit, smoke and bundle checks pass with the new versions.
