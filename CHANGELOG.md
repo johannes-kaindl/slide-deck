@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-10-25
+
 ### Added
 
 - **The Generate tab has a model row** (the kit's `buildModelBar`): a dropdown with the models of the active endpoint, *Automatic*, a refresh button, "Other endpoint …" (opens the endpoint manager when it is installed) and the thinking toggle in the same row. The model you pick there is the same choice as in the settings (it is no longer lost when the tab closes), the thinking toggle sets the level of the "creative" mode, and a change recalculates the context warning because the limit belongs to the model. The row is locked while another run is active. For a Claude endpoint the toggle reads "Thinking: lowest level" with the reason as tooltip.
