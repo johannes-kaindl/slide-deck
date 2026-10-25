@@ -31,7 +31,7 @@ Wirkungskreises.
 
 Was hier blieb, kennt Obsidian, das Kit oder den Endpunkt: `adapter`,
 `theme-registry`, `export`, `main`, die Ansichten, die Einstellungen, `llm-client`,
-`llm/ai-settings-model`, `llm/model-info`, `image/**` (das Nachbarplugin
+`llm/model-info`, `image/**` (das Nachbarplugin
 `local-image-generator` ist ein Obsidian-Plugin, keine Kern-Zuständigkeit).
 
 Dazu `vendor-css.ts`: die vier `import … from "*.css"`, die `deck-core` bewusst

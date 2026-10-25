@@ -65,7 +65,7 @@ import {
 import { messeFolge, zeichneFolge } from "../../tools/obsidian-cdp/folge.js";
 import { gegenprobeErreichbarkeit, gegenprobeFokus, messeDenkblockKopierbar, messeErreichbarkeit, messeFokusErhalt, mitHoehe, zeichneDenkblock, type DenkblockUrteile, type PflichtBilanz, type PflichtTeilurteil } from "../../tools/obsidian-cdp/pflichtpunkte.js";
 import { createBilanz, parseArgs, runDriver, type Bilanz } from "../../tools/obsidian-cdp/bilanz.js";
-import { startLlmStub, type LlmStub, type StubAnfrage } from "../../tools/obsidian-cdp/llm-stub.js";
+import { startLlmStub, type LlmStub, type StubAnfrage, type ZusatzAntwort } from "../../tools/obsidian-cdp/llm-stub.js";
 import { boxOf, capture } from "../../tools/obsidian-cdp/shot.js";
 // Das Woerterbuch selbst, nicht eine Kopie seiner Form: daraus kommen sowohl die exakten
 // Schluessel als auch die Praefix-Liste fuer B2. Eine im Treiber gepflegte Musterliste waere
@@ -244,6 +244,12 @@ Der Modifier steht im Theme, nicht im Kern.
 // --- Protokoll ---------------------------------------------------------------
 
 /** DT1 — die Zeile „Denk-Test“ im Einstellungs-Tab bei einem Claude-Endpunkt. Name hier, weil ihn die Soll-Liste und der Punkt teilen. */
+const MZ1_NAME = "MZ1 Modellzeile im Erzeugen-Fenster: die Modelle des Endpunkts stehen da, ein Wechsel gilt in der Verbindung und in der Einstellung (Tab und Zeile stimmen ueberein)";
+const MZ2_NAME = "MZ2 Das gewaehlte Modell steht im Anfrage-Body des Laufs und im Frontmatter model: der erzeugten Notiz";
+const MZ3_NAME = "MZ3 Denk-Knopf in der Zeile schaltet request.thinking.creative; bei Claude steht \"Thinking: lowest level\" mit Hinweis im aria-label";
+const MZ4_NAME = "MZ4 Ein Modellwechsel rechnet die Kontext-Warnung neu (kleines Modell: Warnung mit seiner Grenze, grosses: keine)";
+const MZ5_NAME = "MZ5 Endpunkt ohne Modell-Liste: die Zeile zeigt Automatisch mit Hinweis, der Knopf Erzeugen bleibt bedienbar";
+const MZ6_NAME = "MZ6 Sperre: laeuft anderswo schon eine Erzeugung, ist die Zeile gesperrt (Gegenprobe: ohne Lauf bedienbar)";
 const DT1_NAME = "DT1 Denk-Test: bei einem Claude-Endpunkt steht die Zeile nicht im Tab, auch nicht nach einem Wechsel im geoeffneten Tab (Gegenprobe: ohne Manager steht sie da)";
 
 /** PD1 — der mobile PDF-Export (lose HTML-Datei im Vault). Name hier, weil ihn die Soll-Liste und der Punkt teilen. */
@@ -384,6 +390,12 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "CL2 Erzeugen gegen den Claude-Stub: Messages-API mit Schluessel und Browser-Header, ohne temperature, das Deck kommt an, das Denken laeuft in den Zustand",
     "CL3 Fehler der API (529): die Erzeugung endet mit dem Fehler, keine Notiz wird geschrieben",
     DT1_NAME,
+    MZ1_NAME,
+    MZ2_NAME,
+    MZ3_NAME,
+    MZ4_NAME,
+    MZ5_NAME,
+    MZ6_NAME,
   ],
 };
 
@@ -1962,10 +1974,10 @@ interface StreamLauf { ergebnis: Awaited<ReturnType<typeof messeFolge>>; denken:
 /** `string`: der Grund, warum das Erzeugen-Panel nicht zustande kam (Umgebung, kein Befund). */
 /** Quellnotiz anlegen, Endpunkt auf den Stub setzen und das Erzeugen-Panel oeffnen. `string`: der Grund, warum es nicht zustande kam
  *  (Umgebung, kein Befund); `null`: der Knopf „Erzeugen“ ist aktiv. Der Aufrufer stellt die Endpunkte danach wieder her. */
-async function oeffneErzeugenPanel(cdp: Cdp, stub: LlmStub): Promise<string | null> {
+async function oeffneErzeugenPanel(cdp: Cdp, stub: LlmStub, opt: { modell?: string; text?: string } = {}): Promise<string | null> {
   await cdp.evaluate(`
     const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
-    p.settings.llmEndpoints = [{ url: ${JSON.stringify(stub.url)}, model: "google/gemma-4-e4b" }];
+    p.settings.llmEndpoints = [{ url: ${JSON.stringify(stub.url)}, model: ${JSON.stringify(opt.modell ?? "google/gemma-4-e4b")} }];
     p.llm.invalidate();
     // Die Aufloesung jetzt erzwingen und merken: das Panel liest sie beim Oeffnen aus dem Zwischenspeicher der Verbindung.
     await p.llm.resolve({ force: true });
@@ -1975,7 +1987,7 @@ async function oeffneErzeugenPanel(cdp: Cdp, stub: LlmStub): Promise<string | nu
     const alt = app.vault.getAbstractFileByPath("smoke-stream-quelle — Deck.md");
     if (alt) await app.vault.delete(alt);
     const q = app.vault.getAbstractFileByPath(${JSON.stringify(STREAM_QUELLE)});
-    const text = "# Wandern\\n\\nEine Tagestour braucht Wasser, feste Schuhe und eine Karte.";
+    const text = ${JSON.stringify(opt.text ?? "# Wandern\n\nEine Tagestour braucht Wasser, feste Schuhe und eine Karte.")};
     if (q) await app.vault.modify(q, text); else await app.vault.create(${JSON.stringify(STREAM_QUELLE)}, text);
     return true;
   `);
@@ -2685,6 +2697,253 @@ async function pruefeDenkTestClaude(cdp: Cdp, ctx: Ctx): Promise<void> {
   }
 }
 
+/** MZ1–MZ6 — die Modellzeile (`buildModelBar`) im Erzeugen-Fenster. Stub mit zwei Modellen (verschiedene Kontextgrenzen ueber
+ *  `GET /api/v0/models`), Endpunkt als lokale Zeile; MZ3 zusaetzlich gegen den Claude-Stub mit Fake-Manager. Das Panel loest nur beim
+ *  Oeffnen und bei `onShow` auf: jede Messung oeffnet es frisch (`oeffneErzeugenPanel` schliesst das Hub-Blatt zuerst). */
+async function pruefeModellzeile(cdp: Cdp, ctx: Ctx): Promise<void> {
+  const KLEIN = "mz-klein";
+  const GROSS = "mz-gross";
+  const GRENZE_KLEIN = 2000;
+  const ZIEL = "smoke-stream-quelle — Deck.md";
+  const DECK = "---\ntheme: kami\n---\n# Modellzeile\n\nErste Folie.\n\n---\n\n# Zweite Folie\n\n- Punkt";
+  const LANG = `# Wandern\n\n${"Eine Tagestour braucht Wasser, feste Schuhe und eine Karte. ".repeat(200)}`;
+  const namen = [MZ1_NAME, MZ2_NAME, MZ3_NAME, MZ4_NAME, MZ5_NAME, MZ6_NAME];
+  const P = `app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]`;
+  const SEL = ".sd-gen-view .okit-model-bar .okit-model-bar-select";
+  const kontextAntwort = (): ZusatzAntwort => ({
+    json: { data: [
+      { id: KLEIN, loaded_context_length: GRENZE_KLEIN, max_context_length: GRENZE_KLEIN },
+      { id: GROSS, loaded_context_length: 100000, max_context_length: 100000 },
+    ] },
+  });
+  const stub = await startLlmStub({
+    models: [KLEIN, GROSS], takt: 10, laenge: 40,
+    antwort: () => ({ text: DECK, model: GROSS }),
+    zusatz: { "GET /api/v0/models": kontextAntwort },
+  });
+  const vorherEndpoints = await cdp.evaluate<string>(`return JSON.stringify(${P}.settings.llmEndpoints);`);
+  const vorherChoice = await cdp.evaluate<string>(`return JSON.stringify(${P}.settings.choice ?? {});`);
+  const vorherRequest = await cdp.evaluate<string>(`return JSON.stringify(${P}.settings.request);`);
+  erzeugtePfade.push(STREAM_QUELLE, ZIEL);
+  const waehle = (wert: string): Promise<unknown> => cdp.evaluate(`
+    const sel = document.querySelector(${JSON.stringify(SEL)});
+    if (!sel) return false;
+    sel.value = ${JSON.stringify(wert)};
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  `);
+  const hinweise = (): Promise<string> => cdp.evaluate<string>(`return [...document.querySelectorAll(".sd-gen-view .sd-gen-hint")].map((e) => e.textContent ?? "").join(" | ");`);
+  let manager = false;
+  try {
+    // ---- MZ1 + MZ2: lokaler Endpunkt, Wechsel, Lauf
+    const grund = await oeffneErzeugenPanel(cdp, stub, { modell: KLEIN });
+    if (grund !== null) throw new Error(grund);
+    const zeile = await pollUntil<string>(cdp, `
+      const sel = document.querySelector(${JSON.stringify(SEL)});
+      if (!sel) return null;
+      const werte = [...sel.options].map((o) => o.value);
+      return werte.includes(${JSON.stringify(GROSS)}) ? JSON.stringify({ werte, texte: [...sel.options].map((o) => o.textContent), aktiv: sel.value }) : null;
+    `, 10_000, 200);
+    const z = zeile === null ? null : (JSON.parse(zeile) as { werte: string[]; texte: string[]; aktiv: string });
+    if (z === null) {
+      const d = "Die Modellzeile (.okit-model-bar-select) mit den Modellen des Stubs kam in 10 s nicht ins Erzeugen-Fenster";
+      record(MZ1_NAME, false, d);
+      record(MZ2_NAME, false, d);
+    } else {
+      const oeffneTabText = async (wert: string): Promise<boolean> => {
+        const t = await oeffneTab(cdp, ctx);
+        try { return await t.ziel.evaluate<boolean>(`return [...document.querySelectorAll(".okit-model-slot input, .okit-model-slot select")].some((i) => i.value === ${JSON.stringify(wert)});`); } finally { await schliesseTab(cdp, t); }
+      };
+      const altTab = await oeffneTabText(KLEIN);
+      await waehle(GROSS);
+      const nach = await pollUntil<string>(cdp, `
+        const p = ${P};
+        return p.llm.modelInUse() === ${JSON.stringify(GROSS)} && p.settings.llmEndpoints[0]?.model === ${JSON.stringify(GROSS)}
+          ? JSON.stringify({ verbindung: p.llm.modelInUse(), zeile: p.settings.llmEndpoints[0].model, bar: document.querySelector(${JSON.stringify(SEL)})?.value }) : null;
+      `, 8_000, 200);
+      const tabNeu = nach === null ? false : await oeffneTabText(GROSS);
+      record(MZ1_NAME,
+        z.werte.includes(KLEIN) && z.werte.includes(GROSS) && z.aktiv === KLEIN && altTab && nach !== null && tabNeu,
+        `Optionen ${JSON.stringify(z.texte)}, Start ${z.aktiv}; Tab vorher ${altTab ? "zeigt " + KLEIN : "ZEIGT " + KLEIN + " NICHT"}; nach dem Wechsel: ${nach ?? "Verbindung/Einstellung NICHT umgestellt"}; Tab danach ${tabNeu ? "zeigt " + GROSS : "ZEIGT " + GROSS + " NICHT"}`);
+
+      // Sichtpruefung (Regel 12): die Zeile hell und dunkel, im breiten und im schmalen (280 px) Panel. Nur mit SMOKE_SHOT_DIR.
+      const shotDir = process.env.SMOKE_SHOT_DIR;
+      if (shotDir) {
+        mkdirSync(shotDir, { recursive: true });
+        const war = await cdp.evaluate<boolean>(`return document.body.classList.contains("theme-dark");`);
+        for (const breite of [640, 280]) {
+          await cdp.evaluate(`const r = app.workspace.rightSplit; if (r && typeof r.setSize === "function") r.setSize(${breite}); return true;`);
+          await new Promise((r) => setTimeout(r, 500));
+          for (const dunkel of [false, true]) {
+            await cdp.evaluate(`document.body.classList.toggle("theme-dark", ${dunkel}); document.body.classList.toggle("theme-light", ${!dunkel}); return true;`);
+            await new Promise((r) => setTimeout(r, 300));
+            const box = await boxOf(cdp, ".sd-gen-view", 8);
+            if (box) writeFileSync(join(shotDir, `mz-${dunkel ? "dunkel" : "hell"}-${breite}.png`), await capture(cdp, box, 2));
+          }
+        }
+        await cdp.evaluate(`document.body.classList.toggle("theme-dark", ${war}); document.body.classList.toggle("theme-light", ${!war}); const r = app.workspace.rightSplit; if (r && typeof r.setSize === "function") r.setSize(640); return true;`);
+      }
+
+      // MZ2 — ein Lauf mit dem gewaehlten Modell
+      stub.loescheMitschnitt();
+      await cdp.evaluate(`document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta").click(); return true;`);
+      const fertig = await pollUntil<string>(cdp, `
+        const f = app.vault.getAbstractFileByPath(${JSON.stringify(ZIEL)});
+        return f ? await app.vault.read(f) : null;
+      `, 20_000, 300);
+      const body = (stub.letzte("chat")?.json ?? {}) as { model?: string };
+      record(MZ2_NAME,
+        fertig !== null && body.model === GROSS && /^model:\s*mz-gross\s*$/m.test(fertig),
+        `Anfrage-Body model ${String(body.model)}; Notiz ${fertig === null ? "NICHT geschrieben" : (/^model:.*$/m.exec(fertig)?.[0] ?? "ohne model:-Zeile")}`);
+    }
+
+    // ---- MZ3 lokal: der Denk-Knopf
+    // Ausgangslage herstellen: ein frueherer Abschnitt (R4) laesst eine Stufe zurueck; der Knopf soll von „an“ aus schalten.
+    await cdp.evaluate(`${P}.settings.request.thinking = { ...(${P}.settings.request.thinking ?? {}), creative: "medium" }; return true;`);
+    const g3 = await oeffneErzeugenPanel(cdp, stub, { modell: GROSS });
+    if (g3 !== null) throw new Error(g3);
+    // Ohne gespeicherte Stufe gilt der Standard des Modus creative (Kit-Tabelle): medium.
+    const stufe = (): Promise<string> => cdp.evaluate<string>(`return String(${P}.settings.request.thinking?.creative ?? "medium");`);
+    const KNOPF = ".sd-gen-view .okit-model-bar .okit-thinking-toggle";
+    const knopfDa = await pollUntil<boolean>(cdp, `return document.querySelector(${JSON.stringify(KNOPF)}) ? true : null;`, 8_000, 200);
+    if (!knopfDa) record(MZ3_NAME, false, "Der Denk-Knopf (.okit-thinking-toggle) steht nicht in der Modellzeile des Erzeugen-Fensters");
+    else {
+    const s0 = await stufe();
+    const druecke = async (): Promise<{ stufe: string; pressed: string | null }> => {
+      await cdp.evaluate(`document.querySelector(${JSON.stringify(KNOPF)}).click(); return true;`);
+      await new Promise((r) => setTimeout(r, 400));
+      return { stufe: await stufe(), pressed: await cdp.evaluate<string | null>(`return document.querySelector(${JSON.stringify(KNOPF)})?.getAttribute("aria-pressed") ?? null;`) };
+    };
+    const s1 = await druecke();
+    const s2 = await druecke();
+
+    // ---- MZ3 Claude: „aus nicht moeglich“ mit Hinweis
+    const SCHLUESSEL = "sk-ant-smoke-slide-deck-mz3";
+    const MODELL = "claude-haiku-5-5";
+    const claude = await startLlmStub({
+      anbieter: "anthropic", schluessel: SCHLUESSEL,
+      models: [{ id: MODELL, capabilities: { effort: { supported: true }, thinking: { types: { adaptive: { supported: true } } } } }],
+      takt: 20, antwort: () => ({ text: "ok", laenge: 2, model: MODELL }),
+    });
+    let claudeText = { label: "", aria: "" };
+    try {
+      await installFakeManager(cdp, {
+        endpunkte: [{ id: "fake-claude", label: "Claude API", url: claude.url, models: [MODELL], defaultModel: MODELL, configModel: "default",
+          provider: "anthropic", backend: "anthropic", apiKey: SCHLUESSEL, hasSecret: true, transport: "anthropic" }],
+        invalidiere: [PLUGIN_ID],
+      });
+      manager = true;
+      await cdp.evaluate(`${P}.settings.choice = {}; ${P}.settings.request.thinking = { ...(${P}.settings.request.thinking ?? {}), creative: "off" }; return true;`);
+      const g3c = await oeffneErzeugenPanel(cdp, claude);
+      if (g3c !== null) throw new Error(g3c);
+      claudeText = await pollUntil<string>(cdp, `
+        const b = document.querySelector(${JSON.stringify(KNOPF)});
+        const l = b ? (b.textContent ?? "").trim() : "";
+        return b && /lowest level|niedrigste Stufe/.test(l) ? JSON.stringify({ label: l, aria: b.getAttribute("aria-label") ?? "" }) : null;
+      `, 10_000, 250).then((r) => (r === null ? { label: "", aria: "" } : (JSON.parse(r) as { label: string; aria: string })));
+    } finally {
+      if (manager) { await entferneFakeManager(cdp, { invalidiere: [PLUGIN_ID] }).catch(() => undefined); manager = false; }
+      await claude.stop();
+    }
+    record(MZ3_NAME,
+      s0 === "medium" && s1.stufe === "off" && s1.pressed === "false" && s2.stufe === s0 && s2.pressed === "true"
+        && claudeText.label !== "" && /can't be fully turned off|nicht ganz abschalten/.test(claudeText.aria),
+      `lokal: ${s0} → ${s1.stufe} (aria-pressed ${String(s1.pressed)}) → ${s2.stufe} (aria-pressed ${String(s2.pressed)}); Claude: Knopf ${JSON.stringify(claudeText.label)} mit aria-label ${JSON.stringify(claudeText.aria.slice(0, 80))}`);
+    }
+
+    // ---- MZ4: Kontext-Warnung folgt dem Modell
+    await cdp.evaluate(`${P}.settings.request = ${vorherRequest}; ${P}.settings.choice = {}; return true;`);
+    const g4 = await oeffneErzeugenPanel(cdp, stub, { modell: KLEIN, text: LANG });
+    if (g4 !== null) throw new Error(g4);
+    const warnKlein = await pollUntil<string>(cdp, `
+      const t = [...document.querySelectorAll(".sd-gen-view .sd-gen-hint")].map((e) => e.textContent ?? "").join(" | ");
+      return t.includes(${JSON.stringify(String(GRENZE_KLEIN))}) ? t : null;
+    `, 10_000, 250);
+    // Die Kontext-Anfragen (LM Studio `/api/v0/models`) vor und nach dem Wechsel: die Neuberechnung ist die zweite am Draht.
+    const kontextAnfragen = (): number => stub.anfragen().filter((a) => a.pfad === "/api/v0/models").length;
+    // Erst warten, bis die Pruefungen des Aufbaus durch sind (Anzahl 1,5 s unveraendert): eine noch laufende liest das Modell erst nach
+    // dem Wechsel und raeumte die Warnung auch ohne Neuberechnung.
+    for (let still = 0, zuletzt = -1; still < 6; ) {
+      await new Promise((r) => setTimeout(r, 250));
+      const jetzt = kontextAnfragen();
+      still = jetzt === zuletzt ? still + 1 : 0;
+      zuletzt = jetzt;
+    }
+    const vorWechsel = kontextAnfragen();
+    await waehle(GROSS);
+    let warnGross = await hinweise();
+    for (let i = 0; i < 16 && warnGross.includes(String(GRENZE_KLEIN)); i++) { await new Promise((r) => setTimeout(r, 250)); warnGross = await hinweise(); }
+    record(MZ4_NAME,
+      warnKlein !== null && !warnGross.includes(String(GRENZE_KLEIN)) && kontextAnfragen() > vorWechsel,
+      `mit ${KLEIN}: ${warnKlein === null ? "KEINE Warnung mit Grenze " + GRENZE_KLEIN : JSON.stringify(warnKlein.trim())}; nach dem Wechsel auf ${GROSS}: ${warnGross.includes(String(GRENZE_KLEIN)) ? "Warnung STEHT NOCH " + JSON.stringify(warnGross.trim()) : "weg"}; Kontext-Anfragen am Draht vorher ${vorWechsel}, danach ${kontextAnfragen()}`);
+
+    // ---- MZ5: Endpunkt ohne Modell-Liste
+    stub.konfiguriere({ models: [] });
+    await cdp.evaluate(`${P}.settings.choice = {}; return true;`);
+    const g5 = await oeffneErzeugenPanel(cdp, stub, { modell: KLEIN });
+    if (g5 !== null) throw new Error(g5);
+    const keine = await pollUntil<string>(cdp, `
+      const sel = document.querySelector(${JSON.stringify(SEL)});
+      const warn = document.querySelector(".sd-gen-view .okit-model-bar-warn");
+      const knopf = document.querySelector(".sd-gen-view .sd-gen-cta button.mod-cta");
+      if (!sel || !warn || warn.classList.contains("is-hidden")) return null;
+      return JSON.stringify({ texte: [...sel.options].map((o) => o.textContent), hinweis: warn.getAttribute("aria-label") ?? "", knopfAus: !!knopf?.disabled });
+    `, 10_000, 250);
+    const k = keine === null ? null : (JSON.parse(keine) as { texte: string[]; hinweis: string; knopfAus: boolean });
+    record(MZ5_NAME,
+      k !== null && /^(Automatisch|Automatic)/.test(k.texte[0] ?? "") && k.hinweis !== "" && !k.knopfAus,
+      k === null ? "Die Zeile mit dem Listen-Hinweis kam in 10 s nicht" : `Optionen ${JSON.stringify(k.texte)}, Hinweis ${JSON.stringify(k.hinweis)}, Knopf ${k.knopfAus ? "GESPERRT" : "bedienbar"}`);
+    stub.konfiguriere({ models: [KLEIN, GROSS] });
+
+    // ---- MZ6: Sperre, wenn anderswo ein Lauf aktiv ist
+    await cdp.evaluate(`${P}.settings.choice = {}; return true;`);
+    const g6 = await oeffneErzeugenPanel(cdp, stub, { modell: KLEIN });
+    if (g6 !== null) throw new Error(g6);
+    await pollUntil<boolean>(cdp, `return document.querySelector(${JSON.stringify(SEL)}) ? true : null;`, 8_000, 200);
+    const wechsle = async (aktiv: boolean): Promise<{ select: boolean; refresh: boolean } | null> => {
+      await cdp.evaluate(`${P}.activeGeneration = ${aktiv ? "{ sentinel: true }" : "null"}; return true;`);
+      // Das Panel zeichnet die Sperre bei `onShow` neu: Tab wechseln und zurueck.
+      await cdp.evaluate(`
+        const tabs = [...document.querySelectorAll(".okit-hub-tab")];
+        const andere = tabs.find((b) => b.getAttribute("data-tab") !== "generate");
+        const eigene = tabs.find((b) => b.getAttribute("data-tab") === "generate");
+        andere?.click(); await new Promise((r) => setTimeout(r, 300)); eigene?.click();
+        return true;
+      `);
+      const r = await pollUntil<string>(cdp, `
+        const sel = document.querySelector(${JSON.stringify(SEL)});
+        const rf = document.querySelector(".sd-gen-view .okit-model-bar-refresh");
+        return sel && rf && sel.disabled === ${aktiv ? "true" : "false"} ? JSON.stringify({ select: sel.disabled, refresh: rf.disabled }) : null;
+      `, 6_000, 200);
+      return r === null ? null : (JSON.parse(r) as { select: boolean; refresh: boolean });
+    };
+    let gesperrt: { select: boolean; refresh: boolean } | null;
+    let frei: { select: boolean; refresh: boolean } | null;
+    try {
+      gesperrt = await wechsle(true);
+    } finally {
+      frei = await wechsle(false);
+    }
+    record(MZ6_NAME,
+      gesperrt !== null && gesperrt.select && gesperrt.refresh && frei !== null && !frei.select && !frei.refresh,
+      `mit aktivem Lauf: Dropdown ${gesperrt === null ? "NICHT gesperrt" : "gesperrt"}, Neu laden ${gesperrt?.refresh ? "gesperrt" : "NICHT gesperrt"}; ohne Lauf: ${frei === null ? "bleibt gesperrt" : "bedienbar"}`);
+  } catch (e) {
+    const schon = new Set(bilanz.eintraege().map((x) => x.name));
+    for (const n of namen) if (!schon.has(n)) bilanz.unmeasured(n, `Messung abgebrochen: ${(e as Error).message}`);
+  } finally {
+    await cdp.evaluate(`${P}.activeGeneration = null; return true;`).catch(() => undefined);
+    if (manager) await entferneFakeManager(cdp, { invalidiere: [PLUGIN_ID] }).catch(() => undefined);
+    await cdp.evaluate(`
+      const p = ${P};
+      p.settings.llmEndpoints = ${vorherEndpoints}; p.settings.choice = ${vorherChoice}; p.settings.request = ${vorherRequest};
+      p.llm.invalidate();
+      app.workspace.detachLeavesOfType("slide-deck-hub");
+      return true;
+    `).catch(() => undefined);
+    await stub.stop();
+  }
+}
+
 const verbindung: Section = {
   key: "verbindung",
   title: "V · Verbindung (Schluesselbund, Bearer, Schwaerzung)",
@@ -2836,6 +3095,7 @@ const verbindung: Section = {
       } finally { await zaehler.close(); }
       await pruefeClaudeVerbindung(cdp);
       await pruefeDenkTestClaude(cdp, ctx);
+      await pruefeModellzeile(cdp, ctx);
     } finally {
       await fake.close();
       // Den Klartext-Schluessel nicht im Staging-Vault liegen lassen: Liste leeren, Schluesselbund-Eintraege des Plugins loeschen.

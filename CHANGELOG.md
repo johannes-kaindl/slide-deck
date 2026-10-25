@@ -6,8 +6,14 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **The Generate tab has a model row** (the kit's `buildModelBar`): a dropdown with the models of the active endpoint, *Automatic*, a refresh button, "Other endpoint …" (opens the endpoint manager when it is installed) and the thinking toggle in the same row. The model you pick there is the same choice as in the settings (it is no longer lost when the tab closes), the thinking toggle sets the level of the "creative" mode, and a change recalculates the context warning because the limit belongs to the model. The row is locked while another run is active. For a Claude endpoint the toggle reads "Thinking: lowest level" with the reason as tooltip.
+
 ### Changed
 
+- **The free-text model field of the Generate tab is gone.** Without a model list the row offers *Automatic* and the saved model; a model name is typed in the endpoint row of the settings. The unused message "Set a model in the AI settings or pick one above." is removed.
+- **Kit pin raised to obsidian-kit 0.70.0 and code-kit 0.37.5.** Nothing else changes for this plugin: the link guard, the chat window changes and the new input helpers are not used here, `model-context` gets its Anthropic branch (used by the context limit below), and `llm.models()` now reports `onResolved` only on a change.
 - **The "Thinking test" row is hidden for Claude endpoints.** The test asks whether a model thinks although thinking is switched off; on Claude there is no "off" (the plugin sends the lowest effort), and thinking text in the result is no fault of the server there, so the question has no object. The row is shown for every other endpoint. It follows a change of the endpoint while the settings are open.
 
 ### Security

@@ -1,5 +1,4 @@
-// Render layer for the AI settings blocks (UI-STANDARD §8). All decisions live in
-// core/llm/ai-settings-model.ts — this file only draws. Shared by the settings tab and the
+// Render layer for the AI settings blocks (UI-STANDARD §8): this file only draws. Shared by the settings tab and the
 // generate-deck view so both speak the same icon vocabulary.
 import { Notice, Setting, setIcon } from "obsidian";
 import { t } from "./i18n";

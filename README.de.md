@@ -251,9 +251,11 @@ konfigurierten OpenAI-kompatiblen LLM-Endpoint** (Standard `http://localhost:123
 lokales LM Studio). Kein Cloud-Dienst ist beteiligt, solange du den Endpoint nicht auf einen
 richtest (oder der LLM Endpoint Manager dir einen **Claude**-Endpunkt liefert: dann geht der Notiz-Inhalt an Anthropic).
 
+Der Tab **Erzeugen** trägt eine **Modellzeile** (die Modell-Liste des aktiven Endpunkts, *Automatisch*, eine Aktualisieren-Taste und der Denk-Schalter): Ein dort gewähltes Modell ist dieselbe Wahl wie in den Einstellungen, und während ein Deck entsteht, wird die Zeile nicht angeboten.
+
 Ist das Plugin **LLM Endpoint Manager** installiert, kommen die Endpunkte (samt Schlüsseln) stattdessen von ihm: Der Einstellungs-Tab bietet dann eine Endpunkt- und Modellwahl, und deine lokale Liste bleibt als Rückfall erhalten, wenn der Manager aus ist. Der Manager kann auch **Claude** (native Messages-API) als Endpunkt liefern; Claude nimmt keine Temperatur, das Plugin sendet deshalb keine, und „Denken aus“ heißt dort die niedrigste Denkstufe. Mit einem Claude-Endpunkt geht der Inhalt der Notiz, aus der du erzeugst, an Anthropic.
 
-- **Erreichbarkeits-Pings, Modell-Listen und die Kontextlänge des Modells** werden abgefragt, wenn du den Erzeugen-Dialog oder den Einstellungs-Tab öffnest (der Einstellungs-Tab zeigt die Kontextlänge unter jeder Endpunkt-Zeile mit Modell). Das sind automatische Requests an die konfigurierten Endpoints.
+- **Erreichbarkeits-Pings, Modell-Listen und die Kontextlänge des Modells** werden abgefragt, wenn du den Erzeugen-Dialog (oder die Aktualisieren-Taste seiner Modellzeile) oder den Einstellungs-Tab öffnest (der Einstellungs-Tab zeigt die Kontextlänge unter jeder Endpunkt-Zeile mit Modell). Das sind automatische Requests an die konfigurierten Endpoints.
 - **Notiz-Inhalte werden nur beim Klick auf „Erzeugen" gesendet.** Geheimnisse im Text (private Schlüssel, Bearer-Token, API-Schlüssel) werden auf dem Weg hinaus durch Platzhalter ersetzt; das erzeugte Deck bekommt die Originale zurück.
 - Keine Telemetrie, keine Analyse, keine Drittanbieter.
 

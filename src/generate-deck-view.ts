@@ -6,11 +6,14 @@ import type { EndpointConfig } from "./vendor/kit/endpoint_config";
 import { frontmatterRange } from "./vendor/deck-core/pure/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./vendor/deck-core/pure/llm/deck-prompt";
 import { estimateTokens, contextOverflow, effectiveContext } from "./llm/model-info";
-import { modelFieldMode, initialModelSelection } from "./llm/ai-settings-model";
+import { MODE } from "./llm/request-params";
 import { paintStatus } from "./ai-settings-ui";
 import type { GenState, GenerationHandle } from "./generate-deck";
 import { getLang, t } from "./i18n";
 import { endpointStatusText } from "./vendor/kit-obsidian/endpoint-status-text";
+import { buildModelBar, type ModelBar } from "./vendor/kit-obsidian/model-bar";
+import { thinkingOffTexts } from "./vendor/kit-obsidian/thinking-control";
+import { onLevelFor, thinkingFor, withThinkingLevel } from "./vendor/kit/sampling-profiles";
 import { buildStreamArea, type StreamArea } from "./vendor/kit-obsidian/stream-area";
 import type { HubPanel } from "./vendor/kit-obsidian/hub";
 import type { HubTabId } from "./hub-view";
@@ -37,7 +40,6 @@ export class GeneratePanel implements HubPanel<HubTabId> {
 
   private root!: HTMLElement;
   private endpoint: EndpointConfig | null = null;
-  private model = "";
   private currentSource: TFile | null = null;
   private unsubscribe: (() => void) | null = null;
   private timer: number | null = null;
@@ -56,12 +58,10 @@ export class GeneratePanel implements HubPanel<HubTabId> {
   private countSel?: HTMLSelectElement;
   private hintInput?: HTMLInputElement;
   private themeSel?: HTMLSelectElement;
-  // Statuszeile und Modellfeld, damit `resolveEndpoint()` sie bei jedem Tab-Wechsel neu malen kann.
+  // Statuszeile und Modellzeile, damit `resolveEndpoint()` sie bei jedem Tab-Wechsel neu malen kann.
   private pingEl?: HTMLElement;
   private pingLabelEl?: HTMLElement;
-  private modelHolder?: HTMLElement;
-  private modelInput?: HTMLInputElement;
-  private modelDirty = false;
+  private bar: ModelBar | null = null;
   private resolving = false;
 
   constructor(private plugin: SlideDeckPlugin) {}
@@ -85,6 +85,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
 
   destroy(): void {
     this.closed = true;
+    this.destroyBar();
     this.unsubscribe?.(); this.unsubscribe = null;
     if (this.timer != null) { window.clearInterval(this.timer); this.timer = null; }
     this.root?.empty();
@@ -96,11 +97,16 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     return `${dir}${file.basename} — Deck`;
   }
   private existsAt(p: string): boolean { return this.plugin.app.vault.getAbstractFileByPath(p) instanceof TFile; }
-  private updateEnabled(): void { if (this.genBtn) this.genBtn.disabled = !this.endpoint || !this.model || !this.currentSource; }
+  /** Das Modell, das ein Lauf jetzt mitschickt: Wahl der Modellzeile, sonst das der Quelle (Kit-Vertrag `modelInUse`). */
+  private model(): string { return this.plugin.llm.modelInUse(); }
+  /** Die Zeile gibt sich nicht selbst frei: vor jedem Neuaufbau des Inhalts abmelden. */
+  private destroyBar(): void { this.bar?.destroy(); this.bar = null; }
+  private updateEnabled(): void { if (this.genBtn) this.genBtn.disabled = !this.endpoint || !this.model() || !this.currentSource; }
 
   private async renderInput(): Promise<void> {
     const contentEl = this.root;
     this.mode = "input";
+    this.destroyBar();
     contentEl.empty();
 
     const status = contentEl.createDiv({ cls: "sd-gen-status" });
@@ -116,14 +122,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     this.countSel.createEl("option", { value: "auto", text: t("deck.modal.auto") });
     for (const n of [3, 5, 6, 8, 10, 12]) this.countSel.createEl("option", { value: String(n), text: String(n) });
 
-    const modelRow = contentEl.createDiv({ cls: "sd-gen-row" });
-    modelRow.createEl("label", { text: t("deck.modal.model") });
-    const modelHolder = this.modelHolder = modelRow.createSpan();
-    this.model = "";
-    const modelInput = this.modelInput = modelHolder.createEl("input", { type: "text" });
-    modelInput.value = this.model;
-    this.modelDirty = false;
-    modelInput.addEventListener("input", () => { this.modelDirty = true; this.model = modelInput.value.trim(); this.updateEnabled(); });
+    this.bar = this.buildModelRow(contentEl.createDiv({ cls: "sd-gen-row sd-gen-model" }));
 
     const hintRow = contentEl.createDiv({ cls: "sd-gen-row" });
     hintRow.createEl("label", { text: t("deck.modal.hint") });
@@ -155,15 +154,15 @@ export class GeneratePanel implements HubPanel<HubTabId> {
   /** Resolve endpoint + ping + models. Laeuft beim Aufbau und bei jedem Sichtbarwerden des Tabs
    *  (ein im Hintergrund eingerichteter Endpunkt soll ohne Neuoeffnen greifen). */
   private async resolveEndpoint(): Promise<void> {
-    const { pingEl, pingLabelEl, modelHolder, modelInput } = this;
-    if (this.resolving || !pingEl || !pingLabelEl || !modelHolder || !modelInput) return;
+    const { pingEl, pingLabelEl } = this;
+    if (this.resolving || !pingEl || !pingLabelEl) return;
     this.resolving = true;
     try {
       const source = await this.plugin.llm.resolve();
       this.endpoint = source.config;
       if (this.closed) return;
-      // The source decides the model too (choice → manager default → local llmModel).
-      if (!this.modelDirty) { this.model = source.model; modelInput.value = source.model; }
+      // Das Kit weiss nicht, wann sich der Endpunkt aendert: die Modellzeile zeichnet sich hier neu (Liste, Familie, Sperre).
+      void this.bar?.refresh();
       if (!this.endpoint) {
         // No resolved endpoint → nothing left to probe() for a kind; "unknown" carries the
         // shared error visual (circle-x/is-error) while the label stays the specific,
@@ -176,29 +175,55 @@ export class GeneratePanel implements HubPanel<HubTabId> {
         // One request answers both questions: the model list of the resolved endpoint, and — by its
         // answer — whether it is reachable. The finer diagnosis (key refused, wrong path, ...) lives in
         // the settings, next to the endpoint row.
-        const { models, reachable } = await this.plugin.llm.models();
+        const { reachable } = await this.plugin.llm.models();
         if (this.closed) return;
         const kind = reachable ? "ok" : "unknown";
         const label = endpointStatusText(kind, { lang: getLang() });
         paintStatus(pingEl, kind, label);
         pingLabelEl.setText(`${this.endpoint.url} — ${label}`);
-        if (modelFieldMode(models) === "dropdown") {
-          // Keep a saved-but-absent model selectable instead of losing it (UI-STANDARD §8,
-          // same rule as the settings model field).
-          const { options, initial } = initialModelSelection(models, source.model);
-          modelHolder.empty();
-          const sel = modelHolder.createEl("select");
-          for (const m of options) sel.createEl("option", { value: m, text: m });
-          this.model = initial;
-          sel.value = this.model;
-          sel.addEventListener("change", () => { this.model = sel.value; this.updateEnabled(); });
-        }
       }
       this.updateEnabled();
       // Endpoint is only known now → re-run the source check so the context-overflow warning
       // can actually fire on first open (F3: the earlier refreshSourceBits ran with endpoint null).
       if (this.currentSource) void this.checkSourceAsync(this.currentSource);
     } finally { this.resolving = false; }
+  }
+
+  /** Die Modellzeile des Kits (`buildModelBar`, UI-STANDARD §8): Modelle des aktiven Endpunkts, Automatisch, Neu laden, Denk-Steuerung.
+   *  Die Wahl gilt wie im Einstellungs-Tab (`llm.setModel`); ein Wechsel rechnet die Kontext-Warnung neu, denn die Grenze haengt am Modell. */
+  private buildModelRow(host: HTMLElement): ModelBar {
+    const llm = this.plugin.llm;
+    return buildModelBar({
+      app: this.plugin.app,
+      containerEl: host,
+      llm,
+      label: t("deck.modal.model"),
+      strings: { lang: getLang() },
+      // Zwei Fenster, ein Lauf: laeuft schon eine Erzeugung, bleibt die Zeile gesperrt (im Lauf-Modus gibt es sie ohnehin nicht).
+      disabled: () => this.plugin.activeGeneration !== null,
+      onChange: () => {
+        this.updateEnabled();
+        if (this.currentSource) void this.checkSourceAsync(this.currentSource);
+      },
+      thinking: {
+        family: () => llm.source().family,
+        backend: () => llm.source().backend,
+        current: () => thinkingFor(this.plugin.settings.request, MODE),
+        onLevel: () => onLevelFor(this.plugin.settings.request, MODE),
+        setLevel: async (level) => {
+          this.plugin.settings.request = withThinkingLevel(this.plugin.settings.request, MODE, level);
+          await this.plugin.saveSettings();
+        },
+        levelPicker: () => false,
+        strings: {
+          button: (level) => (level === "off" ? t("deck.thinking.off") : t("deck.thinking.on")),
+          // „Aus“ nicht moeglich (Claude, gpt-oss, gemma 4 auf LM Studio): Beschriftung und Hinweis aus dem Kit.
+          offNotPossible: thinkingOffTexts(getLang()),
+          level: (level) => t(`deck.thinking.level.${level}`),
+          pickerLabel: t("deck.thinking.picker"),
+        },
+      },
+    });
   }
 
   /** Update the source-note-dependent widgets (label, replace choice, deck hint, context warn). */
@@ -234,7 +259,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     if (this.deckHintEl && looksLikeDeck(raw)) this.deckHintEl.setText(t("deck.modal.sourceIsDeck"));
     if (!this.endpoint || !this.warnEl) return;
     const body = stripNoteFrontmatter(raw);
-    const ctx = await fetchEndpointContext(this.endpoint.url, this.model, this.endpoint.apiKey);
+    const ctx = await fetchEndpointContext(this.endpoint.url, this.model(), this.endpoint.apiKey);
     if (this.currentSource !== file) return;
     const limit = effectiveContext(ctx) ?? undefined;
     const inputTokens = estimateTokens(body.length) + 400;
@@ -249,7 +274,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     // Non-reentrant across the await: `starting` closes the TOCTOU window before startDeckGeneration
     // sets activeGeneration (F1 — key-repeat Enter / Enter+click could otherwise spawn two runs).
     if (this.plugin.activeGeneration || this.starting) return;
-    if (!this.endpoint || !this.model || !this.currentSource) return;
+    if (!this.endpoint || !this.model() || !this.currentSource) return;
     if (!this.countSel || !this.hintInput || !this.themeSel) return;
     this.starting = true;
     try {
@@ -261,7 +286,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
       if (!this.replace) { let n = 2; while (this.existsAt(targetPath)) { targetPath = `${this.targetBase(source)} ${n}.md`; n++; } }
       const input: DeckGenInput = {
         sourceBody: body, slideTarget, hint: this.hintInput.value, themeKey: this.themeSel.value,
-        model: this.model, targetPath, replace: this.replace,
+        model: this.model(), targetPath, replace: this.replace,
         sourceLink: `[[${source.basename}]]`,
       };
       const handle = this.plugin.startDeckGeneration(input);
@@ -275,6 +300,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     // Restore the "at most one live timer/subscription" invariant before wiring new ones.
     this.unsubscribe?.(); this.unsubscribe = null;
     if (this.timer != null) { window.clearInterval(this.timer); this.timer = null; }
+    this.destroyBar();
     contentEl.empty();
     this.startedAt = handle.startedAt; // reattach-stable (F6): real start, not now
 

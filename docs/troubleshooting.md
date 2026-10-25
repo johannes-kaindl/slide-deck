@@ -63,7 +63,6 @@ Each entry starts with what you see — the wording is the plugin's own English 
 ## Generate: no endpoint reachable
 
 > No endpoint reachable — check the AI settings.
-> Set a model in the AI settings or pick one above.
 
 **Cause:** none of the endpoints answers, or no model is chosen. Under **Settings → Slide Deck → AI (local)** each row shows its own status:
 
@@ -74,7 +73,7 @@ Each entry starts with what you see — the wording is the plugin's own English 
 | Access denied — API key missing or invalid. | The server wants an API key. Enter it on that row. |
 | Not reachable — {reason} | Nothing answers at that address; the reason names what went wrong. |
 
-**Fix:** start the server, load a model, press **Test connection**, and choose the model in the row's dropdown (**Refresh models** re-reads it).
+**Fix:** start the server, load a model, press **Test connection**, and choose the model in the **Model** row of the Generate tab (its refresh button re-reads the list) or in the endpoint row's dropdown.
 
 ## Generate: the stream is refused
 

@@ -115,7 +115,6 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
                        wird die Sprache, nicht die Funktion.
   llm/
     model-info.ts         Re-Export von Kits effectiveContext/ModelContext (model-context.ts) + eigene estimateTokens(chars), contextOverflow(...). Der Abruf der Kontextlänge selbst ist `fetchEndpointContext` (obsidian-kit, in `generate-deck-view.ts` direkt gerufen).
-    ai-settings-model.ts  Pure Zustandslogik des Modell-Felds: modelFieldMode, initialModelSelection (+ Typ ModelSelection — hält einen serverseitig nicht mehr gelisteten, gespeicherten Modellwert als Extra-Option statt ihn stumm zu verlieren). Statustexte gibt es hier nicht mehr (Kit: `endpointStatusText`).
   preview-view.ts    PreviewPanel (HubPanel im `SlideDeckHubView`, rechte Seitenleiste) — Live-Vorschau mit
                      Warn-Badges und Source-Jump-Link. Deck wird in einem persistenten
                      isolierten iframe dargestellt; Preview-Zoom wirkt auf das <iframe>-Element;
