@@ -6,6 +6,10 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- **The mobile PDF export now sets a Content-Security-Policy in the HTML file it writes.** On a phone the export writes the deck as a loose HTML file into the export folder and hands it to the system, without the sandbox the desktop print path uses. Markdown notes are rendered with raw HTML allowed and nothing is stripped, so a `<script>`, an `onerror` handler, a `javascript:` link or an `<iframe>` in a note (for example one pasted from the web) ended up in that file and ran when it was opened (measured: all four patterns are in the written file, and all four run without the policy). The file now carries `default-src 'none'`, which blocks scripts, frames and connections; styles, `data:` images and fonts, KaTeX and Mermaid diagrams are unaffected, and images from `https:` addresses still load (a deck of your own may show them), while `http:` images no longer do in this file. The desktop export and the preview are unchanged.
+
 ## [0.19.0] — 2026-10-24
 
 ### Security

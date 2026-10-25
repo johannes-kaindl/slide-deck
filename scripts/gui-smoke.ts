@@ -40,6 +40,7 @@
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { deflateSync } from "node:zlib";
 import { join } from "node:path";
 import {
   AbbruchAusnahme,
@@ -65,7 +66,7 @@ import { messeFolge, zeichneFolge } from "../../tools/obsidian-cdp/folge.js";
 import { gegenprobeErreichbarkeit, gegenprobeFokus, messeDenkblockKopierbar, messeErreichbarkeit, messeFokusErhalt, mitHoehe, zeichneDenkblock, type DenkblockUrteile, type PflichtBilanz, type PflichtTeilurteil } from "../../tools/obsidian-cdp/pflichtpunkte.js";
 import { createBilanz, parseArgs, runDriver, type Bilanz } from "../../tools/obsidian-cdp/bilanz.js";
 import { startLlmStub, type LlmStub, type StubAnfrage } from "../../tools/obsidian-cdp/llm-stub.js";
-import { capture } from "../../tools/obsidian-cdp/shot.js";
+import { boxOf, capture } from "../../tools/obsidian-cdp/shot.js";
 // Das Woerterbuch selbst, nicht eine Kopie seiner Form: daraus kommen sowohl die exakten
 // Schluessel als auch die Praefix-Liste fuer B2. Eine im Treiber gepflegte Musterliste waere
 // beim naechsten neuen Namensraum still blind — und genau diese Sorte Blindheit misst B2.
@@ -242,6 +243,45 @@ Der Modifier steht im Theme, nicht im Kern.
 
 // --- Protokoll ---------------------------------------------------------------
 
+/** PD1 — der mobile PDF-Export (lose HTML-Datei im Vault). Name hier, weil ihn die Soll-Liste und der Punkt teilen. */
+const PD1_NAME = "PD1 Mobiler PDF-Export: die lose Datei fuehrt kein Skript aus (Gegenprobe: ohne Policy laufen alle vier Muster), Bild, Formel und Diagramm bleiben";
+const PD1_NOTE = "smoke-pd1.md";
+/** Rotes PNG (160x90) als data:-URI. markdown-it laesst als `data:`-Bild nur gif/png/jpeg/webp durch, kein SVG:
+ *  ein SVG-Bild bliebe als Text stehen und der Punkt zaehlte 0 Bilder (erster Lauf, 2026-10-25). */
+function pd1RotPng(): string {
+  const crcTab = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+  const crc = (b: Buffer): number => { let c = 0xffffffff; for (const x of b) c = crcTab[(c ^ x) & 0xff]! ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  const chunk = (typ: string, data: Buffer): Buffer => {
+    const kopf = Buffer.alloc(4); kopf.writeUInt32BE(data.length);
+    const tc = Buffer.concat([Buffer.from(typ, "ascii"), data]);
+    const fuss = Buffer.alloc(4); fuss.writeUInt32BE(crc(tc));
+    return Buffer.concat([kopf, tc, fuss]);
+  };
+  const w = 160, h = 90;
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 2;
+  const zeile = Buffer.concat([Buffer.from([0]), Buffer.from(Array.from({ length: w }, () => [216, 27, 96]).flat())]);
+  const roh = Buffer.concat(Array.from({ length: h }, () => zeile));
+  const png = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(roh)), chunk("IEND", Buffer.alloc(0))]);
+  return `data:image/png;base64,${png.toString("base64")}`;
+}
+/** Vier Muster aus der Notiz, je eines setzt eine eigene Marke `window.__pd_<name>` im Rahmen, in dem die Datei laeuft
+ *  (eine gemeinsame Liste hat sich im ersten Lauf gegenseitig ueberschrieben). Das iframe-Muster fuehrt ueber `srcdoc`
+ *  aus (`parent.…`): eine Fernquelle brauchte Netz, der Weg ist derselbe. */
+const PD1_MARKE = (name: string): string => `window.__pd_${name} = 1`;
+const PD1_MD = [
+  "---", "theme: kami", "---", "",
+  "# PD1 Probe", "",
+  `<script>${PD1_MARKE("script")}</script>`, "",
+  `<img src="x" onerror="${PD1_MARKE("onerror")}">`, "",
+  `<a id="pd-link" href="javascript:${PD1_MARKE("link")}">Link</a>`, "",
+  `<iframe srcdoc="&lt;script&gt;parent.${PD1_MARKE("iframe")}&lt;/script&gt;"></iframe>`, "",
+  "---", "",
+  "# Bleibt", "",
+  `![](${pd1RotPng()})`, "",
+  "$$E = mc^2$$", "",
+  "```mermaid", "graph LR", "  A[Eins] --> B[Zwei]", "```", "",
+].join("\n");
+
 /** Soll-Liste je Abschnitt — der Nenner der Bilanz (CORE-TEST-19). Ein Punkt, der nie aufgezeichnet
  *  wird (Abschnitt abgebrochen), zaehlt als „nichts gemessen" und setzt Exit 1; er erscheint nie
  *  als gruen. Bei `--section` gilt die Teilmenge der gewaehlten Abschnitte. „PDF-Export" und
@@ -288,6 +328,7 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "PDF-Export",
     `D1 Bilder-Export schreibt ${DECK_SLIDES} PNG in den Export-Ordner`,
     `D2 Modifier-Klasse ueberlebt den Export (Folie ${REGRESSION_MOD_SLIDE + 1} traegt die Probe-Farbe im PNG)`,
+    PD1_NAME,
   ],
   bild: [
     "N1 Bildplatz rendert als .sd-image-slot",
@@ -1493,6 +1534,118 @@ const exportSektion: Section = {
           (nachbarNicht ? "" : " · ACHTUNG: Nachbarfolie traegt sie auch — die Probe misst nicht den Modifier")
         : `keine vollstaendige Serie${meldung2 ? ` · Meldung: ${meldung2}` : ""} · ${await diagnose(cdp)}`,
     );
+
+    // PD1: der mobile Zweig ist auf dem Desktop nicht anwaehlbar (`app.emulateMobile` aendert `Platform.isDesktopApp`
+    // nicht, gemessen 2026-10-25), also waehlt der Punkt ihn ueber `plugin.exportPdf({ mobile: true })` — dieselbe
+    // Funktion, derselbe Schreibweg, nur die Weiche ist vorgegeben. `openWithDefaultApp` wird ersetzt (es wuerde den
+    // Browser des Rechners oeffnen) und danach entfernt. Die Datei laeuft dann in einem Rahmen OHNE sandbox: dort
+    // zaehlt allein die Policy. Gegenprobe im selben Punkt: dieselbe Datei ohne das meta laesst alle vier Muster laufen.
+    await cdp.evaluate(`
+      const pfad = ${JSON.stringify(PD1_NOTE)};
+      const inhalt = ${JSON.stringify(PD1_MD)};
+      const da = app.vault.getAbstractFileByPath(pfad);
+      if (da) await app.vault.modify(da, inhalt); else await app.vault.create(pfad, inhalt);
+      await new Promise((r) => setTimeout(r, 600));
+      return true;
+    `);
+    erzeugtePfade.push(PD1_NOTE);
+    if (!(await openExisting(cdp, PD1_NOTE, "source"))) throw new Error(`Notiz fehlt im Vault: ${PD1_NOTE}`);
+    await setPluginSetting(cdp, PLUGIN_ID, "customCss", "");
+    const pdDatei = `${zielOrdner}/${PD1_NOTE.replace(/\.md$/, "")}.html`;
+    await cdp.evaluate(`
+      const adapter = app.vault.adapter;
+      if (await adapter.exists(${JSON.stringify(pdDatei)})) await adapter.remove(${JSON.stringify(pdDatei)});
+      globalThis.__pdGeoeffnet = [];
+      app.openWithDefaultApp = async (p) => { globalThis.__pdGeoeffnet.push(p); };
+      return true;
+    `);
+    await clearNotices(cdp);
+    try {
+      await cdp.evaluate(`await app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].exportPdf({ mobile: true }); return true;`);
+      const pd = await pollUntil<{
+        geoeffnet: string[]; vorkommen: Record<string, boolean>; mitPolicy: { marken: string[]; katex: number; svg: number; bild: number; httpsVerletzung: number; httpVerletzung: number };
+        ohnePolicy: { marken: string[]; httpVerletzung: number }; metaEntfernt: boolean; meta: number;
+      } | null>(cdp, `
+        const adapter = app.vault.adapter;
+        if (!(await adapter.exists(${JSON.stringify(pdDatei)}))) return null;
+        const html = await adapter.read(${JSON.stringify(pdDatei)});
+        if (html.length < 2000) return null;
+        const vorkommen = {
+          script: /<script/i.test(html), onerror: /onerror=/i.test(html),
+          link: /href="javascript:/i.test(html), iframe: /<iframe/i.test(html),
+        };
+        const meta = (html.match(/http-equiv="Content-Security-Policy"/g) || []).length;
+        const ohne = html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, "");
+        const metaEntfernt = ohne !== html;
+        const lauf = async (quelltext) => {
+          const f = document.createElement("iframe");
+          f.style.cssText = "position:fixed;left:8px;top:8px;width:min(1300px,96vw);height:min(740px,90vh);z-index:99999;background:#fff;border:0";
+          document.body.appendChild(f);
+          const geladen = new Promise((r) => f.addEventListener("load", () => r(), { once: true }));
+          f.srcdoc = quelltext;
+          await geladen;
+          await f.contentDocument.fonts.ready;
+          const d = f.contentDocument, w = f.contentWindow;
+          const verletzungen = [];
+          d.addEventListener("securitypolicyviolation", (e) => verletzungen.push(e.effectiveDirective + " " + e.blockedURI));
+          const a = d.getElementById("pd-link"); if (a) a.click();
+          await new Promise((r) => setTimeout(r, 600));
+          // img-src nachmessen: ein https- und ein http-Bild von Hand setzen, die Verletzungen zaehlen
+          for (const url of ["https://pd1.invalid/x.png", "http://127.0.0.1:9/x.png"]) {
+            const im = d.createElement("img"); im.setAttribute("data-pd", "1"); im.src = url; d.body.appendChild(im);
+          }
+          await new Promise((r) => setTimeout(r, 600));
+          d.querySelectorAll("img[data-pd]").forEach((i) => i.remove());   // Probebilder raus, bevor aufgenommen wird
+          const zaehle = (muster) => verletzungen.filter((v) => v.startsWith("img-src") && v.includes(muster)).length;
+          return { f, w, d, marken: Object.keys(w).filter((k) => k.startsWith("__pd_")).map((k) => k.slice(5)), httpsVerletzung: zaehle("https:"), httpVerletzung: zaehle("http://"), verletzungen };
+        };
+        const mit = await lauf(html);
+        const mitErgebnis = {
+          marken: mit.marken, katex: mit.d.querySelectorAll(".katex").length, svg: mit.d.querySelectorAll(".sd-mermaid svg").length,
+          bild: Array.from(mit.d.querySelectorAll("img")).filter((i) => i.src.startsWith("data:image/png") && i.naturalWidth > 0).length,
+          httpsVerletzung: mit.httpsVerletzung, httpVerletzung: mit.httpVerletzung,
+        };
+        globalThis.__pdRahmen = mit.f;   // fuer die Aufnahme; danach entfernt
+        const ohnePolicy = await lauf(ohne);
+        const ohneErgebnis = { marken: ohnePolicy.marken, httpVerletzung: ohnePolicy.httpVerletzung };
+        ohnePolicy.f.remove();
+        return { geoeffnet: globalThis.__pdGeoeffnet, vorkommen, mitPolicy: mitErgebnis, ohnePolicy: ohneErgebnis, metaEntfernt, meta };
+      `, 60_000, 2000);
+      const shotDir = process.env.SMOKE_SHOT_DIR;
+      if (shotDir && pd) {
+        // Zwei Aufnahmen, eine je Folie: der Rahmen ist `position: fixed` und endet am Fensterrand, ein hoeherer Ausschnitt waere weiss.
+        const box = await boxOf(cdp, "iframe[style*='z-index: 99999']");
+        if (box) {
+          mkdirSync(shotDir, { recursive: true });
+          for (const nr of [0, 1]) {
+            await cdp.evaluate(`const f = globalThis.__pdRahmen; f.contentDocument.querySelectorAll(".sd-slide")[${nr}].scrollIntoView(); await new Promise((r) => setTimeout(r, 300)); return true;`);
+            writeFileSync(join(shotDir, `pd1-mobiler-export-${nr + 1}.png`), await capture(cdp, box, 1));
+          }
+        }
+      }
+      await cdp.evaluate(`if (globalThis.__pdRahmen) { globalThis.__pdRahmen.remove(); delete globalThis.__pdRahmen; } return true;`);
+      if (pd && !erzeugtePfade.includes(zielOrdner)) erzeugtePfade.push(zielOrdner);
+      const alleVier = pd !== null && Object.values(pd.vorkommen).every(Boolean);
+      const mit = pd?.mitPolicy;
+      const ohne = pd?.ohnePolicy;
+      const ok = pd !== null
+        && alleVier && pd.meta === 1 && pd.metaEntfernt
+        && pd.geoeffnet.length === 1 && pd.geoeffnet[0] === pdDatei
+        && mit!.marken.length === 0 && ohne!.marken.slice().sort().join() === "iframe,link,onerror,script"
+        && mit!.katex > 0 && mit!.svg > 0 && mit!.bild > 0
+        && mit!.httpsVerletzung === 0 && mit!.httpVerletzung > 0 && ohne!.httpVerletzung === 0;
+      record(
+        PD1_NAME,
+        ok,
+        pd
+          ? `Muster in der Datei ${Object.entries(pd.vorkommen).filter(([, v]) => v).length}/4 (${Object.keys(pd.vorkommen).join(", ")}) · Policy-meta ${pd.meta}x · ` +
+            `mit Policy: Marken [${mit!.marken.join(",")}] · KaTeX ${mit!.katex} · Mermaid-SVG ${mit!.svg} · data:-Bild ${mit!.bild} · https-Bild gesperrt ${mit!.httpsVerletzung} · http-Bild gesperrt ${mit!.httpVerletzung} · ` +
+            `ohne Policy: Marken [${ohne!.marken.join(",")}] · http-Bild gesperrt ${ohne!.httpVerletzung} · geoeffnet ${pd.geoeffnet.join(",") || "-"}`
+          : `keine Datei "${pdDatei}" · ${await notices(cdp) || "keine Meldung"} · ${await diagnose(cdp)}`,
+      );
+    } finally {
+      await cdp.evaluate(`delete app.openWithDefaultApp; delete globalThis.__pdGeoeffnet; return true;`);
+    }
   },
 };
 

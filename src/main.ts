@@ -64,7 +64,7 @@ export default class SlideDeckPlugin extends Plugin {
     this.addCommand({ id: "open-preview", name: t("cmd.openPreview"), callback: () => void this.activatePreview() });
     this.addCommand({
       id: "export-pdf", name: t("cmd.exportPdf"),
-      callback: () => void exportPdf(this.app, activeDocument, activeWindow, this.app.workspace.getActiveFile(), this.themeStore.getMap(), { theme: this.settings.defaultTheme, minFontPx: this.settings.minFontPx }, this.settings.customCss, undefined, this.settings.exportFolder),
+      callback: () => void this.exportPdf(),
     });
     this.addCommand({
       id: "export-images", name: t("cmd.exportImages"),
@@ -85,6 +85,11 @@ export default class SlideDeckPlugin extends Plugin {
   }
 
   async saveSettings(): Promise<void> { await this.saveData(this.settings); }
+
+  /** PDF-Export der aktiven Notiz; `mobile` nur fuer den GUI-Smoke (siehe `exportPdf`). */
+  exportPdf(opts: { mobile?: boolean } = {}): Promise<void> {
+    return exportPdf(this.app, activeDocument, activeWindow, this.app.workspace.getActiveFile(), this.themeStore.getMap(), { theme: this.settings.defaultTheme, minFontPx: this.settings.minFontPx }, this.settings.customCss, undefined, this.settings.exportFolder, opts.mobile);
+  }
 
   async runSlot(source: string, ctx: MarkdownPostProcessorContext, onState: (s: CardState) => void): Promise<void> {
     const api = readImageApi(this.app);

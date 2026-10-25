@@ -90,6 +90,7 @@ Der erste Lauf nach der Profilanlage ist ein Aufwärmlauf. Verbindliche Regeln z
 | N4 | Zurückschreiben trifft, unterbleibt bei geändertem Block | `replaceSlot`-Bauart über den echten Vault-Inhalt: Treffer ersetzt den Block durch das Bild-Embed; ein zwischenzeitlich geänderter Block bleibt unberührt |
 | D1 | Bilder-Export schreibt die volle Serie | PNG-Dateien > 1 KB im Export-Ordner, Zahl gegen die Folienzahl |
 | D2 | Modifier-Klasse überlebt den Export | `customCss` färbt `.sd-mod-sand` in eine Probe-Farbe, die kein Theme trägt; Pixel am linken Rand des PNG von Folie 4 des Regressions-Decks = Probe, das der Nachbarfolie ≠ Probe. Gelesen aus den geschriebenen Dateien (adapter → ImageBitmap), nicht aus dem Export-iframe |
+| PD1 | Mobiler PDF-Export: die lose Datei führt kein Skript aus | `plugin.exportPdf({ mobile: true })` (der mobile Zweig ist auf dem Desktop nicht anwählbar: `app.emulateMobile` ändert `Platform.isDesktopApp` nicht) schreibt die HTML-Datei, `openWithDefaultApp` ist ersetzt. Die Notiz trägt `<script>`, `<img onerror>`, `<a href="javascript:">` und ein `<iframe srcdoc>`; die Datei wird in einen Rahmen **ohne** `sandbox` geladen. **Gegenprobe im Punkt:** dieselbe Datei ohne das Policy-`meta` lässt alle vier Muster laufen (Marken), mit Policy keins; `data:`-Bild, KaTeX-Formel und Mermaid-SVG stehen; ein `http:`-Bild wird gesperrt, ein `https:`-Bild nicht. Mit `SMOKE_SHOT_DIR` zwei Bilder (je Folie) |
 
 **A8 und D2 fahren gegen `docs/themes/regression-deck.md`.** Der Treiber schreibt den Prüfling zur
 Laufzeit als `Regression deck.md` in den Vault und räumt ihn danach in den Papierkorb (`--keep`
@@ -237,7 +238,8 @@ ab, damit kein nachfolgender Punkt auf einem beschädigten Nachbarplugin-Slot au
   blockiert jede weitere CDP-Nachricht. Der Treiber protokolliert den Punkt als übersprungen,
   damit die Lücke nicht wie Abdeckung aussieht.
 - **PDF-Export (Mobile):** schreibt HTML in den Export-Ordner und übergibt an
-  `openWithDefaultApp`. Braucht ein Gerät.
+  `openWithDefaultApp`. Das Öffnen und Drucken auf dem Gerät braucht ein Gerät; die Datei selbst
+  (Policy, Inhalt) misst PD1.
 - **Ästhetik:** Ränder, Zeilenfall, Kontrast — „sieht gut aus" ist kein Prüfpunkt. Dafür sind
   `npm run visual-smoke` und `docs/themes/regression-deck.md` da.
 
