@@ -186,7 +186,7 @@
 .sd-gen-row label { min-width: 120px; }
 /* Modellzeile des Kits in einer Zeile des Fensters: die Beschriftung fluchtet mit den Labels darueber, die Zeile nimmt den Rest. */
 .sd-gen-model .okit-model-bar { flex: 1 1 auto; }
-.sd-gen-model .okit-model-bar-label { min-width: 120px; }
+.sd-gen-model .okit-model-bar-label { min-width: 120px; font-size: inherit; color: inherit; }
 .sd-gen-status { margin-bottom: 10px; opacity: 0.9; }
 .sd-gen-ping { margin-left: 8px; display: inline-flex; align-items: center; }
 /* .is-checking-Farbe steht nur noch bei der neuen §8-Keyframe-Regel weiter unten —
