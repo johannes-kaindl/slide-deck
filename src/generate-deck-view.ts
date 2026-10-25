@@ -259,7 +259,9 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     if (this.deckHintEl && looksLikeDeck(raw)) this.deckHintEl.setText(t("deck.modal.sourceIsDeck"));
     if (!this.endpoint || !this.warnEl) return;
     const body = stripNoteFrontmatter(raw);
-    const ctx = await fetchEndpointContext(this.endpoint.url, this.model(), this.endpoint.apiKey);
+    // Claude beantwortet die Grenze ueber die Models-API (`max_input_tokens`, `x-api-key`): der Aufrufer kennt das Backend, die Kit-Huelle raet es nicht.
+    const provider = this.plugin.llm.source().backend === "anthropic" ? ("anthropic" as const) : undefined;
+    const ctx = await fetchEndpointContext(this.endpoint.url, this.model(), this.endpoint.apiKey, { provider });
     if (this.currentSource !== file) return;
     const limit = effectiveContext(ctx) ?? undefined;
     const inputTokens = estimateTokens(body.length) + 400;

@@ -12,6 +12,7 @@ versioning follows [SemVer](https://semver.org/).
 
 ### Changed
 
+- **The context warning knows the limit of a Claude model.** The Generate tab asked the Models API with a Bearer header and found nothing, so every note over 30,000 characters warned "vs ?" for Claude. It now reads `max_input_tokens` from `GET /v1/models` (with `x-api-key`) and warns only when the note really exceeds that limit; endpoints that report nothing keep the 30,000-character rule.
 - **The free-text model field of the Generate tab is gone.** Without a model list the row offers *Automatic* and the saved model; a model name is typed in the endpoint row of the settings. The unused message "Set a model in the AI settings or pick one above." is removed.
 - **Kit pin raised to obsidian-kit 0.70.0 and code-kit 0.37.5.** Nothing else changes for this plugin: the link guard, the chat window changes and the new input helpers are not used here, `model-context` gets its Anthropic branch (used by the context limit below), and `llm.models()` now reports `onResolved` only on a change.
 - **The "Thinking test" row is hidden for Claude endpoints.** The test asks whether a model thinks although thinking is switched off; on Claude there is no "off" (the plugin sends the lowest effort), and thinking text in the result is no fault of the server there, so the question has no object. The row is shown for every other endpoint. It follows a change of the endpoint while the settings are open.

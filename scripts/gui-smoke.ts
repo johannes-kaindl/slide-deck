@@ -65,7 +65,7 @@ import {
 import { messeFolge, zeichneFolge } from "../../tools/obsidian-cdp/folge.js";
 import { gegenprobeErreichbarkeit, gegenprobeFokus, messeDenkblockKopierbar, messeErreichbarkeit, messeFokusErhalt, mitHoehe, zeichneDenkblock, type DenkblockUrteile, type PflichtBilanz, type PflichtTeilurteil } from "../../tools/obsidian-cdp/pflichtpunkte.js";
 import { createBilanz, parseArgs, runDriver, type Bilanz } from "../../tools/obsidian-cdp/bilanz.js";
-import { startLlmStub, type LlmStub, type StubAnfrage, type ZusatzAntwort } from "../../tools/obsidian-cdp/llm-stub.js";
+import { startLlmStub, type LlmStub, type StubAnfrage, type ZusatzAntwort, type ModellEintrag } from "../../tools/obsidian-cdp/llm-stub.js";
 import { boxOf, capture } from "../../tools/obsidian-cdp/shot.js";
 // Das Woerterbuch selbst, nicht eine Kopie seiner Form: daraus kommen sowohl die exakten
 // Schluessel als auch die Praefix-Liste fuer B2. Eine im Treiber gepflegte Musterliste waere
@@ -250,6 +250,7 @@ const MZ3_NAME = "MZ3 Denk-Knopf in der Zeile schaltet request.thinking.creative
 const MZ4_NAME = "MZ4 Ein Modellwechsel rechnet die Kontext-Warnung neu (kleines Modell: Warnung mit seiner Grenze, grosses: keine)";
 const MZ5_NAME = "MZ5 Endpunkt ohne Modell-Liste: die Zeile zeigt Automatisch mit Hinweis, der Knopf Erzeugen bleibt bedienbar";
 const MZ6_NAME = "MZ6 Sperre: laeuft anderswo schon eine Erzeugung, ist die Zeile gesperrt (Gegenprobe: ohne Lauf bedienbar)";
+const CX1_NAME = "CX1 Kontextgrenze bei Claude: die Grenze kommt aus /v1/models (max_input_tokens 200000), keine Warnung fuer 32.800 Zeichen; Gegenprobe 4000 warnt mit \"vs 4000\"";
 const DT1_NAME = "DT1 Denk-Test: bei einem Claude-Endpunkt steht die Zeile nicht im Tab, auch nicht nach einem Wechsel im geoeffneten Tab (Gegenprobe: ohne Manager steht sie da)";
 
 /** PD1 — der mobile PDF-Export (lose HTML-Datei im Vault). Name hier, weil ihn die Soll-Liste und der Punkt teilen. */
@@ -396,6 +397,7 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     MZ4_NAME,
     MZ5_NAME,
     MZ6_NAME,
+    CX1_NAME,
   ],
 };
 
@@ -2944,6 +2946,69 @@ async function pruefeModellzeile(cdp: Cdp, ctx: Ctx): Promise<void> {
   }
 }
 
+/** CX1 — die Kontext-Warnung des Erzeugen-Fensters gegen Claude (Fake-Manager, Anthropic-Stub). Die Grenze steht in `max_input_tokens` der
+ *  Modell-Liste (`GET /v1/models?limit=1000`, `x-api-key` statt Bearer). Eine Notiz von 32.800 Zeichen liegt ueber der Heuristik
+ *  (`limit == null && body.length > 30000`): mit bekannter Grenze 200000 darf nichts warnen, mit 4000 muss die Warnung die Grenze nennen. */
+async function pruefeKontextClaude(cdp: Cdp): Promise<void> {
+  const MODELL = "claude-haiku-5-5";
+  const SCHLUESSEL = "sk-ant-smoke-slide-deck-cx1";
+  const P = `app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]`;
+  const LANG = `# Wandern\n\n${"Eine Tagestour braucht Wasser, feste Schuhe und eine Karte. ".repeat(540)}`.slice(0, 32800);
+  const eintrag = (grenze: number | null): ModellEintrag => ({
+    id: MODELL, max_input_tokens: grenze, max_tokens: 64000,
+    capabilities: { effort: { supported: true }, thinking: { types: { adaptive: { supported: true } } } },
+  });
+  const stub = await startLlmStub({
+    anbieter: "anthropic", schluessel: SCHLUESSEL, models: [eintrag(200000)], takt: 20, antwort: () => ({ text: "ok", laenge: 2, model: MODELL }),
+  });
+  const vorherChoice = await cdp.evaluate<string>(`return JSON.stringify(${P}.settings.choice ?? {});`);
+  const vorherEndpoints = await cdp.evaluate<string>(`return JSON.stringify(${P}.settings.llmEndpoints);`);
+  let manager = false;
+  erzeugtePfade.push(STREAM_QUELLE, "smoke-stream-quelle — Deck.md");
+  const lauf = async (grenze: number): Promise<{ warnung: string; anfrage: { pfad: string; key: unknown; version: unknown } | null }> => {
+    stub.konfiguriere({ models: [eintrag(grenze)] });
+    stub.loescheMitschnitt();
+    await cdp.evaluate(`${P}.settings.choice = {}; return true;`);
+    const grund = await oeffneErzeugenPanel(cdp, stub, { text: LANG });
+    if (grund !== null) throw new Error(grund);
+    // Die Pruefung der Quelle laeuft nach dem Aufbau; warten, bis die Kontext-Anfrage am Draht war und die Anzeige sich beruhigt hat.
+    for (let still = 0, zuletzt = -1; still < 6; ) {
+      await new Promise((r) => setTimeout(r, 250));
+      const jetzt = stub.anfragen().filter((a) => a.route === "models").length;
+      still = jetzt === zuletzt ? still + 1 : 0;
+      zuletzt = jetzt;
+    }
+    const warnung = await cdp.evaluate<string>(`return [...document.querySelectorAll(".sd-gen-view .sd-gen-hint")].map((e) => e.textContent ?? "").join(" | ").trim();`);
+    const ctxAnfrage = stub.anfragen().filter((a) => a.route === "models" && a.url.includes("limit=1000")).at(-1);
+    return { warnung, anfrage: ctxAnfrage ? { pfad: ctxAnfrage.url, key: ctxAnfrage.header["x-api-key"], version: ctxAnfrage.header["anthropic-version"] } : null };
+  };
+  try {
+    await installFakeManager(cdp, {
+      endpunkte: [{ id: "fake-claude", label: "Claude API", url: stub.url, models: [MODELL], defaultModel: MODELL, configModel: "default",
+        provider: "anthropic", backend: "anthropic", apiKey: SCHLUESSEL, hasSecret: true, transport: "anthropic" }],
+      invalidiere: [PLUGIN_ID],
+    });
+    manager = true;
+    const gross = await lauf(200000);
+    const klein = await lauf(4000);
+    record(CX1_NAME,
+      gross.anfrage !== null && gross.anfrage.key === SCHLUESSEL && typeof gross.anfrage.version === "string"
+        && !/tokens vs|Tokens\)|vs\. /.test(gross.warnung) && /vs 4000|vs\. 4000/.test(klein.warnung),
+      `200000: Kontext-Anfrage ${gross.anfrage === null ? "FEHLT" : gross.anfrage.pfad + " mit x-api-key " + (gross.anfrage.key === SCHLUESSEL ? "ok" : "FALSCH") + ", anthropic-version " + String(gross.anfrage.version)}, Warnung ${JSON.stringify(gross.warnung)}; 4000: Warnung ${JSON.stringify(klein.warnung)}`);
+  } catch (e) {
+    if (!bilanz.eintraege().some((x) => x.name === CX1_NAME)) bilanz.unmeasured(CX1_NAME, `Messung abgebrochen: ${(e as Error).message}`);
+  } finally {
+    if (manager) await entferneFakeManager(cdp, { invalidiere: [PLUGIN_ID] }).catch(() => undefined);
+    await cdp.evaluate(`
+      const p = ${P};
+      p.settings.llmEndpoints = ${vorherEndpoints}; p.settings.choice = ${vorherChoice}; p.llm.invalidate();
+      app.workspace.detachLeavesOfType("slide-deck-hub");
+      return true;
+    `).catch(() => undefined);
+    await stub.stop();
+  }
+}
+
 const verbindung: Section = {
   key: "verbindung",
   title: "V · Verbindung (Schluesselbund, Bearer, Schwaerzung)",
@@ -3096,6 +3161,7 @@ const verbindung: Section = {
       await pruefeClaudeVerbindung(cdp);
       await pruefeDenkTestClaude(cdp, ctx);
       await pruefeModellzeile(cdp, ctx);
+      await pruefeKontextClaude(cdp);
     } finally {
       await fake.close();
       // Den Klartext-Schluessel nicht im Staging-Vault liegen lassen: Liste leeren, Schluesselbund-Eintraege des Plugins loeschen.
