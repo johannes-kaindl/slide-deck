@@ -17,6 +17,10 @@ versioning follows [SemVer](https://semver.org/).
 - **Kit pin raised to obsidian-kit 0.70.0 and code-kit 0.37.5.** Nothing else changes for this plugin: the link guard, the chat window changes and the new input helpers are not used here, `model-context` gets its Anthropic branch (used by the context limit below), and `llm.models()` now reports `onResolved` only on a change.
 - **The "Thinking test" row is hidden for Claude endpoints.** The test asks whether a model thinks although thinking is switched off; on Claude there is no "off" (the plugin sends the lowest effort), and thinking text in the result is no fault of the server there, so the question has no object. The row is shown for every other endpoint. It follows a change of the endpoint while the settings are open.
 
+### Fixed
+
+- **The settings tab rebuilds every time it is opened, not only the first time.** The hook that refreshes the "Last request" section and the deviations on opening was removed again in `hide()`, but Obsidian 1.14 calls `renderTab()` (not `display()`) when a tab opens, so after the first close the tab showed an older state. The hook is now removed when the plugin unloads.
+
 ### Security
 
 - **The mobile PDF export now sets a Content-Security-Policy in the HTML file it writes.** On a phone the export writes the deck as a loose HTML file into the export folder and hands it to the system, without the sandbox the desktop print path uses. Markdown notes are rendered with raw HTML allowed and nothing is stripped, so a `<script>`, an `onerror` handler, a `javascript:` link or an `<iframe>` in a note (for example one pasted from the web) ended up in that file and ran when it was opened (measured: all four patterns are in the written file, and all four run without the policy). The file now carries `default-src 'none'`, which blocks scripts, frames and connections; styles, `data:` images and fonts, KaTeX and Mermaid diagrams are unaffected, and images from `https:` addresses still load (a deck of your own may show them), while `http:` images no longer do in this file. The desktop export and the preview are unchanged.

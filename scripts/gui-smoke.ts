@@ -251,6 +251,7 @@ const MZ4_NAME = "MZ4 Ein Modellwechsel rechnet die Kontext-Warnung neu (kleines
 const MZ5_NAME = "MZ5 Endpunkt ohne Modell-Liste: die Zeile zeigt Automatisch mit Hinweis, der Knopf Erzeugen bleibt bedienbar";
 const MZ6_NAME = "MZ6 Sperre: laeuft anderswo schon eine Erzeugung, ist die Zeile gesperrt (Gegenprobe: ohne Lauf bedienbar)";
 const CX1_NAME = "CX1 Kontextgrenze bei Claude: die Grenze kommt aus /v1/models (max_input_tokens 200000), keine Warnung fuer 32.800 Zeichen; Gegenprobe 4000 warnt mit \"vs 4000\"";
+const TR1_NAME = "TR1 Der Einstellungs-Tab baut bei jedem Oeffnen neu auf (der Haken von installTabRefreshOnOpen bleibt nach hide() stehen): je Oeffnen mindestens ein Aufbau";
 const DT1_NAME = "DT1 Denk-Test: bei einem Claude-Endpunkt steht die Zeile nicht im Tab, auch nicht nach einem Wechsel im geoeffneten Tab (Gegenprobe: ohne Manager steht sie da)";
 
 /** PD1 — der mobile PDF-Export (lose HTML-Datei im Vault). Name hier, weil ihn die Soll-Liste und der Punkt teilen. */
@@ -398,6 +399,7 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     MZ5_NAME,
     MZ6_NAME,
     CX1_NAME,
+    TR1_NAME,
   ],
 };
 
@@ -3009,6 +3011,44 @@ async function pruefeKontextClaude(cdp: Cdp): Promise<void> {
   }
 }
 
+/** TR1 — der Oeffnen-Haken (`installTabRefreshOnOpen`, Kit 0.70.0): Obsidian ruft beim Oeffnen `renderTab()`, nicht `display()`; baut das
+ *  Plugin den Haken in `hide()` ab, zeichnet der Tab nur beim ERSTEN Oeffnen vollstaendig neu. Der Punkt zaehlt die Aufrufe von
+ *  `renderImperative` (der Aufbau, den der Haken ausloest) ueber zwei Oeffnen: je Oeffnen mindestens einer. Ein sichtbarer Wert taugt hier
+ *  nicht: die native `renderTab` liest die Werte der Steuerelemente frisch, auch ohne den Haken (gemessen: der Tab zeigte einen von aussen
+ *  geaenderten Wert in beiden Faellen). Gegenprobe im Aufbau: ohne Oeffnen steht der Zaehler auf 0. */
+async function pruefeTabAufbau(cdp: Cdp, ctx: Ctx): Promise<void> {
+  const P = `app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]`;
+  const zaehler = (): Promise<number> => cdp.evaluate<number>(`return globalThis.__tr1 ?? -1;`);
+  try {
+    await cdp.evaluate(`
+      const t = ${P}.settingTab;
+      const orig = t.renderImperative;
+      globalThis.__tr1 = 0;
+      globalThis.__tr1Orig = orig;
+      t.renderImperative = function (...a) { globalThis.__tr1++; return orig.apply(this, a); };
+      return true;
+    `);
+    const null0 = await zaehler();
+    const erst = await oeffneTab(cdp, ctx);
+    await schliesseTab(cdp, erst);
+    const nachErst = await zaehler();
+    const zweit = await oeffneTab(cdp, ctx);
+    await schliesseTab(cdp, zweit);
+    const nachZweit = await zaehler();
+    record(TR1_NAME, null0 === 0 && nachErst >= 1 && nachZweit > nachErst,
+      `Aufbauten (renderImperative): vor dem Oeffnen ${null0}, nach dem ersten Oeffnen ${nachErst}, nach dem zweiten ${nachZweit}`);
+  } catch (e) {
+    if (!bilanz.eintraege().some((x) => x.name === TR1_NAME)) bilanz.unmeasured(TR1_NAME, `Messung abgebrochen: ${(e as Error).message}`);
+  } finally {
+    await cdp.evaluate(`
+      const t = ${P}.settingTab;
+      if (globalThis.__tr1Orig) t.renderImperative = globalThis.__tr1Orig;
+      delete globalThis.__tr1; delete globalThis.__tr1Orig;
+      return true;
+    `).catch(() => undefined);
+  }
+}
+
 const verbindung: Section = {
   key: "verbindung",
   title: "V · Verbindung (Schluesselbund, Bearer, Schwaerzung)",
@@ -3162,6 +3202,7 @@ const verbindung: Section = {
       await pruefeDenkTestClaude(cdp, ctx);
       await pruefeModellzeile(cdp, ctx);
       await pruefeKontextClaude(cdp);
+      await pruefeTabAufbau(cdp, ctx);
     } finally {
       await fake.close();
       // Den Klartext-Schluessel nicht im Staging-Vault liegen lassen: Liste leeren, Schluesselbund-Eintraege des Plugins loeschen.

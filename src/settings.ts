@@ -224,9 +224,13 @@ export class SlideDeckSettingTab extends PluginSettingTab {
    *  starting LM Studio and reopening the settings would change nothing. */
   hide(): void {
     this.plugin.llm.hideSettings();
-    this.uninstallRefresh();
+    // NICHT `uninstallRefresh()` hier: Obsidian ruft beim Oeffnen `renderTab()`, nicht `display()` (Kit 0.70.0, gemessen an 1.14.5); wer den Haken
+    // in `hide()` abbaut, bekommt nur beim ersten Oeffnen einen neuen Aufbau. Der Abbau steht in `dispose()` (Plugin `onunload`).
     super.hide();
   }
+
+  /** Haengt den Oeffnen-Haken aus (Plugin `onunload`). */
+  dispose(): void { this.uninstallRefresh(); }
 
   private cleanupPrevious: () => void = () => {};
 

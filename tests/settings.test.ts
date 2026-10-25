@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { PluginSettingTab } from "obsidian";
 import { SlideDeckSettingTab, DEFAULT_SETTINGS, migrateLegacyThemeKeys, type SlideDeckSettings } from "../src/settings";
 
 // A control definition's `key` is a plain string, so the compiler cannot prove it matches a
@@ -22,7 +23,7 @@ function makeFakePlugin(settings: SlideDeckSettings, family: string | null = nul
     saveSettings: vi.fn(() => { calls.saveSettings++; return Promise.resolve(); }),
     refreshThemes: vi.fn(() => { calls.refreshThemes++; return Promise.resolve(); }),
     applyFolderHide: vi.fn(() => { calls.applyFolderHide++; }),
-    llm: { invalidate: vi.fn(), source: vi.fn(() => ({ family })) },
+    llm: { invalidate: vi.fn(), hideSettings: vi.fn(), source: vi.fn(() => ({ family })) },
   };
   return { plugin, calls };
 }
@@ -224,5 +225,29 @@ describe("SlideDeckSettingTab — Zeile Denk-Test", () => {
     family = "gemma4";
     tab.onSourceResolved();
     expect(update).toHaveBeenCalledTimes(2);
+  });
+});
+
+// Welle 27 (Kit 0.70.0, installTabRefreshOnOpen): der Haken traegt nur, solange sein Abbau NICHT in hide() laeuft (das Oeffnen ruft renderTab(),
+// nicht display(); nach einem Abbau in hide() baut der Tab nur beim ersten Oeffnen neu). Der Abbau gehoert in onunload.
+describe("SlideDeckSettingTab — Haken beim Oeffnen", () => {
+  it("hide() laesst den Haken stehen, dispose() baut ihn ab", () => {
+    const original = function renderTab(): void { /* native Funktion */ };
+    const proto = PluginSettingTab.prototype as unknown as { renderTab?: () => void };
+    proto.renderTab = original;
+    try {
+      const { plugin } = makeFakePlugin({ ...DEFAULT_SETTINGS });
+      const tab = new SlideDeckSettingTab({} as any, plugin as any);
+      const self = tab as unknown as { renderTab?: () => void };
+      expect(self.renderTab).not.toBe(original); // der Konstruktor hat den Haken eingehaengt
+      tab.hide();
+      tab.hide(); // zweimal Oeffnen und Schliessen
+      expect(self.renderTab).not.toBe(original);
+      expect(plugin.llm.hideSettings).toHaveBeenCalledTimes(2);
+      tab.dispose();
+      expect(self.renderTab).toBe(original);
+    } finally {
+      delete proto.renderTab;
+    }
   });
 });

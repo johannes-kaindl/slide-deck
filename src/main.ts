@@ -204,6 +204,8 @@ export default class SlideDeckPlugin extends Plugin {
   }
 
   onunload(): void {
+    this.settingTab?.dispose();
+    this.settingTab = null;
     this.folderHide?.remove();
     this.folderHide = null;
   }
