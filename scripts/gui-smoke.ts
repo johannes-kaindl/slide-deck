@@ -243,6 +243,9 @@ Der Modifier steht im Theme, nicht im Kern.
 
 // --- Protokoll ---------------------------------------------------------------
 
+/** DT1 — die Zeile „Denk-Test“ im Einstellungs-Tab bei einem Claude-Endpunkt. Name hier, weil ihn die Soll-Liste und der Punkt teilen. */
+const DT1_NAME = "DT1 Denk-Test: bei einem Claude-Endpunkt steht die Zeile nicht im Tab, auch nicht nach einem Wechsel im geoeffneten Tab (Gegenprobe: ohne Manager steht sie da)";
+
 /** PD1 — der mobile PDF-Export (lose HTML-Datei im Vault). Name hier, weil ihn die Soll-Liste und der Punkt teilen. */
 const PD1_NAME = "PD1 Mobiler PDF-Export: die lose Datei fuehrt kein Skript aus (Gegenprobe: ohne Policy laufen alle vier Muster), Bild, Formel und Diagramm bleiben";
 const PD1_NOTE = "smoke-pd1.md";
@@ -380,6 +383,7 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "CL1 Claude im Manager: der Endpunkt kommt nur mit Opt-in, das Plugin waehlt ihn (Backend anthropic, Familie claude)",
     "CL2 Erzeugen gegen den Claude-Stub: Messages-API mit Schluessel und Browser-Header, ohne temperature, das Deck kommt an, das Denken laeuft in den Zustand",
     "CL3 Fehler der API (529): die Erzeugung endet mit dem Fehler, keine Notiz wird geschrieben",
+    DT1_NAME,
   ],
 };
 
@@ -2619,10 +2623,72 @@ async function pruefeClaudeVerbindung(cdp: Cdp): Promise<void> {
   }
 }
 
+/** DT1 — misst die Zeile „Denk-Test“ im Tab in vier Lagen: lokaler Endpunkt (da), Wechsel auf Claude im GEOEFFNETEN Tab (weg:
+ *  die Kit-Verbindung zeichnet nur ihren eigenen Behaelter neu, die Zeile folgt ihr ueber `onResolved`), Claude beim Oeffnen
+ *  (weg), Manager entfernt (wieder da). Stub und Fake-Manager wie CL1–CL3 (Anthropic-Modus). */
+async function pruefeDenkTestClaude(cdp: Cdp, ctx: Ctx): Promise<void> {
+  const MODELL = "claude-haiku-5-5";
+  const SCHLUESSEL = "sk-ant-smoke-slide-deck-dt1";
+  const stub = await startLlmStub({
+    anbieter: "anthropic",
+    schluessel: SCHLUESSEL,
+    models: [{ id: MODELL, capabilities: { effort: { supported: true }, thinking: { types: { adaptive: { supported: true } } } } }],
+    takt: 20,
+    antwort: () => ({ text: "ok", laenge: 2, model: MODELL }),
+  });
+  const vorherChoice = await cdp.evaluate<string>(`return JSON.stringify(app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.choice ?? {});`);
+  const hatZeile = (namen: string[]): boolean => namen.some((n) => /^(Thinking test|Denk-Test)$/.test(n));
+  const lies = (offen: OffenerTab): Promise<string[]> => offen.ziel.evaluate<string[]>(`
+    const wurzel = document.querySelector(".vertical-tab-content-container .vertical-tab-content") ?? document.querySelector(".vertical-tab-content");
+    return wurzel ? [...wurzel.querySelectorAll(".setting-item-name")].map((n) => (n.textContent ?? "").trim()) : [];
+  `);
+  const installiere = (): Promise<unknown> => installFakeManager(cdp, {
+    endpunkte: [{
+      id: "fake-claude", label: "Claude API", url: stub.url, models: [MODELL], defaultModel: MODELL, configModel: "default",
+      provider: "anthropic", backend: "anthropic", apiKey: SCHLUESSEL, hasSecret: true, transport: "anthropic",
+    }],
+    invalidiere: [PLUGIN_ID],
+  });
+  const erg = { lokal: false, live: true, beimOeffnen: true, zurueck: false, familie: "" };
+  try {
+    await cdp.evaluate(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; p.settings.choice = {}; p.llm.invalidate(); await p.llm.resolve({ force: true }); return true;`);
+    const offen = await oeffneTab(cdp, ctx);
+    try {
+      erg.lokal = hatZeile(await lies(offen));
+      await installiere();
+      // Die Aufloesung stoesst im echten Ablauf die Endpunkt-Zeile an (`setChoice` → `invalidate`, der Behaelter zeichnet sich neu und loest auf);
+      // der Treiber aendert den Manager von aussen, also loest er selbst auf. Offen bleibt allein: folgt die Zeile dieser Aufloesung?
+      erg.familie = await cdp.evaluate<string>(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; await p.llm.resolve({ force: true }); return String(p.llm.source().family);`);
+      // Wechsel im offenen Tab: die Zeile muss ohne erneutes Oeffnen verschwinden (bis 3 s warten).
+      for (let i = 0; i < 12; i++) {
+        await new Promise((r) => setTimeout(r, 250));
+        erg.live = hatZeile(await lies(offen));
+        if (!erg.live) break;
+      }
+    } finally {
+      await schliesseTab(cdp, offen);
+    }
+    const neu = await oeffneTab(cdp, ctx);
+    try { erg.beimOeffnen = hatZeile(await lies(neu)); } finally { await schliesseTab(cdp, neu); }
+    await entferneFakeManager(cdp, { invalidiere: [PLUGIN_ID] });
+    const ohne = await oeffneTab(cdp, ctx);
+    try { erg.zurueck = hatZeile(await lies(ohne)); } finally { await schliesseTab(cdp, ohne); }
+    record(DT1_NAME,
+      erg.lokal && erg.familie === "claude" && !erg.live && !erg.beimOeffnen && erg.zurueck,
+      `lokal: Zeile ${erg.lokal ? "da" : "FEHLT"} · nach Wechsel auf Claude im offenen Tab (Familie ${erg.familie}): ${erg.live ? "Zeile STEHT NOCH" : "weg"} · Tab neu geoeffnet mit Claude: ${erg.beimOeffnen ? "Zeile DA" : "weg"} · Manager entfernt: Zeile ${erg.zurueck ? "wieder da" : "FEHLT"}`);
+  } catch (e) {
+    if (!bilanz.eintraege().some((x) => x.name === DT1_NAME)) bilanz.unmeasured(DT1_NAME, `Messung abgebrochen: ${(e as Error).message}`);
+  } finally {
+    await entferneFakeManager(cdp, { invalidiere: [PLUGIN_ID] }).catch(() => undefined);
+    await cdp.evaluate(`const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]; p.settings.choice = ${vorherChoice}; p.llm.invalidate(); return true;`).catch(() => undefined);
+    await stub.stop();
+  }
+}
+
 const verbindung: Section = {
   key: "verbindung",
   title: "V · Verbindung (Schluesselbund, Bearer, Schwaerzung)",
-  async run(cdp) {
+  async run(cdp, ctx) {
     const KEY = "sk-smoke-w15-0123456789abcdef";
     const TOKEN = "abcdef0123456789ghijkl";
     const fake = await startFakeChat();
@@ -2769,6 +2835,7 @@ const verbindung: Section = {
           treffer("/v11-logo.png") > 0, `Treffer am Draht: ${treffer("/v11-logo.png")}`);
       } finally { await zaehler.close(); }
       await pruefeClaudeVerbindung(cdp);
+      await pruefeDenkTestClaude(cdp, ctx);
     } finally {
       await fake.close();
       // Den Klartext-Schluessel nicht im Staging-Vault liegen lassen: Liste leeren, Schluesselbund-Eintraege des Plugins loeschen.

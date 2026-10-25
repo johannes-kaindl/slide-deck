@@ -15,6 +15,8 @@ export function deckConnectionOptions(o: {
   save: () => Promise<void>;
   /** Nur Tests: eigene Transporte statt XHR-Stream. */
   transports?: LlmConnectionOptions["transports"];
+  /** Nach jeder abgeschlossenen Aufloesung (Kit): plugin-eigene Zeilen im Einstellungs-Tab folgen so dem Endpunkt. */
+  onResolved?: LlmConnectionOptions["onResolved"];
 }): LlmConnectionOptions {
   return {
     app: o.app,
@@ -28,6 +30,7 @@ export function deckConnectionOptions(o: {
     lang: () => getLang(),
     // `anthropic: true`: Claude als Endpunkt des Managers. Ohne den Opt-in sieht die Verbindung ihn nie (sie fragt dann nur nach `http`).
     transports: { ...(o.transports ?? {}), anthropic: true },
+    ...(o.onResolved ? { onResolved: o.onResolved } : {}),
     getSettings: () => {
       const s = o.settings();
       return { endpoints: s.llmEndpoints, choice: s.choice, request: s.request };

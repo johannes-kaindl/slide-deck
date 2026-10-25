@@ -5,7 +5,7 @@ import { SlideDeckSettingTab, DEFAULT_SETTINGS, migrateLegacyThemeKeys, type Sli
 // case in get/setControlValue. These tests exercise the round-trip to catch a typo'd or
 // unhandled key — the one bug class the type-checker can't see in the declarative migration.
 
-function makeFakePlugin(settings: SlideDeckSettings) {
+function makeFakePlugin(settings: SlideDeckSettings, family: string | null = null) {
   const themes = [
     { key: "kami", source: "builtin" as const },
     { key: "kogane", source: "builtin" as const },
@@ -22,7 +22,7 @@ function makeFakePlugin(settings: SlideDeckSettings) {
     saveSettings: vi.fn(() => { calls.saveSettings++; return Promise.resolve(); }),
     refreshThemes: vi.fn(() => { calls.refreshThemes++; return Promise.resolve(); }),
     applyFolderHide: vi.fn(() => { calls.applyFolderHide++; }),
-    llm: { invalidate: vi.fn() },
+    llm: { invalidate: vi.fn(), source: vi.fn(() => ({ family })) },
   };
   return { plugin, calls };
 }
@@ -186,5 +186,43 @@ describe("SlideDeckSettingTab — Hilfe-Zeile", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+// Welle 27 (A1b): die Zeile "Thinking test" haengt an der Familie des Endpunkts. Das Fake-DOM sieht keine Kaskade, aber diese Entscheidung
+// steht in den Definitionen (sie lassen die Zeile weg): hier belegt, im Treiber (DT1) am echten Tab samt Wechsel im offenen Tab.
+describe("SlideDeckSettingTab — Zeile Denk-Test", () => {
+  const namen = (family: string | null): string[] => {
+    const { plugin } = makeFakePlugin({ ...DEFAULT_SETTINGS }, family);
+    const tab = new SlideDeckSettingTab({} as any, plugin as any);
+    return (tab.getSettingDefinitions() as Array<{ type: string; items?: any[] }>).flatMap((g) => g.items ?? []).map((i) => i.name as string);
+  };
+
+  it("steht bei einem lokalen Endpunkt und vor der ersten Aufloesung (Familie unbekannt) da", () => {
+    expect(namen("gemma4")).toContain("Thinking test");
+    expect(namen(null)).toContain("Thinking test");
+  });
+
+  it("fehlt bei einem Claude-Endpunkt, der Rest der Gruppe bleibt", () => {
+    expect(namen("claude")).not.toContain("Thinking test");
+    expect(namen("claude")).toContain("Max output tokens");
+  });
+
+  it("onSourceResolved zeichnet nur bei einem Wechsel der Familie Claude neu", () => {
+    let family: string | null = null;
+    const { plugin } = makeFakePlugin({ ...DEFAULT_SETTINGS });
+    plugin.llm.source = vi.fn(() => ({ family }));
+    const tab = new SlideDeckSettingTab({} as any, plugin as any);
+    const update = vi.fn();
+    (tab as any).update = update;
+    tab.onSourceResolved(); // null -> kein Wechsel
+    expect(update).toHaveBeenCalledTimes(0);
+    family = "claude";
+    tab.onSourceResolved();
+    tab.onSourceResolved(); // gleicher Stand: kein zweites Mal
+    expect(update).toHaveBeenCalledTimes(1);
+    family = "gemma4";
+    tab.onSourceResolved();
+    expect(update).toHaveBeenCalledTimes(2);
   });
 });

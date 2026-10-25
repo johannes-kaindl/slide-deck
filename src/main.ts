@@ -33,6 +33,7 @@ export default class SlideDeckPlugin extends Plugin {
   public activeGeneration: GenerationHandle | null = null;
   /** Die ganze LLM-Anbindung: Endpunkt-Quelle, Modellliste, Anfrage-Parameter, Client, Settings-Abschnitte. */
   public llm!: LlmConnection;
+  private settingTab: SlideDeckSettingTab | null = null;
 
   async onload(): Promise<void> {
     setLang(pickLang(getLanguage()));
@@ -48,6 +49,8 @@ export default class SlideDeckPlugin extends Plugin {
 
     this.llm = createLlmConnection(deckConnectionOptions({
       app: this.app, pluginId: this.manifest.id, settings: () => this.settings, save: () => this.saveSettings(),
+      // Die Zeile "Thinking test" im Tab haengt an der Familie des Endpunkts und folgt ihm so, auch im geoeffneten Tab.
+      onResolved: () => this.settingTab?.onSourceResolved(),
     }));
 
     this.themeStore = new ThemeStore(this.app, () => this.settings.themesFolder);
@@ -56,7 +59,8 @@ export default class SlideDeckPlugin extends Plugin {
     // `rootSplit.doc`, neither of which is guaranteed to exist this early in onload.
     this.app.workspace.onLayoutReady(() => this.applyFolderHide());
 
-    this.addSettingTab(new SlideDeckSettingTab(this.app, this));
+    this.settingTab = new SlideDeckSettingTab(this.app, this);
+    this.addSettingTab(this.settingTab);
     this.registerView(VIEW_TYPE_HUB, (leaf) => new SlideDeckHubView(leaf, this));
     registerSlotCard(this);
     this.addRibbonIcon("wand-2", t("cmd.generateDeck"), () => void this.activateGenerateView());

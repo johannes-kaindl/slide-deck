@@ -91,6 +91,8 @@ export function migrateLegacyThemeKeys(s: SlideDeckSettings): SlideDeckSettings 
  *  that need bespoke UI (the theme-key chip list, the export dropdown+button) use render. */
 export class SlideDeckSettingTab extends PluginSettingTab {
   private uninstallRefresh: () => void = () => {};
+  /** Ob der zuletzt gemeldete Endpunkt Claude war: `onSourceResolved` zeichnet nur bei einem Wechsel neu. */
+  private lastClaude = false;
 
   constructor(app: App, private plugin: SlideDeckPlugin) {
     super(app, plugin);
@@ -101,6 +103,10 @@ export class SlideDeckSettingTab extends PluginSettingTab {
   }
 
   getSettingDefinitions(): SettingDefinitionItem[] {
+    // Auf Claude gibt es kein "aus" (das Kit sendet dort den niedrigsten Aufwand), ein Denktext im Ergebnis ist kein Fehler des
+    // Servers: die Frage des Tests ("denkt es trotz aus?") hat dort keinen Gegenstand. Vor der ersten Aufloesung ist die Familie
+    // neutral (null): die Zeile steht dann da, und `onSourceResolved` nimmt sie nach der Aufloesung zurueck.
+    const claude = this.plugin.llm.source().family === "claude";
     const themes = this.plugin.themeStore.getThemes();
     const themeOptions = Object.fromEntries(themes.map((e) => [e.key, e.label ?? e.key]));
     // Hilfe-Zeile (UI-STANDARD §8): ERSTES Element, keine Gruppe. Unter 1.13 ruft der Host display()
@@ -153,8 +159,8 @@ export class SlideDeckSettingTab extends PluginSettingTab {
           { name: "", render: (setting) => this.renderConnection(setting) },
           { name: t("deck.settings.maxTokens.name"), desc: t("deck.settings.maxTokens.desc"),
             control: { type: "number", key: "llmMaxTokens", min: 256 } },
-          { name: t("deck.settings.thinkingTest.name"), desc: t("deck.settings.thinkingTest.desc"),
-            render: (setting) => this.renderThinkingTest(setting) },
+          ...(claude ? [] : [{ name: t("deck.settings.thinkingTest.name"), desc: t("deck.settings.thinkingTest.desc"),
+            render: (setting: Setting) => this.renderThinkingTest(setting) }]),
         ],
       },
       {
@@ -223,6 +229,16 @@ export class SlideDeckSettingTab extends PluginSettingTab {
   }
 
   private cleanupPrevious: () => void = () => {};
+
+  /** Die Verbindung hat aufgeloest (Endpunkt oder Modell geaendert): die Zeile "Thinking test" haengt an der Familie und folgt ihr.
+   *  Das Kit zeichnet im offenen Tab nur seinen eigenen Behaelter neu; ohne diesen Haken bliebe die Zeile bis zum naechsten Oeffnen stehen.
+   *  Nur bei einem Wechsel neu zeichnen: jede Aufloesung ruft diesen Haken, und das Neuzeichnen loest selbst auf (Kreis). */
+  onSourceResolved(): void {
+    const claude = this.plugin.llm.source().family === "claude";
+    if (claude === this.lastClaude) return;
+    this.lastClaude = claude;
+    this.refreshUi();
+  }
 
   private renderImperative(): void {
     this.cleanupPrevious();

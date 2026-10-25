@@ -193,3 +193,18 @@ describe("persist: Feldzuordnung", () => {
     expect(opts.getSettings()).not.toHaveProperty("model");
   });
 });
+
+describe("onResolved: der Haken der Einstellungs-Zeilen", () => {
+  it("geht an die Verbindung und feuert nach einer Aufloesung; ohne Option steht keiner in den Optionen", async () => {
+    const settings: SlideDeckSettings = structuredClone(DEFAULT_SETTINGS);
+    const base = { app: fakeApp().app, pluginId: "slide-deck", settings: () => settings, save: async () => {} };
+    expect(deckConnectionOptions(base)).not.toHaveProperty("onResolved");
+    let gerufen = 0;
+    const { transport } = fakeTransport();
+    const opts = deckConnectionOptions({ ...base, onResolved: () => { gerufen++; }, transports: { http: transport, fallback: "none" } });
+    const backend: BackendId = "lmstudio";
+    const llm = createLlmConnection({ ...opts, probe: async () => true, backendOf: async () => backend });
+    await llm.resolve({ force: true });
+    expect(gerufen).toBeGreaterThan(0);
+  });
+});
