@@ -182,8 +182,11 @@
 .sd-theme-chip:hover { background: var(--background-modifier-hover); }
 
 /* Generate-presentation modal */
-.sd-gen-row { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+.sd-gen-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
 .sd-gen-row label { min-width: 120px; }
+/* Eingaben und Auswahlfelder behalten ihre natuerliche Breite, schrumpfen aber bis zur Breite des Panels und rutschen in einer schmalen Seitenleiste unter das Label, statt rechts herauszulaufen.
+   Kind-Selektor: die Modellzeile (.sd-gen-model) traegt ihr Auswahlfeld im Kit-Baustein, das hier nicht ueberschrieben werden darf. */
+.sd-gen-row > input, .sd-gen-row > select { flex: 0 1 auto; min-width: 0; max-width: 100%; }
 /* Modellzeile des Kits in einer Zeile des Fensters: die Beschriftung fluchtet mit den Labels darueber, die Zeile nimmt den Rest. */
 .sd-gen-model .okit-model-bar { flex: 1 1 auto; }
 .sd-gen-model .okit-model-bar-label { min-width: 120px; font-size: inherit; color: inherit; }

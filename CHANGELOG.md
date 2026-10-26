@@ -6,6 +6,11 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Generate panel's hint and theme fields no longer run off the right edge in a narrow sidebar.** At a sidebar width of 280 px the hint field stuck out by 34 px and the theme drop-down by 106 px; the rows now wrap and the fields shrink to the width of the panel. In a wide sidebar nothing changes.
+- **A Claude entry whose manager row names another backend no longer loses its context limit.** The Generate panel decided "Claude" from the backend field of the endpoint; it now reads the transport, so the note-length warning uses the model's real limit from the Models API instead of the 30,000-character guess.
+
 ## [0.20.0] — 2026-10-25
 
 ### Added
