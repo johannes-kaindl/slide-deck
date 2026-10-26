@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { setLang } from "../src/i18n";
 import { deckClient, deckResultOf } from "../src/llm-client";
+import { effectiveContext } from "../src/llm/model-info";
 import { fetchEndpointContext } from "../src/vendor/kit-obsidian/backend-probe";
 import type { CapabilityFetch } from "../src/vendor/kit/capabilities";
 import type { LlmResult } from "../src/vendor/kit-obsidian/llm-connection";
@@ -122,5 +123,39 @@ describe("Kontext-Abruf der Generate-Ansicht (fetchEndpointContext aus dem Kit)"
     expect(await fetchEndpointContext("http://x", "m1", undefined, { fetch: hanging, timers: instant })).toBeNull();
     expect(calls).toEqual(["http://x/api/v0/models", "http://x/api/show"]);
     expect(fired).toEqual([5000, 5000]);
+  });
+
+  describe("Anbieter Claude (provider: anthropic) — nur die vendorte Huelle, nicht die Durchreichung in generate-deck-view (die misst CX1)", () => {
+    const claude = { data: [{ id: "claude-haiku-5-5", max_input_tokens: 200000, max_tokens: 64000 }] };
+    const rec = () => {
+      const reqs: { url: string; headers: Record<string, string> | undefined }[] = [];
+      const fetch: CapabilityFetch = async (p) => { reqs.push({ url: p.url, headers: p.headers }); return p.url.includes("/v1/models") ? { json: claude } : null; };
+      return { reqs, fetch };
+    };
+
+    it("fragt genau eine Models-Anfrage mit x-api-key und anthropic-version und liest max_input_tokens als Grenze", async () => {
+      const { reqs, fetch } = rec();
+      const ctx = await fetchEndpointContext("https://api.anthropic.com", "claude-haiku-5-5", "sk-ant-x", { provider: "anthropic", fetch, timers });
+      expect(effectiveContext(ctx)).toBe(200000);
+      expect(reqs).toHaveLength(1);
+      expect(reqs[0]!.url).toBe("https://api.anthropic.com/v1/models?limit=1000");
+      expect(reqs[0]!.headers).toMatchObject({ "x-api-key": "sk-ant-x", "anthropic-version": "2023-06-01" });
+      expect(reqs[0]!.headers).not.toHaveProperty("Authorization");
+      expect(reqs.some((r) => r.url.includes("/api/v0/models"))).toBe(false);
+    });
+
+    it("Gegenprobe: dieselbe Gegenstelle ohne provider fragt den lokalen Weg und findet keine Grenze", async () => {
+      const { reqs, fetch } = rec();
+      const ctx = await fetchEndpointContext("https://api.anthropic.com", "claude-haiku-5-5", "sk-ant-x", { fetch, timers });
+      expect(effectiveContext(ctx)).toBeNull();
+      expect(reqs.map((r) => r.url)).toEqual(["https://api.anthropic.com/api/v0/models", "https://api.anthropic.com/api/show"]);
+    });
+
+    it("Gegenprobe: ein Modell, das die Liste nicht traegt, liefert keine Grenze", async () => {
+      const { reqs, fetch } = rec();
+      const ctx = await fetchEndpointContext("https://api.anthropic.com", "claude-gibt-es-nicht", "sk-ant-x", { provider: "anthropic", fetch, timers });
+      expect(effectiveContext(ctx)).toBeNull();
+      expect(reqs).toHaveLength(1);
+    });
   });
 });
