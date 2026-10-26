@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.20.1] — 2026-10-26
+
 ### Changed
 
 - **Vendored `obsidian-kit` 0.72.0 (was 0.70.0) and `code-kit` 0.38.0 (was 0.37.5).** What you notice in the Generate panel: a link the guard cut in the streamed answer (`javascript:…`, an Obsidian link when those are off) now looks like text, without colour, underline, pointer and arrow, instead of looking like a link that does nothing (links with a target stay as they are); the thinking button is readable when it is locked because the model always thinks (contrast 1.8:1 light and 2.3:1 dark before, 4.4:1 and 5.5:1 now); with a Claude model and thinking off the button's tooltip names the reason once instead of adding a second sentence. The other changes of these kit releases (the new `onRefreshed` option of the model row, a Live-Indexer fix and `detectEol` in code-kit, a quieter linear-time test probe, the Anthropic wire moving into code-kit) touch modules this plugin does not use or have no visible effect here.
