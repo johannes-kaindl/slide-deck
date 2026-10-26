@@ -3,6 +3,7 @@ import type SlideDeckPlugin from "./main";
 import type { DeckGenInput } from "./main";
 import { fetchEndpointContext } from "./vendor/kit-obsidian/backend-probe";
 import type { EndpointConfig } from "./vendor/kit/endpoint_config";
+import type { EndpointTransport } from "./vendor/kit/endpoint-source";
 import { frontmatterRange } from "./vendor/deck-core/pure/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./vendor/deck-core/pure/llm/deck-prompt";
 import { estimateTokens, contextOverflow, effectiveContext } from "./llm/model-info";
@@ -40,6 +41,8 @@ export class GeneratePanel implements HubPanel<HubTabId> {
 
   private root!: HTMLElement;
   private endpoint: EndpointConfig | null = null;
+  /** Transport des aufgeloesten Eintrags (`"anthropic"` bei Claude): bestimmt, wie die Kontextgrenze erfragt wird. */
+  private endpointTransport: EndpointTransport | undefined;
   private currentSource: TFile | null = null;
   private unsubscribe: (() => void) | null = null;
   private timer: number | null = null;
@@ -160,6 +163,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     try {
       const source = await this.plugin.llm.resolve();
       this.endpoint = source.config;
+      this.endpointTransport = source.transport;
       if (this.closed) return;
       // Das Kit weiss nicht, wann sich der Endpunkt aendert: die Modellzeile zeichnet sich hier neu (Liste, Familie, Sperre).
       void this.bar?.refresh();
@@ -259,8 +263,10 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     if (this.deckHintEl && looksLikeDeck(raw)) this.deckHintEl.setText(t("deck.modal.sourceIsDeck"));
     if (!this.endpoint || !this.warnEl) return;
     const body = stripNoteFrontmatter(raw);
-    // Claude beantwortet die Grenze ueber die Models-API (`max_input_tokens`, `x-api-key`): der Aufrufer kennt das Backend, die Kit-Huelle raet es nicht.
-    const provider = this.plugin.llm.source().backend === "anthropic" ? ("anthropic" as const) : undefined;
+    // Claude beantwortet die Grenze ueber die Models-API (`max_input_tokens`, `x-api-key`): der Aufrufer kennt den Transport des aufgeloesten Eintrags
+    // (`resolve().transport`, wie die Kit-Doku es nennt; `source()` traegt ihn im Typ nicht), die Kit-Huelle raet ihn nicht. Das `backend` ist nur ein
+    // Hinweis des Managers und kann bei einem Eintrag abweichen.
+    const provider = this.endpointTransport === "anthropic" ? ("anthropic" as const) : undefined;
     const ctx = await fetchEndpointContext(this.endpoint.url, this.model(), this.endpoint.apiKey, { provider });
     if (this.currentSource !== file) return;
     const limit = effectiveContext(ctx) ?? undefined;

@@ -249,6 +249,7 @@ const MZ2_NAME = "MZ2 Das gewaehlte Modell steht im Anfrage-Body des Laufs und i
 const MZ3_NAME = "MZ3 Denk-Knopf in der Zeile schaltet request.thinking.creative; bei Claude steht \"Thinking: lowest level\" mit Hinweis im aria-label";
 const MZ4_NAME = "MZ4 Ein Modellwechsel rechnet die Kontext-Warnung neu (kleines Modell: Warnung mit seiner Grenze, grosses: keine)";
 const MZ5_NAME = "MZ5 Endpunkt ohne Modell-Liste: die Zeile zeigt Automatisch mit Hinweis, der Knopf Erzeugen bleibt bedienbar";
+const MZ7_NAME = "MZ7 Kein Bedienelement des Erzeugen-Fensters ragt ueber die rechte Kante des Panels (gemessen bei 280 und bei 640 px Seitenleistenbreite)";
 const MZ6_NAME = "MZ6 Sperre: laeuft anderswo schon eine Erzeugung, ist die Zeile gesperrt (Gegenprobe: ohne Lauf bedienbar)";
 const CX1_NAME = "CX1 Kontextgrenze bei Claude: die Grenze kommt aus /v1/models (max_input_tokens 200000), keine Warnung fuer 32.800 Zeichen; Gegenprobe 4000 warnt mit \"vs 4000\"";
 const TR1_NAME = "TR1 Der Einstellungs-Tab baut bei jedem Oeffnen neu auf (der Haken von installTabRefreshOnOpen bleibt nach hide() stehen): je Oeffnen mindestens ein Aufbau";
@@ -398,6 +399,7 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     MZ4_NAME,
     MZ5_NAME,
     MZ6_NAME,
+    MZ7_NAME,
     CX1_NAME,
     TR1_NAME,
   ],
@@ -2711,7 +2713,7 @@ async function pruefeModellzeile(cdp: Cdp, ctx: Ctx): Promise<void> {
   const ZIEL = "smoke-stream-quelle — Deck.md";
   const DECK = "---\ntheme: kami\n---\n# Modellzeile\n\nErste Folie.\n\n---\n\n# Zweite Folie\n\n- Punkt";
   const LANG = `# Wandern\n\n${"Eine Tagestour braucht Wasser, feste Schuhe und eine Karte. ".repeat(200)}`;
-  const namen = [MZ1_NAME, MZ2_NAME, MZ3_NAME, MZ4_NAME, MZ5_NAME, MZ6_NAME];
+  const namen = [MZ1_NAME, MZ2_NAME, MZ3_NAME, MZ4_NAME, MZ5_NAME, MZ6_NAME, MZ7_NAME];
   const P = `app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}]`;
   const SEL = ".sd-gen-view .okit-model-bar .okit-model-bar-select";
   const kontextAntwort = (): ZusatzAntwort => ({
@@ -2769,6 +2771,28 @@ async function pruefeModellzeile(cdp: Cdp, ctx: Ctx): Promise<void> {
       record(MZ1_NAME,
         z.werte.includes(KLEIN) && z.werte.includes(GROSS) && z.aktiv === KLEIN && altTab && nach !== null && tabNeu,
         `Optionen ${JSON.stringify(z.texte)}, Start ${z.aktiv}; Tab vorher ${altTab ? "zeigt " + KLEIN : "ZEIGT " + KLEIN + " NICHT"}; nach dem Wechsel: ${nach ?? "Verbindung/Einstellung NICHT umgestellt"}; Tab danach ${tabNeu ? "zeigt " + GROSS : "ZEIGT " + GROSS + " NICHT"}`);
+
+      // MZ7 — Layout, nicht DOM: jedes input/select/button muss mit seiner rechten Kante im Blatt bleiben (gemessen bei 280 und 640 px).
+      const ragtRaus = async (breite: number): Promise<{ breite: number; raus: string[]; gemessen: number }> => {
+        await cdp.evaluate(`const r = app.workspace.rightSplit; if (r && typeof r.setSize === "function") r.setSize(${breite}); return true;`);
+        await new Promise((r) => setTimeout(r, 500));
+        return cdp.evaluate(`
+          const panel = document.querySelector(".sd-gen-view");
+          const blatt = panel?.closest(".workspace-leaf-content") ?? panel;
+          if (!panel || !blatt) return { breite: 0, raus: ["Panel fehlt"], gemessen: 0 };
+          const rand = blatt.getBoundingClientRect().right;
+          const el = [...panel.querySelectorAll("input, select, button")].filter((e) => e.getBoundingClientRect().width > 0);
+          return { breite: Math.round(blatt.getBoundingClientRect().width),
+            raus: el.filter((e) => e.getBoundingClientRect().right > rand + 1).map((e) => e.tagName.toLowerCase() + (e.className ? "." + String(e.className).split(" ")[0] : "") + " +" + Math.round(e.getBoundingClientRect().right - rand) + "px"),
+            gemessen: el.length };
+        `);
+      };
+      const schmal = await ragtRaus(280);
+      const breit = await ragtRaus(640);
+      await cdp.evaluate(`const r = app.workspace.rightSplit; if (r && typeof r.setSize === "function") r.setSize(640); return true;`);
+      record(MZ7_NAME,
+        schmal.raus.length === 0 && breit.raus.length === 0 && schmal.gemessen >= 4 && breit.gemessen >= 4,
+        `280 (Blatt ${schmal.breite} px, ${schmal.gemessen} Elemente): ${schmal.raus.length === 0 ? "alle im Blatt" : "RAGEN RAUS " + schmal.raus.join(", ")}; 640 (Blatt ${breit.breite} px, ${breit.gemessen} Elemente): ${breit.raus.length === 0 ? "alle im Blatt" : "RAGEN RAUS " + breit.raus.join(", ")}`);
 
       // Sichtpruefung (Regel 12): die Zeile hell und dunkel, im breiten und im schmalen (280 px) Panel. Nur mit SMOKE_SHOT_DIR.
       const shotDir = process.env.SMOKE_SHOT_DIR;
@@ -2967,7 +2991,7 @@ async function pruefeKontextClaude(cdp: Cdp): Promise<void> {
   const vorherEndpoints = await cdp.evaluate<string>(`return JSON.stringify(${P}.settings.llmEndpoints);`);
   let manager = false;
   erzeugtePfade.push(STREAM_QUELLE, "smoke-stream-quelle — Deck.md");
-  const lauf = async (grenze: number): Promise<{ warnung: string; anfrage: { pfad: string; key: unknown; version: unknown } | null }> => {
+  const lauf = async (grenze: number): Promise<{ warnung: string; anfrage: { pfad: string; key: unknown; version: unknown } | null; kontextAnfragen: number; lokal: string[] }> => {
     stub.konfiguriere({ models: [eintrag(grenze)] });
     stub.loescheMitschnitt();
     await cdp.evaluate(`${P}.settings.choice = {}; return true;`);
@@ -2982,7 +3006,10 @@ async function pruefeKontextClaude(cdp: Cdp): Promise<void> {
     }
     const warnung = await cdp.evaluate<string>(`return [...document.querySelectorAll(".sd-gen-view .sd-gen-hint")].map((e) => e.textContent ?? "").join(" | ").trim();`);
     const ctxAnfrage = stub.anfragen().filter((a) => a.route === "models" && a.url.includes("limit=1000")).at(-1);
-    return { warnung, anfrage: ctxAnfrage ? { pfad: ctxAnfrage.url, key: ctxAnfrage.header["x-api-key"], version: ctxAnfrage.header["anthropic-version"] } : null };
+    // Zaehlung: mindestens eine Kontext-Anfrage je Panel-Oeffnen (heute drei: Aufbau, Aufloesung des Endpunkts, erstes Laden der Modellzeile; die Zahl steht im Detail, offene Task), und keine Anfrage der lokalen Wege (`/api/v0/models`, `/api/show`: beim Anthropic-Stub "unbekannt").
+    const kontextAnfragen = stub.anfragen().filter((a) => a.route === "models" && a.url.includes("limit=1000")).length;
+    const lokal = stub.anfragen().filter((a) => a.route === "unbekannt" || a.route === "api-v0-models" || a.route === "api-v1-models" || a.url.includes("/api/")).map((a) => a.url);
+    return { warnung, anfrage: ctxAnfrage ? { pfad: ctxAnfrage.url, key: ctxAnfrage.header["x-api-key"], version: ctxAnfrage.header["anthropic-version"] } : null, kontextAnfragen, lokal };
   };
   try {
     await installFakeManager(cdp, {
@@ -2993,10 +3020,20 @@ async function pruefeKontextClaude(cdp: Cdp): Promise<void> {
     manager = true;
     const gross = await lauf(200000);
     const klein = await lauf(4000);
+    // Variante: der Eintrag meldet `transport: "anthropic"`, das Backend aber anders (handgeaenderte oder importierte data.json des Managers).
+    // Der Aufrufer fragt den Transport: die Grenze kommt trotzdem aus /v1/models, nichts warnt.
+    await installFakeManager(cdp, {
+      endpunkte: [{ id: "fake-claude", label: "Claude API", url: stub.url, models: [MODELL], defaultModel: MODELL, configModel: "default",
+        provider: "anthropic", backend: "openwebui", apiKey: SCHLUESSEL, hasSecret: true, transport: "anthropic" }],
+      invalidiere: [PLUGIN_ID],
+    });
+    const abweichend = await lauf(200000);
     record(CX1_NAME,
       gross.anfrage !== null && gross.anfrage.key === SCHLUESSEL && typeof gross.anfrage.version === "string"
-        && !/tokens vs|Tokens\)|vs\. /.test(gross.warnung) && /vs 4000|vs\. 4000/.test(klein.warnung),
-      `200000: Kontext-Anfrage ${gross.anfrage === null ? "FEHLT" : gross.anfrage.pfad + " mit x-api-key " + (gross.anfrage.key === SCHLUESSEL ? "ok" : "FALSCH") + ", anthropic-version " + String(gross.anfrage.version)}, Warnung ${JSON.stringify(gross.warnung)}; 4000: Warnung ${JSON.stringify(klein.warnung)}`);
+        && !/tokens vs|Tokens\)|vs\. /.test(gross.warnung) && /vs 4000|vs\. 4000/.test(klein.warnung)
+        && gross.kontextAnfragen >= 1 && klein.kontextAnfragen >= 1 && gross.lokal.length === 0 && klein.lokal.length === 0
+        && abweichend.anfrage !== null && abweichend.lokal.length === 0 && !/tokens vs|Tokens\)|vs\. /.test(abweichend.warnung),
+      `200000: Kontext-Anfrage ${gross.anfrage === null ? "FEHLT" : gross.anfrage.pfad + " mit x-api-key " + (gross.anfrage.key === SCHLUESSEL ? "ok" : "FALSCH") + ", anthropic-version " + String(gross.anfrage.version)}, Warnung ${JSON.stringify(gross.warnung)}; 4000: Warnung ${JSON.stringify(klein.warnung)}; transport anthropic bei backend openwebui: Kontext-Anfrage ${abweichend.anfrage === null ? "FEHLT" : "da"}, Warnung ${JSON.stringify(abweichend.warnung)}; Kontext-Anfragen je Oeffnen ${gross.kontextAnfragen} und ${klein.kontextAnfragen}, lokale Wege ${gross.lokal.length + klein.lokal.length}${gross.lokal.length + klein.lokal.length > 0 ? " (" + [...gross.lokal, ...klein.lokal].join(", ") + ")" : ""}`);
   } catch (e) {
     if (!bilanz.eintraege().some((x) => x.name === CX1_NAME)) bilanz.unmeasured(CX1_NAME, `Messung abgebrochen: ${(e as Error).message}`);
   } finally {
