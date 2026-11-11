@@ -78,6 +78,42 @@ describe("runGenerateDeck", () => {
     expect(client.generate.mock.calls[1][0].length).toBeGreaterThan(baseMessages.length);
   });
 
+  describe("Rueckfrage nach ungueltiger Antwort (answer-retry aus code-kit)", () => {
+    const RUECKFRAGE = "Output ONLY the deck markdown, starting with the frontmatter block.";
+    const zweiterAufruf = async (schlecht: string) => {
+      const client = { generate: vi.fn() };
+      client.generate.mockResolvedValueOnce({ content: schlecht, reasoning: "", usedFallback: false });
+      client.generate.mockResolvedValueOnce({ content: "# Good", reasoning: "", usedFallback: false });
+      const r = await runGenerateDeck(deps(client));
+      expect(r.status).toBe("ok");
+      return client.generate.mock.calls[1][0] as { role: string; content: string }[];
+    };
+
+    it("die Rueckfrage haengt Verlauf, die schlechte Antwort als Assistent-Zug und einen Nutzerzug mit Grund und Anweisung an", async () => {
+      const gesendet = await zweiterAufruf("---\ntheme: x\n---\n");
+      expect(gesendet).toHaveLength(baseMessages.length + 2);
+      expect(gesendet.slice(0, baseMessages.length)).toEqual(baseMessages);
+      expect(gesendet[1]).toEqual({ role: "assistant", content: "---\ntheme: x\n---\n" });
+      expect(gesendet[2]?.role).toBe("user");
+      expect(gesendet[2]?.content).toBe(`Your previous answer was not valid: 0 slides after sanitizing\n\n${RUECKFRAGE}`);
+    });
+
+    it("eine leere Antwort wird nicht als leerer Assistent-Zug zurueckgeschickt (manche APIs lehnen leeren Inhalt ab)", async () => {
+      const gesendet = await zweiterAufruf("");
+      expect(gesendet).toHaveLength(baseMessages.length + 1);
+      expect(gesendet.some((m) => m.role === "assistant")).toBe(false);
+      expect(gesendet[1]?.content).toBe(`Your previous answer was not valid: 0 slides after sanitizing\n\n${RUECKFRAGE}`);
+    });
+
+    it("das Echo der schlechten Antwort ist auf 2000 UTF-16-Einheiten gekuerzt", async () => {
+      const lang = "---\nfooter: " + "x".repeat(3000) + "\n---\n";
+      const gesendet = await zweiterAufruf(lang);
+      expect(gesendet[1]?.role).toBe("assistant");
+      expect(gesendet[1]?.content).toHaveLength(2000);
+      expect(gesendet[1]?.content).toBe(lang.slice(0, 2000));
+    });
+  });
+
   it("gives up after 2 fatal runs with kind:format (hard cap)", async () => {
     const client = { generate: vi.fn(async () => ({ content: "", reasoning: "", usedFallback: false })) };
     const r = await runGenerateDeck(deps(client));

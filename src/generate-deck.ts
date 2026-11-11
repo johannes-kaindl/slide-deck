@@ -2,7 +2,8 @@ import { extractDeckMarkdown, setDeckTheme, setDeckSource, setDeckModel, hoistDe
 import { neutralizeRemoteResources } from "./vendor/kit/safe-markdown";
 import { secondPassDeck } from "./deck-second-pass";
 import { validateDeckOutput } from "./vendor/deck-core/pure/llm/deck-validate";
-import { buildRetryFeedback, type ChatMessage } from "./vendor/deck-core/pure/llm/deck-prompt";
+import type { ChatMessage } from "./vendor/deck-core/pure/llm/deck-prompt";
+import { buildRetryMessages } from "./vendor/kit/answer-retry";
 import type { DeckClient } from "./llm-client";
 
 export type GenPhase = "running" | "retrying" | "done" | "error" | "aborted";
@@ -26,6 +27,12 @@ export interface GenerateResult { status: "ok" | "fatal" | "aborted"; markdown?:
   sanitizedSlides?: number[] }
 
 const MAX_RUNS = 2;
+/** Was das Modell bei der Rueckfrage zuletzt liest (nach dem Grund, den `buildRetryMessages` nennt). */
+const RETRY_INSTRUCTION = "Output ONLY the deck markdown, starting with the frontmatter block.";
+/** Das Echo der schlechten Antwort ist auf den Anfang gekuerzt. Grund (abgeleitet, nicht gemessen): `validateDeckOutput` meldet nur "empty output"
+ *  und "0 slides after sanitizing", also eine Antwort ohne verwertbare Folie; was dem Modell fehlt, steht im Kopf (Frontmatter, erste Zeilen), und
+ *  eine ausufernde Fehlantwort wuerde sonst den Kontext der Rueckfrage fuellen. */
+const RETRY_MAX_ECHO = 2000;
 
 /** stream → sanitize → setDeckTheme → validate, with at most one retry on a format-fatal result.
  *  An envelope/server error returns fatal immediately (no retry — deterministic server state).
@@ -78,7 +85,7 @@ export async function runGenerateDeck(deps: GenerateDeps): Promise<GenerateResul
       return { status: "ok", markdown: themed, incomplete: finishReason === "length", usedFallback, sanitizedSlides: second.replaced };
     }
     lastReason = validation.fatal;
-    if (attempt < MAX_RUNS) messages = [...deps.messages, ...buildRetryFeedback(acc.content, validation.fatal)];
+    if (attempt < MAX_RUNS) messages = buildRetryMessages(deps.messages, acc.content, validation.fatal, RETRY_INSTRUCTION, { maxEcho: RETRY_MAX_ECHO });
   }
   deps.onState({ phase: "error", attempt: MAX_RUNS, content: "", reasoning: "", error: lastReason });
   return { status: "fatal", error: lastReason, kind: "format" };
