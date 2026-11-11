@@ -190,13 +190,17 @@
 /* Modellzeile des Kits in einer Zeile des Fensters: die Beschriftung fluchtet mit den Labels darueber, die Zeile nimmt den Rest. */
 .sd-gen-model .okit-model-bar { flex: 1 1 auto; }
 .sd-gen-model .okit-model-bar-label { min-width: 120px; font-size: inherit; color: inherit; }
+/* Status-Indikator des Kits (§8, STATUS_INDICATOR_CSS, wortgleich kopiert) — die Statuszeile des Erzeugen-Fensters; die eigene Zeile hier legt nur den Abstand fest. */
+.okit-status { display: flex; gap: var(--size-2-2); align-items: center; font-size: var(--font-ui-small); color: var(--text-muted); }
+.okit-status-icon { display: inline-flex; align-items: center; }
+.okit-status-icon svg { width: 14px; height: 14px; }
+.okit-status.is-ok .okit-status-icon { color: var(--text-success); }
+.okit-status.is-error .okit-status-icon { color: var(--text-error); }
+.okit-status.is-warning .okit-status-icon { color: var(--text-warning); }
+.okit-status.is-checking .okit-status-icon svg { animation: okit-status-spin 1.2s linear infinite; }
+@keyframes okit-status-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .okit-status.is-checking .okit-status-icon svg { animation: none; } }
 .sd-gen-status { margin-bottom: 10px; opacity: 0.9; }
-.sd-gen-ping { margin-left: 8px; display: inline-flex; align-items: center; }
-/* .is-checking-Farbe steht nur noch bei der neuen §8-Keyframe-Regel weiter unten —
-   zwei identische Regeln waeren Rauschen. */
-.sd-gen-ping.is-ok { color: var(--text-success); }
-.sd-gen-ping.is-error { color: var(--text-error); }
-.sd-gen-ping-label { margin-left: var(--size-4-2); opacity: 0.9; }
 .sd-gen-hint { margin: 8px 0; font-size: 0.9em; opacity: 0.8; }
 .sd-gen-exists { margin: 8px 0; display: flex; flex-direction: column; gap: var(--size-4-2); }
 .sd-collide-opt { display: flex; align-items: center; gap: var(--size-4-1); }
@@ -359,10 +363,10 @@
 
 /* §8: `is-checking` MUSS sich bewegen — ein stehendes loader-Symbol ist von einem haengenden
    Vorgang nicht zu unterscheiden, und genau das ist der einzige Zweck dieses Zustands.
-   Gilt auch fuer den Alt-Bestand .sd-gen-ping, der bis hierher nur eine Farbe setzte. */
+   (Die Statuszeile des Erzeugen-Fensters kommt aus dem Kit und bringt ihre Drehung selbst mit.) */
 @keyframes sd-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-.sd-slot-status.is-checking, .sd-gen-ping.is-checking { color: var(--text-faint); }
-.sd-slot-status.is-checking svg, .sd-gen-ping.is-checking svg { animation: sd-spin 1s linear infinite; }
+.sd-slot-status.is-checking { color: var(--text-faint); }
+.sd-slot-status.is-checking svg { animation: sd-spin 1s linear infinite; }
 /* Bei reduzierter Bewegung wird die Drehung VERLANGSAMT, nicht abgeschaltet — und das ist
    eine bewusste Abwaegung, keine Nachlaessigkeit: die Bewegung ist hier nicht Zierde, sondern
    die Bedeutung des Zustands. Ein stehendes Ladesymbol ist von einem haengenden Vorgang nicht
@@ -370,7 +374,7 @@
    naehme dem Zustand also genau das, wofuer es ihn gibt. 3 s statt 1 s ist das Gegenteil von
    auffaellig und bleibt trotzdem ein Lebenszeichen. */
 @media (prefers-reduced-motion: reduce) {
-  .sd-slot-status.is-checking svg, .sd-gen-ping.is-checking svg { animation-duration: 3s; }
+  .sd-slot-status.is-checking svg { animation-duration: 3s; }
 }
 
 /* Image function suggest modal description (Insert image slot command) */

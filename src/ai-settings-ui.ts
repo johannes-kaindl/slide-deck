@@ -1,20 +1,7 @@
-// Render layer for the AI settings blocks (UI-STANDARD §8): this file only draws. Shared by the settings tab and the
-// generate-deck view so both speak the same icon vocabulary.
-import { Notice, Setting, setIcon } from "obsidian";
+// Render layer for the AI settings blocks (UI-STANDARD §8): this file only draws. The status line is the kit's
+// status indicator (`buildStatus` / `paintStatus`), used directly by the generate-deck view.
+import { Notice, Setting } from "obsidian";
 import { t } from "./i18n";
-import type { EndpointStatusKind } from "./vendor/kit/endpoint_diagnostics";
-
-/** Status icon per UI-STANDARD §8: shape AND colour AND state class AND aria-label — colour is
- *  never the only carrier (WCAG 1.4.1). `null` kind = not probed yet. */
-export function paintStatus(el: HTMLElement, kind: EndpointStatusKind | null, label: string): void {
-  el.empty();
-  el.removeClasses(["is-ok", "is-error", "is-checking", "is-active"]);
-  if (kind === null) { el.addClass("is-checking"); setIcon(el, "loader"); }
-  else if (kind === "ok") { el.addClass("is-ok"); setIcon(el, "circle-check"); }
-  else { el.addClass("is-error"); setIcon(el, "circle-x"); }
-  el.setAttribute("aria-label", label);
-  el.setAttribute("title", label);
-}
 
 export interface ThinkingTestDeps {
   getModel: () => string | Promise<string>;

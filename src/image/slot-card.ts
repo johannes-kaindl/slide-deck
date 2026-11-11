@@ -5,9 +5,10 @@ import { parseSlot, SLOT_LANG } from "./slot-format";
 import { readImageApi, LOCAL_IMAGE_GENERATOR_URL } from "./image-api";
 import { cardVm, type CardState, type CardVm } from "./slot-card-model";
 
-/** Der eigene Maler derselben §8-Vokabel. Bewusst NICHT `paintStatus` aus ai-settings-ui:
- *  das nimmt einen EndpointStatusKind und kennt drei Endpunkt-Zustaende — ein Bildlauf ist
- *  kein Endpunkt. Geteilt wird die Sprache, nicht die Funktion. */
+/** Der eigene Maler derselben §8-Vokabel. Bewusst NICHT `paintStatus` des Kit-Status-Indikators
+ *  (`vendor/kit-obsidian/status-indicator.ts`): der baut eine eigene Zeile aus Symbol und Beschriftung, hier
+ *  malt die Karte in ein vorhandenes Symbol-Element und kennt auch den Zustand ohne Status (Task: ob die
+ *  Karte auf den Kit-Baustein umzieht, ist offen). Geteilt wird die Sprache, nicht die Funktion. */
 function paintSlotStatus(el: HTMLElement, vm: CardVm): void {
   el.empty();
   el.removeClasses(["is-checking", "is-ok", "is-error"]);

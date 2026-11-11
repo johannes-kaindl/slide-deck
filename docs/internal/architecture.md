@@ -111,8 +111,8 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
                        (is-checking/is-ok/is-error, nur diese drei).
     slot-card.ts       registerSlotCard() — MarkdownCodeBlockProcessor für `slide-image`.
                        paintSlotStatus() ist ein EIGENER Maler derselben Vokabel, bewusst nicht
-                       `paintStatus` aus ai-settings-ui: ein Bildlauf ist kein Endpunkt, geteilt
-                       wird die Sprache, nicht die Funktion.
+                       `paintStatus` des Kit-Status-Indikators: die Karte malt in ein vorhandenes
+                       Symbol-Element, geteilt wird die Sprache, nicht die Funktion.
   llm/
     model-info.ts         Re-Export von Kits effectiveContext/ModelContext (model-context.ts) + eigene estimateTokens(chars), contextOverflow(...). Der Abruf der Kontextlänge selbst ist `fetchEndpointContext` (obsidian-kit, in `generate-deck-view.ts` direkt gerufen).
   preview-view.ts    PreviewPanel (HubPanel im `SlideDeckHubView`, rechte Seitenleiste) — Live-Vorschau mit
@@ -147,12 +147,10 @@ src/               Obsidian-Adapter-Schicht — importiert obsidian / DOM.
   llm/connection.ts  deckConnectionOptions(): die Optionen für createLlmConnection — Zuordnung der Settings-Felder
                      (llmEndpoints/choice/request) und synchrones persist. Request-Bau, Texte der Abweichungen
                      und Backend-Erkennung kommen aus dem Kit (tests/connection.test.ts: goldene Requests).
-  ai-settings-ui.ts  Render der KI-Settings-Bausteine (UI-STANDARD §8): paintStatus (gemeinsame
-                     Status-Icon-Vokabel — Form + Farbe + State-Klasse + aria-label, WCAG 1.4.1),
-                     renderThinkingTestRow (Knopf + Live-Suppress-Test via
-                     echtem Minimal-Call). Die render*-Funktionen sind settings.ts-exklusiv;
-                     paintStatus wird zusätzlich von generate-deck-view.ts importiert (identische
-                     Icon-Sprache in Settings und Generate-View).
+  ai-settings-ui.ts  Render der KI-Settings-Bausteine (UI-STANDARD §8): renderThinkingTestRow (Knopf +
+                     Live-Suppress-Test via echtem Minimal-Call), settings.ts-exklusiv. Die Statuszeile
+                     (Form + Farbe + State-Klasse + aria-label, WCAG 1.4.1) ist der Kit-Baustein
+                     `status-indicator` (`buildStatus`/`paintStatus`), den generate-deck-view.ts direkt nutzt.
   settings.ts        SlideDeckSettings (defaultTheme, minFontPx, imageScale, themesFolder,
                      hideThemesFolder) + SettingTab (inkl. „Verfügbare Themes"-Referenz,
                      Open-in-Finder-Button, Export-as-.css-Button, Ordner-Ausblenden-Toggle).

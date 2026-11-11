@@ -8,13 +8,13 @@ import { frontmatterRange } from "./vendor/deck-core/pure/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./vendor/deck-core/pure/llm/deck-prompt";
 import { estimateTokens, contextOverflow, effectiveContext } from "./llm/model-info";
 import { MODE } from "./llm/request-params";
-import { paintStatus } from "./ai-settings-ui";
 import type { GenState, GenerationHandle } from "./generate-deck";
 import { getLang, t } from "./i18n";
 import { endpointStatusText } from "./vendor/kit-obsidian/endpoint-status-text";
 import { buildModelBar, type ModelBar } from "./vendor/kit-obsidian/model-bar";
 import { thinkingOffTexts } from "./vendor/kit-obsidian/thinking-control";
 import { onLevelFor, thinkingFor, withThinkingLevel } from "./vendor/kit/sampling-profiles";
+import { buildStatus, paintStatus, type StatusParts } from "./vendor/kit-obsidian/status-indicator";
 import { buildStreamArea, type StreamArea } from "./vendor/kit-obsidian/stream-area";
 import type { HubPanel } from "./vendor/kit-obsidian/hub";
 import type { HubTabId } from "./hub-view";
@@ -62,8 +62,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
   private hintInput?: HTMLInputElement;
   private themeSel?: HTMLSelectElement;
   // Statuszeile und Modellzeile, damit `resolveEndpoint()` sie bei jedem Tab-Wechsel neu malen kann.
-  private pingEl?: HTMLElement;
-  private pingLabelEl?: HTMLElement;
+  private pingStatus?: StatusParts;
   private bar: ModelBar | null = null;
   private resolving = false;
 
@@ -112,10 +111,8 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     this.destroyBar();
     contentEl.empty();
 
-    const status = contentEl.createDiv({ cls: "sd-gen-status" });
-    const pingEl = this.pingEl = status.createSpan({ cls: "sd-gen-ping" });
-    this.pingLabelEl = status.createSpan({ cls: "sd-gen-ping-label" });
-    paintStatus(pingEl, null, t("deck.settings.endpoint.probing"));
+    const ping = this.pingStatus = buildStatus(contentEl, "sd-gen-status");
+    paintStatus(ping, "checking", t("deck.settings.endpoint.probing"));
 
     this.sourceLabel = contentEl.createDiv({ cls: "sd-gen-source-label" });
 
@@ -157,8 +154,8 @@ export class GeneratePanel implements HubPanel<HubTabId> {
   /** Resolve endpoint + ping + models. Laeuft beim Aufbau und bei jedem Sichtbarwerden des Tabs
    *  (ein im Hintergrund eingerichteter Endpunkt soll ohne Neuoeffnen greifen). */
   private async resolveEndpoint(): Promise<void> {
-    const { pingEl, pingLabelEl } = this;
-    if (this.resolving || !pingEl || !pingLabelEl) return;
+    const ping = this.pingStatus;
+    if (this.resolving || !ping) return;
     this.resolving = true;
     try {
       const source = await this.plugin.llm.resolve();
@@ -171,8 +168,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
         // No resolved endpoint → nothing left to probe() for a kind; "unknown" carries the
         // shared error visual (circle-x/is-error) while the label stays the specific,
         // actionable message instead of the generic "not reachable" klartext.
-        paintStatus(pingEl, "unknown", t("deck.modal.noEndpoint"));
-        pingLabelEl.setText(t("deck.modal.noEndpoint"));
+        paintStatus(ping, "error", t("deck.modal.noEndpoint"));
         this.warnEl?.setText(t("deck.modal.noEndpoint"));
       } else {
         if (this.warnEl?.textContent === t("deck.modal.noEndpoint")) this.warnEl.setText("");
@@ -183,8 +179,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
         if (this.closed) return;
         const kind = reachable ? "ok" : "unknown";
         const label = endpointStatusText(kind, { lang: getLang() });
-        paintStatus(pingEl, kind, label);
-        pingLabelEl.setText(`${this.endpoint.url} — ${label}`);
+        paintStatus(ping, kind === "ok" ? "ok" : "error", `${this.endpoint.url} — ${label}`);
       }
       this.updateEnabled();
       // Endpoint is only known now → re-run the source check so the context-overflow warning
