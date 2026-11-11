@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.20.2] — 2026-11-11
+
 ### Changed
 
 - **The status line of the Generate panel ("Checking …", "Connected", "Not reachable") is now the kit's status indicator** (`obsidian-kit` 0.76.0, `status-indicator` only; the kit pin of the other modules stays). Same icons and colours as before, one line that reads as a whole: the icon, then the text, and the whole line carries the text as its accessible label (before, only the icon was labelled). The spinner while checking now stands still under "reduce motion" instead of turning at a third of the speed.
