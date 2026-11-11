@@ -246,7 +246,7 @@ Der Modifier steht im Theme, nicht im Kern.
 /** DT1 — die Zeile „Denk-Test“ im Einstellungs-Tab bei einem Claude-Endpunkt. Name hier, weil ihn die Soll-Liste und der Punkt teilen. */
 const MZ1_NAME = "MZ1 Modellzeile im Erzeugen-Fenster: die Modelle des Endpunkts stehen da, ein Wechsel gilt in der Verbindung und in der Einstellung (Tab und Zeile stimmen ueberein)";
 const MZ2_NAME = "MZ2 Das gewaehlte Modell steht im Anfrage-Body des Laufs und im Frontmatter model: der erzeugten Notiz";
-const MZ3_NAME = "MZ3 Denk-Knopf in der Zeile schaltet request.thinking.creative; bei Claude steht \"Thinking: lowest level\" mit Hinweis im aria-label";
+const MZ3_NAME = "MZ3 Denk-Knopf in der Zeile schaltet request.thinking.creative; bei Claude (Familie aus dem Manager, Modellname ohne Familie) steht \"Thinking: lowest level\" mit Hinweis im aria-label, ohne Familie vom Manager nicht";
 const MZ4_NAME = "MZ4 Ein Modellwechsel rechnet die Kontext-Warnung neu (kleines Modell: Warnung mit seiner Grenze, grosses: keine)";
 const MZ5_NAME = "MZ5 Endpunkt ohne Modell-Liste: die Zeile zeigt Automatisch mit Hinweis, der Knopf Erzeugen bleibt bedienbar";
 const MZ7_NAME = "MZ7 Kein Bedienelement des Erzeugen-Fensters ragt ueber die rechte Kante des Panels (gemessen bei 280 und bei 640 px Seitenleistenbreite)";
@@ -2847,36 +2847,52 @@ async function pruefeModellzeile(cdp: Cdp, ctx: Ctx): Promise<void> {
 
     // ---- MZ3 Claude: „aus nicht moeglich“ mit Hinweis
     const SCHLUESSEL = "sk-ant-smoke-slide-deck-mz3";
-    const MODELL = "claude-haiku-5-5";
+    // Ein Name, der die Familie NICHT verraet: ein Treffer des Namensraters waere sonst von „Familie aus dem Manager“ nicht zu trennen.
+    const MODELL = "smoke-modell-ohne-familie";
     const claude = await startLlmStub({
       anbieter: "anthropic", schluessel: SCHLUESSEL,
       models: [{ id: MODELL, capabilities: { effort: { supported: true }, thinking: { types: { adaptive: { supported: true } } } } }],
       takt: 20, antwort: () => ({ text: "ok", laenge: 2, model: MODELL }),
     });
-    let claudeText = { label: "", aria: "" };
-    try {
+    type KnopfText = { label: string; aria: string };
+    // Erzeugen-Fenster gegen den Fake-Manager mit (oder ohne) Familie des Modells oeffnen und den Denk-Knopf lesen.
+    const knopfMitFamilie = async (familie: string | undefined, erwartetSperre: boolean): Promise<KnopfText> => {
       await installFakeManager(cdp, {
         endpunkte: [{ id: "fake-claude", label: "Claude API", url: claude.url, models: [MODELL], defaultModel: MODELL, configModel: "default",
-          provider: "anthropic", backend: "anthropic", apiKey: SCHLUESSEL, hasSecret: true, transport: "anthropic" }],
+          provider: "anthropic", backend: "anthropic", apiKey: SCHLUESSEL, hasSecret: true, transport: "anthropic",
+          ...(familie !== undefined ? { family: familie, displayFamily: familie } : {}) }],
         invalidiere: [PLUGIN_ID],
       });
       manager = true;
       await cdp.evaluate(`${P}.settings.choice = {}; ${P}.settings.request.thinking = { ...(${P}.settings.request.thinking ?? {}), creative: "off" }; return true;`);
       const g3c = await oeffneErzeugenPanel(cdp, claude);
       if (g3c !== null) throw new Error(g3c);
-      claudeText = await pollUntil<string>(cdp, `
+      const roh = await pollUntil<string>(cdp, `
         const b = document.querySelector(${JSON.stringify(KNOPF)});
         const l = b ? (b.textContent ?? "").trim() : "";
-        return b && /lowest level|niedrigste Stufe/.test(l) ? JSON.stringify({ label: l, aria: b.getAttribute("aria-label") ?? "" }) : null;
-      `, 10_000, 250).then((r) => (r === null ? { label: "", aria: "" } : (JSON.parse(r) as { label: string; aria: string })));
+        const gesperrt = /lowest level|niedrigste Stufe/.test(l);
+        return b && gesperrt === ${erwartetSperre ? "true" : "false"} ? JSON.stringify({ label: l, aria: b.getAttribute("aria-label") ?? "" }) : null;
+      `, 10_000, 250);
+      if (roh !== null) return JSON.parse(roh) as KnopfText;
+      return { label: "", aria: "" };
+    };
+    let claudeText: KnopfText = { label: "", aria: "" };
+    let ohneFamilie: KnopfText = { label: "", aria: "" };
+    try {
+      claudeText = await knopfMitFamilie("claude", true);
+      // Gegenprobe: derselbe Endpunkt und Name, der Manager nennt keine Familie → der Knopf ist nicht auf die niedrigste Stufe gesperrt.
+      await entferneFakeManager(cdp, { invalidiere: [PLUGIN_ID] }).catch(() => undefined);
+      manager = false;
+      ohneFamilie = await knopfMitFamilie(undefined, false);
     } finally {
       if (manager) { await entferneFakeManager(cdp, { invalidiere: [PLUGIN_ID] }).catch(() => undefined); manager = false; }
       await claude.stop();
     }
     record(MZ3_NAME,
       s0 === "medium" && s1.stufe === "off" && s1.pressed === "false" && s2.stufe === s0 && s2.pressed === "true"
-        && claudeText.label !== "" && /can't be fully turned off|nicht ganz abschalten/.test(claudeText.aria),
-      `lokal: ${s0} → ${s1.stufe} (aria-pressed ${String(s1.pressed)}) → ${s2.stufe} (aria-pressed ${String(s2.pressed)}); Claude: Knopf ${JSON.stringify(claudeText.label)} mit aria-label ${JSON.stringify(claudeText.aria.slice(0, 80))}`);
+        && claudeText.label !== "" && /can't be fully turned off|nicht ganz abschalten/.test(claudeText.aria)
+        && ohneFamilie.label !== "" && !/can't be fully turned off|nicht ganz abschalten/.test(ohneFamilie.aria),
+      `lokal: ${s0} → ${s1.stufe} (aria-pressed ${String(s1.pressed)}) → ${s2.stufe} (aria-pressed ${String(s2.pressed)}); Claude (Familie aus dem Manager, Name ohne Familie): Knopf ${JSON.stringify(claudeText.label)} mit aria-label ${JSON.stringify(claudeText.aria.slice(0, 80))}; Gegenprobe ohne Familie vom Manager: Knopf ${JSON.stringify(ohneFamilie.label)} mit aria-label ${JSON.stringify(ohneFamilie.aria.slice(0, 80))}`);
     }
 
     // ---- MZ4: Kontext-Warnung folgt dem Modell
