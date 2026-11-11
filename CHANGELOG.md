@@ -6,6 +6,14 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **The status line of the Generate panel ("Checking …", "Connected", "Not reachable") is now the kit's status indicator** (`obsidian-kit` 0.76.0, `status-indicator` only; the kit pin of the other modules stays). Same icons and colours as before, one line that reads as a whole: the icon, then the text, and the whole line carries the text as its accessible label (before, only the icon was labelled). The spinner while checking now stands still under "reduce motion" instead of turning at a third of the speed.
+
+### Fixed
+
+- **When the model's first answer is unusable, the second try no longer sends an empty assistant message.** An empty answer used to be sent back as an empty "assistant" turn, which some endpoints refuse; now only the question follows. The follow-up wording also changed to the kit's (`code-kit` 0.47.0, `answer-retry`): "Your previous answer was not valid: …" followed by the instruction to output only the deck markdown. What stays: one retry at most, a server error is never retried, an answer cut off at the token limit is retried like any other, and the echo of the bad answer is still cut at 2000 characters.
+
 ## [0.20.1] — 2026-10-26
 
 ### Changed
