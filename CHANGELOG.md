@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.21.0] — 2026-11-12
+
 ### Changed
 
 - **The Desktop PDF export saves the file directly, without the print dialog.** The Export to PDF command writes `<export folder>/<note name>.pdf` (the same folder as the image export), one page per slide at the slide size (1280×720 px, 960×540 pt in the file), through the kit's print module (`obsidian-kit` 0.82.2, `print-to-pdf`). If saving fails, the system print dialog opens as before and a notice says why. Mobile is unchanged.
