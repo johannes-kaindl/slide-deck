@@ -3,6 +3,7 @@ import type SlideDeckPlugin from "./main";
 import type { DeckGenInput } from "./main";
 import { fetchEndpointContext } from "./vendor/kit-obsidian/backend-probe";
 import type { EndpointConfig } from "./vendor/kit/endpoint_config";
+import type { ModelContext } from "./vendor/kit/model-context";
 import { frontmatterRange } from "./vendor/deck-core/pure/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./vendor/deck-core/pure/llm/deck-prompt";
 import { estimateTokens, contextOverflow, effectiveContext } from "./llm/model-info";
@@ -40,7 +41,9 @@ export class GeneratePanel implements HubPanel<HubTabId> {
 
   private root!: HTMLElement;
   private endpoint: EndpointConfig | null = null;
-  /** Transport des aufgeloesten Eintrags (`"anthropic"` bei Claude): bestimmt, wie die Kontextgrenze erfragt wird. */
+  /** Die Kontextgrenze je (Endpunkt, Modell, Anbieter) fuer die Dauer eines Aufloesens: Aufbau, Endpunkt-Aufloesung und Modellzeile fragen sonst
+   *  je einmal dasselbe (gemessen 2026-10-26: drei Anfragen je Oeffnen). `resolveEndpoint` leert sie; ein unbekanntes Ergebnis (`null`) bleibt nicht liegen. */
+  private contextCache = new Map<string, Promise<ModelContext | null>>();
   private currentSource: TFile | null = null;
   private unsubscribe: (() => void) | null = null;
   private timer: number | null = null;
@@ -155,6 +158,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     const ping = this.pingStatus;
     if (this.resolving || !ping) return;
     this.resolving = true;
+    this.contextCache.clear();
     try {
       const source = await this.plugin.llm.resolve();
       this.endpoint = source.config;
@@ -248,6 +252,16 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     this.updateEnabled();
   }
 
+  private contextOf(endpoint: EndpointConfig, model: string, provider: "anthropic" | undefined): Promise<ModelContext | null> {
+    const key = `${endpoint.url}\n${model}\n${provider ?? ""}`;
+    const hit = this.contextCache.get(key);
+    if (hit) return hit;
+    const fresh = fetchEndpointContext(endpoint.url, model, endpoint.apiKey, { provider });
+    this.contextCache.set(key, fresh);
+    void fresh.then((ctx) => { if (ctx === null && this.contextCache.get(key) === fresh) this.contextCache.delete(key); });
+    return fresh;
+  }
+
   /** Deck-lookalike hint + context-length warning (needs a vault read + optional model probe). */
   private async checkSourceAsync(file: TFile): Promise<void> {
     const raw = await this.plugin.app.vault.read(file);
@@ -259,7 +273,7 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     // (`source().transport`, seit Kit 0.73.0), die Kit-Huelle raet ihn nicht. Das `backend` ist nur ein Hinweis des Managers und kann bei einem
     // Eintrag abweichen.
     const provider = this.plugin.llm.source().transport === "anthropic" ? ("anthropic" as const) : undefined;
-    const ctx = await fetchEndpointContext(this.endpoint.url, this.model(), this.endpoint.apiKey, { provider });
+    const ctx = await this.contextOf(this.endpoint, this.model(), provider);
     if (this.currentSource !== file) return;
     const limit = effectiveContext(ctx) ?? undefined;
     const inputTokens = estimateTokens(body.length) + 400;

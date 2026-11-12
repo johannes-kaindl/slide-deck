@@ -3047,7 +3047,7 @@ async function pruefeKontextClaude(cdp: Cdp): Promise<void> {
     record(CX1_NAME,
       gross.anfrage !== null && gross.anfrage.key === SCHLUESSEL && typeof gross.anfrage.version === "string"
         && !/tokens vs|Tokens\)|vs\. /.test(gross.warnung) && /vs 4000|vs\. 4000/.test(klein.warnung)
-        && gross.kontextAnfragen >= 1 && klein.kontextAnfragen >= 1 && gross.lokal.length === 0 && klein.lokal.length === 0
+        && gross.kontextAnfragen === 1 && klein.kontextAnfragen === 1 && gross.lokal.length === 0 && klein.lokal.length === 0
         && abweichend.anfrage !== null && abweichend.lokal.length === 0 && !/tokens vs|Tokens\)|vs\. /.test(abweichend.warnung),
       `200000: Kontext-Anfrage ${gross.anfrage === null ? "FEHLT" : gross.anfrage.pfad + " mit x-api-key " + (gross.anfrage.key === SCHLUESSEL ? "ok" : "FALSCH") + ", anthropic-version " + String(gross.anfrage.version)}, Warnung ${JSON.stringify(gross.warnung)}; 4000: Warnung ${JSON.stringify(klein.warnung)}; transport anthropic bei backend openwebui: Kontext-Anfrage ${abweichend.anfrage === null ? "FEHLT" : "da"}, Warnung ${JSON.stringify(abweichend.warnung)}; Kontext-Anfragen je Oeffnen ${gross.kontextAnfragen} und ${klein.kontextAnfragen}, lokale Wege ${gross.lokal.length + klein.lokal.length}${gross.lokal.length + klein.lokal.length > 0 ? " (" + [...gross.lokal, ...klein.lokal].join(", ") + ")" : ""}`);
   } catch (e) {
