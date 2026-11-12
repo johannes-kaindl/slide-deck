@@ -6,6 +6,10 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Vendored the kit's request section and connection at `obsidian-kit` 0.76.0** (`request-section`, `llm-connection`, `llm-connection-strings`; with `sampling-profiles` from `code-kit` 0.40.0; the pins of the other modules stay). What you notice: the thinking level list now follows the chosen model (Claude shows the levels it supports, `xhigh` and `max` exist), and a model that cannot turn thinking off (gpt-oss) now sends `low` for a stored "off" instead of `minimal`. Internally the Generate panel reads the transport of the endpoint from the kit (`source().transport`) instead of keeping its own copy.
+
 ## [0.20.2] — 2026-11-11
 
 ### Changed

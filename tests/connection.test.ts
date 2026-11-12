@@ -75,7 +75,9 @@ describe("goldene Requests — creative, Denkstufe aus, Budget 8192", () => {
       openwebui: { temperature: 0.7, top_p: 0.8, top_k: 20, min_p: 0, presence_penalty: 1.5, reasoning_effort: "none", max_tokens: 8192 },
     },
     "openai/gpt-oss-20b": {
-      lmstudio: { temperature: 0.7, top_p: 1, reasoning_effort: "minimal", max_tokens: 8192 },
+      // gpt-oss kann das Denken nicht abschalten: seit Kit 0.76.0 (request-section/llm-connection, sampling-profiles 0.40.0) klemmt die
+      // Verbindung ein gespeichertes „off“ auf die niedrigste Stufe der Liste des Modells („low“), vorher ging „minimal“ hinaus.
+      lmstudio: { temperature: 0.7, top_p: 1, reasoning_effort: "low", max_tokens: 8192 },
     },
     "kein-bekanntes-modell": {
       lmstudio: { temperature: 0.7, reasoning_effort: "none", max_tokens: 8192 },
