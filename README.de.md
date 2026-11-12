@@ -28,7 +28,7 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 - **Live-Vorschau** — rendert die aktive Notiz als Folien-Deck in einer Seitenleiste, skaliert auf die Fensterbreite; ein Klick auf Überlauf-Warnungen springt zur Quellzeile.
 - **Fit-or-warn-Lesbarkeit** — jede Folie skaliert den Inhalt automatisch herunter bis zur konfigurierbaren Lesbarkeits-Untergrenze (`minFontPx`); Folien, die noch kleineren Text bräuchten, werden als überlaufend markiert statt unleserlich zu werden.
 - **Eigenes CSS** — ein optionales CSS-Snippet in den Einstellungen wird an die Deck-Styles in Vorschau und Exporten angehängt, für Branding oder Anpassungen.
-- **PDF-Export** — rendert alle Folien in nativer Auflösung; auf dem Desktop wird der System-Druckdialog geöffnet (im Dialog „Als PDF speichern" wählen); auf Mobilgeräten (iOS/iPadOS) wird eine eigenständige HTML-Datei in den Export-Ordner geschrieben und über die Standard-App des Betriebssystems geöffnet — von dort kann als PDF gedruckt oder geteilt werden.
+- **PDF-Export** — rendert alle Folien in nativer Auflösung; auf dem Desktop wird die PDF-Datei ohne Druckdialog direkt in den Export-Ordner geschrieben; auf Mobilgeräten (iOS/iPadOS) wird eine eigenständige HTML-Datei in den Export-Ordner geschrieben und über die Standard-App des Betriebssystems geöffnet — von dort kann als PDF gedruckt oder geteilt werden.
 - **PNG-Bilderserie-Export** — erfasst jede Folie via `modern-screenshot` und schreibt nummerierte PNGs in einen konfigurierbaren Export-Ordner (Einstellungen, Standard `Slide-Deck-Export/`); typografisch korrekte Wortabstände.
 - **Mobile-Unterstützung** — läuft auf iOS/iPadOS (Obsidian Mobile); alle Desktop-only-APIs sind plattformgesichert.
 - **KaTeX-Mathematik** — Inline- und Display-Mathematik (`$…$` / `$$…$$`) gerendert von KaTeX.
@@ -77,9 +77,9 @@ selbst in den Themes-Ordner legst.
 
 - **Obsidian ≥ 1.11.4** (`minAppVersion`; API-Schlüssel liegen im Schlüsselbund von Obsidian, den es seit 1.11.4 gibt). Ab 1.13.0 nutzt der Einstellungs-Tab die deklarative Settings-API; ältere Versionen bekommen dieselben Einstellungen über einen klassischen Fallback.
 - **Desktop + Mobile** (`isDesktopOnly: false`) — läuft auf dem Desktop (Windows, macOS, Linux) und auf Mobilgeräten (iOS/iPadOS); Desktop-only-APIs sind plattformgesichert.
-- **PDF-Export auf dem Desktop** verwendet den **System-Druckdialog** — im Druckerdropdown „Als PDF speichern" wählen. Es wird keine PDF-Datei direkt erzeugt.
+- **PDF-Export auf dem Desktop** schreibt `<Export-Ordner>/<Notizname>.pdf` direkt, eine Seite je Folie in Foliengröße, ohne System-Druckdialog. Scheitert das Speichern, öffnet sich stattdessen der Druckdialog („Als PDF speichern" wählen).
 - **PDF-Export auf Mobile** schreibt eine eigenständige HTML-Datei in den Export-Ordner und öffnet sie mit der Standard-App des Betriebssystems; von dort kann als PDF gedruckt oder geteilt werden. Der Dateiname lautet `<Export-Ordner>/<Notizname>.html`.
-- Der PNG-Export schreibt Dateien in einen **konfigurierbaren Export-Ordner** (Einstellungen → Slide Deck → Export-Ordner, Standard `Slide-Deck-Export/`). Der PDF-Export auf dem Desktop läuft über den System-Druckdialog, wo du den Ort wählst.
+- Der PNG-Export schreibt Dateien in einen **konfigurierbaren Export-Ordner** (Einstellungen → Slide Deck → Export-Ordner, Standard `Slide-Deck-Export/`). Der PDF-Export auf dem Desktop schreibt in denselben Ordner (`<Notizname>.pdf`).
 
 ## Installation
 
@@ -242,7 +242,7 @@ Hinweis: Das `---` im YAML-Frontmatter-Block ist der Standard-YAML-Begrenzer und
 2. **Fester Canvas** — jede Folie wird auf einen festen Canvas gerendert: 1280×720 px (16:9) oder 960×720 px (4:3). Die Canvas-Größe ändert sich nicht mit der Fenstergröße.
 3. **Theme-Isolation** — Folien werden in einem sandboxed iframe gerendert, in den die Styles des gewählten Themes direkt injiziert werden. Das aktive Obsidian-Theme dringt nicht in den iframe ein, sodass das Deck in Vorschau, PDF und PNG unabhängig vom Vault-Theme identisch aussieht.
 4. **Fit-or-warn** — der Inhalt jeder Folie wird im DOM gemessen. Überschreitet er den Canvas, wird er gleichmäßig skaliert. Die Skalierung stoppt bei `minFontPx` (Lesbarkeits-Untergrenze). Würde der Inhalt bei dieser Skalierung immer noch überlaufen, wird die Folie in der Vorschau mit einer Warnung markiert statt weiter skaliert.
-5. **Export** — dasselbe theme-isolierte iframe-Artefakt speist alle Export-Wege: die Druck-Pipeline (PDF) und die folienweise `modern-screenshot`-Erfassung (`domToCanvas`) (PNG). Auf dem Desktop wird PDF via `contentWindow.print()` gedruckt; auf Mobilgeräten wird eine eigenständige HTML-Datei in den Vault geschrieben und via `openWithDefaultApp` ans Betriebssystem übergeben.
+5. **Export** — dasselbe theme-isolierte iframe-Artefakt speist alle Export-Wege: die Druck-Pipeline (PDF) und die folienweise `modern-screenshot`-Erfassung (`domToCanvas`) (PNG). Auf dem Desktop rendert das Druckmodul des Kits das PDF (ein verstecktes `<webview>`, `@page` in Foliengröße) und speichert es als Datei, als Rückfall dient der System-Druckdialog; auf Mobilgeräten wird eine eigenständige HTML-Datei in den Vault geschrieben und via `openWithDefaultApp` ans Betriebssystem übergeben.
 
 ## Netzwerknutzung (lokale KI)
 

@@ -69,10 +69,7 @@ diesem Repo nicht mehr, und `npm test` ruft es nicht auf.
      `.sd-slide hr { border: none }` in `structure.css.ts` — und der fällt aus **beiden**
      Gründen heraus.
   Volle Messung in der deck-core-Task „Export ≠ Ansicht“.
-- **PDF via window.print (Desktop):** Der Desktop-PDF-Export druckt den isolierten iframe via
-  `contentWindow.print()`. Obsidian-Themes, Browser-Erweiterungen und Systemdruck-Einstellungen
-  können das Ergebnis beeinflussen. Die `@page`-CSS-Regel setzt die Seitengröße auf die
-  Foliengröße.
+- **PDF am Desktop (seit Welle 33, 2026-11-12):** `exportPdf` schreibt über `printHtmlToPdf` (Kit `print-to-pdf`, ein verstecktes `<webview>`, `preferCSSPageSize`) `<exportFolder>/<Notiz>.pdf` ohne Dialog. Das Dokument ist dasselbe wie die lose Datei des mobilen Zweigs (`mobileDeckHtml`, also mit Content-Security-Policy) plus `PRINT_CSS`; dessen `@page { size: <Canvas>px }` bestimmt die Seite. Gemessen am Deck des Smokes (PD2, Obsidian 1.15, 5 Folien kami): 5 Seiten, MediaBox 960×540 pt (= 1280×720 px), Producer Skia/PDF, Hintergrund und eingebettete Schriften stehen, Seiten angesehen. Scheitert das Modul (`PrintToPdfError`), druckt `printViaIframe` den isolierten iframe wie früher über den Systemdialog (`contentWindow.print()`, modal, im Smoke nicht fahrbar). `PRINT_TO_PDF_CSS` (`.okit-print-host`) steht wortgleich in `styles.css` (`tests/kit-css.test.ts`).
 - **Mermaid-IDs müssen eindeutig sein:** `src/vendor/deck-core/dom/render-dom.ts` vergibt
   eindeutige IDs (`sd-mm-<laufende Nummer>` aus einem globalen Zähler). Mermaid initialisiert
   sich global; doppelte IDs führen zu stummen Render-Fehlern.

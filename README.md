@@ -29,7 +29,7 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 - **Live preview pane** — renders the current note as a slide deck in a side panel, scaled to pane width, with a click-to-source link on overflow warnings.
 - **Fit-or-warn readability** — each slide auto-scales content down to a configurable legibility floor (`minFontPx`); slides that would need smaller text are flagged as overflowing instead of becoming unreadable.
 - **Custom CSS** — an optional CSS snippet in Settings is appended to the deck styles in both preview and exports, for branding or tweaks.
-- **PDF export** — renders all slides at their native resolution; on desktop, triggers the system print dialog (choose "Save as PDF"); on mobile (iOS/iPadOS), writes a self-contained HTML file and opens it via the OS so you can print or share to PDF from there.
+- **PDF export** — renders all slides at their native resolution; on desktop, writes the PDF file straight into the export folder, no print dialog; on mobile (iOS/iPadOS), writes a self-contained HTML file and opens it via the OS so you can print or share to PDF from there.
 - **PNG image-series export** — captures each slide via `modern-screenshot` and writes numbered PNGs into a configurable export folder (Settings, default `Slide-Deck-Export/`); typographically accurate inter-word spacing.
 - **Mobile support** — runs on iOS/iPadOS (Obsidian Mobile); all desktop-only APIs are platform-guarded.
 - **KaTeX math** — inline and display math (`$…$` / `$$…$$`) rendered by KaTeX.
@@ -79,9 +79,9 @@ the themes folder yourself.
 
 - **Obsidian ≥ 1.11.4** (`minAppVersion`; API keys live in Obsidian's secret storage, which arrived with 1.11.4). From 1.13.0 the settings tab uses the declarative settings API; older versions get the same settings through a classic fallback.
 - **Desktop + Mobile** (`isDesktopOnly: false`) — runs on desktop (Windows, macOS, Linux) and on mobile (iOS/iPadOS); desktop-only APIs are platform-guarded.
-- **Desktop PDF export** uses the **system print dialog** — choose "Save as PDF" in the printer dropdown. It does not produce a PDF file directly.
+- **Desktop PDF export** writes `<export-folder>/<note-name>.pdf` directly, one page per slide at the slide size, without the system print dialog. If saving fails, the system print dialog opens instead (choose "Save as PDF").
 - **Mobile PDF export** writes a self-contained HTML file into the export folder and opens it with the OS default app; from there you can print or share to PDF. The file name is `<export-folder>/<note-name>.html`.
-- PNG export writes files into a **configurable export folder** (Settings → Slide Deck → Export folder, default `Slide-Deck-Export/`). PDF export on desktop goes through the system print dialog, where you choose the location.
+- PNG export writes files into a **configurable export folder** (Settings → Slide Deck → Export folder, default `Slide-Deck-Export/`). PDF export on desktop writes into the same folder (`<note-name>.pdf`).
 
 ## Install
 
@@ -136,7 +136,7 @@ paginate: true
 ```
 
 4. Export with **Export presentation to PDF** or **Export presentation to image series**.
-   PDF prints the isolated deck directly on desktop; on mobile a self-contained HTML file is
+   On desktop the PDF is saved into your export folder (no dialog); on mobile a self-contained HTML file is
    written to your export folder and handed to the OS, where you print or share it as PDF.
 
 Per-slide layout is chosen with a layout directive — an HTML comment on its own line:
@@ -255,7 +255,7 @@ Note: the `---` in the YAML frontmatter block is the standard YAML delimiter and
 2. **Fixed canvas** — each slide is rendered onto a fixed canvas: 1280×720 px (16:9) or 960×720 px (4:3). The canvas size does not change with window size.
 3. **Theme isolation** — slides render inside a sandboxed iframe with the chosen theme's styles injected directly. The active Obsidian theme does not reach inside the iframe, so the deck looks identical in preview, PDF, and PNG regardless of vault theme.
 4. **Fit-or-warn** — each slide's content is measured in the DOM. If it exceeds the canvas, the content is scaled down uniformly. Scaling stops at `minFontPx` (the legibility floor). If the content would still overflow at that scale, the slide is flagged with a warning in the preview pane rather than scaled further.
-5. **Export** — the same theme-isolated iframe artifact feeds all export paths: the print pipeline (PDF) and per-slide `modern-screenshot` (`domToCanvas`) capture (PNG). On desktop, PDF is printed via `contentWindow.print()`; on mobile, a self-contained HTML file is written to the vault and handed to the OS via `openWithDefaultApp`.
+5. **Export** — the same theme-isolated iframe artifact feeds all export paths: the print pipeline (PDF) and per-slide `modern-screenshot` (`domToCanvas`) capture (PNG). On desktop, PDF is rendered by the kit's print module (a hidden `<webview>`, `@page` sized to the slide) and saved as a file, with the system print dialog as fallback; on mobile, a self-contained HTML file is written to the vault and handed to the OS via `openWithDefaultApp`.
 
 ## Network use (local AI)
 

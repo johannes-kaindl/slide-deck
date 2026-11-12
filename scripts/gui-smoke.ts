@@ -41,6 +41,7 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { deflateSync } from "node:zlib";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import {
   AbbruchAusnahme,
@@ -258,6 +259,8 @@ const DT1_NAME = "DT1 Denk-Test: bei einem Claude-Endpunkt steht die Zeile nicht
 /** PD1 — der mobile PDF-Export (lose HTML-Datei im Vault). Name hier, weil ihn die Soll-Liste und der Punkt teilen. */
 const PD1_NAME = "PD1 Mobiler PDF-Export: die lose Datei fuehrt kein Skript aus (Gegenprobe: ohne Policy laufen alle vier Muster), Bild, Formel und Diagramm bleiben";
 const PD1_NOTE = "smoke-pd1.md";
+/** PD2 — der Desktop-PDF-Export ueber das Kit-Druckmodul (`printHtmlToPdf`, `<webview>`): Datei ohne Dialog, eine Seite je Folie, Seitengroesse = Canvas. */
+const PD2_NAME = `PD2 Desktop-PDF ohne Druckdialog: ${DECK_SLIDES} Seiten, Seitengroesse = Canvas 1280x720 px (960x540 pt), Chromium-Erzeuger`;
 /** Rotes PNG (160x90) als data:-URI. markdown-it laesst als `data:`-Bild nur gif/png/jpeg/webp durch, kein SVG:
  *  ein SVG-Bild bliebe als Text stehen und der Punkt zaehlte 0 Bilder (erster Lauf, 2026-10-25). */
 function pd1RotPng(): string {
@@ -337,7 +340,7 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "C3 Bei fokussiertem Pop-out liegt das Blatt im Hauptfenster, nicht im Pop-out",
   ],
   export: [
-    "PDF-Export",
+    PD2_NAME,
     `D1 Bilder-Export schreibt ${DECK_SLIDES} PNG in den Export-Ordner`,
     `D2 Modifier-Klasse ueberlebt den Export (Folie ${REGRESSION_MOD_SLIDE + 1} traegt die Probe-Farbe im PNG)`,
     PD1_NAME,
@@ -1437,8 +1440,6 @@ const exportSektion: Section = {
   key: "export",
   title: "D · Bilder-Export",
   async run(cdp) {
-    skipped("PDF-Export", "oeffnet den Systemdruckdialog — modal, blockiert CDP; bleibt Hand-Smoke");
-
     const zielOrdner = await cdp.evaluate<string>(`
       return app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.exportFolder;
     `);
@@ -1471,6 +1472,50 @@ const exportSektion: Section = {
     };
 
     await openPreview(cdp, DECK_NOTE);
+    // PD2: der Desktop-Weg schreibt das PDF ohne Dialog (frueher: Systemdruckdialog, modal, Hand-Smoke). Den Zielort leeren, damit nur
+    // die neue Datei zaehlt; gemessen wird am Byte-Strom: Seitenzahl (/Count), Seitengroesse (/MediaBox, pt = px * 0.75), Erzeuger.
+    {
+      const pdfPfad = `${zielOrdner}/${DECK_NOTE.replace(/\.md$/, "")}.pdf`;
+      await cdp.evaluate(`
+        const adapter = app.vault.adapter;
+        if (await adapter.exists(${JSON.stringify(pdfPfad)})) await adapter.remove(${JSON.stringify(pdfPfad)});
+        return true;
+      `);
+      await clearNotices(cdp);
+      await cdp.evaluate(`await app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].exportPdf(); return true;`);
+      const b64 = await pollUntil<string | null>(cdp, `
+        const adapter = app.vault.adapter;
+        if (!(await adapter.exists(${JSON.stringify(pdfPfad)}))) return null;
+        const bytes = new Uint8Array(await adapter.readBinary(${JSON.stringify(pdfPfad)}));
+        if (bytes.length < 4096) return null;
+        let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+        return btoa(s);
+      `, 60_000, 1000);
+      if (b64 && !erzeugtePfade.includes(zielOrdner)) erzeugtePfade.push(zielOrdner);
+      if (b64) {
+        const bytes = Buffer.from(b64, "base64");
+        const roh = bytes.toString("latin1");
+        const seiten = Number(/\/Type\s*\/Pages[\s\S]{0,200}?\/Count\s+(\d+)/.exec(roh)?.[1] ?? /\/Count\s+(\d+)[\s\S]{0,200}?\/Type\s*\/Pages/.exec(roh)?.[1] ?? 0);
+        const boxen = Array.from(roh.matchAll(/\/MediaBox\s*\[\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\]/g)).map((m) => `${Number(m[3]) - Number(m[1])}x${Number(m[4]) - Number(m[2])}`);
+        const erzeuger = /\/Producer\s*\(([^)]*)\)/.exec(roh)?.[1] ?? "?";
+        const einheitlich = boxen.length > 0 && boxen.every((b) => b === boxen[0]);
+        const [bw, bh] = (boxen[0] ?? "0x0").split("x").map(Number);
+        const passt = einheitlich && Math.abs((bw ?? 0) - 960) <= 1 && Math.abs((bh ?? 0) - 540) <= 1;
+        record(PD2_NAME,
+          roh.startsWith("%PDF-") && seiten === DECK_SLIDES && passt && /Skia\/PDF/.test(erzeuger),
+          `${roh.slice(0, 8).replace(/\n/g, "")} · ${bytes.length} Bytes · ${seiten} Seite(n) · MediaBox ${[...new Set(boxen)].join(",") || "keine"} pt (${boxen.length} Eintraege) · Producer ${erzeuger}`);
+        // Das PDF aus der Datei zu rendern braucht kein Fenster im Vordergrund: eigener Ordner, ohne Bildaufnahme (und damit ohne `focus`-Lock).
+        const shotDir = process.env.SMOKE_PDF_DIR ?? process.env.SMOKE_SHOT_DIR;
+        if (shotDir) {
+          mkdirSync(shotDir, { recursive: true });
+          const pdf = join(shotDir, "pd2-desktop-export.pdf");
+          writeFileSync(pdf, bytes);
+          try { execFileSync("pdftoppm", ["-png", "-r", "50", pdf, join(shotDir, "pd2-seite")]); } catch { /* pdftoppm fehlt: nur die Datei bleibt */ }
+        }
+      } else {
+        record(PD2_NAME, false, `keine Datei "${pdfPfad}" · ${await notices(cdp) || "keine Meldung"} · ${await diagnose(cdp)}`);
+      }
+    }
     // `leereExport` raeumt zweierlei weg, und beides aus demselben Grund — der Punkt soll
     // nichts messen, was vor ihm da war: das Artefakt des Vorlaufs (s. o.) und Obsidians
     // Toast, der app-weit ist und in den jedes Plugin im Vault schreibt.

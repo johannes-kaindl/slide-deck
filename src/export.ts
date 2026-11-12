@@ -5,6 +5,7 @@ import { dataUrlToBytes } from "./vendor/kit/data-url";
 import { buildIsolatedDeck } from "./vendor/deck-core/dom/render-dom";
 import { createIsolatedDeckIframe, isolatedDeckHtml } from "./vendor/deck-core/dom/iframe-host";
 import { PRINT_CSS } from "./vendor/deck-core/dom/chrome-css";
+import { isDesktopPrintAvailable, printHtmlToPdf, PrintToPdfError } from "./vendor/kit-obsidian/print-to-pdf";
 import { geometryFor } from "./vendor/deck-core/pure/geometry";
 import { t } from "./i18n";
 import type { DeckDirectives, SlideDeck } from "./vendor/deck-core/pure/slide-model";
@@ -57,19 +58,9 @@ async function exportDeckHtmlAndOpen(app: App, file: TFile | null, slidesHtml: s
   new Notice(t("notice.pdfOpened", path));
 }
 
-/** `mobile` waehlt nur zwischen den zwei vorhandenen Zweigen (lose HTML-Datei oder Druck des iframe); der
- *  Vorgabewert ist die Plattform, nur der GUI-Smoke (PD1) gibt ihn vor, weil `emulateMobile` `Platform.isDesktopApp` nicht aendert. */
-export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, registry: ThemeRegistry, defaults?: Partial<DeckDirectives>, customCss = "", themeOverride?: string, exportFolder = "Slide-Deck-Export", mobile = !Platform.isDesktopApp): Promise<void> {
- try {
-  const loaded = await loadDeck(app, file, defaults, { registry, themeKey: themeOverride });
-  if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
-  const deck = withTheme(loaded.deck, themeOverride);
-  const geo = geometryFor(deck.directives.aspect);
-  new Notice(t("notice.exporting"));
-  const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, customCss);
-  if (mobile) { await exportDeckHtmlAndOpen(app, file, slidesHtml, css, geo, exportFolder); return; }
-  // Desktop: print the isolated iframe directly.
-  // allow-modals is required for contentWindow.print() on a sandboxed frame (print opens a modal).
+/** Rueckfall des Desktop-Exports: den isolierten iframe ueber den Druckdialog des Systems drucken.
+ *  `allow-modals` braucht `contentWindow.print()` an einem Rahmen mit `sandbox`. */
+async function printViaIframe(doc: Document, win: Window, slidesHtml: string[], css: string, geo: { width: number; height: number }): Promise<void> {
   const host = await createIsolatedDeckIframe(doc, { css, extraCss: PRINT_CSS(geo.width, geo.height), bodyHtml: slidesHtml.join(""), width: geo.width, sandbox: "allow-same-origin allow-modals" });
   const frameWin = host.iframe.contentWindow;
   let done = false;
@@ -85,6 +76,44 @@ export async function exportPdf(app: App, doc: Document, win: Window, file: TFil
   frameWin?.addEventListener("afterprint", cleanup);
   win.setTimeout(() => { try { frameWin?.print(); } catch { new Notice(t("notice.printFailed")); cleanup(); } }, 200);
   safetyTimer = win.setTimeout(cleanup, 60000);
+}
+
+/** Legt `<Exportordner>/<Notizname>.<ext>` an (Ordner bei Bedarf) und liefert den Pfad. */
+async function writeExportFile(app: App, file: TFile | null, exportFolder: string, ext: "pdf", bytes: Uint8Array): Promise<string> {
+  const adapter = app.vault.adapter;
+  const root = exportFolder.replace(/\/+$/, "") || "Slide-Deck-Export";
+  if (!(await adapter.exists(root))) await adapter.mkdir(root);
+  const path = `${root}/${file?.basename ?? "deck"}.${ext}`;
+  await adapter.writeBinary(path, bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer);
+  return path;
+}
+
+/** `mobile` waehlt zwischen den Zweigen (lose HTML-Datei oder Desktop-Druck: Kit-Druckmodul, sonst Druck des iframe); `printer` ersetzt das Kit-Modul in Tests und im GUI-Smoke; der
+ *  Vorgabewert ist die Plattform, nur der GUI-Smoke (PD1) gibt ihn vor, weil `emulateMobile` `Platform.isDesktopApp` nicht aendert. */
+export async function exportPdf(app: App, doc: Document, win: Window, file: TFile | null, registry: ThemeRegistry, defaults?: Partial<DeckDirectives>, customCss = "", themeOverride?: string, exportFolder = "Slide-Deck-Export", mobile = !Platform.isDesktopApp, printer: typeof printHtmlToPdf = printHtmlToPdf): Promise<void> {
+ try {
+  const loaded = await loadDeck(app, file, defaults, { registry, themeKey: themeOverride });
+  if (!loaded || loaded.deck.slides.length === 0) { new Notice(t("notice.noActiveNote")); return; }
+  const deck = withTheme(loaded.deck, themeOverride);
+  const geo = geometryFor(deck.directives.aspect);
+  new Notice(t("notice.exporting"));
+  const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, customCss);
+  if (mobile) { await exportDeckHtmlAndOpen(app, file, slidesHtml, css, geo, exportFolder); return; }
+  // Desktop: das Kit-Druckmodul schreibt das PDF ohne Dialog in den Exportordner. `@page { size: <Canvas>px }` aus PRINT_CSS bestimmt die
+  // Seite (das Modul druckt mit `preferCSSPageSize`), die Policy-Datei ist dieselbe wie im mobilen Weg. Scheitert der Druck, bleibt der alte Weg.
+  if (isDesktopPrintAvailable()) {
+    try {
+      const html = mobileDeckHtml({ css, bodyHtml: slidesHtml.join(""), extraCss: PRINT_CSS(geo.width, geo.height) });
+      const bytes = await printer(doc, html, { pageSize: "A4", printBackground: true });
+      const path = await writeExportFile(app, file, exportFolder, "pdf", bytes);
+      new Notice(t("notice.pdfSaved", path));
+      return;
+    } catch (e) {
+      if (!(e instanceof PrintToPdfError)) throw e;
+      new Notice(t("notice.printModuleFailed", e.kind));
+    }
+  }
+  await printViaIframe(doc, win, slidesHtml, css, geo);
  } catch (e) { new Notice(t("notice.exportFailed", String(e))); }
 }
 
