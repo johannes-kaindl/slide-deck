@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.76.0, src/obsidian/llm-connection.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.84.0, src/obsidian/llm-connection.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 /** Die LLM-Anbindung eines Fachplugins als EINE Komposition: Endpunkt-Quelle (Manager oder lokale
  *  Liste mit Schlüsselbund), gemerkte Auflösung, Modellliste, Anfrage-Parameter je Modus, Client mit
  *  Transport und Fristen, Prüfung der Antwort und beide Settings-Abschnitte.
@@ -44,6 +44,7 @@
  *  speichert) — die Endpunkt-Liste liest ihre Zeilen danach über `getSettings()` zurück. */
 import { Setting, type App } from "obsidian";
 import { normalizeEndpoint } from "../kit/endpoint";
+import { errorMessage } from "../kit/error-message";
 import type { RedactRules } from "../kit/redact";
 import { type EndpointConfig } from "../kit/endpoint_config";
 import { createModelListCache, type ModelListResult } from "../kit/model-list-cache";
@@ -354,10 +355,14 @@ function createChatConnection(o: LlmConnectionOptions): LlmConnection {
     return auto[0]?.id;
   }
 
-  /** Dieselbe Quelle für die Anzeige? Was ein Konsument in `onResolved` neu zeichnet (Modell, Familie, Backend, Endpunkt, Grund), nichts darüber hinaus. */
+  /** Dieselbe Quelle für die Anzeige? Was ein Konsument in `onResolved` neu zeichnet: Modell, gesendetes Modell, Familie samt Anzeigefamilie und Herkunft, Backend samt Herkunft,
+   *  Endpunkt (Art, Adresse, Kennung), Transport und Grund. Jedes Merkmal hat einen Einzelfall in `tests/llm-connection.test.ts`.
+   *  **Bewusst nicht verglichen: `shortcut`** (die Konfiguration des Shortcuts-Transports): sie hängt am Endpunkt, und der Endpunkt samt `transport` ist verglichen; zeichnet ein Konsument
+   *  sie einmal selbst, kommt sie mit einem Einzelfall hinein (Entscheidung Welle 33). Ebenso nicht: `defaultModel` und `models` (die Tabelle des Managers; was daraus zu sehen ist, steht in `sentModel` und `family`). */
   function sameSource(a: EndpointSourceResult | null, b: EndpointSourceResult): boolean {
     return a !== null && a.kind === b.kind && a.config?.url === b.config?.url && a.config?.id === b.config?.id && a.model === b.model
-      && a.sentModel === b.sentModel && a.family === b.family && a.backend === b.backend && a.reason === b.reason && a.transport === b.transport;
+      && a.sentModel === b.sentModel && a.family === b.family && a.displayFamily === b.displayFamily && a.familySource === b.familySource
+      && a.backend === b.backend && a.backendSource === b.backendSource && a.reason === b.reason && a.transport === b.transport;
   }
 
   /** `quiet`: nur `models()`. Ein stiller Lauf ruft `onResolved` bei einem Ergebnis, das sich vom zuletzt gezeigten nicht unterscheidet, nicht. */
@@ -508,7 +513,7 @@ function createChatConnection(o: LlmConnectionOptions): LlmConnection {
     try { chat = chatClientFor(src); }
     catch (e) {
       if (e instanceof TransportMissingError) return fail("no-endpoint", e.message, { reason: "transport-missing", transport: e.transport });
-      return fail("no-endpoint", e instanceof Error ? e.message : String(e));
+      return fail("no-endpoint", errorMessage(e));
     }
 
     const mode = h.mode ?? o.mode;

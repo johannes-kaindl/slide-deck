@@ -9,7 +9,7 @@ versioning follows [SemVer](https://semver.org/).
 ### Changed
 
 - **The Desktop PDF export saves the file directly, without the print dialog.** The Export to PDF command writes `<export folder>/<note name>.pdf` (the same folder as the image export), one page per slide at the slide size (1280×720 px, 960×540 pt in the file), through the kit's print module (`obsidian-kit` 0.82.2, `print-to-pdf`). If saving fails, the system print dialog opens as before and a notice says why. Mobile is unchanged.
-- **Vendored the kit's request section and connection at `obsidian-kit` 0.76.0** (`request-section`, `llm-connection`, `llm-connection-strings`; with `sampling-profiles` from `code-kit` 0.40.0; the pins of the other modules stay). What you notice: the thinking level list now follows the chosen model (Claude shows the levels it supports, `xhigh` and `max` exist), and a model that cannot turn thinking off (gpt-oss) now sends `low` for a stored "off" instead of `minimal`. Internally the Generate panel reads the transport of the endpoint from the kit (`source().transport`) instead of keeping its own copy.
+- **Vendored the kit's request section and connection at `obsidian-kit` 0.84.0** (`request-section`, `llm-connection`, `llm-connection-strings`; with `sampling-profiles` from `code-kit` 0.66.0; the pins of the other modules stay). What you notice: the thinking level list now follows the chosen model (Claude shows the levels it supports, `xhigh` and `max` exist; gpt-oss offers `minimal`, `low`, `medium`, `high`). A stored "off" on gpt-oss still goes out as `minimal`, as before. Internally the Generate panel reads the transport of the endpoint from the kit (`source().transport`) instead of keeping its own copy.
 
 ### Fixed
 
