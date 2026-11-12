@@ -6,9 +6,12 @@ import { readImageApi, LOCAL_IMAGE_GENERATOR_URL } from "./image-api";
 import { cardVm, type CardState, type CardVm } from "./slot-card-model";
 
 /** Der eigene Maler derselben §8-Vokabel. Bewusst NICHT `paintStatus` des Kit-Status-Indikators
- *  (`vendor/kit-obsidian/status-indicator.ts`): der baut eine eigene Zeile aus Symbol und Beschriftung, hier
- *  malt die Karte in ein vorhandenes Symbol-Element und kennt auch den Zustand ohne Status (Task: ob die
- *  Karte auf den Kit-Baustein umzieht, ist offen). Geteilt wird die Sprache, nicht die Funktion. */
+ *  (`vendor/kit-obsidian/status-indicator.ts`): der baut mit `buildStatus` eine eigene Zeile aus Symbol UND
+ *  sichtbarer Beschriftung und kennt keinen Zustand ohne Status. Die Karte trägt den Text bereits an anderer
+ *  Stelle (`sd-slot-state`, im Empty-State die Empty-Zeile), das Symbol sitzt allein in der Kopfzeile neben dem
+ *  Titel; der Kit-Baustein würde den Text doppeln. Entschieden 2026-11-12 (Welle 33): der Maler bleibt, solange
+ *  die Kopfzeile keinen Beschriftungstext trägt. Geteilt wird die Sprache (Symbol, Klasse, `aria-label`), nicht
+ *  die Funktion. Zieht die Karte die Beschriftung in die Kopfzeile, wechselt sie auf `buildStatus`. */
 function paintSlotStatus(el: HTMLElement, vm: CardVm): void {
   el.empty();
   el.removeClasses(["is-checking", "is-ok", "is-error"]);
