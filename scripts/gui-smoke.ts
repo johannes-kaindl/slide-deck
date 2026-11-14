@@ -2553,6 +2553,8 @@ const anfrage: Section = {
 
       // R6 — die Breite eines Handys (390 px, Wert aus der Geraetemessung W33: 386 px) als Layout-Probe in der Zweitinstanz. `setWindowSize` scheitert unter dem Bildschirmminimum
       // (angefordert 390, bekommen 600), darum die Emulation der Seitenbreite des Einstellungs-Targets; sie bestimmt nur die Medienabfragen und den Umbruch, es ist kein Geraet.
+      // Gegenprobe zur Auskunft unten: im Standardfenster (ohne Emulation) scrollt der Tab nicht seitlich, sonst wuerde die Breite nichts erklaeren.
+      const ohneEmulation = await offen.ziel.evaluate<boolean>(`const w = document.querySelector(".vertical-tab-content"); return !!w && w.scrollWidth > w.clientWidth + 1;`);
       await offen.ziel.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: false });
       try {
         await new Promise((r) => setTimeout(r, 700));
@@ -2568,7 +2570,7 @@ const anfrage: Section = {
             .slice(0, 5).map((e) => e.className + ":" + Math.round(e.getBoundingClientRect().right));
           // Der Tab als Ganzes: scrollt er seitlich, steht hier, welche Elemente (ausserhalb des Abschnitts) ueber den rechten Rand ragen — Auskunft, kein Kriterium dieses Punkts.
           const ausserhalb = [...wurzel.querySelectorAll("*")].filter((e) => !koerper.contains(e) && e.getBoundingClientRect().right > kasten.right + 1)
-            .slice(0, 4).map((e) => (e.className || e.tagName) + ":" + Math.round(e.getBoundingClientRect().right));
+            .slice(0, 4).map((e) => (e.className || e.tagName) + ":" + Math.round(e.getBoundingClientRect().right) + " in Zeile " + JSON.stringify(e.closest(".setting-item")?.querySelector(".setting-item-name")?.textContent ?? "?"));
           return JSON.stringify({ da: true, fenster: window.innerWidth, tab: Math.round(kasten.width), elemente: koerper.querySelectorAll("*").length, raus, scrollBreiter: wurzel.scrollWidth > wurzel.clientWidth + 1, ausserhalb });`;
         const echt = JSON.parse(await offen.ziel.evaluate<string>(messeRaus)) as { da: boolean; fenster?: number; tab?: number; elemente?: number; raus?: string[]; scrollBreiter?: boolean; ausserhalb?: string[] };
         // Gegenprobe: ein 900 px breites Probe-Element im Abschnitt muss die Messung auf Rot bringen (sonst misst sie nichts).
@@ -2577,7 +2579,7 @@ const anfrage: Section = {
         await offen.ziel.evaluate(`document.getElementById("sd-probe-breit")?.remove(); return true;`);
         record("R6 Anfrage-Abschnitt bei 390 px Fensterbreite: kein Element des Abschnitts ragt seitlich ueber den Tab hinaus (Gegenprobe: ein breites Probe-Element wird erkannt)",
           echt.da === true && echt.fenster === 390 && (echt.elemente ?? 0) >= 10 && (echt.raus?.length ?? 1) === 0 && (probe.raus?.length ?? 0) > 0,
-          `Fenster ${String(echt.fenster)} px, Tab ${String(echt.tab)} px, ${String(echt.elemente)} Elemente im Abschnitt, ragen heraus: ${JSON.stringify(echt.raus)}, Tab als Ganzes scrollt seitlich: ${String(echt.scrollBreiter)} (ragen ausserhalb des Abschnitts heraus: ${JSON.stringify(echt.ausserhalb)}); Probe-Element erkannt: ${JSON.stringify(probe.raus)}`);
+          `Fenster ${String(echt.fenster)} px, Tab ${String(echt.tab)} px, ${String(echt.elemente)} Elemente im Abschnitt, ragen heraus: ${JSON.stringify(echt.raus)}, Tab als Ganzes scrollt seitlich: ${String(echt.scrollBreiter)}, im Standardfenster ohne Emulation: ${String(ohneEmulation)} (ragen ausserhalb des Abschnitts heraus: ${JSON.stringify(echt.ausserhalb)}); Probe-Element erkannt: ${JSON.stringify(probe.raus)}`);
         const schmalShots = process.env.SMOKE_SHOT_DIR;
         if (schmalShots) {
           mkdirSync(schmalShots, { recursive: true });
