@@ -2604,7 +2604,9 @@ const anfrage: Section = {
           if (!kopf) return false;
           if (kopf.closest(".okit-collapsible").querySelector(".okit-collapsible-body").classList.contains("is-collapsed")) kopf.click();
           await new Promise((r) => setTimeout(r, 300));
-          kopf.scrollIntoView({ block: "start" });
+          // Die Stufenwahl-Zeile (Denkstufe) ins Bild holen, nicht nur den Kopf: sie steht am Ende des Abschnitts. Fehlt sie, bleibt der Kopf am Rand.
+          const stufe = [...wurzel.querySelectorAll(".setting-item")].find((z) => /Denkstufe|Thinking level/.test(z.querySelector(".setting-item-name")?.textContent || ""));
+          (stufe ?? kopf).scrollIntoView({ block: stufe ? "center" : "start" });
           return true;`;
         const warDunkel = await offen.ziel.evaluate<boolean>(`return document.body.classList.contains("theme-dark");`);
         for (const [name, breite] of [["desktop", 0]] as const) {
