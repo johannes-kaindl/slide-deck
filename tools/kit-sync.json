@@ -8,7 +8,7 @@
       "dir": "src/vendor/kit",
       "source": "obsidian-kit",
       "from": "src/pure",
-      "modules": ["endpoint-secret-hook", "endpoint-source", "folder-hide", "anthropic-wire", "override-guard"],
+      "modules": ["endpoint-secret-hook", { "name": "endpoint-source", "ref": "0.89.0" }, "folder-hide", "anthropic-wire", "override-guard"],
       "rewrite": [["../vendor/code-kit/pure/", "./"], ["../vendor/code-kit/web/", "./"]]
     },
     {
@@ -28,14 +28,14 @@
       "dir": "src/vendor/kit-obsidian",
       "source": "obsidian-kit",
       "from": "src/obsidian",
-      "modules": ["backend-probe", "chat-client", "chat-transport", "clipboard", "clock", "collapsible", "embedding-connection", "endpoint-list", "endpoint-plumbing", "endpoint-secrets", "endpoint-source", "folder-hide", "endpoint-status-text", "folder-suggest", "help-setting", "hub", { "name": "llm-connection", "ref": "0.84.0" }, { "name": "llm-connection-strings", "ref": "0.84.0" }, "model-picker", { "name": "request-section", "ref": "0.84.0" }, "request-session", "secrets", "settings_walker", "shortcuts-bridge", "stream-area", { "name": "status-indicator", "ref": "0.76.0" }, "plugin-api", { "name": "print-to-pdf", "ref": "0.82.2" }, "anthropic-transport", "model-bar", "model-bar-strings", "thinking-control"],
+      "modules": ["backend-probe", "chat-client", "chat-transport", "clipboard", "clock", "collapsible", "embedding-connection", "endpoint-list", { "name": "endpoint-plumbing", "ref": "0.89.0" }, "endpoint-secrets", { "name": "endpoint-source", "ref": "0.89.0" }, "folder-hide", "endpoint-status-text", "folder-suggest", "help-setting", "hub", { "name": "llm-connection", "ref": "0.89.0" }, { "name": "llm-connection-strings", "ref": "0.89.0" }, "model-picker", { "name": "request-section", "ref": "0.84.0" }, "request-session", "secrets", "settings_walker", "shortcuts-bridge", "stream-area", { "name": "status-indicator", "ref": "0.76.0" }, "plugin-api", { "name": "print-to-pdf", "ref": "0.82.2" }, "anthropic-transport", { "name": "model-bar", "ref": "0.89.0" }, { "name": "model-bar-strings", "ref": "0.89.0" }, { "name": "thinking-control", "ref": "0.89.0" }],
       "rewrite": [["../vendor/code-kit/pure/", "../kit/"], ["../vendor/code-kit/web/", "../kit/"], ["../pure/", "../kit/"]]
     },
     {
       "dir": "tests/vendor/kit",
       "source": "obsidian-kit",
       "from": "src/testing",
-      "modules": ["kit-css", "obsidian-mock", "window-timers", "linear-probe"]
+      "modules": [{ "name": "kit-css", "ref": "0.89.0" }, "obsidian-mock", "window-timers", "linear-probe"]
     },
     {
       "dir": "tests/vendor/kit",

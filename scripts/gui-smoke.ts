@@ -67,7 +67,7 @@ import { messeFolge, zeichneFolge } from "../../tools/obsidian-cdp/folge.js";
 import { gegenprobeErreichbarkeit, gegenprobeFokus, messeDenkblockKopierbar, messeErreichbarkeit, messeFokusErhalt, mitHoehe, zeichneDenkblock, type DenkblockUrteile, type PflichtBilanz, type PflichtTeilurteil } from "../../tools/obsidian-cdp/pflichtpunkte.js";
 import { createBilanz, parseArgs, runDriver, type Bilanz } from "../../tools/obsidian-cdp/bilanz.js";
 import { startLlmStub, type LlmStub, type StubAnfrage, type ZusatzAntwort, type ModellEintrag } from "../../tools/obsidian-cdp/llm-stub.js";
-import { boxOf, capture } from "../../tools/obsidian-cdp/shot.js";
+import { boxOf, capture, setWindowSize } from "../../tools/obsidian-cdp/shot.js";
 // Das Woerterbuch selbst, nicht eine Kopie seiner Form: daraus kommen sowohl die exakten
 // Schluessel als auch die Praefix-Liste fuer B2. Eine im Treiber gepflegte Musterliste waere
 // beim naechsten neuen Namensraum still blind — und genau diese Sorte Blindheit misst B2.
@@ -247,7 +247,7 @@ Der Modifier steht im Theme, nicht im Kern.
 /** DT1 — die Zeile „Denk-Test“ im Einstellungs-Tab bei einem Claude-Endpunkt. Name hier, weil ihn die Soll-Liste und der Punkt teilen. */
 const MZ1_NAME = "MZ1 Modellzeile im Erzeugen-Fenster: die Modelle des Endpunkts stehen da, ein Wechsel gilt in der Verbindung und in der Einstellung (Tab und Zeile stimmen ueberein)";
 const MZ2_NAME = "MZ2 Das gewaehlte Modell steht im Anfrage-Body des Laufs und im Frontmatter model: der erzeugten Notiz";
-const MZ3_NAME = "MZ3 Denk-Knopf in der Zeile schaltet request.thinking.creative; bei Claude (Familie aus dem Manager, Modellname ohne Familie) steht \"Thinking: lowest level\" mit Hinweis im aria-label, ohne Familie vom Manager nicht";
+const MZ3_NAME = "MZ3 Denkstufen-Dropdown in der Zeile schreibt request.thinking.creative; bei Claude (Familie aus dem Manager, Modellname ohne Familie) fehlt \"off\" in der Liste und die gespeicherte Stufe bleibt, ohne Familie vom Manager gibt es kein Dropdown";
 const MZ4_NAME = "MZ4 Ein Modellwechsel rechnet die Kontext-Warnung neu (kleines Modell: Warnung mit seiner Grenze, grosses: keine)";
 const MZ5_NAME = "MZ5 Endpunkt ohne Modell-Liste: die Zeile zeigt Automatisch mit Hinweis, der Knopf Erzeugen bleibt bedienbar";
 const MZ7_NAME = "MZ7 Kein Bedienelement des Erzeugen-Fensters ragt ueber die rechte Kante des Panels (gemessen bei 280 und bei 640 px Seitenleistenbreite)";
@@ -377,6 +377,7 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "R3 Zeile „Denk-Test“ folgt dem Anfrage-Abschnitt, mit Knopf statt Schalter (umgeschrieben)",
     "R4 Denkstufe waehlen wird gespeichert, der Abschnitt bleibt aufgeklappt",
     "R5 Der gesendete Body traegt das Profil des Modus creative (Temperatur aus den Kit-Tabellen, Budget als max_tokens)",
+    "R6 Anfrage-Abschnitt bei 390 px Fensterbreite: nichts ragt seitlich ueber den Tab hinaus (Gegenprobe: ein breites Probe-Element wird erkannt)",
   ],
   verbindung: [
     "V1 Schluesselbund: nach dem Aufloesen steht kein apiKey mehr in data.json, der Aufrufer bekommt ihn hydriert",
@@ -2468,6 +2469,15 @@ const anfrage: Section = {
   key: "anfrage",
   title: "R · Anfrage (Sampling-Profil creative)",
   async run(cdp, ctx) {
+    // Die Zeile „Denkstufe“ haengt an den Stufen des Modells (Familie aus dem Namen). Ein Pruefpunkt stellt seinen Gegenstand selbst her (CORE-TEST-21): ein Modell
+    // mit bekannter Familie an einem Stub-Endpunkt, statt die Familie dem Rest aus den Abschnitten davor zu ueberlassen (isoliert gefahren war R4 auch am Stand 0.21.0 rot).
+    const fake0 = await startFakeChat();
+    await cdp.evaluate(`
+      const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      p.settings.llmEndpoints = [{ url: ${JSON.stringify(fake0.url)}, model: "google/gemma-4-e4b" }];
+      p.llm.invalidate();
+      await p.llm.resolve();
+      return true;`);
     const offen = await oeffneTab(cdp, ctx);
     try {
       // N1 — der Wechsel in BEIDE Richtungen. Der Auf/Zu-Zustand lebt im Prozess (Kit-Fallback ohne
@@ -2537,9 +2547,77 @@ const anfrage: Section = {
       `)) as { da: boolean; offen?: boolean; gespeichert?: string };
       // `app` gibt es nur im Hauptfenster — die Settings sind ein eigenes CDP-Target.
       n4.gespeichert = await cdp.evaluate<string>(`return app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.request.thinking.creative;`);
+      // Diagnose: fehlt die Zeile, steht im Detail, welche Quelle (Familie, Backend, Modell) das Plugin gerade hat — die Zeile haengt an den Stufen dieses Modells.
+      if (!n4.da) (n4 as Record<string, unknown>).quelle = await cdp.evaluate<string>(`const q = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].llm.source(); return JSON.stringify({ family: q.family, backend: q.backend, model: q.model, familySource: q.familySource });`);
       record("R4 Denkstufe waehlen wird gespeichert, der Abschnitt bleibt aufgeklappt", !!n4.da && n4.offen === true && n4.gespeichert === "high", JSON.stringify(n4));
+
+      // R6 — die Breite eines Handys (390 px, Wert aus der Geraetemessung W33: 386 px) als Layout-Probe in der Zweitinstanz. `setWindowSize` scheitert unter dem Bildschirmminimum
+      // (angefordert 390, bekommen 600), darum die Emulation der Seitenbreite des Einstellungs-Targets; sie bestimmt nur die Medienabfragen und den Umbruch, es ist kein Geraet.
+      await offen.ziel.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: false });
+      try {
+        await new Promise((r) => setTimeout(r, 700));
+        const messeRaus = `
+          const wurzel = document.querySelector(".vertical-tab-content");
+          const kopf = ${ANFRAGE_KOPF};
+          if (!wurzel || !kopf) return JSON.stringify({ da: false });
+          const koerper = kopf.closest(".okit-collapsible").querySelector(".okit-collapsible-body");
+          if (koerper.classList.contains("is-collapsed")) kopf.click();
+          await new Promise((r) => setTimeout(r, 300));
+          const kasten = wurzel.getBoundingClientRect();
+          const raus = [...koerper.querySelectorAll("*")].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > kasten.right + 1 || b.left < kasten.left - 1); })
+            .slice(0, 5).map((e) => e.className + ":" + Math.round(e.getBoundingClientRect().right));
+          return JSON.stringify({ da: true, fenster: window.innerWidth, tab: Math.round(kasten.width), elemente: koerper.querySelectorAll("*").length, raus, scrollBreiter: wurzel.scrollWidth > wurzel.clientWidth + 1 });`;
+        const echt = JSON.parse(await offen.ziel.evaluate<string>(messeRaus)) as { da: boolean; fenster?: number; tab?: number; elemente?: number; raus?: string[]; scrollBreiter?: boolean };
+        // Gegenprobe: ein 900 px breites Probe-Element im Abschnitt muss die Messung auf Rot bringen (sonst misst sie nichts).
+        await offen.ziel.evaluate(`const wurzel = document.querySelector(".vertical-tab-content"); const k = ${ANFRAGE_KOPF}; const d = document.createElement("div"); d.id = "sd-probe-breit"; d.style.cssText = "width:900px;height:4px"; k.closest(".okit-collapsible").querySelector(".okit-collapsible-body").appendChild(d); return true;`);
+        const probe = JSON.parse(await offen.ziel.evaluate<string>(messeRaus)) as { raus?: string[] };
+        await offen.ziel.evaluate(`document.getElementById("sd-probe-breit")?.remove(); return true;`);
+        record("R6 Anfrage-Abschnitt bei 390 px Fensterbreite: nichts ragt seitlich ueber den Tab hinaus (Gegenprobe: ein breites Probe-Element wird erkannt)",
+          echt.da === true && echt.fenster === 390 && (echt.elemente ?? 0) >= 10 && (echt.raus?.length ?? 1) === 0 && echt.scrollBreiter === false && (probe.raus?.length ?? 0) > 0,
+          `Fenster ${String(echt.fenster)} px, Tab ${String(echt.tab)} px, ${String(echt.elemente)} Elemente im Abschnitt, ragen heraus: ${JSON.stringify(echt.raus)}, Tab scrollt seitlich: ${String(echt.scrollBreiter)}; Probe-Element erkannt: ${JSON.stringify(probe.raus)}`);
+        const schmalShots = process.env.SMOKE_SHOT_DIR;
+        if (schmalShots) {
+          mkdirSync(schmalShots, { recursive: true });
+          const war = await offen.ziel.evaluate<boolean>(`return document.body.classList.contains("theme-dark");`);
+          for (const dunkel of [false, true]) {
+            await offen.ziel.evaluate(`document.body.classList.toggle("theme-dark", ${dunkel}); document.body.classList.toggle("theme-light", ${!dunkel}); const k = ${ANFRAGE_KOPF.replace("wurzel.", "document.querySelector('.vertical-tab-content').")}; k?.scrollIntoView({ block: "start" }); return true;`);
+            await new Promise((r) => setTimeout(r, 400));
+            writeFileSync(join(schmalShots, `anfrage-${dunkel ? "dunkel" : "hell"}-390.png`), await capture(offen.ziel));
+          }
+          await offen.ziel.evaluate(`document.body.classList.toggle("theme-dark", ${war}); document.body.classList.toggle("theme-light", ${!war}); return true;`);
+        }
+      } finally {
+        await offen.ziel.send("Emulation.clearDeviceMetricsOverride");
+      }
+
+      // Sichtpruefung des aufgeklappten Anfrage-Abschnitts (Task Welle 33 Nachlauf: hilfe-zeile.png zeigt nur den Seitenkopf).
+      // Der Abschnitt wird ins Bild geholt (scrollIntoView), hell und dunkel, im Standardfenster und schmal (390 px). Nur mit SMOKE_SHOT_DIR.
+      const anfrageShots = process.env.SMOKE_SHOT_DIR;
+      if (anfrageShots) {
+        mkdirSync(anfrageShots, { recursive: true });
+        const kopfZuSehen = `
+          const wurzel = document.querySelector(".vertical-tab-content");
+          const kopf = ${ANFRAGE_KOPF};
+          if (!kopf) return false;
+          if (kopf.closest(".okit-collapsible").querySelector(".okit-collapsible-body").classList.contains("is-collapsed")) kopf.click();
+          await new Promise((r) => setTimeout(r, 300));
+          kopf.scrollIntoView({ block: "start" });
+          return true;`;
+        const warDunkel = await offen.ziel.evaluate<boolean>(`return document.body.classList.contains("theme-dark");`);
+        for (const [name, breite] of [["desktop", 0]] as const) {
+          if (breite > 0) await setWindowSize(offen.ziel, breite, 844);
+          for (const dunkel of [false, true]) {
+            await offen.ziel.evaluate(`document.body.classList.toggle("theme-dark", ${dunkel}); document.body.classList.toggle("theme-light", ${!dunkel}); return true;`);
+            const da = await offen.ziel.evaluate<boolean>(kopfZuSehen);
+            await new Promise((r) => setTimeout(r, 400));
+            if (da) writeFileSync(join(anfrageShots, `anfrage-${dunkel ? "dunkel" : "hell"}-${name}.png`), await capture(offen.ziel));
+          }
+        }
+        await offen.ziel.evaluate(`document.body.classList.toggle("theme-dark", ${warDunkel}); document.body.classList.toggle("theme-light", ${!warDunkel}); return true;`);
+      }
     } finally {
       await schliesseTab(cdp, offen);
+      await fake0.close();
     }
 
     // N5 — der GESENDETE Body. Fake-Server im Node-Prozess; Modell google/gemma-4-e4b (Familie gemma4 aus
@@ -2877,20 +2955,28 @@ async function pruefeModellzeile(cdp: Cdp, ctx: Ctx): Promise<void> {
     if (g3 !== null) throw new Error(g3);
     // Ohne gespeicherte Stufe gilt der Standard des Modus creative (Kit-Tabelle): medium.
     const stufe = (): Promise<string> => cdp.evaluate<string>(`return String(${P}.settings.request.thinking?.creative ?? "medium");`);
-    const KNOPF = ".sd-gen-view .okit-model-bar .okit-thinking-toggle";
-    const knopfDa = await pollUntil<boolean>(cdp, `return document.querySelector(${JSON.stringify(KNOPF)}) ? true : null;`, 8_000, 200);
-    if (!knopfDa) record(MZ3_NAME, false, "Der Denk-Knopf (.okit-thinking-toggle) steht nicht in der Modellzeile des Erzeugen-Fensters");
+    // Seit obsidian-kit 0.88.0 ist die Denk-Steuerung der Modellzeile immer das Dropdown mit den Stufen des Modells (`inModelBar`), nie der Knopf.
+    const DD = ".sd-gen-view .okit-model-bar .okit-thinking-control select";
+    type DdZustand = { werte: string[]; gewaehlt: string; name: string };
+    const ddLesen = async (): Promise<DdZustand | null> => {
+      const roh = await cdp.evaluate<string | null>(`
+        const s = document.querySelector(${JSON.stringify(DD)});
+        return s ? JSON.stringify({ werte: [...s.options].map((o) => o.value), gewaehlt: s.value, name: s.getAttribute("aria-label") ?? "" }) : null;`);
+      return roh === null ? null : (JSON.parse(roh) as DdZustand);
+    };
+    const ddDa = await pollUntil<boolean>(cdp, `return document.querySelector(${JSON.stringify(DD)}) ? true : null;`, 8_000, 200);
+    if (!ddDa) record(MZ3_NAME, false, "Das Denkstufen-Dropdown (.okit-thinking-control select) steht nicht in der Modellzeile des Erzeugen-Fensters");
     else {
     const s0 = await stufe();
-    const druecke = async (): Promise<{ stufe: string; pressed: string | null }> => {
-      await cdp.evaluate(`document.querySelector(${JSON.stringify(KNOPF)}).click(); return true;`);
-      await new Promise((r) => setTimeout(r, 400));
-      return { stufe: await stufe(), pressed: await cdp.evaluate<string | null>(`return document.querySelector(${JSON.stringify(KNOPF)})?.getAttribute("aria-pressed") ?? null;`) };
-    };
-    const s1 = await druecke();
-    const s2 = await druecke();
+    const lokal0 = await ddLesen();
+    // Eine Stufe waehlen, die nicht die gezeigte ist: das Dropdown schreibt sie nach request.thinking.creative.
+    const ziel = lokal0?.werte.find((w) => w !== lokal0.gewaehlt) ?? "";
+    await cdp.evaluate(`const s = document.querySelector(${JSON.stringify(DD)}); s.value = ${JSON.stringify(ziel)}; s.dispatchEvent(new Event("change")); return true;`);
+    await new Promise((r) => setTimeout(r, 500));
+    const s1 = await stufe();
+    const lokal1 = await ddLesen();
 
-    // ---- MZ3 Claude: „aus nicht moeglich“ mit Hinweis
+    // ---- MZ3 Claude: „aus nicht moeglich“ — das Dropdown bietet „aus“ nicht an; die gespeicherte Stufe „off“ bleibt unangetastet (nie still geschrieben)
     const SCHLUESSEL = "sk-ant-smoke-slide-deck-mz3";
     // Ein Name, der die Familie NICHT verraet: ein Treffer des Namensraters waere sonst von „Familie aus dem Manager“ nicht zu trennen.
     const MODELL = "smoke-modell-ohne-familie";
@@ -2899,9 +2985,8 @@ async function pruefeModellzeile(cdp: Cdp, ctx: Ctx): Promise<void> {
       models: [{ id: MODELL, capabilities: { effort: { supported: true }, thinking: { types: { adaptive: { supported: true } } } } }],
       takt: 20, antwort: () => ({ text: "ok", laenge: 2, model: MODELL }),
     });
-    type KnopfText = { label: string; aria: string };
-    // Erzeugen-Fenster gegen den Fake-Manager mit (oder ohne) Familie des Modells oeffnen und den Denk-Knopf lesen.
-    const knopfMitFamilie = async (familie: string | undefined, erwartetSperre: boolean): Promise<KnopfText> => {
+    // Erzeugen-Fenster gegen den Fake-Manager mit (oder ohne) Familie des Modells oeffnen und das Denkstufen-Dropdown lesen.
+    const ddMitFamilie = async (familie: string | undefined): Promise<{ dd: DdZustand | null; gespeichert: string; zeile: boolean }> => {
       await installFakeManager(cdp, {
         endpunkte: [{ id: "fake-claude", label: "Claude API", url: claude.url, models: [MODELL], defaultModel: MODELL, configModel: "default",
           provider: "anthropic", backend: "anthropic", apiKey: SCHLUESSEL, hasSecret: true, transport: "anthropic",
@@ -2912,32 +2997,30 @@ async function pruefeModellzeile(cdp: Cdp, ctx: Ctx): Promise<void> {
       await cdp.evaluate(`${P}.settings.choice = {}; ${P}.settings.request.thinking = { ...(${P}.settings.request.thinking ?? {}), creative: "off" }; return true;`);
       const g3c = await oeffneErzeugenPanel(cdp, claude);
       if (g3c !== null) throw new Error(g3c);
-      const roh = await pollUntil<string>(cdp, `
-        const b = document.querySelector(${JSON.stringify(KNOPF)});
-        const l = b ? (b.textContent ?? "").trim() : "";
-        const gesperrt = /lowest level|niedrigste Stufe/.test(l);
-        return b && gesperrt === ${erwartetSperre ? "true" : "false"} ? JSON.stringify({ label: l, aria: b.getAttribute("aria-label") ?? "" }) : null;
-      `, 10_000, 250);
-      if (roh !== null) return JSON.parse(roh) as KnopfText;
-      return { label: "", aria: "" };
+      // Mit Familie claude fehlt „off“ in der Liste; ohne Familie wird auf die Liste gewartet und danach gelesen.
+      await pollUntil<boolean>(cdp, `
+        const s = document.querySelector(${JSON.stringify(DD)});
+        return s && ${familie === "claude" ? `![...s.options].some((o) => o.value === "off")` : "true"} ? true : null;`, 10_000, 250);
+      await new Promise((r) => setTimeout(r, 500));
+      return { dd: await ddLesen(), gespeichert: await stufe(), zeile: await cdp.evaluate<boolean>(`return !!document.querySelector(".sd-gen-view .okit-model-bar-select");`) };
     };
-    let claudeText: KnopfText = { label: "", aria: "" };
-    let ohneFamilie: KnopfText = { label: "", aria: "" };
+    let claudeDd: { dd: DdZustand | null; gespeichert: string; zeile: boolean } = { dd: null, gespeichert: "", zeile: false };
+    let ohneDd: { dd: DdZustand | null; gespeichert: string; zeile: boolean } = { dd: null, gespeichert: "", zeile: false };
     try {
-      claudeText = await knopfMitFamilie("claude", true);
-      // Gegenprobe: derselbe Endpunkt und Name, der Manager nennt keine Familie → der Knopf ist nicht auf die niedrigste Stufe gesperrt.
+      claudeDd = await ddMitFamilie("claude");
+      // Gegenprobe: derselbe Endpunkt und Name, der Manager nennt keine Familie → es gibt keine Stufen fuer das Modell, das Dropdown fehlt (die Modellzeile steht).
       await entferneFakeManager(cdp, { invalidiere: [PLUGIN_ID] }).catch(() => undefined);
       manager = false;
-      ohneFamilie = await knopfMitFamilie(undefined, false);
+      ohneDd = await ddMitFamilie(undefined);
     } finally {
       if (manager) { await entferneFakeManager(cdp, { invalidiere: [PLUGIN_ID] }).catch(() => undefined); manager = false; }
       await claude.stop();
     }
+    const claudeOhneOff = !!claudeDd.dd && claudeDd.dd.werte.length > 0 && !claudeDd.dd.werte.includes("off");
+    const ohneOhneDropdown = ohneDd.dd === null && ohneDd.zeile;
     record(MZ3_NAME,
-      s0 === "medium" && s1.stufe === "off" && s1.pressed === "false" && s2.stufe === s0 && s2.pressed === "true"
-        && claudeText.label !== "" && /can't be fully turned off|nicht ganz abschalten/.test(claudeText.aria)
-        && ohneFamilie.label !== "" && !/can't be fully turned off|nicht ganz abschalten/.test(ohneFamilie.aria),
-      `lokal: ${s0} → ${s1.stufe} (aria-pressed ${String(s1.pressed)}) → ${s2.stufe} (aria-pressed ${String(s2.pressed)}); Claude (Familie aus dem Manager, Name ohne Familie): Knopf ${JSON.stringify(claudeText.label)} mit aria-label ${JSON.stringify(claudeText.aria.slice(0, 80))}; Gegenprobe ohne Familie vom Manager: Knopf ${JSON.stringify(ohneFamilie.label)} mit aria-label ${JSON.stringify(ohneFamilie.aria.slice(0, 80))}`);
+      !!lokal0 && !!lokal1 && ziel !== "" && s1 === ziel && lokal1.gewaehlt === ziel && claudeOhneOff && claudeDd.gespeichert === "off" && claudeDd.zeile && ohneOhneDropdown,
+      `lokal: Liste ${JSON.stringify(lokal0?.werte)}, gespeichert ${s0} → gewaehlt ${JSON.stringify(ziel)} → gespeichert ${s1}, Dropdown zeigt ${JSON.stringify(lokal1?.gewaehlt)}; Claude (Familie aus dem Manager, Name ohne Familie): Liste ${JSON.stringify(claudeDd.dd?.werte)}, gespeichert bleibt ${claudeDd.gespeichert}; Gegenprobe ohne Familie vom Manager: ${ohneDd.dd === null ? "kein Dropdown" : "Liste " + JSON.stringify(ohneDd.dd.werte)}, Modellzeile ${ohneDd.zeile ? "steht" : "FEHLT"}`);
     }
 
     // ---- MZ4: Kontext-Warnung folgt dem Modell
