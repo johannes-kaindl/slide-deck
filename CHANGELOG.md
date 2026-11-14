@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.22.0] — 2026-11-14
+
 ### Changed
 
 - **The model row of the Generate panel lists the models of all your endpoints, grouped by endpoint** (`obsidian-kit` 0.89.0: `model-bar`, `llm-connection`, `endpoint-source`, `endpoint-plumbing` and `thinking-control` only; the other kit pins stay). Picking a model under another endpoint switches the endpoint for this plugin and keeps your other plugins' choice. "Automatic" shows the endpoint and its default model; an endpoint that does not answer keeps its group with a disabled entry instead of vanishing; "Manage endpoints …" opens the endpoint manager. The row has no visible label any more (it is the row's accessible name) and stays on one line; the thinking control in it is now always a drop-down with the levels of the model (it was a button), and the level shrinks to its symbol when the panel is narrow.
