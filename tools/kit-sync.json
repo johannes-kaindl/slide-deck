@@ -1,41 +1,41 @@
 {
   "sources": {
-    "obsidian-kit": { "ref": "0.72.0" },
-    "code-kit": { "ref": "0.38.0" }
+    "obsidian-kit": { "ref": "0.93.0" },
+    "code-kit": { "ref": "0.73.0" }
   },
   "targets": [
     {
       "dir": "src/vendor/kit",
       "source": "obsidian-kit",
       "from": "src/pure",
-      "modules": ["endpoint-secret-hook", { "name": "endpoint-source", "ref": "0.89.0" }, "folder-hide", "anthropic-wire", "override-guard"],
+      "modules": ["endpoint-secret-hook", "endpoint-source", "folder-hide", "override-guard"],
       "rewrite": [["../vendor/code-kit/pure/", "./"], ["../vendor/code-kit/web/", "./"]]
     },
     {
       "dir": "src/vendor/kit",
       "source": "code-kit",
       "from": "src/ts/pure",
-      "modules": [{ "name": "answer-retry", "ref": "0.47.0" }, "backend-probe", "capabilities", "data-url", "embeddings-client", "endpoint", "endpoint_config", "endpoint_diagnostics", { "name": "error-message", "ref": "0.66.0" }, "error_body", "model-choice", "model-context", "model-list-cache", "reasoning", { "name": "redact", "ref": "0.60.0" }, "safe-markdown", { "name": "sampling-profiles", "ref": "0.66.0" }, "secrets", "settings", "sse", "think-splitter", "timeout"]
+      "modules": ["answer-retry", "backend-probe", "capabilities", "data-url", "embeddings-client", "endpoint", "endpoint_config", "endpoint_diagnostics", "error-message", "error_body", "model-choice", "model-context", "anthropic-wire", "model-list-cache", "reasoning", "redact", "safe-markdown", "sampling-profiles", "secrets", "settings", "sse", "think-splitter", "timeout"]
     },
     {
       "dir": "src/vendor/kit",
       "source": "code-kit",
       "from": "src/ts/web",
-      "modules": ["clipboard", "remote-resources"],
+      "modules": ["clipboard", "remote-resources", "leave-tree"],
       "rewrite": [["../pure/", "./"]]
     },
     {
       "dir": "src/vendor/kit-obsidian",
       "source": "obsidian-kit",
       "from": "src/obsidian",
-      "modules": ["backend-probe", "chat-client", "chat-transport", "clipboard", "clock", "collapsible", "embedding-connection", "endpoint-list", { "name": "endpoint-plumbing", "ref": "0.89.0" }, "endpoint-secrets", { "name": "endpoint-source", "ref": "0.89.0" }, "folder-hide", "endpoint-status-text", "folder-suggest", "help-setting", "hub", { "name": "llm-connection", "ref": "0.89.0" }, { "name": "llm-connection-strings", "ref": "0.89.0" }, "model-picker", { "name": "request-section", "ref": "0.84.0" }, "request-session", "secrets", "settings_walker", "shortcuts-bridge", "stream-area", { "name": "status-indicator", "ref": "0.76.0" }, "plugin-api", { "name": "print-to-pdf", "ref": "0.82.2" }, "anthropic-transport", { "name": "model-bar", "ref": "0.89.0" }, { "name": "model-bar-strings", "ref": "0.89.0" }, { "name": "thinking-control", "ref": "0.89.0" }],
+      "modules": ["backend-probe", "chat-client", "chat-transport", "clipboard", "clock", "collapsible", "embedding-connection", "endpoint-list", "endpoint-plumbing", "endpoint-secrets", "endpoint-source", "folder-hide", "endpoint-status-text", "folder-suggest", "setting-body-host", "copy-button", "help-setting", "hub", "llm-connection", "llm-connection-strings", "model-picker", "request-section", "request-session", "secrets", "settings_walker", "shortcuts-bridge", "stream-area", "status-indicator", "plugin-api", "print-to-pdf", "anthropic-transport", "model-bar", "model-bar-strings", "thinking-control"],
       "rewrite": [["../vendor/code-kit/pure/", "../kit/"], ["../vendor/code-kit/web/", "../kit/"], ["../pure/", "../kit/"]]
     },
     {
       "dir": "tests/vendor/kit",
       "source": "obsidian-kit",
       "from": "src/testing",
-      "modules": [{ "name": "kit-css", "ref": "0.89.0" }, "obsidian-mock", "window-timers", "linear-probe"]
+      "modules": ["kit-css", "obsidian-mock", "window-timers", "linear-probe"]
     },
     {
       "dir": "tests/vendor/kit",

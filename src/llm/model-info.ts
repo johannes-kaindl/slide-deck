@@ -1,11 +1,2 @@
-// Kit owns the context fetch and parsers (vendored, pinned). Only the two estimator helpers below are ours.
+// Kit owns the context fetch, the parsers and the estimate (vendored, pinned): `estimateTokens` and `contextOverflow` live in `vendor/kit/model-context` (code-kit 0.69.0).
 export { effectiveContext, type ModelContext } from "../vendor/kit/model-context";
-
-/** Rough token estimate: ~3.5 characters per token (English/German prose average). */
-export function estimateTokens(chars: number): number { return Math.ceil(chars / 3.5); }
-
-/** True only when a context limit is known and the request would not fit. */
-export function contextOverflow(inputTokens: number, maxTokens: number, contextLimit: number | undefined): boolean {
-  if (contextLimit == null) return false;
-  return inputTokens + maxTokens > contextLimit;
-}

@@ -6,7 +6,8 @@ import type { EndpointConfig } from "./vendor/kit/endpoint_config";
 import type { ModelContext } from "./vendor/kit/model-context";
 import { frontmatterRange } from "./vendor/deck-core/pure/llm/deck-sanitize";
 import { stripNoteFrontmatter } from "./vendor/deck-core/pure/llm/deck-prompt";
-import { estimateTokens, contextOverflow, effectiveContext } from "./llm/model-info";
+import { effectiveContext } from "./llm/model-info";
+import { contextOverflow, estimateTokens } from "./vendor/kit/model-context";
 import { MODE } from "./llm/request-params";
 import type { GenState, GenerationHandle } from "./generate-deck";
 import { getLang, t } from "./i18n";
@@ -276,8 +277,12 @@ export class GeneratePanel implements HubPanel<HubTabId> {
     const ctx = await this.contextOf(this.endpoint, this.model(), provider);
     if (this.currentSource !== file) return;
     const limit = effectiveContext(ctx) ?? undefined;
-    const inputTokens = estimateTokens(body.length) + 400;
-    if (contextOverflow(inputTokens, this.plugin.settings.llmMaxTokens, limit) || (limit == null && body.length > 30000)) {
+    // Gemessen wird, was wirklich gesendet wird (Kit-Standard `model-context`): die Zeichen aller Nachrichten, einmal geschätzt, ohne pauschalen Zuschlag;
+    // `max_tokens` zählt als Reserve, weil die ganze Antwort auch noch passen muss. Bei unbekannter Grenze gibt es keine Warnung.
+    const slideTarget: number | "auto" = !this.countSel || this.countSel.value === "auto" ? "auto" : Number(this.countSel.value);
+    const sentChars = this.plugin.deckMessages(body, slideTarget, this.hintInput?.value ?? "").reduce((n, m) => n + m.content.length, 0);
+    const inputTokens = estimateTokens(sentChars, "cautious");
+    if (contextOverflow(inputTokens, limit, this.plugin.settings.llmMaxTokens) !== null) {
       this.warnEl.setText(t("deck.modal.contextWarn", inputTokens, limit != null ? String(limit) : "?"));
     } else {
       this.warnEl.setText("");

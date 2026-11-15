@@ -380,9 +380,7 @@
 /* Image function suggest modal description (Insert image slot command) */
 .sd-slot-suggest-desc { display: block; color: var(--text-muted); font-size: var(--font-ui-smaller); }
 
-/* Kopie aus obsidian-kit src/obsidian/stream-area.ts (STREAM_AREA_CSS, seit 0.43.0 unveraendert, gemessen gegen 0.59.1) — das Kit
-   injiziert kein CSS, laut Vertrag kopiert der Consumer in seine eigene styles.css.
-   Re-vendoren via tools/sync-kit.sh; diese Regeln von Hand mitziehen (nicht automatisiert). */
+/* STREAM_AREA_CSS (obsidian-kit stream-area.ts) — verbatim aus dem Kit, nicht von Hand aendern; nach einem Re-Vendoring neu uebernehmen. */
 .okit-stream { display: flex; flex-direction: column; min-height: 0; gap: var(--size-4-2); }
 .okit-stream-body {
   flex: 1 1 auto; min-height: 0; overflow-y: auto;
@@ -409,14 +407,8 @@
   font-size: var(--font-ui-smaller); color: var(--text-muted);
 }
 .okit-stream-reasoning > summary { cursor: var(--cursor); color: var(--text-faint); }
-/* Der Kopier-Knopf sitzt IN der Zusammenfassung, bleibt inline und nimmt der Zeile keine Höhe. */
-.okit-stream-reasoning-copy {
-  display: inline-flex; vertical-align: middle; margin-inline-start: var(--size-4-2);
-  height: auto; padding: var(--size-2-1) var(--size-2-2);
-  color: var(--text-faint);
-}
-.okit-stream-reasoning-copy.is-copied { color: var(--text-success); }
-.okit-stream-reasoning-copy .svg-icon { width: var(--icon-xs); height: var(--icon-xs); }
+/* Der Kopier-Knopf sitzt IN der Zusammenfassung, bleibt inline und nimmt der Zeile keine Höhe. Sein Aussehen steht in COPY_BUTTON_CSS (Baustein createCopyButton), die der Konsument einmal selbst kopiert. */
+.okit-stream-reasoning-copy { display: inline-flex; vertical-align: middle; margin-inline-start: var(--size-4-2); }
 .okit-stream-reasoning > pre {
   max-height: 12em; overflow-y: auto; white-space: pre-wrap;
   background: var(--background-secondary); padding: var(--size-4-2);
@@ -424,6 +416,13 @@
 /* Ein leerer Slot bleibt Flex-Item und kostet einen gap — spürbar bei einem Wirt, der die
    Statuszeile nicht nutzt (Befund aus der ersten Adoption, 2026-09-11). */
 .okit-stream-status:empty, .okit-stream-reasoning-slot:empty { display: none; }
+
+/* COPY_BUTTON_CSS (obsidian-kit copy-button.ts) — verbatim aus dem Kit, nicht von Hand aendern; nach einem Re-Vendoring neu uebernehmen. */
+.okit-copy-button { color: var(--text-faint); height: auto; padding: var(--size-2-1) var(--size-2-2); }
+.okit-copy-button.is-copied { color: var(--text-success); }
+.okit-copy-button .svg-icon { width: var(--icon-xs); height: var(--icon-xs); }
+.is-mobile .okit-copy-button { position: relative; }
+.is-mobile .okit-copy-button::after { content: ""; position: absolute; top: 50%; left: 50%; width: calc(var(--size-4-10) + var(--size-4-1)); height: calc(var(--size-4-10) + var(--size-4-1)); transform: translate(-50%, -50%); }
 
 /* Globale Modell-Zeile: mit LLM Endpoint Manager waehlt der Endpunkt-Baustein das Modell. */
 

@@ -260,6 +260,12 @@ export default class SlideDeckPlugin extends Plugin {
     return target;
   }
 
+  /** The messages a generation sends: system prompt (contract and rules) and the source note. The sidebar view measures the context against exactly these. */
+  deckMessages(sourceBody: string, slideTarget: number | "auto", hint: string): ReturnType<typeof buildDeckPrompt> {
+    const contract = getAuthoringContract({ theme: this.settings.defaultTheme, aspect: "16:9", minFontPx: this.settings.minFontPx });
+    return buildDeckPrompt(sourceBody, { slideTarget, hint }, contract);
+  }
+
   /** Start a generation. Returns a handle the modal attaches to; the run survives modal close. */
   startDeckGeneration(input: DeckGenInput): GenerationHandle {
     const controller = new AbortController();
@@ -267,8 +273,7 @@ export default class SlideDeckPlugin extends Plugin {
     const subs = new Set<(s: GenState) => void>();
     const notify = (s: GenState): void => { state = s; for (const fn of subs) fn(s); };
 
-    const contract = getAuthoringContract({ theme: this.settings.defaultTheme, aspect: "16:9", minFontPx: this.settings.minFontPx });
-    const messages = buildDeckPrompt(input.sourceBody, { slideTarget: input.slideTarget, hint: input.hint }, contract);
+    const messages = this.deckMessages(input.sourceBody, input.slideTarget, input.hint);
     const client = deckClient(this.llm, input.model);
 
     const done: Promise<GenerateResult> = (async () => {

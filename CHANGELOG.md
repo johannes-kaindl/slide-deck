@@ -6,6 +6,12 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **The context warning in the Generate panel measures what is really sent.** It counts the characters of the system prompt (contract and rules) and of your note once, with the shared estimate of `code-kit` 0.73.0 (3.5 characters per token), and warns when that plus the answer budget (`max_tokens`) does not fit the model's context. Before, it added a flat 400 tokens and warned for any note above 30,000 characters when the endpoint did not report a context length; both are gone, so a long note with an unknown context length no longer warns, and a note that only fits with the real prompt now warns where it did not before. A context of 0 counts as unknown.
+- **A frame the link guard removes stays for 250 ms as a hidden, bare skeleton** (`code-kit` 0.73.0, `leave-tree`; `obsidian-kit` 0.93.0). It stops the error box "A JavaScript error occurred in the main process" that showed for an `iframe` with an `app:`, relative or `file:` target in remote content. A check that expects `querySelector("iframe") === null` right after the pass waits 250 ms or counts `onRemoved`.
+- The copy button of the thinking block comes from the shared `copy-button` of `obsidian-kit` 0.93.0 (a larger touch area on the phone); the look is the same. All kit pins are now `obsidian-kit` 0.93.0 and `code-kit` 0.73.0.
+
 ## [0.22.0] — 2026-11-14
 
 ### Changed
