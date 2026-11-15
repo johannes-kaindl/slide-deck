@@ -1169,7 +1169,7 @@ const einstellungen: Section = {
       JSON.stringify(hilfe),
     );
     const shotDir = process.env.SMOKE_SHOT_DIR;
-    if (shotDir) writeFileSync(`${shotDir}/hilfe-zeile.png`, await capture(offen.ziel));
+    if (shotDir) { mkdirSync(shotDir, { recursive: true }); writeFileSync(`${shotDir}/hilfe-zeile.png`, await capture(offen.ziel)); }
 
     await schliesseTab(cdp, offen);
 
