@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.22.1] — 2026-11-15
+
 ### Changed
 
 - **The context warning in the Generate panel measures what is really sent.** It counts the characters of the system prompt (contract and rules) and of your note once, with the shared estimate of `code-kit` 0.73.0 (3.5 characters per token), and warns when that plus the answer budget (`max_tokens`) does not fit the model's context. Before, it added a flat 400 tokens and warned for any note above 30,000 characters when the endpoint did not report a context length; both are gone, so a long note with an unknown context length no longer warns, and a note that only fits with the real prompt now warns where it did not before. A context of 0 counts as unknown.
