@@ -925,6 +925,13 @@ const mermaid: Section = {
         : `kein Mermaid-SVG mit Text im Deck · ${await diagnose(cdp)}`,
     );
 
+    // Sichtpruefung (Regel 12): die Folie mit dem Diagramm im Vorschau-Rahmen. Nur mit SMOKE_SHOT_DIR (Bildaufnahme: Lock `focus`).
+    const m6Shots = process.env.SMOKE_SHOT_DIR;
+    if (m6Shots && m6 !== null) {
+      const box = await boxOf(cdp, "iframe.sd-deck-iframe", 4);
+      if (box) { mkdirSync(m6Shots, { recursive: true }); writeFileSync(`${m6Shots}/mermaid-umlaute.png`, await capture(cdp, box)); }
+    }
+
     // M4: der `sender:`-Slot steht im gerenderten Deck. Er kam mit deck-core 0.9.0 und war
     // bis hierher nur am Kern belegt — dass `parseDeck` ihn liest, sagt nichts darueber, ob
     // `appendSlots` ihn baut und das Struktur-CSS ihn sichtbar macht. Gemessen wird deshalb
