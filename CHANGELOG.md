@@ -6,6 +6,10 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Umlauts and other non-ASCII characters in Mermaid diagrams no longer show as mojibake** (`deck-core` 0.14.2). A label such as "geprüft" was drawn as "geprÃ¼ft" in the preview and in the PDF and image export, because the diagram text was read back byte by byte instead of as UTF-8.
+
 ## [0.22.1] — 2026-11-15
 
 ### Changed

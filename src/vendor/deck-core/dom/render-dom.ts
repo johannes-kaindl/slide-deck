@@ -1,6 +1,6 @@
 import mermaid from "mermaid";
 import type { HostDocument } from "./host-document";
-import { renderMarkdown } from "../pure/render/md2html";
+import { renderMarkdown, fromBase64Utf8 } from "../pure/render/md2html";
 import { computeFit } from "../pure/layout/fit";
 import { shouldCenterCompose } from "../pure/layout/compose";
 import { collectWarnings, collectDeckWarnings, WARNING_SEVERITY, type Warning, type SlideWarning } from "../pure/constraints/engine";
@@ -39,10 +39,15 @@ export function appendSlots(doc: HostDocument, box: HTMLElement, deck: SlideDeck
   if (d.paginate) make("sd-slide-pagination", `${slideIndex + 1} / ${deck.slides.length}`);
 }
 
+/** Diagram source of a `.sd-mermaid` slot (written by `toBase64Utf8` in md2html). */
+export function mermaidSourceOf(slot: HTMLElement): string {
+  return fromBase64Utf8(slot.dataset.src ?? "");
+}
+
 async function renderMermaidSlots(scope: HTMLElement, slideIndex: number, warnings: Warning[]): Promise<void> {
   const slots = Array.from(scope.querySelectorAll<HTMLElement>(".sd-mermaid"));
   for (let i = 0; i < slots.length; i++) {
-    const src = atob(slots[i].dataset.src ?? "");
+    const src = mermaidSourceOf(slots[i]);
     try {
       const renderId = `sd-mm-${mermaidSeq++}`;
       const { svg } = await mermaid.render(renderId, src);

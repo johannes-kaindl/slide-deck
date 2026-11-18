@@ -22,11 +22,21 @@ export interface RenderedSlide {
   warnings: SlideWarning[];
 }
 
-function toBase64Utf8(s: string): string {
+export function toBase64Utf8(s: string): string {
   const bytes = new TextEncoder().encode(s);
   let bin = "";
   for (const b of bytes) bin += String.fromCharCode(b);
   return btoa(bin);
+}
+
+/** Inverse of toBase64Utf8. atob() alone yields one char per byte (Latin-1), so every
+ *  non-ASCII character comes out as mojibake ("geprüft" -> "geprÃ¼ft"); the bytes must be
+ *  decoded as UTF-8. */
+export function fromBase64Utf8(b64: string): string {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder("utf-8").decode(bytes);
 }
 
 function highlight(str: string, lang: string): string {
