@@ -204,6 +204,19 @@ flowchart LR
 \`\`\`
 `;
 
+/** M6 — Nicht-ASCII im Diagrammtext. `renderMermaidSlots` reicht den Quelltext Base64-kodiert
+ *  durchs Deck; liest die Gegenseite ihn mit `atob` ohne UTF-8-Dekodierung zurueck, wird aus
+ *  "geprueft" ein "geprÃ¼ft" (deck-core 0.14.2 behob das). Die Woerter sind die des Befunds. */
+const UMLAUT_NOTE = "Mermaid umlaut probe.md";
+const UMLAUT_LABELS = ["geprüft", "Größe"] as const;
+const UMLAUT_NOTE_MD = `# Mermaid umlaut probe
+
+\`\`\`mermaid
+graph LR
+  A[${UMLAUT_LABELS[0]}] --> B[${UMLAUT_LABELS[1]}]
+\`\`\`
+`;
+
 /** M3 — EIN Segment, damit die gemessene Flaeche der Vollkreis ist und nicht davon abhaengt,
  *  wohin Mermaid welchen Sektor legt. Gezaehlt werden Pixel im ganzen Bild, nicht an einer
  *  Koordinate: wo der Kreis im PNG sitzt, haengt an Diagrammgroesse und Layout, die Menge
@@ -315,6 +328,7 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
   mermaid: [
     "M1 Ordner-Theme faerbt das Diagramm ueber seine Tokens",
     "M2 sd-mermaid-Angabe schlaegt die Token-Ableitung",
+    "M6 Umlaute im Mermaid-Diagramm bleiben lesbar (kein Mojibake)",
     "M4 sender-Slot steht sichtbar im Deck (und fehlt ohne die Direktive)",
     `M5 Theme-eigener Modifier "${THEME_MOD}" warnt nicht (ohne Deklaration schon)`,
     "M3 sd-mermaid-var traegt bis ins PNG (pieOpacity 1 gegen Mermaids 0.7)",
@@ -535,6 +549,23 @@ async function mermaidKnoten(cdp: Cdp): Promise<MermaidKnoten | null> {
     const knoten = svg.querySelectorAll(".node rect, .node polygon, .basic.label-container, rect.basic");
     if (knoten.length === 0) return null;
     return { fill: deck.defaultView.getComputedStyle(knoten[0]).fill, knoten: knoten.length };
+  `, 20_000);
+}
+
+/** Der Text des gerenderten Mermaid-SVG im Deck-iframe (`textContent` ohne die
+ *  `<style>`-Elemente: Knotenbeschriftungen stehen je nach Diagrammart als `<text>` oder in einem `foreignObject`). Wartet, bis die
+ *  Grafik Text traegt — "SVG steht" und "Beschriftung steht" liegen auseinander. */
+async function mermaidText(cdp: Cdp): Promise<string | null> {
+  return pollUntil<string>(cdp, `
+    ${DECK_DOC}
+    if (!deck) return null;
+    const svg = deck.querySelector(".sd-mermaid svg, svg[id^='sd-mermaid']");
+    if (!svg) return null;
+    // Mermaid legt sein CSS als <style> in die Grafik; sein Text gehoert nicht zur Beschriftung.
+    const kopie = svg.cloneNode(true);
+    kopie.querySelectorAll("style").forEach((el) => el.remove());
+    const text = (kopie.textContent || "").trim();
+    return text.length > 0 ? text : null;
   `, 20_000);
 }
 
@@ -811,6 +842,7 @@ const mermaid: Section = {
       [cssPfad, mermaidThemeCss()],
       [MERMAID_NOTE, MERMAID_NOTE_MD],
       [PIE_NOTE, PIE_NOTE_MD],
+      [UMLAUT_NOTE, UMLAUT_NOTE_MD],
       [SENDER_NOTE, SENDER_NOTE_MD],
       [MOD_NOTE, MOD_NOTE_MD],
     ];
@@ -875,6 +907,22 @@ const mermaid: Section = {
         ? `Knotenfuellung ${m2.fill} (benanntes Thema "dark") · nicht rgb(${MERMAID_PROBE_RGB.join(",")})` +
           (nahAn(m2.fill, MERMAID_PROBE_RGB) ? " · ACHTUNG: die Tokens ueberstimmen die Angabe" : "")
         : `kein Mermaid-SVG im Deck · ${await diagnose(cdp)}`,
+    );
+
+    // M6: Nicht-ASCII im Diagrammtext. Gemessen wird der Text des gerenderten SVG, nicht der
+    // Quelltext der Notiz: der Fehler sass im Rueckweg (Base64 → Text), und nur das SVG zeigt,
+    // was der Nutzer sieht. Der Detailtext nennt den gelesenen Text, damit ein Mojibake
+    // ("geprÃ¼ft") im Protokoll sichtbar ist statt als blosses "rot".
+    await openPreview(cdp, UMLAUT_NOTE);
+    const m6 = await mermaidText(cdp);
+    const m6Ok = m6 !== null && UMLAUT_LABELS.every((w) => m6.includes(w));
+    record(
+      "M6 Umlaute im Mermaid-Diagramm bleiben lesbar (kein Mojibake)",
+      m6Ok,
+      m6 !== null
+        ? `SVG-Text "${m6}" · erwartet ${UMLAUT_LABELS.map((w) => `"${w}"`).join(" und ")}` +
+          (m6Ok ? "" : " · ACHTUNG: Beschriftung verfaelscht (Mojibake?)")
+        : `kein Mermaid-SVG mit Text im Deck · ${await diagnose(cdp)}`,
     );
 
     // M4: der `sender:`-Slot steht im gerenderten Deck. Er kam mit deck-core 0.9.0 und war
