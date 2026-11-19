@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.23.0] — 2026-11-19
+
 ### Changed
 
 - **`deck-core` 0.15.1 (was 0.14.2).** What you notice in your decks:
