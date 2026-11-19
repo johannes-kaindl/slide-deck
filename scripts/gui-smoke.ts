@@ -14,19 +14,15 @@
  * Zweitinstanz mit eigenem Profil und eigenem Port, nie die regulaere Instanz (kein `quit`,
  * kein Neustart fremder Fenster). `--port` ist Pflicht.
  *
- * ```bash
- * UD=/tmp/obs-test-slide-deck; mkdir -p "$UD"
- * lsof -nP -iTCP:<port> -sTCP:LISTEN; pgrep -f "user-data-dir=$UD"      # beides leer
- * cp ~/Library/Application\ Support/obsidian/obsidian-*.asar "$UD"/      # aktuelle Version
- * # $UD/obsidian.json: {"vaults":{"sd":{"path":"$STAGING_VAULTS_DIR/slide-deck","ts":1,"open":true}},"language":"en"}
- * npm run shots:obsidian -- --setup     # baut den Staging-Vault aus docs/images/fixture/
- * npm run build && OBSIDIAN_PLUGIN_DIR="$STAGING_VAULTS_DIR/slide-deck/.obsidian/plugins/slide-deck" npm run deploy
- * python3 ~/.claude/hooks/obsidian-cdp-lock.py acquire --label slide-deck --intent "GUI-Smoke" --exclusive focus --port <port> --ttl 300
- * /Applications/Obsidian.app/Contents/MacOS/Obsidian --user-data-dir="$UD" --remote-debugging-port=<port> &
- * npm run smoke:gui -- --port <port>
- * npm run smoke:gui -- --port <port> --section vorschau --keep
- * python3 ~/.claude/hooks/obsidian-cdp-lock.py release
- * ```
+ * Lauf: `tools/obsidian-cdp/messlauf.sh` (Dach, README § Messlauf in einem Aufruf) startet die Zweitinstanz, hält den Lock (`--exclusive focus`, davor, mit `export`)
+ * und räumt auf; das Rezept steht nur dort. Für diesen Treiber: `REPO=slide-deck SETUP_BEFEHL='npm run shots:obsidian -- --setup'`.
+ *
+ * Weitere Läufe (als `SMOKE_ARGS`):
+ *   --section vorschau --keep
+ *
+ * Besonderheiten dieses Treibers (aus dem früheren Rezept übernommen):
+ *   Setup (`npm run shots:obsidian -- --setup`): baut den Staging-Vault aus docs/images/fixture/
+ *   OBSIDIAN_PLUGIN_DIR="$STAGING_VAULTS_DIR/slide-deck/.obsidian/plugins/slide-deck" npm run deploy
  *
  * Vertrauensdialog, Restricted Mode und Aktivierung erledigt `bereiteInstanzVor` im Treiber.
  * Je Messlauf ein frischer Prozess; der erste Lauf nach einer Profilanlage ist ein Aufwaermlauf.
