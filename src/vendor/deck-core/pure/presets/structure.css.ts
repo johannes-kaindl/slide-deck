@@ -174,7 +174,10 @@ export const STRUCTURE_CSS = `
   letter-spacing:.08em; }
 .sd-slide-header{ top:24px; right:32px; text-transform:uppercase; }
 .sd-slide-footer{ bottom:24px; left:32px; }
-.sd-slide-pagination{ bottom:24px; right:32px; }
+/* nowrap: the pagination is shrink-to-fit. The image export writes its measured width inline
+   (64.9453px against 64.9792px live, measured 2026-11-19), a hair too narrow for the three
+   spans, and "1 / 3" then broke after the slash. */
+.sd-slide-pagination{ bottom:24px; right:32px; white-space:nowrap; }
 /* The sender is a brand element, not a metadata eyebrow — it shares the slots' layer and
    margin, deliberately not their mono/tracked voice. Sits above the pagination because
    bottom-right is taken; the theme overrides position and size anyway. */

@@ -17,6 +17,8 @@ versioning follows [SemVer](https://semver.org/).
   - **The numbers of the `agenda` and `threads` layouts now appear in the image export too** (they were missing there because the screenshot library drops `counter()` from `content`). A theme that styled `.sd-layout-agenda ol > li::before` must target `.sd-item-num` instead.
   - **In the Obsidian plugin the same size rule holds for the image lookup:** `![[image.svg|48]]` and `![[image.svg\|48]]` now load `image.svg` (the lookup used the whole reference before).
 
+- **`deck-core` 0.15.1 (was 0.15.0).** The page number ("1 / 3") no longer wraps in the image export: with the page-number spans of 0.15.0 the PNG export of `paginate: true` showed "1 /" and "3" on two lines. A theme that wants the page number to wrap overrides `white-space` on `.sd-slide-pagination`.
+
 - **Kit pins raised to `obsidian-kit` 0.98.0 and `code-kit` 0.78.0** (were 0.93.0 and 0.73.0; the CHANGELOGs of all five skipped `obsidian-kit` and `code-kit` releases were read). What you notice, all in the AI settings:
   - **The "Request" section has a new row "Random seed (seed)".** You can type a value only where the backend really uses it (today Open WebUI); on LM Studio the row is shown but locked, because a seed was measured to have no effect there. Ollama, OpenAI, Anthropic and unknown servers do not take a seed. There is no default: without your entry no seed is sent.
   - **`top_p` can be set from 0.01 on Open WebUI, OpenAI, Anthropic and unknown servers** (it was 0.1 everywhere). On LM Studio and Ollama the lower bound stays 0.1: a smaller value is marked red and not saved, and a smaller value stored earlier is not sent (the family value applies, with a note in the row).
