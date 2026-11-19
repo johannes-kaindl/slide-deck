@@ -54,6 +54,22 @@ These three come from the Traces slide specimens. Each takes a `# Title` and a `
 | `threads` | an ordered list; each item starts with `**Card title**`, followed by its text |
 | `closing` | a bullet list of `**key** value` contact lines |
 
+## Heading levels
+
+The slide title is the `#` heading; the `##` above or below it is the kicker (eyebrow). If your notes begin at `##` (an Obsidian linter that keeps a note's own title as `#`, say) a deck **without any `#` heading** is read one level up: `##` is the title, `###` the kicker. This is decided for the whole deck: one `#` anywhere (such as `# Thanks` on the last slide) keeps the plain reading everywhere, so a mixed deck does not shift half of its slides. Example: `docs/themes/h2-deck.md`.
+
+## Images and their size
+
+`![[image.png]]` and `![image](image.png)` fill the free space of the slide. Obsidian's size syntax sets a fixed size instead:
+
+| Written | Result |
+|---|---|
+| `![[icon.svg\|48]]` | 48 px wide, height follows |
+| `![[icon.svg\|48x30]]` | 48 × 30 px |
+| `![[icon.svg\|Alt text]]` | normal image, `Alt text` as its alt text |
+
+A sized image stays in the text line (a 48 px icon next to a word) and, alone on a slide, keeps its size instead of filling the slide. In a table cell write `\|` as usual; the backslash is table syntax and is ignored. `![[…]]` inside inline code, a code block or a `~~~` fence stays plain text.
+
 ## Smart layout inference
 
 If you set no `<!-- layout -->` directive, the layout is inferred from the slide's content:

@@ -167,6 +167,23 @@ only sets the seven §1 tokens still gets a legible blockquote.
 | `--sd-slot-font` | `var(--sd-mono, …)` | Slot font family — slots speak the deck's metadata (eyebrow) voice |
 | `--sd-slot-fg` | `var(--sd-muted, #6b7280)` | Slot colour |
 
+**Page-number classes.** The pagination slot (`paginate: true`) is
+`.sd-slide-pagination` with three spans, so a theme can style the current number apart
+from the total:
+
+```html
+<div class="sd-slide-pagination"><span class="sd-page-current">3</span><span class="sd-page-sep"> / </span><span class="sd-page-total">12</span></div>
+```
+
+```css
+.sd-slide-pagination .sd-page-current { color: var(--sd-accent); font-weight: 600; }
+.sd-slide-pagination .sd-page-sep,
+.sd-slide-pagination .sd-page-total { opacity: .6; }
+```
+
+The text stays exactly "3 / 12". Use these spans instead of `counter()` for a page
+number (see "Export limits" in §7).
+
 ### Layout-specific
 
 | Token | Default | Purpose |
@@ -196,9 +213,21 @@ with it:
   — don't add `text-align: center` to `ul`/`ol`/`li`.
 - **Margins on headings, paragraphs, lists, code, blockquotes.** Vertical
   rhythm is owned by the plugin's adjacency rule (the "owl" selector,
-  `* + *`) driven by the `--sd-space-*` scale — blocks themselves carry
-  `margin: 0`. A theme that sets its own margins breaks the rhythm for every
-  layout at once.
+  `* + *`) driven by the `--sd-space-*` scale. A theme that sets its own margins
+  breaks the rhythm for every layout at once.
+
+  **Since deck-core 0.15.0 the reset has specificity zero.** The plugin resets
+  `h1, h2, p, ul, ol, pre, blockquote, table` to `margin: 0` with
+  `:where(.sd-slide) :where(…)`, so the adjacency spacing between neighbours (paragraph
+  then list, list then paragraph, paragraph then code …) now applies; before, the
+  reset (specificity 0,1,1) beat it and there was no gap. Two consequences for themes:
+
+  - Element rules such as `p { margin-bottom: … }` or `ul { margin: … }` were
+    neutralised by the old reset and **now apply**. If you wrote them as a counter to
+    the reset, remove them and check your slides.
+  - A theme that **copied the old reset** (`.sd-slide h1, …, table { margin: 0 }`, as
+    older Folder themes did) cancels the fix for itself again. Migration: write it with
+    `:where()` or drop it.
 
 Rule-level overrides are still *technically* possible — your file loads after
 `structure`/`layouts` in the cascade (see "CSS layer order" above), so a raw `.sd-slide h1 { … }` rule
@@ -313,10 +342,31 @@ Minimal skeleton to start from (or copy `example.css` directly):
   `src: url(https://…)`. The slide renders in a sandboxed `srcdoc` iframe and
   the plugin is offline-by-design; remote URLs leak your IP, fail offline, and
   are unreliable in PNG/PDF export. (See §8 for the privacy-safe font path.)
-- **Export fidelity.** PNG export uses html2canvas and PDF uses the print
+- **Export fidelity.** PNG export uses `modern-screenshot` and PDF uses the print
   pipeline; both render the same isolated iframe. Exotic CSS (filters, complex
   gradients, blend modes) may differ in export — test by exporting, not just by
   eyeballing the preview.
+- **Export limits: `counter()` in `content` is missing from the PNG export.**
+  `modern-screenshot` 4.7.0 (the newest release) removes every `counter(...)` from the
+  `content` of a pseudo-element while it clones the slide (`copyPseudoClass`), on
+  purpose. A rule such as `.page::after { content: counter(page) }` shows in the
+  preview and the PDF but **not** in the PNG. Do not number with CSS counters in
+  pseudo-elements. Instead:
+  - for the page number, style the `.sd-page-current` / `.sd-page-total` spans (§3,
+    "Page-number classes");
+  - the `agenda` and `threads` layouts do this for you: the plugin puts a
+    `<span class="sd-item-num">01</span>` as the first child of every list item, and
+    the numbers show in preview, PDF and PNG alike. A theme that styled
+    `.sd-layout-agenda ol > li::before` or the counter `sd-agenda` / `sd-threads` must
+    target `.sd-item-num` instead.
+  - for your own numbered layout, write the number into the Markdown, or style the list's
+    own marker (`li::marker`), which the export keeps.
+- **Heading levels: a deck without `#` reads `##` as the title.** If no slide of the deck
+  has a `#` heading, the highest level used becomes the title (`##` → `h1`, `###` → `h2`),
+  so notes written from `##` on get the title, section, stat and cover-image looks.
+  One `#` anywhere in the deck (say `# Thanks` at the end) keeps the plain reading for the
+  whole deck. A theme that styled `h2` as the slide title for such decks now meets an
+  `h1` there. Example: `docs/themes/h2-deck.md`.
 - **Stay inside `.sd-slide`.** Don't restyle `html`/`body` or fight the fixed
   1280×720 / 960×720 geometry — that's fit-critical and owned by the plugin.
 

@@ -55,6 +55,22 @@ Diese drei stammen aus den Folien-Spezimen von Traces. Jedes nimmt einen `# Tite
 | `threads` | eine nummerierte Liste; jeder Punkt beginnt mit `**Kartentitel**`, danach der Text |
 | `closing` | eine Aufzählung aus Kontaktzeilen `**Schlüssel** Wert` |
 
+## Überschriftsebenen
+
+Der Folientitel ist die `#`-Überschrift; die `##` darüber oder darunter ist der Kicker (Eyebrow). Beginnen deine Notizen bei `##` (etwa weil ein Obsidian-Linter den Notiztitel als `#` behält), wird ein Deck **ohne jede `#`-Überschrift** eine Ebene höher gelesen: `##` ist der Titel, `###` der Kicker. Das gilt für das ganze Deck: eine einzige `#` irgendwo (etwa `# Danke` auf der letzten Folie) lässt überall die bisherige Lesart gelten, damit ein gemischtes Deck nicht zur Hälfte verrutscht. Beispiel: `docs/themes/h2-deck.md`.
+
+## Bilder und ihre Größe
+
+`![[bild.png]]` und `![Bild](bild.png)` füllen den freien Platz der Folie. Obsidians Größen-Syntax setzt stattdessen eine feste Größe:
+
+| Geschrieben | Ergebnis |
+|---|---|
+| `![[icon.svg\|48]]` | 48 px breit, Höhe folgt |
+| `![[icon.svg\|48x30]]` | 48 × 30 px |
+| `![[icon.svg\|Alt-Text]]` | normales Bild, `Alt-Text` als Alt-Text |
+
+Ein Bild mit Größe bleibt in der Textzeile (ein 48-px-Symbol neben einem Wort) und behält allein auf einer Folie seine Größe, statt die Folie zu füllen. In einer Tabellenzelle schreibst du `\|` wie üblich; der Backslash gehört zur Tabellensyntax und wird ignoriert. `![[…]]` in Inline-Code, in einem Codeblock oder einem `~~~`-Zaun bleibt Text.
+
 ## Automatische Layout-Erkennung
 
 Ohne `<!-- layout -->`-Direktive wird das Layout aus dem Inhalt der Folie abgeleitet:
