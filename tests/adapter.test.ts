@@ -112,7 +112,7 @@ describe("loadDeck: Embed mit Größe lädt das Bild", () => {
 
   it("die Ausgabe trägt das Bild mit Größe (Kette Adapter -> Kern)", async () => {
     const loaded = await loadDeck(fakeApp("# T\n\n![[a.svg|48]]", []), note);
-    const out = renderMarkdown({ markdown: "![[a.svg|48]]", resolveEmbed: loaded!.resolveEmbed } as never);
+    const out = renderMarkdown({ markdown: "![[a.svg|48]]", resolveEmbed: loaded!.resolveEmbed });
     expect(out.html).toContain('width="48"');
     expect(out.warnings.filter((w) => w.kind === "missing-embed")).toEqual([]);
   });

@@ -222,7 +222,7 @@
 }
 
 /* --- AI settings: endpoint row editor (UI-STANDARD §8) ---
-   Verbatim from obsidian-kit@0.98.0 ENDPOINT_LIST_CSS. The kit ships its rules as an
+   Verbatim from obsidian-kit@0.100.0 ENDPOINT_LIST_CSS. The kit ships its rules as an
    exported string rather than a .css file (a CSS import is an assumption about the bundler) and
    leaves it to each consumer to paste them here — same pattern as COLLAPSIBLE_CSS. Re-copy on
    every re-vendor of endpoint-list.ts; the class prefix is the kit's `okit-`, not our `sd-`. */
