@@ -4,12 +4,23 @@
 
 import type { HostDocument } from "./host-document";
 
+/** Escape a string for use inside a double-quoted HTML attribute value. */
+function escapeAttr(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 /** Assemble the full self-contained HTML for a deck iframe. `extraCss` (preview chrome or
- *  print CSS) is concatenated AFTER `css` so it can override deck tokens. */
-export function isolatedDeckHtml(opts: { css: string; bodyHtml: string; extraCss?: string }): string {
-  const { css, bodyHtml, extraCss = "" } = opts;
+ *  print CSS) is concatenated AFTER `css` so it can override deck tokens. `contentSecurityPolicy`
+ *  (for a loose file opened outside the sandboxed iframe) becomes exactly one
+ *  `<meta http-equiv="Content-Security-Policy">` directly behind the charset meta; the value is
+ *  attribute-escaped. Without it (or empty) the output carries no such meta. */
+export function isolatedDeckHtml(opts: { css: string; bodyHtml: string; extraCss?: string; contentSecurityPolicy?: string }): string {
+  const { css, bodyHtml, extraCss = "", contentSecurityPolicy } = opts;
+  const csp = contentSecurityPolicy
+    ? `<meta http-equiv="Content-Security-Policy" content="${escapeAttr(contentSecurityPolicy)}">`
+    : "";
   return (
-    `<!doctype html><html><head><meta charset="utf-8">` +
+    `<!doctype html><html><head><meta charset="utf-8">${csp}` +
     `<style>${css}${extraCss}</style></head>` +
     `<body>${bodyHtml}</body></html>`
   );

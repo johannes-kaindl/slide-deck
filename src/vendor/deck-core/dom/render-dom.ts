@@ -1,6 +1,6 @@
 import mermaid from "mermaid";
 import type { HostDocument } from "./host-document";
-import { renderMarkdown, fromBase64Utf8 } from "../pure/render/md2html";
+import { renderMarkdown, deckHeadingShift, fromBase64Utf8 } from "../pure/render/md2html";
 import { computeFit } from "../pure/layout/fit";
 import { shouldCenterCompose } from "../pure/layout/compose";
 import { collectWarnings, collectDeckWarnings, WARNING_SEVERITY, type Warning, type SlideWarning } from "../pure/constraints/engine";
@@ -23,6 +23,26 @@ function setHtml(el: HTMLElement, html: string): void {
   el.replaceChildren(...Array.from(parsed.body.childNodes, (n) => ownerDoc.importNode(n, true)));
 }
 
+/** Die Nummern der Layouts agenda und threads als echte Spans statt `::before{content:counter()}`.
+ *  Grund: der PNG-Export des Abnehmers (modern-screenshot 4.7.0) entfernt in `copyPseudoClass` jedes
+ *  `counter(...)` aus `content`, die Nummern fehlten im Bild, während die Vorschau sie zeigte.
+ *  Zweistellig und je Liste fortlaufend wie `decimal-leading-zero`; native DOM-API, läuft in jedem Realm.
+ *  Exported for the seam (Fake-Doc-Test in tests/dom/item-numbers.test.ts). */
+export function addItemNumbers(doc: HostDocument, scope: HTMLElement, layout: string): void {
+  if (layout !== "agenda" && layout !== "threads") return;
+  for (const ol of Array.from(scope.querySelectorAll("ol"))) {
+    let n = 0;
+    for (const li of Array.from(ol.children)) {
+      if (li.tagName !== "LI") continue;
+      n++;
+      const num = doc.createElement("span");
+      num.className = "sd-item-num";
+      num.textContent = String(n).padStart(2, "0");
+      li.insertBefore(num, li.firstChild);
+    }
+  }
+}
+
 /** Exported for the seam: the slots are the one part of rendering that is pure
  *  string-to-element, so it can be proven against a four-method fake document. */
 export function appendSlots(doc: HostDocument, box: HTMLElement, deck: SlideDeck, slideIndex: number): void {
@@ -36,7 +56,22 @@ export function appendSlots(doc: HostDocument, box: HTMLElement, deck: SlideDeck
   if (d.header) make("sd-slide-header", d.header);
   if (d.footer) make("sd-slide-footer", d.footer);
   if (d.sender) make("sd-slide-sender", d.sender);
-  if (d.paginate) make("sd-slide-pagination", `${slideIndex + 1} / ${deck.slides.length}`);
+  if (d.paginate) {
+    // Number, separator and total are separate spans so a theme can style them apart
+    // (e.g. the current number in the accent colour). textContent stays "N / M".
+    const pagination = doc.createElement("div");
+    pagination.className = "sd-slide-pagination";
+    const part = (cls: string, text: string) => {
+      const span = doc.createElement("span");
+      span.className = cls;
+      span.textContent = text;
+      pagination.appendChild(span);
+    };
+    part("sd-page-current", String(slideIndex + 1));
+    part("sd-page-sep", " / ");
+    part("sd-page-total", String(deck.slides.length));
+    box.appendChild(pagination);
+  }
 }
 
 /** Diagram source of a `.sd-mermaid` slot (written by `toBase64Utf8` in md2html). */
@@ -93,6 +128,11 @@ export async function renderDeckToContainer(
   const derived = brauchtAbleitung ? mermaidVarsFromDocument(doc, container) : undefined;
   mermaid.initialize({ startOnLoad: false, ...mermaidConfig(entry, derived) });
 
+  // A deck without any `#` reads its highest heading level as the title. Computed ONCE over
+  // every region of every slide: per slide, a `##` subtitle in a deck full of `#` titles would
+  // turn into a title of its own.
+  const headingShift = deckHeadingShift(deck.slides.flatMap((s) => s.regions));
+
   // Pass 1 — build every slide's DOM (native createElement; runs in any realm).
   const built: { box: HTMLElement; inner: HTMLElement; slide: SlideDeck["slides"][number]; renderWarnings: SlideWarning[] }[] = [];
   for (const slide of deck.slides) {
@@ -106,7 +146,7 @@ export async function renderDeckToContainer(
     box.appendChild(inner);
     const renderWarnings: SlideWarning[] = [];
     for (const region of slide.regions) {
-      const r = renderMarkdown({ markdown: region, resolveEmbed });
+      const r = renderMarkdown({ markdown: region, resolveEmbed, headingShift });
       const regionEl = doc.createElement("div");
       regionEl.className = "sd-region";
       setHtml(regionEl, r.html); // self-generated controlled core HTML (parsed, not innerHTML)
@@ -132,7 +172,7 @@ export async function renderDeckToContainer(
     // through `wantsCover` so the built-in layout and the `cover` modifier reach it alike.
     const cover = wantsCover(slide);
     if (cover) {
-      const img = inner.querySelector<HTMLImageElement>("img");
+      const img = inner.querySelector<HTMLImageElement>("img:not(.sd-embed-sized)");
       if (img) {
         const media = doc.createElement("img");
         media.className = "sd-cover-media";
@@ -154,13 +194,13 @@ export async function renderDeckToContainer(
     if (
       !cover &&
       slide.regions.length === 1 &&
-      inner.querySelector(".sd-region > p > img.sd-embed:only-child, .sd-region > img.sd-embed, .sd-region > .sd-mermaid")
+      inner.querySelector(".sd-region > p > img.sd-embed:not(.sd-embed-sized):only-child, .sd-region > img.sd-embed:not(.sd-embed-sized), .sd-region > .sd-mermaid")
     ) {
       inner.classList.add("sd-has-media");
       // Obsidian ![[embeds]] render as a bare <img> directly under .sd-region (no
       // <p>); wrap each in a cell so it shares the same fill structure as the
       // <p>-wrapped markdown ![](…) images.
-      for (const img of Array.from(inner.querySelectorAll(".sd-region > img.sd-embed"))) {
+      for (const img of Array.from(inner.querySelectorAll(".sd-region > img.sd-embed:not(.sd-embed-sized)"))) {
         const cell = doc.createElement("div");
         cell.className = "sd-media-cell";
         img.parentNode?.insertBefore(cell, img);
@@ -173,9 +213,9 @@ export async function renderDeckToContainer(
     // above: that one governs every single-region deck already in the wild.
     if (!cover && slide.regions.length > 1) {
       for (const region of Array.from(inner.querySelectorAll<HTMLElement>(".sd-region"))) {
-        if (!region.querySelector(":scope > p > img.sd-embed:only-child, :scope > img.sd-embed, :scope > .sd-mermaid")) continue;
+        if (!region.querySelector(":scope > p > img.sd-embed:not(.sd-embed-sized):only-child, :scope > img.sd-embed:not(.sd-embed-sized), :scope > .sd-mermaid")) continue;
         region.classList.add("sd-has-media");
-        for (const img of Array.from(region.querySelectorAll(":scope > img.sd-embed"))) {
+        for (const img of Array.from(region.querySelectorAll(":scope > img.sd-embed:not(.sd-embed-sized)"))) {
           const cell = doc.createElement("div");
           cell.className = "sd-media-cell";
           img.parentNode?.insertBefore(cell, img);
@@ -183,6 +223,7 @@ export async function renderDeckToContainer(
         }
       }
     }
+    addItemNumbers(doc, inner, slide.layout);
     appendSlots(doc, box, deck, slide.index);
     await renderMermaidSlots(inner, slide.index, warnings);
     container.appendChild(box);

@@ -29,8 +29,10 @@ export const STRUCTURE_CSS = `
 .sd-slide a{ color:var(--sd-accent); text-decoration:underline; text-underline-offset:2px; }
 
 /* ── Vertical rhythm: blocks own NO margins; space comes from adjacency (owl).
-   More air before a new section, tight binding after a heading. ── */
-.sd-slide h1,.sd-slide h2,.sd-slide p,.sd-slide ul,.sd-slide ol,.sd-slide pre,.sd-slide blockquote,.sd-slide table{ margin:0; }
+   More air before a new section, tight binding after a heading. The reset below sits at
+   specificity ZERO (:where): at (0,1,1) it beat the .sd-region > * + * gaps (0,1,0) for
+   p, ul, ol, pre, blockquote and table, and beat a theme's own p{ margin-bottom }. ── */
+:where(.sd-slide) :where(h1,h2,p,ul,ol,pre,blockquote,table){ margin:0; }
 .sd-region > * + *{ margin-top:var(--sd-space-s,.75em); }
 /* Panels (code, callouts, tables, lists) are visually heavy boxes — they
    breathe on both sides, clearly more than the tight rhythm within them
@@ -119,15 +121,18 @@ export const STRUCTURE_CSS = `
    remaining vertical space via flex, so media sizing is independent of raster
    image decode timing and never relies on (unresolved) percentage heights. */
 .sd-embed{ display:block; margin-inline:auto; max-width:100%; max-height:100%; object-fit:contain; }
+/* ![[bild|48]] — an embed with an explicit size keeps it and sits in the text line, like in
+   Obsidian. It is no "media": the fill rules below and render-dom's media detection skip it. */
+.sd-embed-sized{ display:inline-block; vertical-align:middle; max-width:100%; }
 .sd-mermaid{ text-align:center; }
 .sd-mermaid svg{ display:block; margin-inline:auto; max-width:100%; max-height:100%; }
 .sd-content.sd-has-media{ display:flex; flex-direction:column; }
 .sd-content.sd-has-media > .sd-region{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-.sd-content.sd-has-media .sd-region > p:has(> img.sd-embed:only-child),
+.sd-content.sd-has-media .sd-region > p:has(> img.sd-embed:not(.sd-embed-sized):only-child),
 .sd-content.sd-has-media .sd-region > .sd-media-cell,
 .sd-content.sd-has-media .sd-region > .sd-mermaid{ flex:1 1 0; min-height:0; margin:var(--sd-space-xs,.5em) 0; }
-.sd-content.sd-has-media .sd-region > p > img.sd-embed:only-child,
-.sd-content.sd-has-media .sd-region > .sd-media-cell > img.sd-embed,
+.sd-content.sd-has-media .sd-region > p > img.sd-embed:not(.sd-embed-sized):only-child,
+.sd-content.sd-has-media .sd-region > .sd-media-cell > img.sd-embed:not(.sd-embed-sized),
 .sd-content.sd-has-media .sd-region > .sd-mermaid > svg{ width:100%; height:100%; object-fit:contain; }
 
 /* Media in a COLUMN. The rules above bind the fill to .sd-content, which only works when
@@ -140,11 +145,11 @@ export const STRUCTURE_CSS = `
 .sd-content:has(> .sd-region-title):has(> .sd-region.sd-has-media){ grid-template-rows:min-content 1fr; }
 .sd-content:not(:has(> .sd-region-title)):has(> .sd-region.sd-has-media){ grid-template-rows:1fr; }
 .sd-region.sd-has-media{ min-height:0; display:flex; flex-direction:column; }
-.sd-region.sd-has-media > p:has(> img.sd-embed:only-child),
+.sd-region.sd-has-media > p:has(> img.sd-embed:not(.sd-embed-sized):only-child),
 .sd-region.sd-has-media > .sd-media-cell,
 .sd-region.sd-has-media > .sd-mermaid{ flex:1 1 0; min-height:0; margin:var(--sd-space-xs,.5em) 0; }
-.sd-region.sd-has-media > p > img.sd-embed:only-child,
-.sd-region.sd-has-media > .sd-media-cell > img.sd-embed,
+.sd-region.sd-has-media > p > img.sd-embed:not(.sd-embed-sized):only-child,
+.sd-region.sd-has-media > .sd-media-cell > img.sd-embed:not(.sd-embed-sized),
 .sd-region.sd-has-media > .sd-mermaid > svg{ width:100%; height:100%; object-fit:contain; }
 .sd-missing-embed{ color:#8a4b00; border:2px dashed #8a4b00; padding:0 .3em; border-radius:4px; }
 

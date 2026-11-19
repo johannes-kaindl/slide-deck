@@ -4,8 +4,6 @@ import { frontmatterRange } from "./deck-sanitize";
 export interface ChatMessage { role: "system" | "user" | "assistant"; content: string }
 export interface DeckPromptOpts { slideTarget: number | "auto"; hint: string }
 
-const MAX_ECHO = 2000;
-
 /** Strip the note's own frontmatter block (schema keys would burn context / be echoed as content). */
 export function stripNoteFrontmatter(md: string): string {
   const lines = md.replace(/\r\n/g, "\n").split("\n");
@@ -46,15 +44,5 @@ export function buildDeckPrompt(sourceBody: string, opts: DeckPromptOpts, contra
   return [
     { role: "system", content: system },
     { role: "user", content: userParts.join("\n") },
-  ];
-}
-
-/** Corrective feedback for the single allowed auto-retry: echo the failed output (truncated)
- *  as the assistant turn, then a user turn naming why it failed. */
-export function buildRetryFeedback(failedOutput: string, reason: string): ChatMessage[] {
-  const echo = failedOutput.length > MAX_ECHO ? failedOutput.slice(0, MAX_ECHO) : failedOutput;
-  return [
-    { role: "assistant", content: echo },
-    { role: "user", content: `That was not a valid deck because: ${reason}. Output ONLY the deck markdown, starting with the frontmatter block.` },
   ];
 }

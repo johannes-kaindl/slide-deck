@@ -1,8 +1,8 @@
 {
   "source": "https://git.jkaindl.de/jkaindl/deck-core",
-  "version": "0.14.2",
-  "sha": "b7bd133",
-  "vendored": "2026-11-18",
+  "version": "0.15.0",
+  "sha": "a9973a9",
+  "vendored": "2026-11-19",
   "files": [
     "dom/chrome-css.ts",
     "dom/host-document.ts",
