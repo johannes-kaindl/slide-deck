@@ -24,23 +24,10 @@ function withTheme(deck: SlideDeck, themeOverride?: string): SlideDeck {
  *  laedt sie im eigenen Deck bewusst (Smoke V11). */
 export const MOBILE_EXPORT_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; base-uri 'none'; form-action 'none'";
 
-const CHARSET_META = `<meta charset="utf-8">`;
-
-/** Setzt das Policy-`meta` direkt hinter das `meta charset` des Kopfes. Findet es die Stelle nicht,
- *  wirft es: eine lose Datei ohne Policy darf nie still entstehen. Gesucht wird nur im Kopf, damit
- *  ein `meta charset` im Inhalt einer Folie nicht als Anker taugt. */
-export function withContentSecurityPolicy(html: string): string {
-  const head = html.indexOf("<head>");
-  const headEnd = html.indexOf("</head>");
-  const at = head === -1 || headEnd === -1 ? -1 : html.indexOf(CHARSET_META, head);
-  if (at === -1 || at > headEnd) throw new Error("export: meta charset not found in deck head, cannot set Content-Security-Policy");
-  const end = at + CHARSET_META.length;
-  return `${html.slice(0, end)}<meta http-equiv="Content-Security-Policy" content="${MOBILE_EXPORT_CSP}">${html.slice(end)}`;
-}
-
-/** Die lose Datei des mobilen PDF-Exports: der Assembler des Kerns plus Policy. */
+/** Die lose Datei des mobilen PDF-Exports: der Assembler des Kerns, der die Policy
+ *  (`MOBILE_EXPORT_CSP`) selbst hinter das charset-meta setzt. */
 export function mobileDeckHtml(opts: { css: string; bodyHtml: string; extraCss?: string }): string {
-  return withContentSecurityPolicy(isolatedDeckHtml(opts));
+  return isolatedDeckHtml({ ...opts, contentSecurityPolicy: MOBILE_EXPORT_CSP });
 }
 
 /** Mobile PDF path (letterhead pattern): window.print() is a no-op in the Obsidian

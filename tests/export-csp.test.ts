@@ -1,25 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { renderMarkdown } from "../src/vendor/deck-core/pure/render/md2html";
-import { MOBILE_EXPORT_CSP, mobileDeckHtml, withContentSecurityPolicy } from "../src/export";
+import { MOBILE_EXPORT_CSP, mobileDeckHtml } from "../src/export";
 
 const META = `<meta http-equiv="Content-Security-Policy" content="${MOBILE_EXPORT_CSP}">`;
-
-describe("withContentSecurityPolicy", () => {
-  it("setzt das meta direkt hinter das meta charset des Kopfes", () => {
-    const html = `<!doctype html><html><head><meta charset="utf-8"><style>a{}</style></head><body></body></html>`;
-    expect(withContentSecurityPolicy(html)).toBe(
-      `<!doctype html><html><head><meta charset="utf-8">${META}<style>a{}</style></head><body></body></html>`,
-    );
-  });
-
-  it("wirft, wenn die Stelle fehlt, statt still auf die Policy zu verzichten", () => {
-    expect(() => withContentSecurityPolicy("<!doctype html><html><head></head><body></body></html>")).toThrow(/charset/);
-  });
-
-  it("wirft, auch wenn das charset-meta nur im Inhalt der Folien steht", () => {
-    expect(() => withContentSecurityPolicy(`<body>&lt;meta charset="utf-8"&gt;</body>`)).toThrow(/charset/);
-  });
-});
 
 describe("MOBILE_EXPORT_CSP", () => {
   it("sperrt Skripte (default-src 'none', kein script-src), erlaubt Fernbilder nur über https", () => {
@@ -44,6 +27,19 @@ describe("mobileDeckHtml (die lose Datei des mobilen PDF-Exports)", () => {
   it("enthält die Policy genau einmal", () => {
     const html = mobileDeckHtml({ css: "", bodyHtml: "" });
     expect(html.split("Content-Security-Policy").length - 1).toBe(1);
+    expect(html.split(META).length - 1).toBe(1);
+  });
+
+  it("setzt das meta direkt hinter das meta charset (die Stelle legt isolatedDeckHtml fest)", () => {
+    expect(mobileDeckHtml({ css: "a{}", bodyHtml: "" })).toBe(
+      `<!doctype html><html><head><meta charset="utf-8">${META}<style>a{}</style></head><body></body></html>`,
+    );
+  });
+
+  it("Inhalt einer Folie mit Policy-Text ändert die Stelle nicht (kein Textersatz im Körper)", () => {
+    const html = mobileDeckHtml({ css: "", bodyHtml: `<p>&lt;meta charset="utf-8"&gt;</p>` });
+    expect(html.indexOf(META)).toBeLessThan(html.indexOf("<body>"));
+    expect(html.split(META).length - 1).toBe(1);
   });
 });
 
