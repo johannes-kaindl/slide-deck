@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { knownModifiersFor } from "../src/adapter";
+import type { App } from "obsidian";
+import { TFile } from "obsidian";
+import { knownModifiersFor, loadDeck } from "../src/adapter";
+import { renderMarkdown } from "../src/vendor/deck-core/pure/render/md2html";
 import { mergeThemes, type ThemeEntry, type ThemeRegistry } from "../src/vendor/deck-core/pure/presets";
 import { builtinThemeEntries, userThemeEntry } from "../src/vendor/deck-core/pure/deck-css";
 import { parseDeck } from "../src/vendor/deck-core/pure/slide-model";
@@ -60,5 +63,57 @@ describe("sd-modifiers erreicht den Parser (Consumer-Kette)", () => {
   it("meldet denselben Modifier, wenn die Liste NICHT durchgereicht wird", () => {
     const slide = parseDeck(deckMd).slides[0];
     expect(slide.directiveWarnings.map((w) => w.kind)).toEqual(["modifier-unknown"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// loadDeck: Embed-Größe. deck-core schneidet `|48` ab und fragt `resolveEmbed` nur mit dem
+// Pfad; der Adapter sammelt die Refs vorab und muss seinen Cache am selben Pfad schlüsseln.
+// ---------------------------------------------------------------------------
+describe("loadDeck: Embed mit Größe lädt das Bild", () => {
+  const svg = new TextEncoder().encode("<svg xmlns=\"http://www.w3.org/2000/svg\"/>").buffer;
+
+  // Die echte TFile hat keinen Konstruktor-Parameter; der Mock-Konstruktor setzt Pfad und Endung.
+  const tfile = (path: string): TFile => {
+    const f = Object.create(TFile.prototype) as TFile;
+    return Object.assign(f, { path, name: path.split("/").pop()!, extension: path.split(".").pop()! });
+  };
+
+  function fakeApp(note: string, looked: string[]) {
+    const dest = tfile("assets/a.svg");
+    return {
+      vault: {
+        read: async () => note,
+        readBinary: async () => svg,
+      },
+      metadataCache: {
+        getFileCache: () => null,
+        getFirstLinkpathDest: (ref: string) => { looked.push(ref); return ref === "a.svg" ? dest : null; },
+      },
+    } as unknown as App;
+  }
+  const note = tfile("deck.md");
+
+  for (const [name, source] of [
+    ["ohne Größe", "# T\n\n![[a.svg]]"],
+    ["|48", "# T\n\nText ![[a.svg|48]] im Fluss"],
+    ["|48x30", "# T\n\n![[a.svg|48x30]]"],
+    ["|Alt Text", "# T\n\n![[a.svg|Alt Text]]"],
+    ["\\|48 in der Tabellenzelle", "# T\n\n| a | b |\n|---|---|\n| ![[a.svg\\|48]] | x |"],
+  ] as const) {
+    it(`${name}: resolveEmbed("a.svg") liefert eine Data-URL, gesucht wird nur der Pfad`, async () => {
+      const looked: string[] = [];
+      const loaded = await loadDeck(fakeApp(source, looked), note);
+      expect(loaded).not.toBeNull();
+      expect(looked).toEqual(["a.svg"]);
+      expect(loaded!.resolveEmbed("a.svg")).toMatch(/^data:image\/svg\+xml;base64,/);
+    });
+  }
+
+  it("die Ausgabe trägt das Bild mit Größe (Kette Adapter -> Kern)", async () => {
+    const loaded = await loadDeck(fakeApp("# T\n\n![[a.svg|48]]", []), note);
+    const out = renderMarkdown({ markdown: "![[a.svg|48]]", resolveEmbed: loaded!.resolveEmbed } as never);
+    expect(out.html).toContain('width="48"');
+    expect(out.warnings.filter((w) => w.kind === "missing-embed")).toEqual([]);
   });
 });

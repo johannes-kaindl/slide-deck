@@ -15,6 +15,14 @@ export function knownModifiersFor(registry: ThemeRegistry, themeKey: string | un
   return resolveTheme(registry, themeKey).modifiers;
 }
 
+/** The path part of an embed reference: cut at the first `|` (size or alt text follow), a `\`
+ *  right before it belongs to the table syntax and goes too. Same reading as deck-core's
+ *  `splitEmbedRef`, which hands exactly this to `resolveEmbed`. */
+function embedPath(ref: string): string {
+  const bar = ref.indexOf("|");
+  return (bar < 0 ? ref : ref.slice(0, bar).replace(/\\$/, "")).trim();
+}
+
 export interface LoadedDeck {
   deck: SlideDeck;
   resolveEmbed: (ref: string) => string | null;
@@ -41,7 +49,9 @@ export async function loadDeck(
   // Embeds vorab zu Data-URLs (synchroner resolveEmbed-Vertrag fürs Core)
   const cache = new Map<string, string>();
   const refs = new Set<string>();
-  for (const s of deck.slides) for (const m of s.markdown.matchAll(/!\[\[([^\]]+?)\]\]/g)) refs.add(m[1].trim());
+  // deck-core ruft `resolveEmbed` nur mit dem Pfad (`![[a.svg|48]]` -> "a.svg"); Cache und
+  // Suche arbeiten deshalb am Pfad. Ein `\` direkt vor dem `|` gehört zur Tabellensyntax.
+  for (const s of deck.slides) for (const m of s.markdown.matchAll(/!\[\[([^\]]+?)\]\]/g)) refs.add(embedPath(m[1]));
   for (const ref of refs) {
     const dest = app.metadataCache.getFirstLinkpathDest(ref, file.path);
     if (dest instanceof TFile && mimeForExtension(dest.extension) !== null) {
