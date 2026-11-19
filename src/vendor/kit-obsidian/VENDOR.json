@@ -1,7 +1,7 @@
 {
   "source": "obsidian-kit",
-  "version": "0.98.0",
-  "sha": "888c9a4",
+  "version": "0.100.0",
+  "sha": "651d57b",
   "vendored": "backend-probe.ts, chat-client.ts, chat-transport.ts, clipboard.ts, clock.ts, collapsible.ts, embedding-connection.ts, endpoint-list.ts, endpoint-plumbing.ts, endpoint-secrets.ts, endpoint-source.ts, folder-hide.ts, endpoint-status-text.ts, folder-suggest.ts, setting-body-host.ts, copy-button.ts, help-setting.ts, hub.ts, llm-connection.ts, llm-connection-strings.ts, model-picker.ts, request-section.ts, request-session.ts, secrets.ts, settings_walker.ts, shortcuts-bridge.ts, stream-area.ts, status-indicator.ts, plugin-api.ts, print-to-pdf.ts, anthropic-transport.ts, model-bar.ts, model-bar-strings.ts, thinking-control.ts",
   "note": "Verbatim snapshot. Never hand-edit. Pins in tools/kit-sync.json, re-vendor via tools/sync-kit.sh (zentrales kit-sync im Dach). version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien. chat-client.ts, endpoint-list.ts, model-picker.ts und endpoint-source.ts tragen EINE mechanische Abweichung: kit-interne Importe von ../pure/* sind auf ../kit/* umgeschrieben (Vendor-Layout). Bei jedem Re-Vendoring reproduzieren; sonst darf nichts abweichen.",
   "license": "AGPL-3.0-or-later"

@@ -8,7 +8,7 @@ versioning follows [SemVer](https://semver.org/).
 
 ### Changed
 
-- **`deck-core` 0.15.0 (was 0.14.2).** What you notice in your decks:
+- **`deck-core` 0.15.1 (was 0.14.2).** What you notice in your decks:
   - **Spacing between paragraphs, lists, code, quotes, tables and headings now follows the theme's spacing steps.** An internal reset had cancelled it, so a list right after a paragraph (and the reverse) had no gap at all. **Slides may look fuller** (about one line of air more where a paragraph meets a list); none of the demo, regression and layout slides changed to scaling or a warning. **Your own themes:** element rules such as `p { margin-bottom: … }` or `ul { margin: … }` were neutralised before and now apply, so check your slides. A theme that copied the old reset (`.sd-slide h1,…,table { margin: 0 }`) cancels the fix for itself again; write it with `:where()`.
   - **A deck without a `#` heading reads its highest heading level as the slide title.** If your notes start at `##` (`## Title`, `### Kicker`), the slides now get the title, section, stat and cover-image looks that used to need `#`/`##`. One `#` anywhere in the deck (say `# Thanks` at the end) keeps the old reading for the whole deck; a deck with `#` looks as before. A theme that styled `h2` as the title for such decks now sees an `h1` there.
   - **The page number carries classes** `.sd-page-current`, `.sd-page-sep` and `.sd-page-total` inside `.sd-slide-pagination`, so a theme can style the current number apart from the total. The text stays "3 / 12".
@@ -16,16 +16,21 @@ versioning follows [SemVer](https://semver.org/).
   - **`![[image|48]]` and `![[image|48x30]]` set the image size as in Obsidian**, `![[image|Alt text]]` sets the alt text; in a table cell `\|` works like `|`. A sized image sits in the text line and is not stretched to fill the slide.
   - **The numbers of the `agenda` and `threads` layouts now appear in the image export too** (they were missing there because the screenshot library drops `counter()` from `content`). A theme that styled `.sd-layout-agenda ol > li::before` must target `.sd-item-num` instead.
   - **In the Obsidian plugin the same size rule holds for the image lookup:** `![[image.svg|48]]` and `![[image.svg\|48]]` now load `image.svg` (the lookup used the whole reference before).
+  - **The page number ("1 / 3") no longer wraps in the image export.** With its three spans the PNG export of `paginate: true` showed "1 /" and "3" on two lines; the preview and the export before showed it on one. A theme that wants the page number to wrap overrides `white-space` on `.sd-slide-pagination`.
 
-- **`deck-core` 0.15.1 (was 0.15.0).** The page number ("1 / 3") no longer wraps in the image export: with the page-number spans of 0.15.0 the PNG export of `paginate: true` showed "1 /" and "3" on two lines. A theme that wants the page number to wrap overrides `white-space` on `.sd-slide-pagination`.
-
-- **Kit pins raised to `obsidian-kit` 0.98.0 and `code-kit` 0.78.0** (were 0.93.0 and 0.73.0; the CHANGELOGs of all five skipped `obsidian-kit` and `code-kit` releases were read). What you notice, all in the AI settings:
+- **Kit pins raised to `obsidian-kit` 0.100.0 and `code-kit` 0.79.1** (were 0.93.0 and 0.73.0; the CHANGELOGs of all skipped `obsidian-kit` and `code-kit` releases were read). What you notice, all in the AI settings:
   - **The "Request" section has a new row "Random seed (seed)".** You can type a value only where the backend really uses it (today Open WebUI); on LM Studio the row is shown but locked, because a seed was measured to have no effect there. Ollama, OpenAI, Anthropic and unknown servers do not take a seed. There is no default: without your entry no seed is sent.
   - **`top_p` can be set from 0.01 on Open WebUI, OpenAI, Anthropic and unknown servers** (it was 0.1 everywhere). On LM Studio and Ollama the lower bound stays 0.1: a smaller value is marked red and not saved, and a smaller value stored earlier is not sent (the family value applies, with a note in the row).
   - **In the settings, the model row below the endpoint list, set to "Automatic", belongs to the endpoint the manager really uses** (it skips switched-off, keyless and unreachable ones), not to the first one in the list. Before, choosing a model there could bind an endpoint that was not reachable. If the manager reports none, the first entry is shown as before, with its "not reachable" hint.
   - **In a narrow settings window the extra lines of an endpoint row are left-aligned** (their names stood right-aligned, offset from the switch); the rule is copied into `styles.css` as the kit asks.
+  - **In the settings on Obsidian before 1.13 (the fallback tab; from 1.13 on Obsidian draws the number fields itself, unchanged), the number fields behave like Obsidian's own** (`minFontPx`, `imageScale`, `llmMaxTokens`): a value below the lower bound is no longer pulled up to it but not saved, the field keeps what you typed; an empty or unreadable field saves nothing (these fields have no default in the tab); the fields take decimals (`step="any"`).
 - **Without a visible effect here:** the thinking-level row keeps its order when it gets narrow (name before word, now written down in the kit), the connection no longer drags the model row's code into the vendored set, and the Generate panel's own model row is unchanged. The kit's prompt-panel frame, `panel-accept`, the writing helpers for frontmatter and code blocks, `fences` (code blocks that start in a list, `- ` followed by a fence), `recordingTransport`, `print-css` and `file-snapshot`, and in `code-kit` the new `coded-error`, `panel-host`, `gzip-text`, `ical-duration`, `throttle-embedder` and `iban` are not vendored by this plugin, so nothing of them reaches you.
-- All kit pins are now `obsidian-kit` 0.98.0 and `code-kit` 0.78.0.
+- **Without a visible effect here either:** in `obsidian-kit` 0.99.0 to 0.100.0 the prompt-panel frame (model label, buttons that stay put on a leaf change), the pseudonymizer contract and `pseudonymizeFor`/`restoreFor`, the `frontmatter` boolean values, the redline author trace and `pdf/layout`, and in `code-kit` 0.79.0 `iban`, `placeholder` and `user-regex`; this plugin does not vendor them.
+- All kit pins are now `obsidian-kit` 0.100.0 and `code-kit` 0.79.1.
+
+### Security
+
+- **A secret directly behind a word character (`key_sk-…`, `my_AKIA…`, `x_Bearer …`) is now redacted from logs and traces** (`code-kit` 0.79.1, `redact`). Before, such a secret stayed in clear text when the AI connection masked a request or a reply; a key glued to a lowercase letter without a separator (`keysk-…`) stays unread on purpose, because it cannot be told from ordinary words like `task-…`. This plugin applies no redaction rule of its own; the fix reaches it through the vendored AI connection.
 
 ## [0.22.2] — 2026-11-18
 

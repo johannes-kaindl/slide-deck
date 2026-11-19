@@ -1,10 +1,10 @@
 {
   "source": "obsidian-kit",
-  "version": "0.98.0",
-  "sha": "888c9a4",
+  "version": "0.100.0",
+  "sha": "651d57b",
   "vendored": "kit-css.ts, obsidian-mock.ts, window-timers.ts, linear-probe.ts",
-  "code_kit_version": "0.78.0",
-  "code_kit_sha": "84820b7",
+  "code_kit_version": "0.79.1",
+  "code_kit_sha": "f2437cf",
   "code_kit_vendored": "remote-sources.json, happy-dom-blind.json",
   "license": "AGPL-3.0-or-later"
 }
