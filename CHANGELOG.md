@@ -6,6 +6,16 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Kit pins raised to `obsidian-kit` 0.98.0 and `code-kit` 0.78.0** (were 0.93.0 and 0.73.0; the CHANGELOGs of all five skipped `obsidian-kit` and `code-kit` releases were read). What you notice, all in the AI settings:
+  - **The "Request" section has a new row "Random seed (seed)".** You can type a value only where the backend really uses it (today Open WebUI); on LM Studio the row is shown but locked, because a seed was measured to have no effect there. Ollama, OpenAI, Anthropic and unknown servers do not take a seed. There is no default: without your entry no seed is sent.
+  - **`top_p` can be set from 0.01 on Open WebUI, OpenAI, Anthropic and unknown servers** (it was 0.1 everywhere). On LM Studio and Ollama the lower bound stays 0.1: a smaller value is marked red and not saved, and a smaller value stored earlier is not sent (the family value applies, with a note in the row).
+  - **In the settings, the model row below the endpoint list, set to "Automatic", belongs to the endpoint the manager really uses** (it skips switched-off, keyless and unreachable ones), not to the first one in the list. Before, choosing a model there could bind an endpoint that was not reachable. If the manager reports none, the first entry is shown as before, with its "not reachable" hint.
+  - **In a narrow settings window the extra lines of an endpoint row are left-aligned** (their names stood right-aligned, offset from the switch); the rule is copied into `styles.css` as the kit asks.
+- **Without a visible effect here:** the thinking-level row keeps its order when it gets narrow (name before word, now written down in the kit), the connection no longer drags the model row's code into the vendored set, and the Generate panel's own model row is unchanged. The kit's prompt-panel frame, `panel-accept`, the writing helpers for frontmatter and code blocks, `fences` (code blocks that start in a list, `- ` followed by a fence), `recordingTransport`, `print-css` and `file-snapshot`, and in `code-kit` the new `coded-error`, `panel-host`, `gzip-text`, `ical-duration`, `throttle-embedder` and `iban` are not vendored by this plugin, so nothing of them reaches you.
+- All kit pins are now `obsidian-kit` 0.98.0 and `code-kit` 0.78.0.
+
 ## [0.22.2] — 2026-11-18
 
 ### Fixed

@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.93.0, src/obsidian/print-to-pdf.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.98.0, src/obsidian/print-to-pdf.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 import { Platform } from "obsidian";
 import { withTimeout } from "../kit/timeout";
 import { errorMessage } from "../kit/error-message";
