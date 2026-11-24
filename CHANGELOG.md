@@ -6,6 +6,10 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Library update to obsidian-kit 0.106.0 and code-kit 0.87.0 (was 0.100.0 and 0.79.1). The redaction module now also redacts an IBAN glued to a word character (`iban_DE89…`); the plugin itself only uses the secret redaction (already fixed in 0.79.1), so nothing changes in what it sends. A test pins both forms.
+
 ## [0.23.0] — 2026-11-19
 
 ### Changed
