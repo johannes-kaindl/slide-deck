@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.24.0] — 2026-11-24
+
 ### Added
 
 - Bar charts: a ` ```bars ``` ` code block with one `Label | Value` line per bar (optionally `| variant`) draws horizontal bars in preview, PDF and PNG, each scaled to the largest value, with the value shown as written. Numbers are read the German way (`1.234,5`, unit or `%` after the number ignored); an ambiguous `1.234` is read as 1234 and raises a slide warning, and so do a value that is not a number, a negative value and a malformed line. Themes style the classes `.sd-bars`, `.sd-bar-row`, `.sd-bar-label`, `.sd-bar-track`, `.sd-bar-fill` (width `var(--sd-bar)`), `.sd-bar-value` and `.sd-bar-<variant>` (see the theming guide). No animation yet. deck-core 0.16.0 (was 0.15.2).
