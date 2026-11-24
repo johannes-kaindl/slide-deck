@@ -6,7 +6,13 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- A long run of blank lines no longer stalls the check of generated decks. The Mermaid-source guard (`secondPassDeck`) went through the deck parser, whose slide-edge trim (`/\n+$/`) is quadratic on a run of line breaks with text behind it: 80,000 blank lines took 2.6 s, a 250 kB model reply made the generate step hang. Fixed in deck-core 0.15.2 (linear trim, same result for every input); the new fuzz test `tests/linear-fuzz.test.ts` guards it.
+
 ### Changed
+
+- deck-core 0.15.2 (was 0.15.1): only the linear edge trim above.
 
 - Library update to obsidian-kit 0.106.0 and code-kit 0.87.0 (was 0.100.0 and 0.79.1). The redaction module now also redacts an IBAN glued to a word character (`iban_DE89…`); the plugin itself only uses the secret redaction (already fixed in 0.79.1), so nothing changes in what it sends. A test pins both forms.
 - The image-prompt helper uses the library's `splitList` instead of its own copy of the comma split (same result).

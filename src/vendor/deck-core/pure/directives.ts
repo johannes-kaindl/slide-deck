@@ -35,6 +35,16 @@ const LAYOUT_ALIASES: Record<string, string> = {
   image: "image-focus",
 };
 
+/** Schneidet führende und abschließende `\n` ab. Bewusst keine Regex: `/\n+$/` setzt in einem langen Lauf von Umbrüchen, dem Text folgt, an jedem
+ *  Umbruch neu an und scheitert erst am Ende des Laufs, das ist quadratisch (50 000 leere Zeilen: rund eine Sekunde). */
+function trimNewlines(s: string): string {
+  let a = 0;
+  let b = s.length;
+  while (a < b && s.charCodeAt(a) === 10) a++;
+  while (b > a && s.charCodeAt(b - 1) === 10) b--;
+  return s.slice(a, b);
+}
+
 /** Parse per-slide directives. Fence-aware: directives inside ```/~~~ blocks are literal.
  *  Indented code blocks are intentionally NOT fence-protected (rare; documented limitation).
  *  CRLF line endings are normalized to LF internally before parsing. */
@@ -97,6 +107,6 @@ export function parseDirectives(slideMarkdown: string, knownModifiers?: readonly
     push(line);
   }
 
-  const regionStrings = regions.map((r) => r.join("\n").replace(/^\n+/, "").replace(/\n+$/, ""));
+  const regionStrings = regions.map((r) => trimNewlines(r.join("\n")));
   return { layout, layoutExplicit: layoutSet, modifiers, regions: regionStrings, warnings };
 }
