@@ -1,3 +1,4 @@
+import { splitList } from "../vendor/kit/split-list";
 import type { ImageCapabilities, ImageRequest } from "./image-api";
 import type { SlotBlock } from "./slot-format";
 
@@ -41,9 +42,7 @@ export const DEFAULT_NEGATIVES: Record<ImageFunction, string> = {
 };
 
 const SEP = ", ";
-function parts(text: string): string[] {
-  return text.split(",").map((p) => p.trim()).filter((p) => p !== "");
-}
+const parts = (text: string): string[] => splitList(text);
 
 /** Baustein an den Prompt hängen — kommasepariert, ohne Dubletten. Dieselbe Grammatik, die
  *  local-image-generator intern für seine Stil-Presets benutzt (`splitParts` in

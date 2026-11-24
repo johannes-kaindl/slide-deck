@@ -15,7 +15,7 @@
       "dir": "src/vendor/kit",
       "source": "code-kit",
       "from": "src/ts/pure",
-      "modules": ["answer-retry", "backend-probe", "capabilities", "data-url", "embeddings-client", "endpoint", "endpoint_config", "endpoint_diagnostics", "error-message", "error_body", "model-choice", "model-context", "anthropic-wire", "model-list-cache", "reasoning", "redact", "safe-markdown", "sampling-profiles", "secrets", "settings", "sse", "think-splitter", "timeout"]
+      "modules": ["answer-retry", "backend-probe", "capabilities", "data-url", "embeddings-client", "endpoint", "endpoint_config", "endpoint_diagnostics", "error-message", "error_body", "model-choice", "model-context", "anthropic-wire", "model-list-cache", "reasoning", "redact", "safe-markdown", "sampling-profiles", "secrets", "settings", "split-list", "sse", "think-splitter", "timeout"]
     },
     {
       "dir": "src/vendor/kit",
