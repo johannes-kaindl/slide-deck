@@ -6,6 +6,8 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.23.1] — 2026-11-24
+
 ### Security
 
 - A long run of blank lines no longer stalls the check of generated decks. The Mermaid-source guard (`secondPassDeck`) went through the deck parser, whose slide-edge trim (`/\n+$/`) is quadratic on a run of line breaks with text behind it: 80,000 blank lines took 2.6 s, a 250 kB model reply made the generate step hang. Fixed in deck-core 0.15.2 (linear trim, same result for every input); the new fuzz test `tests/linear-fuzz.test.ts` guards it.
