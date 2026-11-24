@@ -6,6 +6,10 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Bar charts: a ` ```bars ``` ` code block with one `Label | Value` line per bar (optionally `| variant`) draws horizontal bars in preview, PDF and PNG, each scaled to the largest value, with the value shown as written. Numbers are read the German way (`1.234,5`, unit or `%` after the number ignored); an ambiguous `1.234` is read as 1234 and raises a slide warning, and so do a value that is not a number, a negative value and a malformed line. Themes style the classes `.sd-bars`, `.sd-bar-row`, `.sd-bar-label`, `.sd-bar-track`, `.sd-bar-fill` (width `var(--sd-bar)`), `.sd-bar-value` and `.sd-bar-<variant>` (see the theming guide). No animation yet. deck-core 0.16.0 (was 0.15.2).
+
 ### Changed
 
 - Library update to obsidian-kit 0.108.0 and code-kit 0.88.0 (was 0.106.0 and 0.87.0). Nothing changes for users: the vendored modules gain an optional hub overflow menu (not used here) and an optional `message` on endpoint errors. The runtime-linearity tests now count as skipped instead of failed when the machine's load is above 3 per core (the library's `mitLastSchutz`); a release gate broke on such a timing flake in 0.23.0.

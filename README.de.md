@@ -35,6 +35,7 @@ Eine Markdown-Notiz in eine Präsentation verwandeln und als PDF oder PNG-Bilder
 - **Code-Hervorhebung** — Fenced-Code-Blöcke werden von highlight.js eingefärbt, theme-spezifisch.
 - **Barrierefreie Callouts** — Obsidian-Callouts `> [!note]`, `[!warning]`, `[!danger]`, `[!tip]`, `[!info]` mit redundanter Kodierung: Rahmenfarbe + geometrische Form + sichtbares Label (nicht nur Farbe; erfüllt WCAG 1.4.1).
 - **Mermaid-Diagramme** — Fenced-Blöcke ` ```mermaid ``` ` werden als SVG gerendert, theme-spezifisch.
+- **Balkendiagramme** — ein Block ` ```bars ``` ` mit einer Zeile `Beschriftung | Wert` je Balken (optional `| Variante`) zeichnet waagrechte Balken relativ zum größten Wert; der Wert steht wie geschrieben daneben. Zahlen werden deutsch gelesen (`1.234,5`); ein mehrdeutiges `1.234` wird als 1234 gelesen und als Folienwarnung gemeldet, ebenso ein Wert, der keine Zahl ist. Vorerst statisch, ohne Animation.
 - **EN/DE-Oberfläche** — alle UI-Strings folgen der Obsidian-Spracheinstellung (Englisch kanonisch, Deutsch unterstützt).
 
 ## Screenshots

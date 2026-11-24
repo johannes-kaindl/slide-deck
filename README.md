@@ -36,6 +36,7 @@ Turn a Markdown note into a slide deck and export it to PDF or a PNG image serie
 - **Code highlighting** — fenced code blocks highlighted by highlight.js, per-theme.
 - **Accessible callouts** — Obsidian-style `> [!note]`, `[!warning]`, `[!danger]`, `[!tip]`, `[!info]` blocks rendered with redundant coding: border color + geometric shape + visible label word (not color-only; satisfies WCAG 1.4.1).
 - **Mermaid diagrams** — fenced ` ```mermaid ``` ` blocks rendered as SVG, per-theme.
+- **Bar charts** — a ` ```bars ``` ` block with one `Label | Value` line per bar (optionally `| variant`) draws horizontal bars scaled to the largest value; the value shows as written. Numbers are read the German way (`1.234,5`); an ambiguous `1.234` is read as 1234 and flagged as a slide warning, as is a value that is not a number. Static for now, no animation.
 - **EN/DE interface** — all UI strings follow Obsidian's language setting (English canonical, German supported).
 - **Image slots** (desktop, requires [local-image-generator](https://github.com/johannes-kaindl/local-image-generator)) — a `slide-image` code block renders as a card with a generate button; on click it calls the neighbor plugin to produce and save an image, then replaces itself with a normal embed plus a prompt comment for re-rolling later.
 

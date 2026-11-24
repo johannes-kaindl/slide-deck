@@ -4,6 +4,7 @@ import katexImport from "@vscode/markdown-it-katex";
 import hljs from "./hljs";
 import type { SlideWarning } from "../constraints/engine";
 import { calloutPlugin } from "./callouts";
+import { parseBarsBlock, renderBarsHtml } from "./bars";
 
 // Interop guard: esbuild's CJS bundling exposes this package's default export as
 // `{ default: fn }` at runtime, while vitest/ESM exposes the fn directly. Without
@@ -81,6 +82,18 @@ function buildMd(): MarkdownIt {
       // token.content includes a trailing newline added by markdown-it; strip it
       const b64 = toBase64Utf8(token.content.replace(/\n$/, ""));
       return `<div class="sd-mermaid" data-src="${b64}"></div>`;
+    }
+    if (token.info.trim() === "bars") {
+      // Static bars; the row form and number reading live in bars.ts. Problems travel back
+      // through env, because a fence rule can only return HTML.
+      const block = parseBarsBlock(token.content.replace(/\n$/, ""));
+      const out = renderBarsHtml(block.rows);
+      const sink = (env as { warnings?: SlideWarning[] } | undefined)?.warnings;
+      if (sink) {
+        for (const message of [...block.problems, ...out.problems]) sink.push({ kind: "bars-malformed", message });
+        for (const message of out.ambiguous) sink.push({ kind: "bars-ambiguous", message });
+      }
+      return out.html;
     }
     if (token.info.trim() === "slide-image") {
       // Der Kern reicht den Rohtext durch und parst ihn NICHT: die Feld-Grammatik ist
@@ -263,6 +276,6 @@ export function renderMarkdown(input: RenderInput): RenderedSlide {
   // a chain like `a` → `b` must never break AFTER the arrow, or the arrow's
   // target starts a line alone ("orphaned arrow"). Chips themselves are
   // nowrap via CSS; the joining space becomes non-breaking here.
-  const html = md.render(preprocessed, { headingShift: input.headingShift ?? 0 }).replace(/(<\/span>) +(<code)/g, "$1&nbsp;$2");
+  const html = md.render(preprocessed, { headingShift: input.headingShift ?? 0, warnings }).replace(/(<\/span>) +(<code)/g, "$1&nbsp;$2");
   return { html, warnings };
 }

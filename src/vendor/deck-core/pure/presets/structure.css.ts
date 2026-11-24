@@ -215,4 +215,15 @@ export const STRUCTURE_CSS = `
   padding:var(--sd-space-s,.75em); min-height:3em; }
 .sd-slide .sd-image-slot pre{ font-family:var(--sd-mono,ui-monospace,SFMono-Regular,Menlo,monospace);
   font-size:.7em; white-space:pre-wrap; margin:0; background:none; padding:0; }
+/* ── bars code block — static bar chart (md2html → bars.ts). The fill width is var(--sd-bar), a percentage
+   of the largest value written on .sd-bar-fill; a width, not a scaleX, so the PNG export carries it.
+   One grid for the whole block (rows are display:contents), so labels, tracks and values line up.
+   A plain default: themes restyle these classes and the variant class sd-bar-<name> on the row. ── */
+.sd-slide .sd-bars{ display:grid; grid-template-columns:minmax(0,max-content) minmax(0,1fr) max-content;
+  column-gap:var(--sd-space-s,.75em); row-gap:var(--sd-space-xs,.5em); align-items:center; }
+.sd-slide .sd-bar-row{ display:contents; }
+.sd-slide .sd-bar-track{ display:block; height:.9em; border-radius:4px; overflow:hidden;
+  background:color-mix(in srgb,var(--sd-fg) 10%,transparent); }
+.sd-slide .sd-bar-fill{ display:block; height:100%; width:var(--sd-bar,0%); background:var(--sd-accent); border-radius:inherit; }
+.sd-slide .sd-bar-value{ font-variant-numeric:tabular-nums; text-align:right; }
 `;

@@ -1,7 +1,7 @@
 {
   "source": "https://git.jkaindl.de/jkaindl/deck-core",
-  "version": "0.15.2",
-  "sha": "a8fedba",
+  "version": "0.16.0",
+  "sha": "8ff5515",
   "vendored": "2026-11-24",
   "files": [
     "dom/chrome-css.ts",
@@ -30,6 +30,7 @@
     "pure/presets/layouts.css.ts",
     "pure/presets/structure.css.ts",
     "pure/presets/sumi.ts",
+    "pure/render/bars.ts",
     "pure/render/callouts.ts",
     "pure/render/hljs.ts",
     "pure/render/md2html.ts",

@@ -195,6 +195,17 @@ number (see "Export limits" in §7).
 
 See `example.css` §2 for the same list as ready-to-uncomment declarations.
 
+### Bar charts (` ```bars ``` `)
+
+A `bars` block renders `.sd-bars > .sd-bar-row > (.sd-bar-label, .sd-bar-track > .sd-bar-fill, .sd-bar-value)`. The fill's width is `var(--sd-bar)`, written on `.sd-bar-fill` as its share of the largest value (`style="--sd-bar: 58.5%"`); a variant written as the third field becomes the class `sd-bar-<name>` on the row. The base is one grid for the whole block (rows are `display: contents`), track tinted from `--sd-fg`, fill in `--sd-accent`. Restyle through these classes, for example:
+
+```css
+.sd-slide .sd-bar-track { height: 1.2em; border-radius: 0; }
+.sd-slide .sd-bar-accent .sd-bar-fill { background: var(--sd-fg); }
+```
+
+Keep the width a width: a `transform: scaleX(…)` would equal its default on a full bar and drop out of the PNG export (see §7).
+
 ---
 
 ## 4. What you should NOT style anymore

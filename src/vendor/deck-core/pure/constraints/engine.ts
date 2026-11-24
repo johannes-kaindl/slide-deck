@@ -7,7 +7,7 @@ import { THEME_ALIASES, type ThemeRegistry } from "../presets";
 export type WarningKind =
   | "overflow" | "belowFloor" | "missing-embed" | "mermaid-error" | "low-contrast"
   | "layout-unknown" | "modifier-unknown" | "layout-multiple" | "directive-malformed" | "region-count"
-  | "theme-unknown" | "cover-no-image";
+  | "theme-unknown" | "cover-no-image" | "bars-malformed" | "bars-ambiguous";
 /** How loud a warning may be. `error` costs legibility and must be seen; `warn` means the
  *  deck renders but something the author asked for did not happen; `info` reports that the
  *  core did not recognise a name and passed it through — the documented extension path for
@@ -28,6 +28,8 @@ export const WARNING_SEVERITY: Record<WarningKind, WarningSeverity> = {
   "region-count": "warn",
   "theme-unknown": "warn",
   "cover-no-image": "warn",
+  "bars-malformed": "warn",
+  "bars-ambiguous": "warn",
   "layout-unknown": "info",
   "modifier-unknown": "info",
 };
