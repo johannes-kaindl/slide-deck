@@ -10,7 +10,7 @@
 import { describe, expect, it } from "vitest";
 import { Window } from "happy-dom";
 import { secondPassDeck } from "../src/deck-second-pass";
-import { pruefeLinearFuzz } from "./vendor/kit/linear-probe";
+import { mitLastSchutz, pruefeLast, pruefeLinearFuzz } from "./vendor/kit/linear-probe";
 
 const FUZZ_MS = 180_000;
 
@@ -35,11 +35,11 @@ const deck = (src: string): string => `# A\n\n\`\`\`mermaid\n${src}\n\`\`\`\n`;
 const befund = (r: { verdaechtig: ReadonlyArray<{ message: string }> }): string => r.verdaechtig.map((v) => v.message).join("\n");
 
 describe("Mermaid-Quelltext im Deck (secondPassDeck)", () => {
-  it("Fuzz über url, Klammer, img-Feld, Anführungszeichen und Zeilenumbruch", () => {
-    const f = pruefeLinearFuzz((s) => lauf(deck(`graph TD\n${s}`)), {
+  it("Fuzz über url, Klammer, img-Feld, Anführungszeichen und Zeilenumbruch", (ctx) => {
+    const f = mitLastSchutz(ctx, () => pruefeLinearFuzz((s) => lauf(deck(`graph TD\n${s}`)), {
       alphabet: ["url", "(", "@{ img: ", '"', "\n", "x"],
       maxLaenge: 3,
-    });
+    }));
     expect(f.linear, befund(f)).toBe(true);
     expect(f.gemessen, "der Fuzz hat Eingaben gemessen").toBeGreaterThan(20);
   }, FUZZ_MS);
@@ -58,14 +58,20 @@ describe("Kommentar und Klammer, verschachtelt (secondPassDeck, nur der Aufruf g
     return ms;
   };
 
-  it("250 kB Quelltext (n = 50 000) laufen in unter 5 s durch", () => {
-    expect(zeit(50_000)).toBeLessThan(5_000);
+  // Die eigenen Zeitmessungen hier laufen nicht durch die Proben des Kits; dieselbe Gültigkeitsbedingung (Last je Kern vor und nach der Messung,
+  // Schwelle des Kits) stellt `gemessen` her: über der Schwelle ist der Fall übersprungen, nicht rot.
+  const gemessen = <T>(ctx: Parameters<typeof mitLastSchutz>[0], messung: () => T): T =>
+    mitLastSchutz(ctx, () => { pruefeLast(undefined, "vor"); const r = messung(); pruefeLast(undefined, "nach"); return r; });
+
+  it("250 kB Quelltext (n = 50 000) laufen in unter 5 s durch", (ctx) => {
+    expect(gemessen(ctx, () => zeit(50_000))).toBeLessThan(5_000);
   }, FUZZ_MS);
 
-  it("t(50 000)/t(12 500) liegt unter 8 (linear etwa 4, quadratisch 16)", () => {
-    zeit(2_000); // Aufwärmen
-    const klein = Math.min(zeit(12_500), zeit(12_500));
-    const gross = zeit(50_000);
+  it("t(50 000)/t(12 500) liegt unter 8 (linear etwa 4, quadratisch 16)", (ctx) => {
+    const { klein, gross } = gemessen(ctx, () => {
+      zeit(2_000); // Aufwärmen
+      return { klein: Math.min(zeit(12_500), zeit(12_500)), gross: zeit(50_000) };
+    });
     expect(gross < 100 || gross / Math.max(klein, 0.05) < 8, `t(12 500) = ${klein.toFixed(1)} ms, t(50 000) = ${gross.toFixed(1)} ms`).toBe(true);
   }, FUZZ_MS);
 });
@@ -74,8 +80,8 @@ describe("Gegenprobe: der Fuzz kann rot werden (CORE-TEST-01)", () => {
   /** Absichtlich quadratisch: dieselbe Form wie `src.replace(/\n*$/, …)` auf dem Mermaid-Quelltext. */
   const quadratisch = (s: string): string => s.replace(/\n*$/, "\n\n");
 
-  it("pruefeLinearFuzz meldet die quadratische Form als Verdacht", () => {
-    const f = pruefeLinearFuzz((s) => quadratisch(`graph TD\n${s}\nA-->B`), { alphabet: ["\n", "x"], maxLaenge: 1, verschachtelt: false });
+  it("pruefeLinearFuzz meldet die quadratische Form als Verdacht", (ctx) => {
+    const f = mitLastSchutz(ctx, () => pruefeLinearFuzz((s) => quadratisch(`graph TD\n${s}\nA-->B`), { alphabet: ["\n", "x"], maxLaenge: 1, verschachtelt: false }));
     expect(f.linear).toBe(false);
     expect(f.verdaechtig.map((v) => v.einheit)).toContain("\n");
   }, FUZZ_MS);

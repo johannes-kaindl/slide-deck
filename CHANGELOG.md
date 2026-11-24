@@ -6,6 +6,10 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Library update to obsidian-kit 0.108.0 and code-kit 0.88.0 (was 0.106.0 and 0.87.0). Nothing changes for users: the vendored modules gain an optional hub overflow menu (not used here) and an optional `message` on endpoint errors. The runtime-linearity tests now count as skipped instead of failed when the machine's load is above 3 per core (the library's `mitLastSchutz`); a release gate broke on such a timing flake in 0.23.0.
+
 ## [0.23.1] — 2026-11-24
 
 ### Security

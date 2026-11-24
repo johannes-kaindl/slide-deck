@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { Window } from "happy-dom";
 import { secondPassDeck } from "../src/deck-second-pass";
 import { neutralizeRemoteResources } from "../src/vendor/kit/safe-markdown";
-import { pruefeLinear } from "./vendor/kit/linear-probe";
+import { mitLastSchutz, pruefeLinear } from "./vendor/kit/linear-probe";
 
 // Ohne Seitenladen: das Dokument ist inert, happy-dom darf auch fuer iframes nichts holen.
 const win = new Window({ settings: { disableIframePageLoading: true, disableJavaScriptEvaluation: true, disableCSSFileLoading: true, disableJavaScriptFileLoading: true } });
@@ -121,13 +121,15 @@ describe("secondPassDeck", () => {
       expect(performance.now() - t0).toBeLessThan(400 + n / 10);
       expect(r.replaced).toEqual([1]); // ein `/*` im Mermaid-Quelltext ist selbst ein Fund
     });
-    it.each([
+    // Unter Rechnerlast ueber 3 je Kern ist die Zeitmessung ungueltig: `mitLastSchutz` fuehrt den Fall dann als uebersprungen statt rot
+    // (obsidian-kit 0.108.0; Welle 36 brach ein Release-Gate bei Load 95 bis 130 mit Quotient 15 ab, die Wiederholung war gruen).
+    it.for([
       ["lange Folge ohne Treffer", "A-->B\n"],
       ["viele img:-Zeilen", 'A@{ img: "x.png" }\n'],
       ["lange url-Folge", "url "],
       ["lange Backslash-freie Zeile ohne Klammer", "image"],
-    ])("Laufzeit der uebrigen Muster: %s waechst linear", (_n, einheit) => {
-      const r = pruefeLinear((src: string) => secondPassDeck(deck("graph TD\n" + src), deps), einheit);
+    ] as const)("Laufzeit der uebrigen Muster: %s waechst linear", ([, einheit], ctx) => {
+      const r = mitLastSchutz(ctx, () => pruefeLinear((src: string) => secondPassDeck(deck("graph TD\n" + src), deps), einheit));
       expect(r.linear, r.message).toBe(true);
     });
     // Seit code-kit 0.20.0 fragt die zweite Schicht das Kit (`mermaidLoadsRemote`), nicht mehr eine eigene Regel: strenger bei
