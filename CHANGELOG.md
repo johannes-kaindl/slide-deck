@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+## [0.25.0] — 2026-11-25
+
 ### Fixed
 
 - PNG export now sets body text in the same font as the preview. Themes with the Inter stack (kami, kogane, sumi, kairo, kurenai) used to fall back to a wider substitute font in the exported image (a line 590.8 px wide in the preview came out 666.5 px in the PNG, +12.8 %), so labels could crowd bars. Preview, fit measurement and PNG now use Obsidian's own Inter. The PDF keeps the system font for now: its file policy loads fonts only from `data:` URLs.
