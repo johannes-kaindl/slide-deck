@@ -349,6 +349,9 @@ const ABSCHNITT_PUNKTE: Record<string, readonly string[]> = {
     "C2 Ausschalten macht ihn wieder sichtbar",
     "C3 Bei fokussiertem Pop-out liegt das Blatt im Hauptfenster, nicht im Pop-out",
   ],
+  schrift: [
+    "S1 Fliesstext im PNG-Export so breit wie in der Vorschau (Toleranz 1 %, Inter-Stack, Theme kami)",
+  ],
   export: [
     PD2_NAME,
     `D1 Bilder-Export schreibt ${DECK_SLIDES} PNG in den Export-Ordner`,
@@ -1488,6 +1491,106 @@ const explorer: Section = {
 /** D — der Bilder-Export. Zweiter Kernpfad: dasselbe iframe-Artefakt wie die Vorschau,
  *  aufgenommen mit `modern-screenshot`. PDF bleibt Handarbeit — `contentWindow.print()`
  *  oeffnet einen modalen Systemdialog und der blockiert jede weitere CDP-Nachricht. */
+/** S — die Schrift im PNG-Export. Der Inter-Stack der deck-core-Themes trifft in der Vorschau
+ *  auf eine Systemschrift; der foreignObject-Klon von modern-screenshot setzte dieselbe Zeile
+ *  13 % breiter (Welle 37: 587 gegen 666 px), und am bars-Codeblock lief ein Label an den Balken.
+ *  Gemessen wird die Tinte einer einzeiligen Absatzzeile im geschriebenen PNG, nicht das DOM:
+ *  am DOM waere der Punkt immer gruen, die Abweichung entsteht erst im Bild. Das Detail nennt
+ *  die Schriften, die Haupt- und Deck-Dokument kennen, damit ein Rot seine Ursache mitbringt. */
+const SCHRIFT_NOTE = "Schrift probe.md";
+const SCHRIFT_TEXT = "Zahlen deutsch gelesen, Einheit wie geschrieben.";
+const schriftSektion: Section = {
+  key: "schrift",
+  title: "S · Schrift im PNG-Export",
+  async run(cdp) {
+    const inhalt = `---\ntheme: kami\n---\n\n${SCHRIFT_TEXT}\n`;
+    const angelegt = await cdp.evaluate<boolean>(`
+      const pfad = ${JSON.stringify(SCHRIFT_NOTE)};
+      const da = app.vault.getAbstractFileByPath(pfad);
+      if (da) { await app.vault.modify(da, ${JSON.stringify(inhalt)}); return false; }
+      await app.vault.create(pfad, ${JSON.stringify(inhalt)});
+      await new Promise((r) => setTimeout(r, 600));
+      return true;
+    `);
+    if (angelegt) erzeugtePfade.push(SCHRIFT_NOTE);
+    const folien = await openPreview(cdp, SCHRIFT_NOTE);
+    type Vorschau = { breite: number; oben: number; unten: number; schrift: string; deckFonts: string; hauptFonts: string; vergleich: string } | null;
+    const vorschau = await pollUntil<Vorschau>(cdp, `
+      ${DECK_DOC}
+      if (!deck) return null;
+      const slide = deck.querySelector(".sd-slide");
+      const p = slide && Array.from(slide.querySelectorAll("p")).find((e) => e.textContent.includes(${JSON.stringify(SCHRIFT_TEXT)}));
+      if (!p) return null;
+      await deck.fonts.ready;
+      const r = deck.createRange(); r.selectNodeContents(p);
+      const t = r.getBoundingClientRect(); const s = slide.getBoundingClientRect();
+      const f = s.width / slide.offsetWidth;
+      const fam = (d) => Array.from(new Set(Array.from(d.fonts).map((x) => x.family + ":" + x.status))).join(", ") || "-";
+      // Vergleichsbreiten im Hauptdokument (dort hat Obsidian Inter geladen): welche Schrift das PNG traf, verraet die passende Zahl.
+      const cs = deck.defaultView.getComputedStyle(p);
+      const miss = (familie) => { const e = document.createElement("span"); e.textContent = ${JSON.stringify(SCHRIFT_TEXT)};
+        e.style.cssText = "position:absolute;left:-9999px;white-space:nowrap;font-size:" + cs.fontSize + ";font-weight:" + cs.fontWeight + ";font-family:" + familie;
+        document.body.appendChild(e); const w = e.getBoundingClientRect().width; e.remove(); return Math.round(w * 10) / 10; };
+      return { breite: t.width / f, oben: (t.top - s.top) / f, unten: (t.bottom - s.top) / f,
+        schrift: cs.fontFamily, deckFonts: fam(deck), hauptFonts: fam(document),
+        vergleich: "Inter " + miss("Inter") + " · system-ui " + miss("system-ui") + " · Helvetica " + miss("Helvetica") };
+    `, 20_000);
+    const probe = await cdp.evaluate<string>(`
+      ${readFileSync("/private/tmp/claude-502/-Users-johannes-Projects-jkaindl-obsidian-plugins-slide-deck/28722802-ae81-4f05-8b75-bacd63ed418c/scratchpad/fontprobe/entry.js", "utf8")}
+      ${DECK_DOC}
+      return (await window.__fontProbe(deck)) + " || MAIN: " + (await window.__fontProbe(document));
+    `);
+    console.log("PROBE " + probe);
+    const exportOrdner = await cdp.evaluate<string>(`return app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.exportFolder;`);
+    const base = SCHRIFT_NOTE.replace(/\.md$/, "");
+    const ordner = `${exportOrdner}/${base}`;
+    const bild = `${ordner}/01-${base}.png`;
+    let tinte: { breite: number; skala: number } | null = null;
+    if (vorschau) {
+      // Altes Bild weg, sonst faende der Poll das Artefakt eines Vorlaufs (vgl. M3).
+      await cdp.evaluate(`
+        const a = app.vault.adapter;
+        if (await a.exists(${JSON.stringify(ordner)})) await a.rmdir(${JSON.stringify(ordner)}, true);
+        return true;
+      `);
+      await clearNotices(cdp);
+      await cdp.evaluate(`await app.commands.executeCommandById("${PLUGIN_ID}:export-images"); return true;`);
+      tinte = await pollUntil<{ breite: number; skala: number }>(cdp, `
+        const a = app.vault.adapter;
+        const pfad = ${JSON.stringify(bild)};
+        if (!(await a.exists(pfad))) return null;
+        const st = await a.stat(pfad);
+        if (!st || st.size < 1024) return null;
+        const bmp = await createImageBitmap(new Blob([await a.readBinary(pfad)], { type: "image/png" }));
+        const c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height;
+        const ctx = c.getContext("2d"); ctx.drawImage(bmp, 0, 0);
+        const skala = bmp.width / 1280;
+        const y0 = Math.max(0, Math.floor(${vorschau.oben} * skala)), y1 = Math.min(bmp.height, Math.ceil(${vorschau.unten} * skala));
+        const d = ctx.getImageData(0, y0, bmp.width, y1 - y0).data;
+        const bg = [d[8], d[9], d[10]];
+        let min = bmp.width, max = -1;
+        for (let y = 0; y < y1 - y0; y++) for (let x = 0; x < bmp.width; x++) {
+          const i = (y * bmp.width + x) * 4;
+          if (Math.abs(d[i] - bg[0]) + Math.abs(d[i + 1] - bg[1]) + Math.abs(d[i + 2] - bg[2]) > 120) { if (x < min) min = x; if (x > max) max = x; }
+        }
+        return { breite: max < 0 ? 0 : (max - min + 1) / skala, skala };
+      `, 90_000, 2000);
+      if (tinte && !erzeugtePfade.includes(exportOrdner)) erzeugtePfade.push(exportOrdner);
+    }
+    const abw = vorschau && tinte && vorschau.breite > 0 ? (tinte.breite - vorschau.breite) / vorschau.breite : null;
+    record(
+      "S1 Fliesstext im PNG-Export so breit wie in der Vorschau (Toleranz 1 %, Inter-Stack, Theme kami)",
+      abw !== null && tinte !== null && tinte.breite > 0 && Math.abs(abw) <= 0.01,
+      !vorschau
+        ? `Absatz nicht in der Vorschau (${folien} Folien) · ${await diagnose(cdp)}`
+        : !tinte
+          ? `kein Export-PNG unter "${bild}" · ${await diagnose(cdp)}`
+          : `Vorschau ${vorschau.breite.toFixed(1)} px, PNG ${tinte.breite.toFixed(1)} px (Skala ${tinte.skala}), Abweichung ${((abw ?? 0) * 100).toFixed(1)} %` +
+            ` · Hauptdokument misst ${vorschau.vergleich} · font-family ${vorschau.schrift} · Deck-Dokument kennt: ${vorschau.deckFonts} · Hauptdokument kennt: ${vorschau.hauptFonts}`,
+    );
+  },
+};
+
 const exportSektion: Section = {
   key: "export",
   title: "D · Bilder-Export",
@@ -3458,7 +3561,7 @@ const verbindung: Section = {
 /** M steht VOR dem Export, nicht dahinter: der Export-Abschnitt setzt eine Probe-Regel ins
  *  `customCss` und raeumt sie erst im `finally` des Laufs weg. Liefe M danach, faerbte diese
  *  Regel in die Messung hinein. N steht aus demselben Grund davor. */
-const SECTIONS: Section[] = [vorschau, mermaid, bildplaetze, einstellungen, anfrage, verbindung, endpunktQuelle, explorer, exportSektion, chatSektion];
+const SECTIONS: Section[] = [vorschau, mermaid, bildplaetze, einstellungen, anfrage, verbindung, endpunktQuelle, explorer, schriftSektion, exportSektion, chatSektion];
 
 // --- Lauf --------------------------------------------------------------------
 
