@@ -1,6 +1,7 @@
 import { App, FileSystemAdapter, Notice, type DataAdapter } from "obsidian";
 import { keyFromFilename } from "./vendor/deck-core/pure/theme-key";
 import { normalizeFolder } from "./vendor/kit/folder-hide";
+import { ensureDir } from "./vendor/kit/ensure-dir";
 
 /** List *.css in the themes folder; each becomes { key, css }. Unreadable files are skipped. */
 export async function scanThemeFiles(adapter: DataAdapter, folder: string): Promise<{ key: string; css: string }[]> {
@@ -23,7 +24,7 @@ export async function scanThemeFiles(adapter: DataAdapter, folder: string): Prom
  *  Returns the path written. Creates the folder on demand. */
 export async function writeThemeCss(adapter: DataAdapter, folder: string, key: string, css: string): Promise<string> {
   const dir = normalizeFolder(folder);
-  if (dir && !(await adapter.exists(dir))) await adapter.mkdir(dir);
+  if (dir) await ensureDir(adapter, dir);
   const pathFor = (name: string) => (dir ? `${dir}/${name}` : name);
   let path = pathFor(`${key}.css`);
   let n = 1;

@@ -6,6 +6,10 @@ versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- A generated deck note that would take an occupied name is now created through the shared kit helper: the folder is created on demand, the name passes the file-name policy (the `filename-sanitizer` plugin when installed), and a taken name still gets ` 2`, ` 3` …
+
 ## [0.24.0] — 2026-11-24
 
 ### Added

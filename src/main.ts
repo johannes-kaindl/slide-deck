@@ -4,7 +4,8 @@ import { SlideDeckHubView, VIEW_TYPE_HUB } from "./hub-view";
 import { t, pickLang, setLang } from "./i18n";
 import { SlideDeckSettings, SlideDeckSettingTab, migrateLegacyThemeKeys, loadSettingsWithReport } from "./settings";
 import { ThemeStore } from "./theme-registry";
-import { normalizeFolder } from "./vendor/kit/folder-hide";
+import { isInFolder } from "./vendor/kit/folder-scope";
+import { createNote } from "./vendor/kit-obsidian/create-note";
 import { installFolderHide, type FolderHideHandle } from "./vendor/kit-obsidian/folder-hide";
 import { runGenerateDeck, type GenState, type GenerateResult, type GenerationHandle } from "./generate-deck";
 import { deckClient } from "./llm-client";
@@ -81,7 +82,8 @@ export default class SlideDeckPlugin extends Plugin {
     this.addCommand({ id: "generate-deck", name: t("cmd.generateDeck"), callback: () => void this.activateGenerateView() });
 
     // Refresh the registry when a .css under the themes folder is added/removed/renamed.
-    const underThemes = (path: string) => normalizeFolder(path).startsWith(normalizeFolder(this.settings.themesFolder) + "/") && path.toLowerCase().endsWith(".css");
+    // Leerer Themes-Ordner heißt „kein Ordner“ (Standard von isInFolder), wie vorher mit startsWith.
+    const underThemes = (path: string) => isInFolder(path, this.settings.themesFolder) && path.toLowerCase().endsWith(".css");
     const onVault = (f: TAbstractFile) => { if (underThemes(f.path)) void this.refreshThemes(); };
     this.registerEvent(this.app.vault.on("create", (f) => { if (f instanceof TFile) onVault(f); }));
     this.registerEvent(this.app.vault.on("delete", (f) => { if (f instanceof TFile) onVault(f); }));
@@ -245,19 +247,16 @@ export default class SlideDeckPlugin extends Plugin {
   }
 
   /** Write the deck note, returning the path actually written. Replace overwrites in place; a copy
-   *  (or a raced/occupied create target) gets a fresh " N" suffix so vault.create can never throw. */
+   *  (or an occupied create target) goes through the kit's `createNote`: folder created on demand, name
+   *  through the filename policy, a fresh " N" suffix when taken. */
   private async writeDeckNote(path: string, markdown: string, replace: boolean): Promise<string> {
     const p = normalizePath(path);
     const existing = this.app.vault.getAbstractFileByPath(p);
     if (existing instanceof TFile && replace) { await this.app.vault.modify(existing, markdown); return p; }
-    let target = p;
-    if (this.app.vault.getAbstractFileByPath(target)) {
-      const base = p.replace(/\.md$/, "");
-      let n = 2;
-      while (this.app.vault.getAbstractFileByPath(target)) { target = `${base} ${n}.md`; n++; }
-    }
-    await this.app.vault.create(target, markdown);
-    return target;
+    const cut = p.lastIndexOf("/");
+    const res = await createNote(this.app, { folder: cut < 0 ? "" : p.slice(0, cut), name: p.slice(cut + 1).replace(/\.md$/i, ""), content: markdown, caller: this.manifest.id });
+    if (!res.ok) throw new Error(res.message);
+    return res.path;
   }
 
   /** The messages a generation sends: system prompt (contract and rules) and the source note. The sidebar view measures the context against exactly these. */

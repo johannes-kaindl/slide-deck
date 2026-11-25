@@ -1,8 +1,6 @@
-export type Lang = "en" | "de";
-let currentLang: Lang = "en";
-export function pickLang(raw?: string | null): Lang { return raw && raw.toLowerCase().startsWith("de") ? "de" : "en"; }
-export function setLang(lang: Lang): void { currentLang = lang; }
-export function getLang(): Lang { return currentLang; }
+// Sprachwahl und Platzhalter kommen aus der code-kit-Engine (PROF-OBS-07); die Texte sind plugin-eigen.
+import { defineStrings, getLang, pickLang, setLang, t as kitT, type Lang } from "./vendor/kit/i18n";
+export { getLang, pickLang, setLang, type Lang };
 type Dict = Record<string, string>;
 
 const EN: Dict = {
@@ -318,7 +316,6 @@ const DE: Dict = {
 const STRINGS: Record<Lang, Dict> = { en: EN, de: DE };
 export const STRINGS_EN: Dict = EN;
 export const STRINGS_DE: Dict = DE;
-export function t(key: string, ...args: (string | number)[]): string {
-  const raw = STRINGS[currentLang][key] ?? STRINGS.en[key] ?? key;
-  return raw.replace(/\{(\d+)\}/g, (_m, i) => { const v = args[Number(i)]; return v === undefined ? `{${i}}` : String(v); });
-}
+// Läuft beim ersten Import dieses Moduls und damit vor jedem `t`; die Sprache setzt `main.ts` im `onload`.
+defineStrings(STRINGS);
+export function t(key: string, ...args: (string | number)[]): string { return kitT(key, ...args); }

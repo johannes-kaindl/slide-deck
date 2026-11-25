@@ -10,6 +10,7 @@ import { geometryFor } from "./vendor/deck-core/pure/geometry";
 import { t } from "./i18n";
 import type { DeckDirectives, SlideDeck } from "./vendor/deck-core/pure/slide-model";
 import type { ThemeRegistry } from "./vendor/deck-core/pure/presets";
+import { ensureDir } from "./vendor/kit/ensure-dir";
 
 /** Apply an explicit theme override (the toolbar's ephemeral try-on) onto a loaded deck. */
 function withTheme(deck: SlideDeck, themeOverride?: string): SlideDeck {
@@ -37,7 +38,7 @@ async function exportDeckHtmlAndOpen(app: App, file: TFile | null, slidesHtml: s
   const adapter = app.vault.adapter;
   const base = file?.basename ?? "deck";
   const root = exportFolder.replace(/\/+$/, "") || "Slide-Deck-Export";
-  if (!(await adapter.exists(root))) await adapter.mkdir(root);
+  await ensureDir(adapter, root);
   const path = `${root}/${base}.html`;
   await adapter.write(path, mobileDeckHtml({ css, bodyHtml: slidesHtml.join(""), extraCss: PRINT_CSS(geo.width, geo.height) }));
   const open = (app as unknown as { openWithDefaultApp?: (p: string) => Promise<void> }).openWithDefaultApp;
@@ -69,7 +70,7 @@ async function printViaIframe(doc: Document, win: Window, slidesHtml: string[], 
 async function writeExportFile(app: App, file: TFile | null, exportFolder: string, ext: "pdf", bytes: Uint8Array): Promise<string> {
   const adapter = app.vault.adapter;
   const root = exportFolder.replace(/\/+$/, "") || "Slide-Deck-Export";
-  if (!(await adapter.exists(root))) await adapter.mkdir(root);
+  await ensureDir(adapter, root);
   const path = `${root}/${file?.basename ?? "deck"}.${ext}`;
   await adapter.writeBinary(path, bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer);
   return path;
@@ -117,8 +118,7 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
   const base = file?.basename ?? "deck";
   const root = exportFolder.replace(/\/+$/, "") || "Slide-Deck-Export";
   const folder = `${root}/${base}`;
-  if (!(await adapter.exists(root))) await adapter.mkdir(root);
-  if (!(await adapter.exists(folder))) await adapter.mkdir(folder);
+  await ensureDir(adapter, folder);   // legt die Wurzel mit an
   const host = await createIsolatedDeckIframe(doc, { css, bodyHtml: slidesHtml.join(""), width: geo.width });
   try {
     const slides = Array.from(host.contentDoc.querySelectorAll<HTMLElement>(".sd-slide"));
