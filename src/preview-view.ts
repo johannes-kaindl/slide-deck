@@ -3,7 +3,7 @@ import { loadDeck } from "./adapter";
 import { buildIsolatedDeck } from "./vendor/deck-core/dom/render-dom";
 import { createIsolatedDeckIframe, type IsolatedIframe } from "./vendor/deck-core/dom/iframe-host";
 import { PREVIEW_CHROME_CSS } from "./vendor/deck-core/dom/chrome-css";
-import { exportPdf, exportImages } from "./export";
+import { exportPdf, exportImages, withHostFonts } from "./export";
 import { setNoteTheme } from "./frontmatter-writer";
 import { activeDoc, activeWin } from "./dom-safe";
 import { geometryFor } from "./vendor/deck-core/pure/geometry";
@@ -166,7 +166,7 @@ export class PreviewPanel implements HubPanel<HubTabId> {
     const deck: SlideDeck = { ...this.currentDeck, directives: { ...this.currentDeck.directives, theme: this.effectiveTheme } };
     this.warnEl.empty();
     this.disposeFrame();
-    const { slidesHtml, css, warnings } = await buildIsolatedDeck(activeDoc(), deck, this.resolveEmbedFn, this.plugin.themeStore.getMap(), this.plugin.settings.customCss);
+    const { slidesHtml, css, warnings } = await buildIsolatedDeck(activeDoc(), deck, this.resolveEmbedFn, this.plugin.themeStore.getMap(), withHostFonts(activeDoc(), this.plugin.settings.customCss));
     const bodyHtml = `<div class="sd-deck-inner">${slidesHtml.join("")}</div>`;
     this.previewFrame = await createIsolatedDeckIframe(this.deckHost.ownerDocument, { css, extraCss: PREVIEW_CHROME_CSS, bodyHtml, width: this.geoWidth, mount: this.deckHost });
     this.previewFrame.iframe.addClass("sd-deck-iframe");

@@ -1,13 +1,16 @@
 # Changelog
 
-All notable changes to this project are documented here.
-Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-versioning follows [SemVer](https://semver.org/).
+All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- PNG export now sets body text in the same font as the preview. Themes with the Inter stack (kami, kogane, sumi, kairo, kurenai) used to fall back to a wider substitute font in the exported image (a line 590.8 px wide in the preview came out 666.5 px in the PNG, +12.8 %), so labels could crowd bars. Preview, fit measurement and PNG now use Obsidian's own Inter. The PDF keeps the system font for now: its file policy loads fonts only from `data:` URLs.
+
 ### Changed
 
+- Library update to code-kit 0.93.0 (was 0.91.1) for the font-face collector; obsidian-kit stays at 0.111.0.
 - A generated deck note that would take an occupied name is now created through the shared kit helper: the folder is created on demand, the name passes the file-name policy (the `filename-sanitizer` plugin when installed), and a taken name still gets ` 2`, ` 3` …
 
 ## [0.24.0] — 2026-11-24

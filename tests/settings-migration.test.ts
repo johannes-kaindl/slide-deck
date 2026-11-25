@@ -3,10 +3,10 @@ import { loadSettings, loadSettingsWithReport, DEFAULT_SETTINGS } from "../src/s
 
 describe("loadSettings — endpoint migration", () => {
   it("turns a pre-0.7 string list into configs", () => {
-    const out = loadSettings({ llmEndpoints: ["http://localhost:1234", "http://192.168.1.5:1234"] });
+    const out = loadSettings({ llmEndpoints: ["http://localhost:1234", "http://192.0.2.5:1234"] });
     expect(out.llmEndpoints).toEqual([
       { url: "http://localhost:1234" },
-      { url: "http://192.168.1.5:1234" },
+      { url: "http://192.0.2.5:1234" },
     ]);
   });
 

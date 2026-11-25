@@ -1514,7 +1514,7 @@ const schriftSektion: Section = {
     `);
     if (angelegt) erzeugtePfade.push(SCHRIFT_NOTE);
     const folien = await openPreview(cdp, SCHRIFT_NOTE);
-    type Vorschau = { breite: number; oben: number; unten: number; schrift: string; deckFonts: string; hauptFonts: string; vergleich: string } | null;
+    type Vorschau = { breite: number; oben: number; unten: number; schrift: string; deckFonts: string; hauptFonts: string; vergleich: string; quellen: string } | null;
     const vorschau = await pollUntil<Vorschau>(cdp, `
       ${DECK_DOC}
       if (!deck) return null;
@@ -1531,16 +1531,18 @@ const schriftSektion: Section = {
       const miss = (familie) => { const e = document.createElement("span"); e.textContent = ${JSON.stringify(SCHRIFT_TEXT)};
         e.style.cssText = "position:absolute;left:-9999px;white-space:nowrap;font-size:" + cs.fontSize + ";font-weight:" + cs.fontWeight + ";font-family:" + familie;
         document.body.appendChild(e); const w = e.getBoundingClientRect().width; e.remove(); return Math.round(w * 10) / 10; };
+      // Woher Inter kommt: die src der @font-face-Regeln im Haupt- und im Deck-Dokument (Hauptdokument relativ, Deck absolut erwartet).
+      const interSrc = (d) => { const out = []; const walk = (rules) => { for (const r of Array.from(rules)) {
+          if (r.styleSheet) { try { walk(r.styleSheet.cssRules); } catch {} continue; }
+          if (r.cssRules) { walk(r.cssRules); continue; }
+          if (r.constructor.name === "CSSFontFaceRule" && /inter/i.test(r.style.getPropertyValue("font-family"))) out.push((r.style.getPropertyValue("src").match(/url\\(([^)]*)\\)/) || ["", "?"])[1]); } };
+        for (const sh of Array.from(d.styleSheets)) { try { walk(sh.cssRules); } catch {} }
+        return out.length + " Regel(n)" + (out.length ? ", erste " + out[0] : ""); };
       return { breite: t.width / f, oben: (t.top - s.top) / f, unten: (t.bottom - s.top) / f,
         schrift: cs.fontFamily, deckFonts: fam(deck), hauptFonts: fam(document),
+        quellen: "Inter-@font-face Hauptdokument: " + interSrc(document) + " · Deck-Dokument: " + interSrc(deck),
         vergleich: "Inter " + miss("Inter") + " · system-ui " + miss("system-ui") + " · Helvetica " + miss("Helvetica") };
     `, 20_000);
-    const probe = await cdp.evaluate<string>(`
-      ${readFileSync("/private/tmp/claude-502/-Users-johannes-Projects-jkaindl-obsidian-plugins-slide-deck/28722802-ae81-4f05-8b75-bacd63ed418c/scratchpad/fontprobe/entry.js", "utf8")}
-      ${DECK_DOC}
-      return (await window.__fontProbe(deck)) + " || MAIN: " + (await window.__fontProbe(document));
-    `);
-    console.log("PROBE " + probe);
     const exportOrdner = await cdp.evaluate<string>(`return app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].settings.exportFolder;`);
     const base = SCHRIFT_NOTE.replace(/\.md$/, "");
     const ordner = `${exportOrdner}/${base}`;
@@ -1576,6 +1578,17 @@ const schriftSektion: Section = {
         return { breite: max < 0 ? 0 : (max - min + 1) / skala, skala };
       `, 90_000, 2000);
       if (tinte && !erzeugtePfade.includes(exportOrdner)) erzeugtePfade.push(exportOrdner);
+      // Sichtpruefung: das geschriebene PNG als Datei ablegen (Kopie aus dem Vault, keine Bildschirmaufnahme, also ohne Lock `focus`).
+      const s1Shots = process.env.SMOKE_SHOT_DIR;
+      if (tinte && s1Shots) {
+        const b64 = await cdp.evaluate<string>(`
+          const u8 = new Uint8Array(await app.vault.adapter.readBinary(${JSON.stringify(bild)}));
+          let bin = ""; for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode(...u8.subarray(i, i + 0x8000));
+          return btoa(bin);
+        `);
+        mkdirSync(s1Shots, { recursive: true });
+        writeFileSync(join(s1Shots, "s1-export.png"), Buffer.from(b64, "base64"));
+      }
     }
     const abw = vorschau && tinte && vorschau.breite > 0 ? (tinte.breite - vorschau.breite) / vorschau.breite : null;
     record(
@@ -1586,7 +1599,7 @@ const schriftSektion: Section = {
         : !tinte
           ? `kein Export-PNG unter "${bild}" · ${await diagnose(cdp)}`
           : `Vorschau ${vorschau.breite.toFixed(1)} px, PNG ${tinte.breite.toFixed(1)} px (Skala ${tinte.skala}), Abweichung ${((abw ?? 0) * 100).toFixed(1)} %` +
-            ` · Hauptdokument misst ${vorschau.vergleich} · font-family ${vorschau.schrift} · Deck-Dokument kennt: ${vorschau.deckFonts} · Hauptdokument kennt: ${vorschau.hauptFonts}`,
+            ` · Hauptdokument misst ${vorschau.vergleich} · font-family ${vorschau.schrift} · ${vorschau.quellen} · Deck-Dokument kennt: ${vorschau.deckFonts} · Hauptdokument kennt: ${vorschau.hauptFonts}`,
     );
   },
 };

@@ -11,6 +11,21 @@ import { t } from "./i18n";
 import type { DeckDirectives, SlideDeck } from "./vendor/deck-core/pure/slide-model";
 import type { ThemeRegistry } from "./vendor/deck-core/pure/presets";
 import { ensureDir } from "./vendor/kit/ensure-dir";
+import { collectFontFaces } from "./vendor/kit/font-faces";
+import type { StyleSheetSource } from "./vendor/kit/collect-css";
+
+/** Schriften, die Obsidian im Hauptdokument per `@font-face` laedt und die Themes beim Namen nennen (deck-core-Presets: `"Inter", system-ui, …`). */
+export const HOST_FONT_FAMILIES: readonly string[] = ["Inter"];
+
+/** Das eigene CSS des Nutzers mit Obsidians `@font-face`-Regeln fuer `HOST_FONT_FAMILIES` davor, fuer Vorschau, Messung und Export.
+ *  Ohne sie faellt der Inter-Stack im isolierten Deck auf `system-ui`, und modern-screenshot setzt `system-ui` im foreignObject-Bild
+ *  breiter als die Vorschau (Obsidian 1.15.1: 590,8 gegen 666,5 px); mit ihnen rendern Vorschau, Fit-Messung und PNG dieselbe Inter.
+ *  Im PDF (Druckmodul und mobile HTML-Datei) sperrt die Policy (`font-src data:`) die `app:`-URL, dort bleibt es beim Rueckfall auf die
+ *  Systemschrift; sie laeuft schmaler als Inter, die Fit-Messung bleibt also auf der sicheren Seite. */
+export function withHostFonts(doc: StyleSheetSource, customCss: string): string {
+  const { css } = collectFontFaces(doc, HOST_FONT_FAMILIES);
+  return css === "" ? customCss : `${css}\n${customCss}`;
+}
 
 /** Apply an explicit theme override (the toolbar's ephemeral try-on) onto a loaded deck. */
 function withTheme(deck: SlideDeck, themeOverride?: string): SlideDeck {
@@ -85,7 +100,7 @@ export async function exportPdf(app: App, doc: Document, win: Window, file: TFil
   const deck = withTheme(loaded.deck, themeOverride);
   const geo = geometryFor(deck.directives.aspect);
   new Notice(t("notice.exporting"));
-  const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, customCss);
+  const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, withHostFonts(doc, customCss));
   if (mobile) { await exportDeckHtmlAndOpen(app, file, slidesHtml, css, geo, exportFolder); return; }
   // Desktop: das Kit-Druckmodul schreibt das PDF ohne Dialog in den Exportordner. `@page { size: <Canvas>px }` aus PRINT_CSS bestimmt die
   // Seite (das Modul druckt mit `preferCSSPageSize`), die Policy-Datei ist dieselbe wie im mobilen Weg. Scheitert der Druck, bleibt der alte Weg.
@@ -113,7 +128,7 @@ export async function exportImages(app: App, doc: Document, win: Window, file: T
   const deck = withTheme(loaded.deck, themeOverride);
   const geo = geometryFor(deck.directives.aspect);
   new Notice(t("notice.exporting"));
-  const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, customCss);
+  const { slidesHtml, css } = await buildIsolatedDeck(doc, deck, loaded.resolveEmbed, registry, withHostFonts(doc, customCss));
   const adapter = app.vault.adapter;
   const base = file?.basename ?? "deck";
   const root = exportFolder.replace(/\/+$/, "") || "Slide-Deck-Export";

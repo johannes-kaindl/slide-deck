@@ -1,7 +1,7 @@
 {
   "sources": {
     "obsidian-kit": { "ref": "0.111.0" },
-    "code-kit": { "ref": "0.91.1" }
+    "code-kit": { "ref": "0.93.0" }
   },
   "targets": [
     {
@@ -15,13 +15,13 @@
       "dir": "src/vendor/kit",
       "source": "code-kit",
       "from": "src/ts/pure",
-      "modules": ["answer-retry", "backend-probe", "capabilities", "data-url", "embeddings-client", "endpoint", "endpoint_config", "endpoint_diagnostics", "error-message", "error_body", "model-choice", "model-context", "anthropic-wire", "model-list-cache", "reasoning", "redact", "safe-markdown", "sampling-profiles", "secrets", "settings", "split-list", "sse", "think-splitter", "timeout", "ensure-dir", "filename-policy", "folder-scope", "fold-case", "rel-path", "i18n"]
+      "modules": ["answer-retry", "backend-probe", "capabilities", "data-url", "embeddings-client", "endpoint", "endpoint_config", "endpoint_diagnostics", "error-message", "error_body", "model-choice", "model-context", "anthropic-wire", "model-list-cache", "reasoning", "redact", "safe-markdown", "sampling-profiles", "secrets", "settings", "split-list", "sse", "think-splitter", "timeout", "ensure-dir", "filename-policy", "folder-scope", "fold-case", "rel-path", "i18n", "css-rules", "regexp-escape"]
     },
     {
       "dir": "src/vendor/kit",
       "source": "code-kit",
       "from": "src/ts/web",
-      "modules": ["clipboard", "remote-resources", "leave-tree"],
+      "modules": ["clipboard", "remote-resources", "leave-tree", "collect-css", "font-faces"],
       "rewrite": [["../pure/", "./"]]
     },
     {

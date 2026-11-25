@@ -1,4 +1,4 @@
-// vendored from code-kit@0.91.1, src/ts/pure/data-url.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.93.0, src/ts/pure/data-url.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // Origin: koda-agent `src/core/tools/images.ts` (header: "taken over from slide-deck/src/adapter.ts, 2026-09-30") and
 // slide-deck `src/adapter.ts` — the same 8 lines twice, differing only in the table (koda-agent leaves out SVG). Also
 // replaces the inline versions in obsidian-letterhead (`src/obsidian/main.ts:238`), local-image-generator
@@ -30,7 +30,8 @@ const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
 /** Standard Base64 (RFC 4648 §4, with `=` padding) of the bytes in `bytes`. Linear time and no `btoa`/`Buffer`: the
  *  `pure/` layer promises to run anywhere, and the old `String.fromCharCode(...chunk)` + `btoa` pair needed a chunk
  *  size to stay under the argument limit and built a second, binary string as large as the input.
- *  A view (`subarray`) is encoded as the view, not as the buffer behind it. */
+ *  A view (`subarray`) is encoded as the view, not as the buffer behind it.
+ *  Not `Uint8Array.prototype.toBase64` (ES2026): measured 2026-11-25, Node 24.14 lacks it (Playwright WebKit 26.6 and Chromium 153 have it). */
 export function bytesToBase64(bytes: Uint8Array): string {
   const parts: string[] = [];
   const n = bytes.length;
@@ -55,6 +56,16 @@ export function bytesToBase64(bytes: Uint8Array): string {
   }
   parts.push(block);
   return parts.join("");
+}
+
+/** Standard Base64 of the UTF-8 bytes of `text` (`bytesToBase64(new TextEncoder().encode(text))`): what `btoa(text)` cannot do, since `btoa`
+ *  takes code units as Latin-1 bytes and throws above U+00FF. Origin: mailstone `src/core/imap/client.ts:115`, `src/core/smtp/client.ts:70`
+ *  (`base64Utf8`) and `src/core/mime/headers.ts:36` (`utf8ToBase64`), three copies of `TextEncoder` + a `String.fromCharCode` loop + `btoa`,
+ *  and calendar-notes `src/core/dav/transport.ts:6` (`base64Utf8`, own table) — Welle 38, divergence run 2026-11-25. A lone surrogate is
+ *  encoded as U+FFFD (EF BF BD), as `TextEncoder` and therefore all four carriers do; a text with one does not survive the round trip.
+ *  Linear, no argument-count limit (no spread into `String.fromCharCode`). */
+export function utf8ToBase64(text: string): string {
+  return bytesToBase64(new TextEncoder().encode(text));
 }
 
 /** Character → 6-bit value, `-1` for anything outside the standard alphabet (`=` included). */

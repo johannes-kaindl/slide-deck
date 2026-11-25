@@ -2,10 +2,10 @@
   "source": "obsidian-kit",
   "version": "0.111.0",
   "sha": "3ba6442",
-  "code_kit_version": "0.91.1",
+  "code_kit_version": "0.93.0",
   "vendored": "endpoint-secret-hook.ts, endpoint-source.ts, filename-sanitizer-source.ts, folder-hide.ts, override-guard.ts",
   "note": "Verbatim snapshot aus ZWEI Quellen (obsidian-kit + code-kit); welche Datei woher stammt, sagt ihr eigener Kopf. Never hand-edit. Pins in tools/kit-sync.json, re-vendor via tools/sync-kit.sh (zentrales kit-sync im Dach). version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien.",
-  "code_kit_sha": "512aa5c",
-  "code_kit_vendored": "answer-retry.ts, backend-probe.ts, capabilities.ts, data-url.ts, embeddings-client.ts, endpoint.ts, endpoint_config.ts, endpoint_diagnostics.ts, error-message.ts, error_body.ts, model-choice.ts, model-context.ts, anthropic-wire.ts, model-list-cache.ts, reasoning.ts, redact.ts, safe-markdown.ts, sampling-profiles.ts, secrets.ts, settings.ts, split-list.ts, sse.ts, think-splitter.ts, timeout.ts, ensure-dir.ts, filename-policy.ts, folder-scope.ts, fold-case.ts, rel-path.ts, i18n.ts, clipboard.ts, remote-resources.ts, leave-tree.ts",
+  "code_kit_sha": "8f43ca7",
+  "code_kit_vendored": "answer-retry.ts, backend-probe.ts, capabilities.ts, data-url.ts, embeddings-client.ts, endpoint.ts, endpoint_config.ts, endpoint_diagnostics.ts, error-message.ts, error_body.ts, model-choice.ts, model-context.ts, anthropic-wire.ts, model-list-cache.ts, reasoning.ts, redact.ts, safe-markdown.ts, sampling-profiles.ts, secrets.ts, settings.ts, split-list.ts, sse.ts, think-splitter.ts, timeout.ts, ensure-dir.ts, filename-policy.ts, folder-scope.ts, fold-case.ts, rel-path.ts, i18n.ts, css-rules.ts, regexp-escape.ts, clipboard.ts, remote-resources.ts, leave-tree.ts, collect-css.ts, font-faces.ts",
   "license": "AGPL-3.0-or-later"
 }
