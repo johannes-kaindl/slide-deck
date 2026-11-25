@@ -1,21 +1,21 @@
 {
   "sources": {
-    "obsidian-kit": { "ref": "0.108.0" },
-    "code-kit": { "ref": "0.88.0" }
+    "obsidian-kit": { "ref": "0.111.0" },
+    "code-kit": { "ref": "0.91.1" }
   },
   "targets": [
     {
       "dir": "src/vendor/kit",
       "source": "obsidian-kit",
       "from": "src/pure",
-      "modules": ["endpoint-secret-hook", "endpoint-source", "folder-hide", "override-guard"],
+      "modules": ["endpoint-secret-hook", "endpoint-source", "filename-sanitizer-source", "folder-hide", "override-guard"],
       "rewrite": [["../vendor/code-kit/pure/", "./"], ["../vendor/code-kit/web/", "./"]]
     },
     {
       "dir": "src/vendor/kit",
       "source": "code-kit",
       "from": "src/ts/pure",
-      "modules": ["answer-retry", "backend-probe", "capabilities", "data-url", "embeddings-client", "endpoint", "endpoint_config", "endpoint_diagnostics", "error-message", "error_body", "model-choice", "model-context", "anthropic-wire", "model-list-cache", "reasoning", "redact", "safe-markdown", "sampling-profiles", "secrets", "settings", "split-list", "sse", "think-splitter", "timeout"]
+      "modules": ["answer-retry", "backend-probe", "capabilities", "data-url", "embeddings-client", "endpoint", "endpoint_config", "endpoint_diagnostics", "error-message", "error_body", "model-choice", "model-context", "anthropic-wire", "model-list-cache", "reasoning", "redact", "safe-markdown", "sampling-profiles", "secrets", "settings", "split-list", "sse", "think-splitter", "timeout", "ensure-dir", "filename-policy", "folder-scope", "fold-case", "rel-path", "i18n"]
     },
     {
       "dir": "src/vendor/kit",
@@ -28,7 +28,7 @@
       "dir": "src/vendor/kit-obsidian",
       "source": "obsidian-kit",
       "from": "src/obsidian",
-      "modules": ["backend-probe", "chat-client", "chat-transport", "clipboard", "clock", "collapsible", "embedding-connection", "endpoint-list", "endpoint-plumbing", "endpoint-secrets", "endpoint-source", "folder-hide", "endpoint-status-text", "folder-suggest", "setting-body-host", "copy-button", "help-setting", "hub", "llm-connection", "llm-connection-strings", "model-picker", "request-section", "request-session", "secrets", "settings_walker", "shortcuts-bridge", "stream-area", "status-indicator", "plugin-api", "print-to-pdf", "anthropic-transport", "model-bar", "model-bar-strings", "thinking-control"],
+      "modules": ["backend-probe", "chat-client", "chat-transport", "clipboard", "clock", "collapsible", "embedding-connection", "endpoint-list", "endpoint-plumbing", "endpoint-secrets", "endpoint-source", "folder-hide", "endpoint-status-text", "folder-suggest", "setting-body-host", "copy-button", "help-setting", "hub", "llm-connection", "llm-connection-strings", "model-picker", "request-section", "request-session", "secrets", "settings_walker", "shortcuts-bridge", "stream-area", "status-indicator", "plugin-api", "print-to-pdf", "anthropic-transport", "model-bar", "model-bar-strings", "thinking-control", "create-note", "safe-file-name"],
       "rewrite": [["../vendor/code-kit/pure/", "../kit/"], ["../vendor/code-kit/web/", "../kit/"], ["../pure/", "../kit/"]]
     },
     {
